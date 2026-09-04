@@ -39,12 +39,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
+    // 1. Instant local cache hydration for 0ms initial render
+    if (typeof window !== 'undefined') {
+      try {
+        const cachedStr = localStorage.getItem('cached_users');
+        const savedUserId = localStorage.getItem('active_user_id');
+        if (cachedStr) {
+          const cachedUsers: User[] = JSON.parse(cachedStr);
+          if (Array.isArray(cachedUsers) && cachedUsers.length > 0) {
+            setAvailableUsers(cachedUsers);
+            const found = cachedUsers.find((u) => u.id === savedUserId);
+            if (found) {
+              setCurrentUser(found);
+            } else {
+              const defaultUser = cachedUsers.find((u) => u.role === 'OFFICER') || cachedUsers[0];
+              setCurrentUser(defaultUser);
+            }
+            setIsLoading(false); // Render immediately without waiting for network!
+          }
+        }
+      } catch (e) {
+        console.error('Error reading cached users', e);
+      }
+    }
+
+    // 2. Fetch fresh data in background (SWR pattern)
     async function loadUsers() {
       try {
         const res = await fetch('/api/users');
         if (res.ok) {
           const users: User[] = await res.json();
           setAvailableUsers(users);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('cached_users', JSON.stringify(users));
+          }
 
           const savedUserId = typeof window !== 'undefined' ? localStorage.getItem('active_user_id') : null;
           const found = users.find((u) => u.id === savedUserId);

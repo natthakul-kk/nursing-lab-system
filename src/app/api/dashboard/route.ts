@@ -3,28 +3,70 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
-    // 1. Counts
-    const totalEquipmentItems = await prisma.item.count({ where: { type: 'EQUIPMENT' } });
-    const totalConsumableItems = await prisma.item.count({ where: { type: 'CONSUMABLE' } });
-    
-    // Assets status
-    const totalAssets = await prisma.equipmentAsset.count();
-    const availableAssets = await prisma.equipmentAsset.count({ where: { status: 'AVAILABLE' } });
-    const borrowedAssets = await prisma.equipmentAsset.count({ where: { status: 'BORROWED' } });
-    const maintenanceAssets = await prisma.equipmentAsset.count({ where: { status: 'MAINTENANCE' } });
+    const now = new Date();
+    const ninetyDaysLater = new Date();
+    ninetyDaysLater.setDate(now.getDate() + 90);
 
-    // Pending Requests
-    const pendingBorrows = await prisma.borrowRequest.count({ where: { status: 'PENDING' } });
-    const pendingRequisitions = await prisma.requisitionRequest.count({ where: { status: 'PENDING' } });
-
-    // 2. Low stock consumable items
-    const consumables = await prisma.item.findMany({
-      where: { type: 'CONSUMABLE' },
-      include: {
-        stockLots: true,
-        category: true,
-      },
-    });
+    const [
+      totalEquipmentItems,
+      totalConsumableItems,
+      totalAssets,
+      availableAssets,
+      borrowedAssets,
+      maintenanceAssets,
+      pendingBorrows,
+      pendingRequisitions,
+      consumables,
+      expiringLots,
+      courses,
+      recentTransactions,
+    ] = await Promise.all([
+      prisma.item.count({ where: { type: 'EQUIPMENT' } }),
+      prisma.item.count({ where: { type: 'CONSUMABLE' } }),
+      prisma.equipmentAsset.count(),
+      prisma.equipmentAsset.count({ where: { status: 'AVAILABLE' } }),
+      prisma.equipmentAsset.count({ where: { status: 'BORROWED' } }),
+      prisma.equipmentAsset.count({ where: { status: 'MAINTENANCE' } }),
+      prisma.borrowRequest.count({ where: { status: 'PENDING' } }),
+      prisma.requisitionRequest.count({ where: { status: 'PENDING' } }),
+      prisma.item.findMany({
+        where: { type: 'CONSUMABLE' },
+        include: {
+          stockLots: true,
+          category: true,
+        },
+      }),
+      prisma.stockLot.findMany({
+        where: {
+          quantityRemaining: { gt: 0 },
+          expiryDate: {
+            not: null,
+            lte: ninetyDaysLater,
+          },
+        },
+        include: {
+          item: true,
+        },
+        orderBy: { expiryDate: 'asc' },
+      }),
+      prisma.course.findMany({
+        include: {
+          stockTransactions: {
+            where: { type: 'OUT_REQUISITION' },
+          },
+          requisitionRequests: true,
+        },
+      }),
+      prisma.stockTransaction.findMany({
+        take: 6,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          item: true,
+          course: true,
+          createdBy: true,
+        },
+      }),
+    ]);
 
     const lowStockItems = consumables
       .map((item) => {
@@ -40,35 +82,6 @@ export async function GET() {
         };
       })
       .filter((item) => item.isLowStock);
-
-    // 3. Expiring soon lots (within 90 days)
-    const now = new Date();
-    const ninetyDaysLater = new Date();
-    ninetyDaysLater.setDate(now.getDate() + 90);
-
-    const expiringLots = await prisma.stockLot.findMany({
-      where: {
-        quantityRemaining: { gt: 0 },
-        expiryDate: {
-          not: null,
-          lte: ninetyDaysLater,
-        },
-      },
-      include: {
-        item: true,
-      },
-      orderBy: { expiryDate: 'asc' },
-    });
-
-    // 4. Course cost breakdown
-    const courses = await prisma.course.findMany({
-      include: {
-        stockTransactions: {
-          where: { type: 'OUT_REQUISITION' },
-        },
-        requisitionRequests: true,
-      },
-    });
 
     const courseCosts = courses.map((course) => {
       const totalExpense = course.stockTransactions.reduce((sum, tx) => sum + Math.abs(tx.totalCost), 0);
@@ -88,17 +101,6 @@ export async function GET() {
     });
 
     const totalSystemExpense = courseCosts.reduce((sum, c) => sum + c.totalExpense, 0);
-
-    // 5. Recent Transactions
-    const recentTransactions = await prisma.stockTransaction.findMany({
-      take: 6,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        item: true,
-        course: true,
-        createdBy: true,
-      },
-    });
 
     return NextResponse.json({
       totalEquipmentItems,

@@ -43,13 +43,30 @@ export default function StudentDashboard() {
   };
 
   useEffect(() => {
+    if (!currentUser?.id) return;
+
+    // 1. Instant session cache for 0ms render
+    try {
+      const cached = sessionStorage.getItem(`cached_borrows_${currentUser.id}`);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed)) {
+          setBorrowRequests(parsed);
+          setLoading(false);
+        }
+      }
+    } catch {}
+
+    // 2. Fetch fresh in background
     async function fetchMyBorrows() {
-      if (!currentUser?.id) return;
       try {
-        const res = await fetch(`/api/borrow?userId=${currentUser.id}`);
+        const res = await fetch(`/api/borrow?userId=${currentUser?.id}`);
         if (res.ok) {
           const data = await res.json();
           setBorrowRequests(data);
+          if (currentUser?.id) {
+            sessionStorage.setItem(`cached_borrows_${currentUser.id}`, JSON.stringify(data));
+          }
         }
       } catch (err) {
         console.error('Failed to fetch student borrow records', err);

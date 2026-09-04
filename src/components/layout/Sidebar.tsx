@@ -16,7 +16,8 @@ import {
   Clock,
   Shield,
   GraduationCap,
-  UserCog
+  UserCog,
+  CalendarDays
 } from 'lucide-react';
 import ProfileModal from '@/components/profile/ProfileModal';
 
@@ -86,6 +87,13 @@ export default function Sidebar() {
       icon: CheckSquare,
       roles: ['ADMIN', 'OFFICER', 'APPROVER'],
       badgeCount: pendingCount,
+    },
+    {
+      label: 'ตารางงาน & กำหนดรับ-คืน',
+      href: '/schedule',
+      icon: CalendarDays,
+      roles: ['ADMIN', 'OFFICER', 'APPROVER'],
+      badge: 'เจ้าหน้าที่',
     },
     {
       label: 'ต้นทุนวัสดุตามรายวิชา',

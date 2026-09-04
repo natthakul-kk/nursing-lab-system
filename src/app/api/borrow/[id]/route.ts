@@ -39,6 +39,18 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       });
       return NextResponse.json(updated);
     }
+    if (action === 'UPDATE_DATES') {
+      const { borrowDate, expectedReturnDate } = body;
+      const dataToUpdate: any = {};
+      if (borrowDate) dataToUpdate.borrowDate = new Date(borrowDate);
+      if (expectedReturnDate) dataToUpdate.expectedReturnDate = new Date(expectedReturnDate);
+
+      const updated = await prisma.borrowRequest.update({
+        where: { id },
+        data: dataToUpdate,
+      });
+      return NextResponse.json(updated);
+    }
 
     if (action === 'CHECKOUT') {
       // Officer checks out equipment.

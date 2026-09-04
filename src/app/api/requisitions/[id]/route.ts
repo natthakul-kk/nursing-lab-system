@@ -42,6 +42,17 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       });
       return NextResponse.json(updated);
     }
+    if (action === 'UPDATE_DATES') {
+      const { dateNeeded } = body;
+      const dataToUpdate: any = {};
+      if (dateNeeded) dataToUpdate.dateNeeded = new Date(dateNeeded);
+
+      const updated = await prisma.requisitionRequest.update({
+        where: { id },
+        data: dataToUpdate,
+      });
+      return NextResponse.json(updated);
+    }
 
     if (action === 'DISPENSE') {
       // Officer dispenses items and deducts stock FIFO

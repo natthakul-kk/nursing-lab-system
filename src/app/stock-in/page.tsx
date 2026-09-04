@@ -1,0 +1,482 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/lib/auth-context';
+import {
+  ArrowDownToLine,
+  Boxes,
+  PlusCircle,
+  Calendar,
+  DollarSign,
+  Building,
+  CheckCircle2,
+  AlertCircle,
+  Tag,
+  Clock
+} from 'lucide-react';
+
+export default function StockInPage() {
+  const { currentUser, isOfficer } = useAuth();
+  const [items, setItems] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<'CONSUMABLE' | 'EQUIPMENT'>('CONSUMABLE');
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Form State
+  const [form, setForm] = useState({
+    itemId: '',
+    lotNumber: '',
+    quantity: 50,
+    unitCost: 25.0,
+    expiryDate: '',
+    supplier: '',
+    assetCode: '',
+    sequenceNumber: 1,
+    serialNumber: '',
+    location: '',
+    cost: 0,
+    receivedDate: '',
+    imageUrl: '',
+    note: '',
+  });
+
+  const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
+
+  const fetchItemsAndHistory = async () => {
+    try {
+      const [itemsRes, dashRes] = await Promise.all([
+        fetch('/api/items'),
+        fetch('/api/dashboard'),
+      ]);
+      if (itemsRes.ok) {
+        const data = await itemsRes.json();
+        setItems(data);
+        const consumables = data.filter((i: any) => i.type === 'CONSUMABLE');
+        if (consumables.length > 0 && !form.itemId) {
+          setForm((prev) => ({ ...prev, itemId: consumables[0].id }));
+        }
+      }
+      if (dashRes.ok) {
+        const dash = await dashRes.json();
+        setRecentTransactions(dash.recentTransactions?.filter((tx: any) => tx.type === 'IN') || []);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchItemsAndHistory();
+  }, []);
+
+  const handleTabChange = (tab: 'CONSUMABLE' | 'EQUIPMENT') => {
+    setActiveTab(tab);
+    const available = items.filter((i) => i.type === tab);
+    if (available.length > 0) {
+      setForm((prev) => ({ ...prev, itemId: available[0].id }));
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.itemId) {
+      alert('กรุณาเลือกรายการ');
+      return;
+    }
+
+    setSubmitting(true);
+    setSuccessMessage(null);
+
+    try {
+      const res = await fetch('/api/stock/in', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...form,
+          type: activeTab,
+          userId: currentUser?.id,
+        }),
+      });
+
+      if (res.ok) {
+        setSuccessMessage('บันทึกการรับเข้าเรียบร้อยแล้ว');
+        setForm({
+          itemId: form.itemId,
+          lotNumber: '',
+          quantity: 50,
+          unitCost: 25.0,
+          expiryDate: '',
+          supplier: '',
+          assetCode: '',
+          sequenceNumber: 1,
+          serialNumber: '',
+          location: '',
+          cost: 0,
+          receivedDate: '',
+          imageUrl: '',
+          note: '',
+        });
+        fetchItemsAndHistory();
+        setTimeout(() => setSuccessMessage(null), 4000);
+      } else {
+        const err = await res.json();
+        alert(err.error || 'เกิดข้อผิดพลาดในการบันทึก');
+      }
+    } catch (err) {
+      alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const selectedItem = items.find((i) => i.id === form.itemId);
+  const eligibleItems = items.filter((i) => i.type === activeTab);
+
+  if (!isOfficer) {
+    return (
+      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center text-amber-800">
+        <AlertCircle className="w-8 h-8 mx-auto mb-2 text-amber-600" />
+        <h3 className="font-bold text-base">เฉพาะเจ้าหน้าที่ห้องปฏิบัติการพยาบาล</h3>
+        <p className="text-xs mt-1">
+          กรุณาสลับบทบาทเป็น "เจ้าหน้าที่แล็บ" หรือ "ผู้ดูแลระบบ" จากแถบด้านบนเพื่อบันทึกการรับเข้าพัสดุ
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+          <ArrowDownToLine className="w-6 h-6 text-teal-600" />
+          ระบบรับเข้าพัสดุและลงทะเบียนครุภัณฑ์ (Stock In)
+        </h2>
+        <p className="text-xs text-slate-500 mt-1">
+          บันทึกรับเวชภัณฑ์สิ้นเปลืองเข้าคลัง กำหนดเลข Lot วันหมดอายุ ราคาต้นทุน หรือลงทะเบียนรหัส Asset ครุภัณฑ์ชิ้นใหม่
+        </p>
+      </div>
+
+      {successMessage && (
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 rounded-xl text-xs font-bold flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+          <span>{successMessage}</span>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Form Column (2 Cols) */}
+        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+          {/* Tabs */}
+          <div className="flex items-center p-1 bg-slate-100 rounded-xl mb-6">
+            <button
+              onClick={() => handleTabChange('CONSUMABLE')}
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition ${
+                activeTab === 'CONSUMABLE'
+                  ? 'bg-white text-teal-700 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              1. รับเข้าเวชภัณฑ์สิ้นเปลือง (บันทึก Lot & ต้นทุน)
+            </button>
+            <button
+              onClick={() => handleTabChange('EQUIPMENT')}
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition ${
+                activeTab === 'EQUIPMENT'
+                  ? 'bg-white text-teal-700 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              2. ลงทะเบียนครุภัณฑ์คงทน (บันทึกรหัส Asset)
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                เลือกรายการพัสดุ / ครุภัณฑ์
+              </label>
+              <select
+                value={form.itemId}
+                onChange={(e) => setForm({ ...form, itemId: e.target.value })}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+              >
+                {eligibleItems.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    [{item.code}] {item.name} (คงเหลือ: {item.currentStock} {item.unit})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {activeTab === 'CONSUMABLE' ? (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      หมายเลข Lot (Lot Number) *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="เช่น LOT-256909-01"
+                      value={form.lotNumber}
+                      onChange={(e) => setForm({ ...form, lotNumber: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      วันหมดอายุ (Expiry Date)
+                    </label>
+                    <input
+                      type="date"
+                      value={form.expiryDate}
+                      onChange={(e) => setForm({ ...form, expiryDate: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      จำนวนรับเข้า ({selectedItem?.unit || 'หน่วย'}) *
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      value={form.quantity}
+                      onChange={(e) => setForm({ ...form, quantity: Number(e.target.value) })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      ราคาต้นทุนต่อหน่วย (บาท / {selectedItem?.unit || 'หน่วย'}) *
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        step="0.25"
+                        min="0"
+                        required
+                        value={form.unitCost}
+                        onChange={(e) => setForm({ ...form, unitCost: Number(e.target.value) })}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 pl-7 text-xs font-bold text-emerald-700 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                      />
+                      <span className="absolute left-2.5 top-2 text-slate-400 text-xs font-bold">฿</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Total Computed Value */}
+                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-between">
+                  <span className="text-xs font-bold text-emerald-800">
+                    มูลค่ารับเข้ารวมในครั้งนี้:
+                  </span>
+                  <span className="text-base font-black text-emerald-700">
+                    ฿{(form.quantity * form.unitCost).toLocaleString('th-TH', {
+                      minimumFractionDigits: 2,
+                    })}{' '}
+                    บาท
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    บริษัทคู่ค้า / แหล่งงบประมาณ
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="เช่น บริษัท สหเวชกิจการ จำกัด, งบประมาณแผ่นดิน 2569"
+                    value={form.supplier}
+                    onChange={(e) => setForm({ ...form, supplier: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      รหัสครุภัณฑ์ (Asset Code / QR Tag) *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="เช่น AED-2569-001, CPR-2569-004"
+                      value={form.assetCode}
+                      onChange={(e) => setForm({ ...form, assetCode: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono font-bold focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      ลำดับของครุภัณฑ์ (เช่น เครื่องที่ 1, ชิ้นที่ 2) *
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      required
+                      value={form.sequenceNumber}
+                      onChange={(e) => setForm({ ...form, sequenceNumber: Number(e.target.value) })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-teal-800 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      สถานที่จัดเก็บเฉพาะชิ้น (เก็บไว้ที่ไหน) *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="เช่น ตู้ฉุกเฉิน เสา C ห้อง Simulation Lab 1"
+                      value={form.location}
+                      onChange={(e) => setForm({ ...form, location: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Serial Number (จากผู้ผลิต)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="เช่น SN-ZOLL-8801"
+                      value={form.serialNumber}
+                      onChange={(e) => setForm({ ...form, serialNumber: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      วันที่รับเข้า (Received Date)
+                    </label>
+                    <input
+                      type="date"
+                      value={form.receivedDate}
+                      onChange={(e) => setForm({ ...form, receivedDate: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      ราคาจัดซื้อ / มูลค่าต่อเครื่อง (บาท)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="เช่น 65000"
+                        value={form.cost}
+                        onChange={(e) => setForm({ ...form, cost: Number(e.target.value) })}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 pl-7 text-xs font-bold text-emerald-700 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                      />
+                      <span className="absolute left-2.5 top-2 text-slate-400 text-xs font-bold">฿</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    ลิงก์รูปภาพครุภัณฑ์ (รองรับ Google Drive Share Link)
+                  </label>
+                  <input
+                    type="url"
+                    placeholder="แปะลิงก์รูปภาพ เช่น https://drive.google.com/file/d/... หรือ URL รูปภาพ"
+                    value={form.imageUrl}
+                    onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    * สามารถคัดลอกลิงก์แชร์จาก Google Drive มาวางได้ทันที ระบบจะแปลงและแสดงรูปภาพให้อัตโนมัติ
+                  </p>
+                </div>
+              </>
+            )}
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                หมายเหตุการรับเข้า
+              </label>
+              <textarea
+                rows={2}
+                placeholder="เลขที่ใบส่งของ หรือรายละเอียดการตรวจรับ"
+                value={form.note}
+                onChange={(e) => setForm({ ...form, note: e.target.value })}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+              />
+            </div>
+
+            <div className="pt-2">
+              <button
+                type="submit"
+                disabled={submitting}
+                className="w-full py-3 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>{submitting ? 'กำลังบันทึกข้อมูล...' : 'ยืนยันบันทึกรับเข้าสต็อก'}</span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* Info Column (1 Col) */}
+        <div className="space-y-6">
+          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-1.5">
+              <Clock className="w-4 h-4 text-teal-600" />
+              ประวัติรับเข้าล่าสุด (Recent Stock-ins)
+            </h4>
+            <div className="divide-y divide-slate-100">
+              {recentTransactions.map((tx: any) => (
+                <div key={tx.id} className="py-2.5">
+                  <div className="text-xs font-bold text-slate-900">{tx.item?.name}</div>
+                  <div className="flex items-center justify-between mt-1 text-[11px] text-slate-500">
+                    <span>
+                      +{tx.quantity} {tx.item?.unit}
+                    </span>
+                    <span className="font-bold text-emerald-600">
+                      ฿{tx.totalCost.toFixed(2)} บาท
+                    </span>
+                  </div>
+                  <div className="text-[10px] text-slate-400 mt-0.5">
+                    {new Date(tx.createdAt).toLocaleDateString('th-TH')} | {tx.note}
+                  </div>
+                </div>
+              ))}
+              {recentTransactions.length === 0 && (
+                <div className="py-4 text-center text-xs text-slate-400">
+                  ยังไม่มีประวัติการรับเข้า
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-teal-50 border border-teal-100 text-xs text-teal-900 space-y-2">
+            <h5 className="font-bold">หลักการ FIFO ในการเบิกจ่าย</h5>
+            <p className="text-[11px] leading-relaxed text-teal-800">
+              เมื่อมีการขอเบิกวัสดุสิ้นเปลืองสำหรับรายวิชา ระบบจะเลือกตัดสต็อกและคำนวณต้นทุนจาก <strong>Lot ที่มีวันหมดอายุเร็วที่สุดก่อนโดยอัตโนมัติ (First-In, First-Out)</strong> เพื่อให้การคิดต้นทุนรายวิชาแม่นยำตรงกับของที่ใช้จริง
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

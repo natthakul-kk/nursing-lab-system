@@ -1,0 +1,214 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id          String   @id @default(cuid())
+  name        String
+  email       String   @unique
+  password    String   @default("123456")
+  role        String   // "ADMIN", "OFFICER", "APPROVER", "USER"
+  department  String?
+  studentId   String?
+  phone       String?
+  avatar      String?
+  status      String   @default("ACTIVE")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  borrowRequests      BorrowRequest[]      @relation("UserBorrowRequests")
+  approvedBorrows     BorrowRequest[]      @relation("ApproverBorrowRequests")
+  requisitionRequests RequisitionRequest[] @relation("UserRequisitions")
+  approvedRequisitions RequisitionRequest[] @relation("ApproverRequisitions")
+  stockTransactions   StockTransaction[]
+}
+
+model Course {
+  id              String   @id @default(cuid())
+  code            String   @unique
+  name            String
+  semester        String   @default("1")
+  academicYear    String   @default("2569")
+  instructorName  String
+  description     String?
+  allocatedBudget Float    @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  requisitionRequests RequisitionRequest[]
+  borrowRequests      BorrowRequest[]
+  stockTransactions   StockTransaction[]
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   // "EQUIPMENT" or "CONSUMABLE"
+  description String?
+  items       Item[]
+}
+
+model Item {
+  id            String   @id @default(cuid())
+  code          String   @unique
+  name          String
+  type          String   // "EQUIPMENT" or "CONSUMABLE"
+  categoryId    String
+  category      Category @relation(fields: [categoryId], references: [id])
+  unit          String
+  minStockAlert Int      @default(5)
+  location      String?
+  description   String?
+  imageUrl      String?
+  status        String   @default("ACTIVE")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  assets            EquipmentAsset[]
+  stockLots         StockLot[]
+  stockTransactions StockTransaction[]
+  borrowItems       BorrowItem[]
+  requisitionItems  RequisitionItem[]
+}
+
+model EquipmentAsset {
+  id             String    @id @default(cuid())
+  itemId         String
+  item           Item      @relation(fields: [itemId], references: [id])
+  assetCode      String    @unique
+  sequenceNumber Int       @default(1) // ลำดับ เช่น เครื่องที่ 1, ชิ้นที่ 2
+  serialNumber   String?
+  location       String?   // สถานที่จัดเก็บเฉพาะชิ้น เช่น ตู้ฉุกเฉิน ห้อง Lab 1
+  receivedDate   DateTime  @default(now()) // วันที่รับเข้า
+  cost           Float     @default(0)     // ราคาจัดซื้อ / มูลค่าต่อชิ้น
+  imageUrl       String?   // ลิงก์รูปภาพในไดรฟ์
+  status         String    @default("AVAILABLE") // "AVAILABLE", "BORROWED", "MAINTENANCE", "RETIRED"
+  condition      String    @default("GOOD")      // "GOOD", "FAIR", "DAMAGED"
+  note           String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  borrowItems    BorrowItem[]
+}
+
+model StockLot {
+  id                String    @id @default(cuid())
+  itemId            String
+  item              Item      @relation(fields: [itemId], references: [id])
+  lotNumber         String
+  quantityInitial   Int
+  quantityRemaining Int
+  unitCost          Float
+  expiryDate        DateTime?
+  receivedDate      DateTime  @default(now())
+  supplier          String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  stockTransactions StockTransaction[]
+}
+
+model StockTransaction {
+  id              String    @id @default(cuid())
+  itemId          String
+  item            Item      @relation(fields: [itemId], references: [id])
+  lotId           String?
+  lot             StockLot? @relation(fields: [lotId], references: [id])
+  type            String    // "IN", "OUT_REQUISITION", "ADJUSTMENT", "WRITE_OFF"
+  quantity        Int
+  unitCost        Float     @default(0)
+  totalCost       Float     @default(0)
+  courseId        String?
+  course          Course?   @relation(fields: [courseId], references: [id])
+  referenceNumber String?
+  createdById     String
+  createdBy       User      @relation(fields: [createdById], references: [id])
+  note            String?
+  createdAt       DateTime  @default(now())
+}
+
+model BorrowRequest {
+  id                 String    @id @default(cuid())
+  requestNumber      String    @unique
+  userId             String
+  user               User      @relation("UserBorrowRequests", fields: [userId], references: [id])
+  courseId           String?
+  course             Course?   @relation(fields: [courseId], references: [id])
+  purpose            String
+  borrowDate         DateTime
+  expectedReturnDate DateTime
+  actualReturnDate   DateTime?
+  status             String    @default("PENDING") // "PENDING", "APPROVED", "REJECTED", "BORROWED", "RETURNED_COMPLETE", "RETURNED_WITH_ISSUE", "CANCELLED"
+  
+  approverId         String?
+  approver           User?     @relation("ApproverBorrowRequests", fields: [approverId], references: [id])
+  approvedAt         DateTime?
+  rejectionReason    String?
+
+  officerId          String?
+  checkedOutAt       DateTime?
+  checkedInAt        DateTime?
+  returnNote         String?
+
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  items              BorrowItem[]
+}
+
+model BorrowItem {
+  id              String          @id @default(cuid())
+  borrowRequestId String
+  borrowRequest   BorrowRequest   @relation(fields: [borrowRequestId], references: [id], onDelete: Cascade)
+  itemId          String
+  item            Item            @relation(fields: [itemId], references: [id])
+  assetId         String?
+  asset           EquipmentAsset? @relation(fields: [assetId], references: [id])
+  quantity        Int             @default(1)
+  isReturned      Boolean         @default(false)
+  returnCondition String?
+}
+
+model RequisitionRequest {
+  id              String    @id @default(cuid())
+  requestNumber   String    @unique
+  userId          String
+  user            User      @relation("UserRequisitions", fields: [userId], references: [id])
+  courseId        String
+  course          Course    @relation(fields: [courseId], references: [id])
+  purpose         String
+  dateNeeded      DateTime
+  status          String    @default("PENDING") // "PENDING", "APPROVED", "REJECTED", "DISPENSED", "CANCELLED"
+
+  approverId      String?
+  approver        User?     @relation("ApproverRequisitions", fields: [approverId], references: [id])
+  approvedAt      DateTime?
+  rejectionReason String?
+
+  officerId       String?
+  dispensedAt     DateTime?
+  totalCost       Float     @default(0)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  items           RequisitionItem[]
+}
+
+model RequisitionItem {
+  id                   String             @id @default(cuid())
+  requisitionRequestId String
+  requisitionRequest   RequisitionRequest @relation(fields: [requisitionRequestId], references: [id], onDelete: Cascade)
+  itemId               String
+  item                 Item               @relation(fields: [itemId], references: [id])
+  quantityRequested    Int
+  quantityDispensed    Int                @default(0)
+  unitCost             Float              @default(0)
+  totalCost            Float              @default(0)
+}

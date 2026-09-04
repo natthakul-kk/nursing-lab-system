@@ -24,6 +24,7 @@ import {
   DollarSign,
   Image as ImageIcon
 } from 'lucide-react';
+import { TableLoadingRow } from '@/components/common/LoadingSpinner';
 
 export default function InventoryPage() {
   const { isOfficer } = useAuth();
@@ -219,11 +220,7 @@ export default function InventoryPage() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
-                <tr>
-                  <td colSpan={5} className="py-8 text-center text-slate-400">
-                    กำลังโหลดข้อมูลพัสดุ...
-                  </td>
-                </tr>
+                <TableLoadingRow colSpan={5} message="กำลังโหลดรายการวัสดุ ครุภัณฑ์ และสต็อกยา..." />
               ) : filteredItems.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="py-8 text-center text-slate-400">

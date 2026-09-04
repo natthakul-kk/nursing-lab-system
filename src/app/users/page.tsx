@@ -16,6 +16,7 @@ import {
   Edit3,
   Trash2
 } from 'lucide-react';
+import { TableLoadingRow } from '@/components/common/LoadingSpinner';
 
 export default function UsersPage() {
   const { availableUsers, isAdmin } = useAuth();
@@ -213,7 +214,16 @@ export default function UsersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {users.map((u) => (
+              {loading ? (
+                <TableLoadingRow colSpan={6} message="กำลังโหลดรายชื่อผู้ใช้งานและกำหนดสิทธิ์..." />
+              ) : users.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-8 text-center text-slate-400">
+                    ไม่พบข้อมูลผู้ใช้งานในระบบ
+                  </td>
+                </tr>
+              ) : (
+                users.map((u) => (
                 <tr key={u.id} className="hover:bg-slate-50/60 transition">
                   <td className="py-3.5 px-4">
                     <div className="font-bold text-slate-900 text-xs">{u.name}</div>
@@ -246,7 +256,7 @@ export default function UsersPage() {
                     </button>
                   </td>
                 </tr>
-              ))}
+              )))}
             </tbody>
           </table>
         </div>

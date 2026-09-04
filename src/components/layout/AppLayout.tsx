@@ -2,16 +2,30 @@
 
 import React from 'react';
 import { usePathname } from 'next/navigation';
-import { AuthProvider } from '@/lib/auth-context';
+import { AuthProvider, useAuth } from '@/lib/auth-context';
 import Navbar from './Navbar';
 import Sidebar from './Sidebar';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { isLoading } = useAuth();
   const isLoginPage = pathname === '/login';
 
   if (isLoginPage) {
     return <main className="min-h-screen">{children}</main>;
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <LoadingSpinner
+          size="lg"
+          message="กำลังเชื่อมต่อระบบห้องปฏิบัติการพยาบาล..."
+          submessage="กำลังโหลดข้อมูลจาก Supabase Cloud Database"
+        />
+      </div>
+    );
   }
 
   return (

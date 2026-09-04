@@ -20,6 +20,7 @@ import {
   Building,
   ShieldAlert
 } from 'lucide-react';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 export default function CoursesPage() {
   const router = useRouter();
@@ -148,6 +149,15 @@ export default function CoursesPage() {
   const handlePrint = () => {
     window.print();
   };
+
+  if (loading) {
+    return (
+      <LoadingSpinner
+        message="กำลังโหลดข้อมูลรายวิชาและวิเคราะห์ต้นทุน..."
+        submessage="กำลังคำนวณยอดงบประมาณและการเบิกใช้วัสดุจาก Supabase"
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">

@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 
 import StudentDashboard from '@/components/dashboard/StudentDashboard';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 export default function DashboardPage() {
   const { currentUser, isOfficer, isApprover } = useAuth();
@@ -57,12 +58,10 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="flex flex-col items-center gap-3 text-slate-500">
-          <Activity className="w-8 h-8 animate-spin text-teal-600" />
-          <p className="text-sm font-medium">กำลังโหลดข้อมูลห้องปฏิบัติการพยาบาล...</p>
-        </div>
-      </div>
+      <LoadingSpinner
+        message="กำลังโหลดข้อมูลภาพรวมห้องปฏิบัติการ..."
+        submessage="กำลังซิงค์สถิติครุภัณฑ์ สต็อกยา และคำขอจาก Supabase"
+      />
     );
   }
 

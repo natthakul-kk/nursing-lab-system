@@ -16,6 +16,7 @@ import {
   Info,
   Check
 } from 'lucide-react';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 export default function StudentDashboard() {
   const { currentUser } = useAuth();
@@ -128,6 +129,15 @@ export default function StudentDashboard() {
     const s = getReturnStatus(b.expectedReturnDate, b.status);
     return s.state === 'overdue';
   });
+
+  if (loading) {
+    return (
+      <LoadingSpinner
+        message="กำลังโหลดข้อมูลของท่าน..."
+        submessage="กำลังดึงข้อมูลรายการยืมและแจ้งเตือนกำหนดวันส่งคืนจาก Supabase"
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">

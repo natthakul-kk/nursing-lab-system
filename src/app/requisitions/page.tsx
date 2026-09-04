@@ -18,6 +18,7 @@ import {
   Check,
   AlertCircle
 } from 'lucide-react';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 export default function RequisitionsPage() {
   const { currentUser, isOfficer, isApprover } = useAuth();
@@ -249,8 +250,11 @@ export default function RequisitionsPage() {
       {/* Requisitions List */}
       <div className="space-y-4">
         {loading ? (
-          <div className="text-center py-12 text-slate-400 text-xs">
-            กำลังโหลดรายการคำขอเบิก...
+          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm">
+            <LoadingSpinner
+              message="กำลังโหลดรายการคำขอเบิกวัสดุ..."
+              submessage="กำลังดึงข้อมูลการจัดสรรตามรายวิชาและสต็อกคงเหลือจาก Supabase"
+            />
           </div>
         ) : filteredRequisitions.length === 0 ? (
           <div className="bg-white p-12 text-center rounded-2xl border border-slate-200/80 text-slate-400 text-xs">

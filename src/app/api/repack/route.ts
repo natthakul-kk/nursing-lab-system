@@ -18,11 +18,27 @@ export async function GET(req: Request) {
         orderBy: { packedDate: 'desc' },
       }),
       prisma.item.findMany({
-        where: { type: 'CONSUMABLE', status: 'ACTIVE' },
+        where: {
+          type: 'CONSUMABLE',
+          status: 'ACTIVE',
+          // ไม่แสดงเวชภัณฑ์ที่เกิดจากการแบ่งบรรจุแล้ว (เช่น รหัส RP- หรือหน่วย ซอง) มาเป็นต้นทางแบ่งซ้ำ
+          NOT: [
+            { code: { startsWith: 'RP-' } },
+            { unit: 'ซอง' },
+          ],
+        },
         include: {
           category: true,
           stockLots: {
-            where: { quantityRemaining: { gt: 0 } },
+            where: {
+              quantityRemaining: { gt: 0 },
+              // ไม่แสดงล็อตย่อย (SL-) หรือล็อตที่เกิดจากการแบ่งบรรจุมาเป็นล็อตต้นทาง
+              NOT: [
+                { lotNumber: { startsWith: 'SL-' } },
+                { lotNumber: { startsWith: 'RP-' } },
+                { supplier: { contains: 'แบ่งบรรจุ' } },
+              ],
+            },
             orderBy: { expiryDate: 'asc' },
           },
         },

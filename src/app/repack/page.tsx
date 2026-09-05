@@ -88,14 +88,28 @@ export default function RepackPage() {
     fetchData();
   }, []);
 
+  // กรองเฉพาะเวชภัณฑ์ต้นทางของโรงงาน (ตัดของแบ่งบรรจุแล้ว และตัดล็อต SL ออก)
+  const sourceAvailableItems = consumableItems.filter(
+    (item) =>
+      !item.code.startsWith('RP-') &&
+      item.unit !== 'ซอง' &&
+      item.stockLots &&
+      item.stockLots.some((lot: any) => !lot.lotNumber.startsWith('SL-') && !lot.lotNumber.startsWith('RP-'))
+  );
+
   // Selected Source Item & Lot object
   const selectedSourceItem = consumableItems.find((i) => i.id === form.sourceItemId);
-  const selectedSourceLot = selectedSourceItem?.stockLots?.find((l: any) => l.id === form.sourceLotId);
+  const selectedSourceLot = selectedSourceItem?.stockLots?.find(
+    (l: any) => l.id === form.sourceLotId && !l.lotNumber.startsWith('SL-') && !l.lotNumber.startsWith('RP-')
+  );
 
   // When source item changes, select first lot and suggest sublot
   const handleSourceItemChange = (itemId: string) => {
     const item = consumableItems.find((i) => i.id === itemId);
-    const firstLot = item?.stockLots?.[0];
+    const validLots = (item?.stockLots || []).filter(
+      (l: any) => !l.lotNumber.startsWith('SL-') && !l.lotNumber.startsWith('RP-')
+    );
+    const firstLot = validLots[0];
     const todayStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
     const suggestedSubLot = 'SL-' + (item?.code || 'MED') + '-' + todayStr + '-01';
 
@@ -222,8 +236,9 @@ export default function RepackPage() {
           {isStaff && (
             <button
               onClick={() => {
-                if (consumableItems.length > 0) {
-                  handleSourceItemChange(consumableItems[0].id);
+                const initialItem = sourceAvailableItems[0] || consumableItems[0];
+                if (initialItem) {
+                  handleSourceItemChange(initialItem.id);
                 }
                 setShowModal(true);
               }}
@@ -610,10 +625,10 @@ export default function RepackPage() {
                       className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500"
                       required
                     >
-                      <option value="">-- เลือกเวชภัณฑ์ที่มีในสต็อก --</option>
-                      {consumableItems.map((item) => (
+                      <option value="">-- เลือกเวชภัณฑ์ต้นทาง (ของโรงงาน/ห่อใหญ่) --</option>
+                      {sourceAvailableItems.map((item) => (
                         <option key={item.id} value={item.id}>
-                          {item.name} ({item.code}) - หน่วย: {item.unit}
+                          {item.name} ({item.code}) - หน่วยสต็อก: {item.unit}
                         </option>
                       ))}
                     </select>
@@ -630,14 +645,16 @@ export default function RepackPage() {
                       required
                       disabled={!selectedSourceItem}
                     >
-                      {selectedSourceItem?.stockLots?.length ? (
-                        selectedSourceItem.stockLots.map((lot: any) => (
-                          <option key={lot.id} value={lot.id}>
-                            Lot: {lot.lotNumber} (คงเหลือ: {lot.quantityRemaining} {selectedSourceItem.unit})
-                          </option>
-                        ))
+                      {selectedSourceItem?.stockLots?.filter((l: any) => !l.lotNumber.startsWith('SL-') && !l.lotNumber.startsWith('RP-')).length ? (
+                        selectedSourceItem.stockLots
+                          .filter((l: any) => !l.lotNumber.startsWith('SL-') && !l.lotNumber.startsWith('RP-'))
+                          .map((lot: any) => (
+                            <option key={lot.id} value={lot.id}>
+                              Lot โรงงาน: {lot.lotNumber} (คงเหลือ: {lot.quantityRemaining} {selectedSourceItem.unit})
+                            </option>
+                          ))
                       ) : (
-                        <option value="">ไม่มีสต็อกคงเหลือในล็อต</option>
+                        <option value="">ไม่มีสต็อกล็อตโรงงานคงเหลือ</option>
                       )}
                     </select>
                   </div>

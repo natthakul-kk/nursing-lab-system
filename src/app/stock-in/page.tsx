@@ -12,7 +12,11 @@ import {
   CheckCircle2,
   AlertCircle,
   Tag,
-  Clock
+  Clock,
+  Lock,
+  Unlock,
+  RefreshCw,
+  Edit3
 } from 'lucide-react';
 
 export default function StockInPage() {
@@ -22,6 +26,7 @@ export default function StockInPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isCustomCode, setIsCustomCode] = useState(false);
 
   // Form State
   const [form, setForm] = useState({
@@ -73,6 +78,28 @@ export default function StockInPage() {
     fetchItemsAndHistory();
   }, []);
 
+  const calculateSuggestedCode = (it: any) => {
+    const nextSeq = (it.assets?.length || 0) + 1;
+    const currentYearThai = new Date().getFullYear() + 543;
+    // Extract prefix from item code (e.g. EQ-AED-001 -> AED, EQ-KD-001 -> KD)
+    const prefix = it.code.replace('EQ-', '').replace(/-\d+$/, '') || 'EQ';
+    const suggestedAssetCode = `${prefix}-${currentYearThai}-${String(nextSeq).padStart(3, '0')}`;
+    return { nextSeq, suggestedAssetCode };
+  };
+
+  const resetToAutoCode = (targetItem?: any) => {
+    const it = targetItem || items.find((i) => i.id === form.itemId);
+    if (it) {
+      const { nextSeq, suggestedAssetCode } = calculateSuggestedCode(it);
+      setForm((prev) => ({
+        ...prev,
+        sequenceNumber: nextSeq,
+        assetCode: suggestedAssetCode,
+      }));
+      setIsCustomCode(false);
+    }
+  };
+
   const handleItemSelect = (selectedId: string) => {
     const it = items.find((i) => i.id === selectedId);
     if (!it) {
@@ -81,18 +108,15 @@ export default function StockInPage() {
     }
 
     if (activeTab === 'EQUIPMENT') {
-      const nextSeq = (it.assets?.length || 0) + 1;
-      const currentYearThai = new Date().getFullYear() + 543;
-      // Extract prefix from item code (e.g. EQ-AED-001 -> AED)
-      const prefix = it.code.replace('EQ-', '').replace(/-\d+$/, '') || 'EQ';
-      const suggestedAssetCode = `${prefix}-${currentYearThai}-${String(nextSeq).padStart(3, '0')}`;
+      const { nextSeq, suggestedAssetCode } = calculateSuggestedCode(it);
 
       setForm((prev) => ({
         ...prev,
         itemId: selectedId,
         sequenceNumber: nextSeq,
-        assetCode: prev.assetCode || suggestedAssetCode,
-        location: prev.location || it.location || '',
+        // If user is not in custom mode, always update to the newly calculated code!
+        assetCode: isCustomCode ? prev.assetCode : suggestedAssetCode,
+        location: it.location || prev.location || '',
       }));
     } else {
       setForm((prev) => ({ ...prev, itemId: selectedId }));
@@ -147,6 +171,7 @@ export default function StockInPage() {
           imageUrl: '',
           note: '',
         });
+        setIsCustomCode(false);
         fetchItemsAndHistory();
         setTimeout(() => setSuccessMessage(null), 4000);
       } else {
@@ -334,20 +359,71 @@ export default function StockInPage() {
                 {/* 1. Codes: Lab Code & Gov Asset Code */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      รหัสประจำชิ้นในแล็บ (Lab Asset Code / สติกเกอร์ QR) *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="เช่น AED-2569-001, KD-01 (ชามรูปไต), TRY-02"
-                      value={form.assetCode}
-                      onChange={(e) => setForm({ ...form, assetCode: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono font-bold focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
-                    />
-                    <p className="text-[10px] text-slate-400 mt-1">
-                      * รหัสสั้นกระชับ ใช้สำหรับพิมพ์ป้าย QR Code ติดบนชิ้นอุปกรณ์ และให้นิสิตระบุเวลายืม-คืน
-                    </p>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-bold text-slate-700">
+                        รหัสประจำชิ้นในแล็บ (Lab Asset Code) *
+                      </label>
+                      {isCustomCode ? (
+                        <button
+                          type="button"
+                          onClick={() => resetToAutoCode()}
+                          className="inline-flex items-center gap-1 text-[10px] font-bold text-teal-700 hover:text-teal-800 bg-teal-50 hover:bg-teal-100 px-2 py-0.5 rounded-lg border border-teal-200 transition cursor-pointer"
+                          title="คืนค่ากลับเป็นรหัสอัตโนมัติตามลำดับสต็อก"
+                        >
+                          <RefreshCw className="w-3 h-3 text-teal-600" />
+                          <span>คืนค่ารหัสอัตโนมัติ</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setIsCustomCode(true)}
+                          className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 px-2 py-0.5 rounded-lg border border-amber-200 transition cursor-pointer"
+                          title="คลิกเพื่อปลดล็อคและกำหนดรหัสเอง"
+                        >
+                          <Edit3 className="w-3 h-3 text-amber-600" />
+                          <span>กำหนดรหัสเอง</span>
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="relative">
+                      <input
+                        type="text"
+                        required
+                        readOnly={!isCustomCode}
+                        placeholder="เช่น AED-2569-001, KD-01 (ชามรูปไต), TRY-02"
+                        value={form.assetCode}
+                        onChange={(e) => setForm({ ...form, assetCode: e.target.value })}
+                        className={`w-full rounded-xl px-3 py-2 text-xs font-mono font-bold transition ${
+                          !isCustomCode
+                            ? 'bg-teal-50/70 border border-teal-300 text-teal-900 cursor-not-allowed pr-14'
+                            : 'bg-white border-2 border-amber-400 text-slate-900 focus:ring-2 focus:ring-amber-500/20 pr-14'
+                        }`}
+                      />
+                      <div className="absolute right-2.5 top-2 pointer-events-none">
+                        {!isCustomCode ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-teal-700 bg-teal-100/80 px-1.5 py-0.5 rounded">
+                            <Lock className="w-2.5 h-2.5" /> Auto
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
+                            <Unlock className="w-2.5 h-2.5" /> กำหนดเอง
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {!isCustomCode ? (
+                      <p className="text-[10px] text-teal-700 font-medium mt-1 flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3 flex-shrink-0 text-teal-600" />
+                        <span>ระบบสร้างรหัสอัตโนมัติให้อย่างถูกต้องตามลำดับสต็อก (ป้องกันข้อผิดพลาด)</span>
+                      </p>
+                    ) : (
+                      <p className="text-[10px] text-amber-700 font-medium mt-1 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3 flex-shrink-0 text-amber-600" />
+                        <span>กำลังกำหนดรหัสเอง กรุณาตรวจสอบไม่ให้ซ้ำกับอุปกรณ์ชิ้นอื่น</span>
+                      </p>
+                    )}
                   </div>
 
                   <div>

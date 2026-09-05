@@ -27,6 +27,9 @@ import {
   X,
   Check,
   RotateCcw,
+  Edit,
+  Trash2,
+  FileEdit,
 } from 'lucide-react';
 import { TableLoadingRow } from '@/components/common/LoadingSpinner';
 
@@ -137,6 +140,150 @@ export default function InventoryPage() {
       alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
     } finally {
       setMaintenanceSubmitting(false);
+    }
+  };
+
+  // Edit & Delete Asset State
+  const [editAssetTarget, setEditAssetTarget] = useState<{ asset: any; itemName: string } | null>(null);
+  const [editAssetForm, setEditAssetForm] = useState({
+    assetCode: '',
+    govAssetCode: '',
+    location: '',
+    serialNumber: '',
+    cost: 0,
+    receivedDate: '',
+    imageUrl: '',
+    note: '',
+    status: 'AVAILABLE',
+    condition: 'GOOD',
+  });
+  const [assetSaving, setAssetSaving] = useState(false);
+
+  // Edit & Delete Item State
+  const [editItemTarget, setEditItemTarget] = useState<any | null>(null);
+  const [editItemForm, setEditItemForm] = useState({
+    name: '',
+    code: '',
+    categoryId: '',
+    unit: 'เครื่อง',
+    minStockAlert: 5,
+    location: '',
+    description: '',
+  });
+  const [itemSaving, setItemSaving] = useState(false);
+
+  const openEditAsset = (asset: any, itemName: string) => {
+    setEditAssetTarget({ asset, itemName });
+    setEditAssetForm({
+      assetCode: asset.assetCode || '',
+      govAssetCode: asset.govAssetCode || '',
+      location: asset.location || '',
+      serialNumber: asset.serialNumber || '',
+      cost: asset.cost || 0,
+      receivedDate: asset.receivedDate ? new Date(asset.receivedDate).toISOString().split('T')[0] : '',
+      imageUrl: asset.imageUrl || '',
+      note: asset.note || '',
+      status: asset.status || 'AVAILABLE',
+      condition: asset.condition || 'GOOD',
+    });
+  };
+
+  const handleSaveAsset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editAssetTarget) return;
+    setAssetSaving(true);
+    try {
+      const res = await fetch(`/api/assets/${editAssetTarget.asset.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editAssetForm),
+      });
+      if (res.ok) {
+        setEditAssetTarget(null);
+        await fetchItems();
+      } else {
+        const err = await res.json();
+        alert(err.error || 'เกิดข้อผิดพลาดในการบันทึกการแก้ไขอุปกรณ์');
+      }
+    } catch (err) {
+      alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
+    } finally {
+      setAssetSaving(false);
+    }
+  };
+
+  const handleDeleteAsset = async (asset: any, itemName: string) => {
+    if (!confirm(`คุณต้องการลบชิ้นอุปกรณ์ "${asset.assetCode}" (${itemName}) ออกจากระบบใช่หรือไม่?\n\n* การกระทำนี้ไม่สามารถย้อนกลับได้`)) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/assets/${asset.id}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        await fetchItems();
+      } else {
+        const err = await res.json();
+        alert(err.error || 'เกิดข้อผิดพลาดในการลบชิ้นอุปกรณ์');
+      }
+    } catch (err) {
+      alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
+    }
+  };
+
+  const openEditItem = (item: any) => {
+    setEditItemTarget(item);
+    setEditItemForm({
+      name: item.name || '',
+      code: item.code || '',
+      categoryId: item.categoryId || (categories[0]?.id || ''),
+      unit: item.unit || 'เครื่อง',
+      minStockAlert: item.minStockAlert || 5,
+      location: item.location || '',
+      description: item.description || '',
+    });
+  };
+
+  const handleSaveItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editItemTarget) return;
+    setItemSaving(true);
+    try {
+      const res = await fetch(`/api/items/${editItemTarget.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editItemForm),
+      });
+      if (res.ok) {
+        setEditItemTarget(null);
+        await fetchItems();
+      } else {
+        const err = await res.json();
+        alert(err.error || 'เกิดข้อผิดพลาดในการบันทึกการแก้ไขพัสดุ');
+      }
+    } catch (err) {
+      alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
+    } finally {
+      setItemSaving(false);
+    }
+  };
+
+  const handleDeleteItem = async (item: any) => {
+    if (!confirm(`คุณต้องการลบรายการพัสดุ "${item.name}" [${item.code}] ออกจากระบบใช่หรือไม่?`)) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/items/${item.id}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        await fetchItems();
+      } else {
+        const err = await res.json();
+        alert(err.error || 'เกิดข้อผิดพลาดในการลบรายการพัสดุ');
+      }
+    } catch (err) {
+      alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
     }
   };
 
@@ -410,17 +557,37 @@ export default function InventoryPage() {
                         </td>
 
                         <td className="py-3.5 px-4 text-right">
-                          <button
-                            onClick={() => setExpandedItemId(isExpanded ? null : item.id)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 hover:border-teal-500 hover:text-teal-600 font-bold transition text-[11px]"
-                          >
-                            <span>{isEquipment ? 'ดูรหัสชิ้น/Asset' : 'ดูล็อต/วันหมดอายุ'}</span>
-                            {isExpanded ? (
-                              <ChevronUp className="w-3.5 h-3.5" />
-                            ) : (
-                              <ChevronDown className="w-3.5 h-3.5" />
+                          <div className="flex items-center justify-end gap-1.5">
+                            {isStaff && (
+                              <button
+                                onClick={() => openEditItem(item)}
+                                className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:text-teal-600 hover:border-teal-400 hover:bg-teal-50 transition cursor-pointer"
+                                title="แก้ไขข้อมูลพัสดุ (เปลี่ยนชื่อ, รหัส, หมวดหมู่, ที่เก็บหลัก)"
+                              >
+                                <Edit className="w-3.5 h-3.5" />
+                              </button>
                             )}
-                          </button>
+                            {isStaff && (item.currentStock === 0 && (!item.assets || item.assets.length === 0)) && (
+                              <button
+                                onClick={() => handleDeleteItem(item)}
+                                className="p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:text-rose-600 hover:border-rose-300 hover:bg-rose-50 transition cursor-pointer"
+                                title="ลบรายการพัสดุนี้"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => setExpandedItemId(isExpanded ? null : item.id)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 hover:border-teal-500 hover:text-teal-600 font-bold transition text-[11px]"
+                            >
+                              <span>{isEquipment ? 'ดูรหัสชิ้น/Asset' : 'ดูล็อต/วันหมดอายุ'}</span>
+                              {isExpanded ? (
+                                <ChevronUp className="w-3.5 h-3.5" />
+                              ) : (
+                                <ChevronDown className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                          </div>
                         </td>
                       </tr>
 
@@ -606,6 +773,30 @@ export default function InventoryPage() {
                                                 >
                                                   <History className="w-3 h-3 text-slate-500" />
                                                   <span>ประวัติ ({asset.maintenanceLogs.length})</span>
+                                                </button>
+                                              )}
+
+                                              {/* Edit Asset (Staff only) */}
+                                              {isStaff && (
+                                                <button
+                                                  onClick={() => openEditAsset(asset, item.name)}
+                                                  className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100 hover:bg-teal-50 text-slate-700 hover:text-teal-700 text-[11px] font-medium transition border border-slate-200 hover:border-teal-300 cursor-pointer"
+                                                  title="แก้ไขข้อมูลชิ้นนี้ (เปลี่ยนที่อยู่, รหัส, Serial, ราคา, หมายเหตุ)"
+                                                >
+                                                  <Edit className="w-3 h-3 text-slate-500" />
+                                                  <span>แก้ไข</span>
+                                                </button>
+                                              )}
+
+                                              {/* Delete Asset (Staff only - if not currently borrowed) */}
+                                              {isStaff && asset.status !== 'BORROWED' && (
+                                                <button
+                                                  onClick={() => handleDeleteAsset(asset, item.name)}
+                                                  className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 text-[11px] font-medium transition border border-slate-200 hover:border-rose-300 cursor-pointer"
+                                                  title="ลบชิ้นอุปกรณ์นี้ออกจากระบบ"
+                                                >
+                                                  <Trash2 className="w-3 h-3 text-slate-400" />
+                                                  <span>ลบ</span>
                                                 </button>
                                               )}
                                             </div>
@@ -1189,6 +1380,369 @@ export default function InventoryPage() {
                 ปิด
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Edit Individual Asset */}
+      {editAssetTarget && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Edit className="w-5 h-5 text-teal-600" />
+                แก้ไขข้อมูลชิ้นอุปกรณ์ / ครุภัณฑ์
+              </h3>
+              <button
+                onClick={() => setEditAssetTarget(null)}
+                className="text-slate-400 hover:text-slate-600 text-lg font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-0.5">
+              <div className="font-bold text-slate-800">{editAssetTarget.itemName}</div>
+              <div className="font-mono text-slate-500 text-[11px]">
+                ID: {editAssetTarget.asset.id} | ลำดับที่: {editAssetTarget.asset.sequenceNumber}
+              </div>
+            </div>
+
+            <form onSubmit={handleSaveAsset} className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    รหัสประจำชิ้นในแล็บ (Lab Code) *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editAssetForm.assetCode}
+                    onChange={(e) =>
+                      setEditAssetForm({ ...editAssetForm, assetCode: e.target.value })
+                    }
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono font-bold focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    เลขครุภัณฑ์ทางราชการ
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="เช่น 7440-001-0001/2569"
+                    value={editAssetForm.govAssetCode}
+                    onChange={(e) =>
+                      setEditAssetForm({ ...editAssetForm, govAssetCode: e.target.value })
+                    }
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    สถานที่จัดเก็บเฉพาะชิ้น (ที่อยู่) *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="เช่น ตู้ฉุกเฉิน เสา C ห้อง Simulation Lab 1"
+                    value={editAssetForm.location}
+                    onChange={(e) =>
+                      setEditAssetForm({ ...editAssetForm, location: e.target.value })
+                    }
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Serial Number
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="SN จากผู้ผลิต"
+                    value={editAssetForm.serialNumber}
+                    onChange={(e) =>
+                      setEditAssetForm({ ...editAssetForm, serialNumber: e.target.value })
+                    }
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    สถานะการใช้งาน
+                  </label>
+                  <select
+                    value={editAssetForm.status}
+                    onChange={(e) =>
+                      setEditAssetForm({ ...editAssetForm, status: e.target.value })
+                    }
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  >
+                    <option value="AVAILABLE">พร้อมใช้ (AVAILABLE)</option>
+                    <option value="MAINTENANCE">ส่งซ่อมบำรุง (MAINTENANCE)</option>
+                    <option value="BORROWED">ถูกยืมอยู่ (BORROWED)</option>
+                    <option value="RETIRED">จำหน่ายออก / ปลดระวาง (RETIRED)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    สภาพอุปกรณ์
+                  </label>
+                  <select
+                    value={editAssetForm.condition}
+                    onChange={(e) =>
+                      setEditAssetForm({ ...editAssetForm, condition: e.target.value })
+                    }
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  >
+                    <option value="GOOD">ปกติ สมบูรณ์ (GOOD)</option>
+                    <option value="FAIR">พอใช้ มีรอยการใช้งาน (FAIR)</option>
+                    <option value="DAMAGED">ชำรุด รอซ่อม (DAMAGED)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    ราคา / มูลค่าจัดซื้อ (บาท)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editAssetForm.cost}
+                    onChange={(e) =>
+                      setEditAssetForm({ ...editAssetForm, cost: Number(e.target.value) })
+                    }
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    วันที่รับเข้า
+                  </label>
+                  <input
+                    type="date"
+                    value={editAssetForm.receivedDate}
+                    onChange={(e) =>
+                      setEditAssetForm({ ...editAssetForm, receivedDate: e.target.value })
+                    }
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  ลิงก์รูปภาพครุภัณฑ์ (URL หรือ Google Drive)
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://drive.google.com/file/d/..."
+                  value={editAssetForm.imageUrl}
+                  onChange={(e) =>
+                    setEditAssetForm({ ...editAssetForm, imageUrl: e.target.value })
+                  }
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  หมายเหตุเพิ่มเติม
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="รายละเอียดสภาพอุปกรณ์ หรือประวัติการย้ายสถานที่"
+                  value={editAssetForm.note}
+                  onChange={(e) =>
+                    setEditAssetForm({ ...editAssetForm, note: e.target.value })
+                  }
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setEditAssetTarget(null)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 transition"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  type="submit"
+                  disabled={assetSaving}
+                  className="px-5 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition disabled:opacity-50 cursor-pointer"
+                >
+                  {assetSaving ? 'กำลังบันทึก...' : 'บันทึกการแก้ไขชิ้นอุปกรณ์'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Edit Item (Name, Code, Category, Unit, MinAlert, Description) */}
+      {editItemTarget && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <FileEdit className="w-5 h-5 text-teal-600" />
+                แก้ไขข้อมูลพัสดุ / ครุภัณฑ์หลัก
+              </h3>
+              <button
+                onClick={() => setEditItemTarget(null)}
+                className="text-slate-400 hover:text-slate-600 text-lg font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveItem} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  ชื่ออุปกรณ์ / เวชภัณฑ์ *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="เช่น หุ่นฝึกกู้ชีพผู้ใหญ่พร้อมไฟ LED"
+                  value={editItemForm.name}
+                  onChange={(e) =>
+                    setEditItemForm({ ...editItemForm, name: e.target.value })
+                  }
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    รหัสพัสดุ (Item Code) *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editItemForm.code}
+                    onChange={(e) =>
+                      setEditItemForm({ ...editItemForm, code: e.target.value })
+                    }
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono font-bold focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    หมวดหมู่
+                  </label>
+                  <select
+                    value={editItemForm.categoryId}
+                    onChange={(e) =>
+                      setEditItemForm({ ...editItemForm, categoryId: e.target.value })
+                    }
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  >
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    หน่วยนับ *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="เช่น เครื่อง, ชิ้น, ใบ, กล่อง"
+                    value={editItemForm.unit}
+                    onChange={(e) =>
+                      setEditItemForm({ ...editItemForm, unit: e.target.value })
+                    }
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    จุดแจ้งเตือนขั้นต่ำ (Min Alert)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editItemForm.minStockAlert}
+                    onChange={(e) =>
+                      setEditItemForm({ ...editItemForm, minStockAlert: Number(e.target.value) })
+                    }
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  สถานที่จัดเก็บหลัก
+                </label>
+                <input
+                  type="text"
+                  placeholder="เช่น ห้อง Simulation Lab 2, ตู้เวชภัณฑ์ A"
+                  value={editItemForm.location}
+                  onChange={(e) =>
+                    setEditItemForm({ ...editItemForm, location: e.target.value })
+                  }
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  รายละเอียดเพิ่มเติม
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="สเปกอุปกรณ์ หรือข้อควรระวังในการใช้งาน"
+                  value={editItemForm.description}
+                  onChange={(e) =>
+                    setEditItemForm({ ...editItemForm, description: e.target.value })
+                  }
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setEditItemTarget(null)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 transition"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  type="submit"
+                  disabled={itemSaving}
+                  className="px-5 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition disabled:opacity-50 cursor-pointer"
+                >
+                  {itemSaving ? 'กำลังบันทึก...' : 'บันทึกการแก้ไขพัสดุ'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -619,10 +619,19 @@ export default function InventoryPage() {
                             <span className="font-mono text-[11px] font-semibold text-teal-700 bg-teal-50 px-1.5 py-0.5 rounded">
                               {item.code}
                             </span>
-                            {item.type === 'CONSUMABLE' && item.usageUnit && (
-                              <span className="text-[10px] font-bold text-teal-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-                                1 {item.unit} = {item.conversionRatio || 1} {item.usageUnit}
-                              </span>
+                            {item.type === 'CONSUMABLE' && (
+                              item.code.startsWith('RP-') || item.unit === 'ซอง' ? (
+                                <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-300 flex items-center gap-1">
+                                  <span>✨ ปลอดเชื้อแบ่งบรรจุ</span>
+                                  {item.usageUnit && <span>(ซองละ {item.conversionRatio || 1} {item.usageUnit})</span>}
+                                </span>
+                              ) : (
+                                item.usageUnit ? (
+                                  <span className="text-[10px] font-bold text-teal-700 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-200">
+                                    1 {item.unit} = {item.conversionRatio || 1} {item.usageUnit}
+                                  </span>
+                                ) : null
+                              )
                             )}
                             {item.description && (
                               <span className="text-slate-400 text-[11px] truncate max-w-xs">

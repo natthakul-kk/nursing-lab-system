@@ -28,6 +28,7 @@ model User {
   approvedRequisitions RequisitionRequest[] @relation("ApproverRequisitions")
   stockTransactions   StockTransaction[]
   maintenanceLogs     MaintenanceLog[]
+  repackRecords       RepackRecord[]
 }
 
 model Course {
@@ -62,14 +63,16 @@ model Item {
   type          String   // "EQUIPMENT" or "CONSUMABLE"
   categoryId    String
   category      Category @relation(fields: [categoryId], references: [id])
-  unit          String
-  minStockAlert Int      @default(5)
-  location      String?
-  description   String?
-  imageUrl      String?
-  status        String   @default("ACTIVE")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  unit            String   // หน่วยจัดซื้อ/สต็อกหลัก เช่น "ถุง", "กล่อง", "ห่อ", "ขวด"
+  usageUnit       String?  // หน่วยย่อยที่ใช้จริง เช่น "ก้อน", "แผ่น", "กรัม", "มล."
+  conversionRatio Float?   @default(1) // อัตราแปลง 1 unit = conversionRatio usageUnit เช่น 1 ห่อ = 100 แผ่น
+  minStockAlert   Int      @default(5)
+  location        String?
+  description     String?
+  imageUrl        String?
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   assets            EquipmentAsset[]
   stockLots         StockLot[]
@@ -77,6 +80,8 @@ model Item {
   borrowItems       BorrowItem[]
   requisitionItems  RequisitionItem[]
   practiceKitItems  PracticeKitItem[]
+  sourceRepacks     RepackRecord[]     @relation("SourceItemRepacks")
+  targetRepacks     RepackRecord[]     @relation("TargetItemRepacks")
 }
 
 model EquipmentAsset {
@@ -133,6 +138,7 @@ model StockLot {
   updatedAt         DateTime  @updatedAt
 
   stockTransactions StockTransaction[]
+  repackRecords     RepackRecord[]
 }
 
 model StockTransaction {
@@ -267,4 +273,30 @@ model PracticeKitItem {
   item      Item        @relation(fields: [itemId], references: [id])
   quantity  Int         @default(1)
 }
+
+model RepackRecord {
+  id                  String    @id @default(cuid())
+  recordNumber        String    @unique // เช่น RP-2026-0001
+  sourceItemId        String
+  sourceItem          Item      @relation("SourceItemRepacks", fields: [sourceItemId], references: [id])
+  sourceLotId         String
+  sourceLot           StockLot  @relation(fields: [sourceLotId], references: [id])
+  
+  sourceQtyUsed       Int       // จำนวนหน่วยใหญ่ที่เบิกออกมาแพ็ค เช่น 5 ห่อ
+  
+  targetItemId        String?   // พัสดุปลายทาง (ถ้ามี)
+  targetItem          Item?     @relation("TargetItemRepacks", fields: [targetItemId], references: [id])
+  subLotNumber        String    // รหัส Sub-lot ใหม่ของแล็บ เช่น RP-GAUZE-260905-01
+  unitsPerPack        Int       // จำนวนชิ้นต่อซองย่อย เช่น 10 แผ่น/ซอง หรือ 20 กรัม/ซอง
+  totalPacksProduced  Int       // จำนวนซองย่อยที่ได้ทั้งหมด เช่น 50 ซอง
+  
+  packedDate          DateTime  @default(now()) // วันที่แบ่งบรรจุ
+  sterileExpiryDate   DateTime? // วันหมดอายุหลังอบสเตอร์ไรด์
+  sterilizeMethod     String?   // วิธีการทำให้ปราศจากเชื้อ เช่น "Autoclave (ไอน้ำ)", "ETO (แก๊ส)", "พร้อมใช้ไม่ต้องอบ"
+  operatorId          String
+  operator            User      @relation(fields: [operatorId], references: [id])
+  note                String?
+  createdAt           DateTime  @default(now())
+}
+
 

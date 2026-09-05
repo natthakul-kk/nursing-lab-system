@@ -18,7 +18,8 @@ import {
   GraduationCap,
   UserCog,
   CalendarDays,
-  BriefcaseMedical
+  BriefcaseMedical,
+  PackageCheck
 } from 'lucide-react';
 import ProfileModal from '@/components/profile/ProfileModal';
 
@@ -69,6 +70,13 @@ export default function Sidebar() {
       icon: ArrowDownToLine,
       roles: ['ADMIN', 'OFFICER'],
       badge: 'เจ้าหน้าที่',
+    },
+    {
+      label: 'แบ่งบรรจุ & สเตอร์ไรด์',
+      href: '/repack',
+      icon: PackageCheck,
+      roles: ['ADMIN', 'OFFICER'],
+      badge: 'งานแล็บ',
     },
     {
       label: 'ระบบยืม-คืน ครุภัณฑ์',

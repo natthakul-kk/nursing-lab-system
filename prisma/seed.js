@@ -1,21 +1,55 @@
+const fs = require('fs');
+const path = require('path');
+
+// Manually parse .env from project directory
+try {
+  const envContent = fs.readFileSync('d:\\LAB-system\\.env', 'utf8');
+  envContent.split('\n').forEach((line) => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) return;
+    const eqIdx = trimmed.indexOf('=');
+    if (eqIdx !== -1) {
+      const key = trimmed.slice(0, eqIdx).trim();
+      let val = trimmed.slice(eqIdx + 1).trim();
+      if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+        val = val.slice(1, -1);
+      }
+      process.env[key] = val;
+    }
+  });
+} catch (e) {
+  console.log('Error reading .env:', e.message);
+}
+
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-async function main() {
-  console.log('Cleaning database...');
-  await prisma.requisitionItem.deleteMany();
-  await prisma.requisitionRequest.deleteMany();
+async function cleanAndSeed() {
+  console.log('--- Cleaning test records from database ---');
+
+  // 1. Delete dependent transactional records
+  await prisma.practiceKitItem.deleteMany();
+  await prisma.practiceKit.deleteMany();
+  await prisma.repackPackItem.deleteMany();
+  await prisma.repackRecord.deleteMany();
   await prisma.borrowItem.deleteMany();
   await prisma.borrowRequest.deleteMany();
+  await prisma.requisitionItem.deleteMany();
+  await prisma.requisitionRequest.deleteMany();
+  await prisma.stockLotBox.deleteMany();
   await prisma.stockTransaction.deleteMany();
-  await prisma.stockLot.deleteMany();
+  await prisma.maintenanceLog.deleteMany();
   await prisma.equipmentAsset.deleteMany();
+  await prisma.stockLot.deleteMany();
   await prisma.item.deleteMany();
   await prisma.category.deleteMany();
   await prisma.course.deleteMany();
   await prisma.user.deleteMany();
 
-  console.log('Creating users...');
+  console.log('Database cleaned successfully.');
+
+  // 2. Create Users
+  console.log('Creating standard users...');
   const admin = await prisma.user.create({
     data: {
       name: 'ผู้ดูแลระบบกลาง (Admin)',
@@ -72,7 +106,8 @@ async function main() {
     },
   });
 
-  console.log('Creating courses...');
+  // 3. Create Courses
+  console.log('Creating academic courses...');
   const c1 = await prisma.course.create({
     data: {
       code: 'NUR1101',
@@ -121,6 +156,7 @@ async function main() {
     },
   });
 
+  // 4. Create Master Categories
   console.log('Creating categories...');
   const catManikin = await prisma.category.create({
     data: {
@@ -170,8 +206,10 @@ async function main() {
     },
   });
 
-  console.log('Creating items...');
-  // 1. Manikin CPR
+  // 5. Create Master Equipment Items & Assets
+  console.log('Creating equipment items and assets...');
+
+  // 5.1 CPR Manikin
   const itemCpr = await prisma.item.create({
     data: {
       code: 'EQ-MNK-001',
@@ -185,16 +223,15 @@ async function main() {
     },
   });
 
-  // Assets for CPR Manikin
   await prisma.equipmentAsset.createMany({
     data: [
-      { itemId: itemCpr.id, assetCode: 'CPR-2567-001', sequenceNumber: 1, serialNumber: 'SN-CPR-9021', location: 'ห้อง Simulation Lab 1 (ตู้ M1)', receivedDate: new Date('2025-06-10'), cost: 48000, status: 'AVAILABLE', condition: 'GOOD' },
-      { itemId: itemCpr.id, assetCode: 'CPR-2567-002', sequenceNumber: 2, serialNumber: 'SN-CPR-9022', location: 'ห้อง Simulation Lab 1 (ตู้ M1)', receivedDate: new Date('2025-06-10'), cost: 48000, status: 'AVAILABLE', condition: 'GOOD' },
-      { itemId: itemCpr.id, assetCode: 'CPR-2567-003', sequenceNumber: 3, serialNumber: 'SN-CPR-9023', location: 'ห้อง Simulation Lab 1 (ตู้ M1)', receivedDate: new Date('2025-06-10'), cost: 48000, status: 'AVAILABLE', condition: 'GOOD' },
+      { itemId: itemCpr.id, assetCode: 'CPR-2567-001', sequenceNumber: 1, serialNumber: 'SN-CPR-9021', location: 'ห้อง Simulation Lab 1 (ตู้ M1)', receivedDate: new Date('2025-06-10'), cost: 48000, status: 'AVAILABLE', condition: 'GOOD', note: 'เครื่องที่ 1 พร้อมใช้งาน' },
+      { itemId: itemCpr.id, assetCode: 'CPR-2567-002', sequenceNumber: 2, serialNumber: 'SN-CPR-9022', location: 'ห้อง Simulation Lab 1 (ตู้ M1)', receivedDate: new Date('2025-06-10'), cost: 48000, status: 'AVAILABLE', condition: 'GOOD', note: 'เครื่องที่ 2 พร้อมใช้งาน' },
+      { itemId: itemCpr.id, assetCode: 'CPR-2567-003', sequenceNumber: 3, serialNumber: 'SN-CPR-9023', location: 'ห้อง Simulation Lab 1 (ตู้ M1)', receivedDate: new Date('2025-06-10'), cost: 48000, status: 'AVAILABLE', condition: 'GOOD', note: 'เครื่องที่ 3 พร้อมใช้งาน' },
     ],
   });
 
-  // 2. IV Arm Trainer
+  // 5.2 IV Training Arm
   const itemIvArm = await prisma.item.create({
     data: {
       code: 'EQ-MNK-002',
@@ -213,11 +250,11 @@ async function main() {
       { itemId: itemIvArm.id, assetCode: 'ARM-2567-001', sequenceNumber: 1, serialNumber: 'ARM-X1', location: 'ห้อง Skill Lab 2 (ตู้ M2)', receivedDate: new Date('2025-07-20'), cost: 12500, status: 'AVAILABLE', condition: 'GOOD' },
       { itemId: itemIvArm.id, assetCode: 'ARM-2567-002', sequenceNumber: 2, serialNumber: 'ARM-X2', location: 'ห้อง Skill Lab 2 (ตู้ M2)', receivedDate: new Date('2025-07-20'), cost: 12500, status: 'AVAILABLE', condition: 'GOOD' },
       { itemId: itemIvArm.id, assetCode: 'ARM-2567-003', sequenceNumber: 3, serialNumber: 'ARM-X3', location: 'ห้อง Skill Lab 2 (ตู้ M2)', receivedDate: new Date('2025-07-20'), cost: 12500, status: 'AVAILABLE', condition: 'GOOD' },
-      { itemId: itemIvArm.id, assetCode: 'ARM-2567-004', sequenceNumber: 4, serialNumber: 'ARM-X4', location: 'ห้องซ่อมบำรุง Lab', receivedDate: new Date('2025-07-20'), cost: 12500, status: 'MAINTENANCE', condition: 'DAMAGED', note: 'ท่อยางรั่ว รอเปลี่ยนอะไหล่' },
+      { itemId: itemIvArm.id, assetCode: 'ARM-2567-004', sequenceNumber: 4, serialNumber: 'ARM-X4', location: 'ห้อง Skill Lab 2 (ตู้ M2)', receivedDate: new Date('2025-07-20'), cost: 12500, status: 'AVAILABLE', condition: 'GOOD' },
     ],
   });
 
-  // 3. Stethoscope Littmann
+  // 5.3 Stethoscope Littmann
   const itemSteth = await prisma.item.create({
     data: {
       code: 'EQ-MED-001',
@@ -241,7 +278,7 @@ async function main() {
     ],
   });
 
-  // 4. Digital BP Monitor
+  // 5.4 Digital BP Monitor
   const itemBp = await prisma.item.create({
     data: {
       code: 'EQ-MED-002',
@@ -262,7 +299,7 @@ async function main() {
     ],
   });
 
-  // 5. Automated External Defibrillator (AED) - User's explicit requested example!
+  // 5.5 Automated External Defibrillator (AED)
   const itemAed = await prisma.item.create({
     data: {
       code: 'EQ-AED-001',
@@ -308,8 +345,53 @@ async function main() {
     ],
   });
 
-  // Consumables:
-  // 5. 0.9% Normal Saline 1,000 ml
+  // 6. Create Master Consumable Items, Fresh Lots, and Compact Box Sequences (2569)
+  console.log('Creating consumable items, fresh lots, and boxes...');
+
+  async function createLotWithBoxes(item, lotData, boxCount) {
+    const lot = await prisma.stockLot.create({
+      data: {
+        itemId: item.id,
+        ...lotData,
+      },
+    });
+
+    const boxes = [];
+    const cleanItemCode = item.code.trim();
+    for (let b = 1; b <= boxCount; b++) {
+      boxes.push({
+        lotId: lot.id,
+        itemId: item.id,
+        boxCode: `${cleanItemCode}-2569-B${String(b).padStart(3, '0')}`,
+        boxNumberInLot: b,
+        boxNumberInYear: b,
+        year: '2569',
+        status: 'IN_STOCK',
+      });
+    }
+
+    if (boxes.length > 0) {
+      await prisma.stockLotBox.createMany({ data: boxes });
+    }
+
+    // Record initial StockTransaction IN
+    await prisma.stockTransaction.create({
+      data: {
+        itemId: item.id,
+        lotId: lot.id,
+        type: 'IN',
+        quantity: lotData.quantityInitial,
+        unitCost: lotData.unitCost,
+        totalCost: lotData.quantityInitial * lotData.unitCost,
+        createdById: officer.id,
+        note: `รับเข้าสต็อกเริ่มต้น ล็อต: ${lotData.lotNumber} (${boxCount} กล่อง/หน่วย)`,
+      },
+    });
+
+    return lot;
+  }
+
+  // 6.1 NSS 1000ml (ขวด)
   const itemNss = await prisma.item.create({
     data: {
       code: 'CON-IV-001',
@@ -317,25 +399,23 @@ async function main() {
       type: 'CONSUMABLE',
       categoryId: catIVSupplies.id,
       unit: 'ขวด',
+      usageUnit: 'ขวด',
+      conversionRatio: 1,
       minStockAlert: 20,
       location: 'ชั้นวางเวชภัณฑ์ D-1 (ตู้ควบคุมอุณหภูมิ)',
       description: 'น้ำเกลือปราศจากเชื้อสำหรับฝึกผสมยาและต่อสาย IV Set',
     },
   });
+  await createLotWithBoxes(itemNss, {
+    lotNumber: 'NSS-680105',
+    quantityInitial: 50,
+    quantityRemaining: 50,
+    unitCost: 42.0,
+    expiryDate: new Date('2027-12-31'),
+    supplier: 'บริษัท สหเวชกิจการ จำกัด',
+  }, 50);
 
-  const lotNss1 = await prisma.stockLot.create({
-    data: {
-      itemId: itemNss.id,
-      lotNumber: 'NSS-680105',
-      quantityInitial: 100,
-      quantityRemaining: 68,
-      unitCost: 42.0,
-      expiryDate: new Date('2027-12-31'),
-      supplier: 'บริษัท สหเวชกิจการ จำกัด',
-    },
-  });
-
-  // 6. IV Set (Infusion Giving Set)
+  // 6.2 IV Infusion Set (ชุด)
   const itemIvSet = await prisma.item.create({
     data: {
       code: 'CON-IV-002',
@@ -343,77 +423,71 @@ async function main() {
       type: 'CONSUMABLE',
       categoryId: catIVSupplies.id,
       unit: 'ชุด',
-      minStockAlert: 30,
+      usageUnit: 'ชิ้น',
+      conversionRatio: 1,
+      minStockAlert: 25,
       location: 'ชั้นวางเวชภัณฑ์ D-2',
       description: 'สายน้ำเกลือปลอดเชื้อพร้อมเข็มแอร์และ Roller clamp',
     },
   });
+  await createLotWithBoxes(itemIvSet, {
+    lotNumber: 'IVSET-26011',
+    quantityInitial: 60,
+    quantityRemaining: 60,
+    unitCost: 28.5,
+    expiryDate: new Date('2028-06-30'),
+    supplier: 'บริษัท เมดิคอลซัพพลายส์ จำกัด',
+  }, 60);
 
-  const lotIvSet1 = await prisma.stockLot.create({
-    data: {
-      itemId: itemIvSet.id,
-      lotNumber: 'IVSET-26011',
-      quantityInitial: 200,
-      quantityRemaining: 115,
-      unitCost: 28.5,
-      expiryDate: new Date('2028-06-30'),
-      supplier: 'บริษัท เมดิคอลซัพพลายส์ จำกัด',
-    },
-  });
-
-  // 7. IV Catheter No. 22 (เข็มแทงน้ำเกลือ)
+  // 6.3 IV Cannula G22 (กล่องละ 50 ชิ้น / สต็อก 10 กล่อง = 500 ชิ้น)
   const itemIvCath = await prisma.item.create({
     data: {
       code: 'CON-IV-003',
       name: 'เข็มแทงน้ำเกลือพร้อมปลอกพลาสติก No. 22 (IV Cannula G22)',
       type: 'CONSUMABLE',
       categoryId: catIVSupplies.id,
-      unit: 'ชิ้น',
-      minStockAlert: 50,
+      unit: 'กล่อง',
+      usageUnit: 'ชิ้น',
+      conversionRatio: 50,
+      minStockAlert: 3,
       location: 'ลิ้นชักเวชภัณฑ์ C-04',
-      description: 'เข็มแทงเส้นเลือดดำสีฟ้า No. 22 สำหรับฝึกหัตถการแทงน้ำเกลือ',
+      description: 'เข็มแทงเส้นเลือดดำสีฟ้า No. 22 สำหรับฝึกหัตถการแทงน้ำเกลือ บรรจุกล่องละ 50 ชิ้น',
     },
   });
+  await createLotWithBoxes(itemIvCath, {
+    lotNumber: 'CATH-22B-98',
+    quantityInitial: 10,
+    quantityRemaining: 10,
+    unitCost: 750.0,
+    expiryDate: new Date('2027-08-31'),
+    supplier: 'ห้างหุ้นส่วน เวชภัณฑ์สยาม',
+  }, 10);
 
-  const lotCath1 = await prisma.stockLot.create({
-    data: {
-      itemId: itemIvCath.id,
-      lotNumber: 'CATH-22B-98',
-      quantityInitial: 300,
-      quantityRemaining: 180,
-      unitCost: 15.0,
-      expiryDate: new Date('2027-08-31'),
-      supplier: 'ห้างหุ้นส่วน เวชภัณฑ์สยาม',
-    },
-  });
-
-  // 8. Syringe 5 ml
+  // 6.4 Syringe 5ml (กล่องละ 100 ชิ้น / สต็อก 5 กล่อง = 500 ชิ้น)
   const itemSyringe = await prisma.item.create({
     data: {
       code: 'CON-IV-004',
       name: 'กระบอกฉีดยาปลอดเชื้อ ขนาด 5 ml (Sterile Disposable Syringe 5ml)',
       type: 'CONSUMABLE',
       categoryId: catIVSupplies.id,
-      unit: 'ชิ้น',
-      minStockAlert: 40,
+      unit: 'กล่อง',
+      usageUnit: 'ชิ้น',
+      conversionRatio: 100,
+      minStockAlert: 2,
       location: 'ลิ้นชักเวชภัณฑ์ C-02',
-      description: 'กระบอกฉีดยา Nipro 5ml ชนิด Luer Slip',
+      description: 'กระบอกฉีดยา Nipro 5ml ชนิด Luer Slip บรรจุกล่องละ 100 ชิ้น',
     },
   });
+  await createLotWithBoxes(itemSyringe, {
+    lotNumber: 'SYR-5ML-04',
+    quantityInitial: 5,
+    quantityRemaining: 5,
+    unitCost: 450.0,
+    expiryDate: new Date('2028-01-31'),
+    supplier: 'บริษัท นิโปร ประเทศไทย จำกัด',
+  }, 5);
 
-  const lotSyr1 = await prisma.stockLot.create({
-    data: {
-      itemId: itemSyringe.id,
-      lotNumber: 'SYR-5ML-04',
-      quantityInitial: 250,
-      quantityRemaining: 140,
-      unitCost: 4.5,
-      expiryDate: new Date('2028-01-31'),
-      supplier: 'บริษัท นิโปร ประเทศไทย จำกัด',
-    },
-  });
-
-  // 9. Sterile Dressing Set (ชุดทำแผลปลอดเชื้อ)
+  // 6.5 Sterile Dressing Set (ชุด)
   const itemDressing = await prisma.item.create({
     data: {
       code: 'CON-WD-001',
@@ -421,51 +495,47 @@ async function main() {
       type: 'CONSUMABLE',
       categoryId: catWoundCare.id,
       unit: 'ชุด',
-      minStockAlert: 25,
+      usageUnit: 'ชุด',
+      conversionRatio: 1,
+      minStockAlert: 20,
       location: 'ชั้นวางหัตถการ W-1',
       description: 'ในชุดประกอบด้วย ปากคีบ Forceps 2 ตัว, สำลีก้อน 6 ก้อน, ผ้าก๊อซ 3 แผ่น, ถาดพลาสติก',
     },
   });
+  await createLotWithBoxes(itemDressing, {
+    lotNumber: 'DRS-SET-2026',
+    quantityInitial: 50,
+    quantityRemaining: 50,
+    unitCost: 35.0,
+    expiryDate: new Date('2027-05-15'),
+    supplier: 'บริษัท บางกอกเมดิคอลแวร์ จำกัด',
+  }, 50);
 
-  const lotDrs1 = await prisma.stockLot.create({
-    data: {
-      itemId: itemDressing.id,
-      lotNumber: 'DRS-SET-2026',
-      quantityInitial: 150,
-      quantityRemaining: 85,
-      unitCost: 35.0,
-      expiryDate: new Date('2027-05-15'),
-      supplier: 'บริษัท บางกอกเมดิคอลแวร์ จำกัด',
-    },
-  });
-
-  // 10. Sterile Gloves No. 7 (ถุงมือผ่าตัดปลอดเชื้อ)
+  // 6.6 Sterile Gloves No. 7 (กล่องละ 50 คู่ / สต็อก 10 กล่อง = 500 คู่)
   const itemGloves = await prisma.item.create({
     data: {
       code: 'CON-PPE-001',
       name: 'ถุงมือตรวจโรคปลอดเชื้อ ชนิดมีแป้ง เบอร์ 7 (Sterile Surgical Gloves Size 7.0)',
       type: 'CONSUMABLE',
       categoryId: catPPE.id,
-      unit: 'คู่',
-      minStockAlert: 50,
+      unit: 'กล่อง',
+      usageUnit: 'คู่',
+      conversionRatio: 50,
+      minStockAlert: 3,
       location: 'ตู้ PPE ลิ้นชัก G-1',
-      description: 'ถุงมือยางธรรมชาติ Sterile บรรจุซองแยกคู่',
+      description: 'ถุงมือยางธรรมชาติ Sterile บรรจุกล่องละ 50 คู่ (ซองแยกคู่)',
     },
   });
+  await createLotWithBoxes(itemGloves, {
+    lotNumber: 'GLV-S7-889',
+    quantityInitial: 10,
+    quantityRemaining: 10,
+    unitCost: 1100.0,
+    expiryDate: new Date('2027-11-20'),
+    supplier: 'บริษัท ศรีตรังโกลฟส์ (ประเทศไทย) จำกัด',
+  }, 10);
 
-  const lotGlv1 = await prisma.stockLot.create({
-    data: {
-      itemId: itemGloves.id,
-      lotNumber: 'GLV-S7-889',
-      quantityInitial: 200,
-      quantityRemaining: 92,
-      unitCost: 22.0,
-      expiryDate: new Date('2027-11-20'),
-      supplier: 'บริษัท ศรีตรังโกลฟส์ (ประเทศไทย) จำกัด',
-    },
-  });
-
-  // 11. Low stock item: Alcohol 70% 450 ml
+  // 6.7 Alcohol 70% 450ml (ขวด)
   const itemAlcohol = await prisma.item.create({
     data: {
       code: 'CON-WD-002',
@@ -473,221 +543,87 @@ async function main() {
       type: 'CONSUMABLE',
       categoryId: catWoundCare.id,
       unit: 'ขวด',
-      minStockAlert: 15,
+      usageUnit: 'ขวด',
+      conversionRatio: 1,
+      minStockAlert: 10,
       location: 'ตู้สารเคมี Flammable Cabinet',
       description: 'เอทิลแอลกอฮอล์ 70% V/V ชนิดใส',
     },
   });
+  await createLotWithBoxes(itemAlcohol, {
+    lotNumber: 'ALC-70-109',
+    quantityInitial: 30,
+    quantityRemaining: 30,
+    unitCost: 55.0,
+    expiryDate: new Date('2027-04-30'),
+    supplier: 'องค์การเภสัชกรรม (GPO)',
+  }, 30);
 
-  const lotAlc1 = await prisma.stockLot.create({
-    data: {
-      itemId: itemAlcohol.id,
-      lotNumber: 'ALC-70-109',
-      quantityInitial: 40,
-      quantityRemaining: 6, // Low stock! < 15
-      unitCost: 55.0,
-      expiryDate: new Date('2026-11-15'), // Expiring in ~2 months!
-      supplier: 'องค์การเภสัชกรรม (GPO)',
-    },
-  });
+  // 7. Create Standard Practice Kits (ชุดฝึกปฏิบัติการมาตรฐาน)
+  console.log('Creating standard practice kits...');
 
-  console.log('Creating sample requisitions with course cost tracking...');
-  // Sample 1: Completed Requisition for Course NUR1101 (Fundamental Nursing)
-  const req1 = await prisma.requisitionRequest.create({
+  // Kit 1: IV Therapy Practice Kit
+  await prisma.practiceKit.create({
     data: {
-      requestNumber: 'REQ-25690901-001',
-      userId: teacher.id,
-      courseId: c1.id,
-      purpose: 'ฝึกปฏิบัติการหัตถการแทงน้ำเกลือและให้สารน้ำ กลุ่มเรียน A (นศ. 40 คน)',
-      dateNeeded: new Date('2026-09-02'),
-      status: 'DISPENSED',
-      approverId: approver.id,
-      approvedAt: new Date('2026-09-01T14:30:00'),
-      officerId: officer.id,
-      dispensedAt: new Date('2026-09-02T08:15:00'),
-      totalCost: 3490.0,
+      code: 'KIT-IV-01',
+      name: 'ชุดฝึกเปิดเส้นให้สารน้ำทางหลอดเลือดดำ (IV Therapy Practice Kit)',
+      category: 'หัตถการให้สารน้ำและยา',
+      description: 'ชุดฝึกปฏิบัติการเปิดเส้นแทงน้ำเกลือ บรรจุแขนฝึกเจาะเลือด ถุงมือตรวจโรค สาย IV Set น้ำเกลือ และเข็มแทงพร้อมใช้งาน',
+      targetCourse: 'NUR1101 การพยาบาลพื้นฐาน',
       items: {
         create: [
-          { itemId: itemNss.id, quantityRequested: 40, quantityDispensed: 40, unitCost: 42.0, totalCost: 1680.0 },
-          { itemId: itemIvSet.id, quantityRequested: 40, quantityDispensed: 40, unitCost: 28.5, totalCost: 1140.0 },
-          { itemId: itemIvCath.id, quantityRequested: 45, quantityDispensed: 45, unitCost: 15.0, totalCost: 670.0 },
+          { itemId: itemIvArm.id, quantity: 1 },
+          { itemId: itemNss.id, quantity: 1 },
+          { itemId: itemIvSet.id, quantity: 1 },
+          { itemId: itemIvCath.id, quantity: 2 },
+          { itemId: itemSyringe.id, quantity: 1 },
+          { itemId: itemAlcohol.id, quantity: 1 },
         ],
       },
     },
   });
 
-  // Transactions for req1
-  await prisma.stockTransaction.createMany({
-    data: [
-      {
-        itemId: itemNss.id,
-        lotId: lotNss1.id,
-        type: 'OUT_REQUISITION',
-        quantity: -40,
-        unitCost: 42.0,
-        totalCost: 1680.0,
-        courseId: c1.id,
-        referenceNumber: req1.requestNumber,
-        createdById: officer.id,
-        note: 'เบิกใช้ประกอบการสอน NUR1101 กลุ่ม A',
-      },
-      {
-        itemId: itemIvSet.id,
-        lotId: lotIvSet1.id,
-        type: 'OUT_REQUISITION',
-        quantity: -40,
-        unitCost: 28.5,
-        totalCost: 1140.0,
-        courseId: c1.id,
-        referenceNumber: req1.requestNumber,
-        createdById: officer.id,
-        note: 'เบิกใช้ประกอบการสอน NUR1101 กลุ่ม A',
-      },
-      {
-        itemId: itemIvCath.id,
-        lotId: lotCath1.id,
-        type: 'OUT_REQUISITION',
-        quantity: -45,
-        unitCost: 15.0,
-        totalCost: 670.0,
-        courseId: c1.id,
-        referenceNumber: req1.requestNumber,
-        createdById: officer.id,
-        note: 'เบิกใช้ประกอบการสอน NUR1101 กลุ่ม A',
-      },
-    ],
-  });
-
-  // Sample 2: Completed Requisition for Course NUR2102 (Health Assessment)
-  const req2 = await prisma.requisitionRequest.create({
+  // Kit 2: Sterile Dressing Set
+  await prisma.practiceKit.create({
     data: {
-      requestNumber: 'REQ-25690902-002',
-      userId: teacher.id,
-      courseId: c2.id,
-      purpose: 'ฝึกประเมินและทำแผลจำลอง (Wound Dressing Lab) กลุ่มเรียน B (30 คน)',
-      dateNeeded: new Date('2026-09-03'),
-      status: 'DISPENSED',
-      approverId: approver.id,
-      approvedAt: new Date('2026-09-02T16:00:00'),
-      officerId: officer.id,
-      dispensedAt: new Date('2026-09-03T09:00:00'),
-      totalCost: 2360.0,
+      code: 'KIT-DRESSING-01',
+      name: 'ชุดฝึกปฏิบัติการทำแผลปราศจากเชื้อ (Sterile Dressing Set)',
+      category: 'หัตถการพื้นฐานทางการพยาบาล',
+      description: 'สำหรับฝึกปฏิบัติการทำแผลแห้ง (Dry dressing) และแผลเปียก (Wet dressing) พร้อมชุดทำแผลและแอลกอฮอล์',
+      targetCourse: 'NUR1101 การพยาบาลพื้นฐาน',
       items: {
         create: [
-          { itemId: itemDressing.id, quantityRequested: 30, quantityDispensed: 30, unitCost: 35.0, totalCost: 1050.0 },
-          { itemId: itemGloves.id, quantityRequested: 40, quantityDispensed: 40, unitCost: 22.0, totalCost: 880.0 },
-          { itemId: itemAlcohol.id, quantityRequested: 8, quantityDispensed: 8, unitCost: 55.0, totalCost: 430.0 },
+          { itemId: itemDressing.id, quantity: 1 },
+          { itemId: itemAlcohol.id, quantity: 1 },
         ],
       },
     },
   });
 
-  await prisma.stockTransaction.createMany({
-    data: [
-      {
-        itemId: itemDressing.id,
-        lotId: lotDrs1.id,
-        type: 'OUT_REQUISITION',
-        quantity: -30,
-        unitCost: 35.0,
-        totalCost: 1050.0,
-        courseId: c2.id,
-        referenceNumber: req2.requestNumber,
-        createdById: officer.id,
-        note: 'เบิกใช้ประกอบการสอน NUR2102 กลุ่ม B',
-      },
-      {
-        itemId: itemGloves.id,
-        lotId: lotGlv1.id,
-        type: 'OUT_REQUISITION',
-        quantity: -40,
-        unitCost: 22.0,
-        totalCost: 880.0,
-        courseId: c2.id,
-        referenceNumber: req2.requestNumber,
-        createdById: officer.id,
-        note: 'เบิกใช้ประกอบการสอน NUR2102 กลุ่ม B',
-      },
-    ],
-  });
-
-  // Sample 3: Pending Requisition waiting for Approver
-  await prisma.requisitionRequest.create({
+  // Kit 3: Emergency CPR & BLS Kit
+  await prisma.practiceKit.create({
     data: {
-      requestNumber: 'REQ-25690904-003',
-      userId: student.id,
-      courseId: c1.id,
-      purpose: 'ฝึกปฏิบัติทบทวนทักษะฉีดยาและการเตรียมยา (Self-practice นอกเวลา)',
-      dateNeeded: new Date('2026-09-05'),
-      status: 'PENDING',
-      totalCost: 450.0,
+      code: 'KIT-CPR-01',
+      name: 'ชุดฝึกช่วยฟื้นคืนชีพและการกู้ชีพฉุกเฉิน (CPR & Basic Life Support Set)',
+      category: 'การพยาบาลฉุกเฉินและอุบัติเหตุ',
+      description: 'สำหรับฝึกการช่วยฟื้นคืนชีพขั้นพื้นฐาน หุ่น CPR, เครื่องกระตุกหัวใจไฟฟ้า AED และหูฟังตรวจแพทย์',
+      targetCourse: 'NUR4108 การช่วยฟื้นคืนชีพขั้นสูงและการพยาบาลฉุกเฉิน',
       items: {
         create: [
-          { itemId: itemSyringe.id, quantityRequested: 20, quantityDispensed: 0, unitCost: 4.5, totalCost: 90.0 },
-          { itemId: itemNss.id, quantityRequested: 5, quantityDispensed: 0, unitCost: 42.0, totalCost: 210.0 },
-          { itemId: itemGloves.id, quantityRequested: 6, quantityDispensed: 0, unitCost: 22.0, totalCost: 150.0 },
+          { itemId: itemCpr.id, quantity: 1 },
+          { itemId: itemAed.id, quantity: 1 },
+          { itemId: itemSteth.id, quantity: 1 },
         ],
       },
     },
   });
 
-  console.log('Creating sample borrow requests...');
-  // Sample Borrow 1: Currently BORROWED
-  const cprAsset = await prisma.equipmentAsset.findFirst({ where: { assetCode: 'CPR-2567-001' } });
-  if (cprAsset) {
-    await prisma.equipmentAsset.update({
-      where: { id: cprAsset.id },
-      data: { status: 'BORROWED' },
-    });
-
-    await prisma.borrowRequest.create({
-      data: {
-        requestNumber: 'BRW-25690903-001',
-        userId: teacher.id,
-        courseId: c4.id,
-        purpose: 'สอนการประเมินภาวะหัวใจหยุดเต้นและฝึก CPR ในชั้นเรียน ACLS',
-        borrowDate: new Date('2026-09-03T13:00:00'),
-        expectedReturnDate: new Date('2026-09-05T17:00:00'),
-        status: 'BORROWED',
-        approverId: approver.id,
-        approvedAt: new Date('2026-09-03T10:00:00'),
-        officerId: officer.id,
-        checkedOutAt: new Date('2026-09-03T12:45:00'),
-        items: {
-          create: [
-            { itemId: itemCpr.id, assetId: cprAsset.id, quantity: 1, isReturned: false },
-          ],
-        },
-      },
-    });
-  }
-
-  // Sample Borrow 2: PENDING Approval
-  await prisma.borrowRequest.create({
-    data: {
-      requestNumber: 'BRW-25690904-002',
-      userId: student.id,
-      courseId: c2.id,
-      purpose: 'ยืมหูฟัง Stethoscope และแบบจำลองแขนสำหรับฝึกฟังเสียงและคลำชีพจร',
-      borrowDate: new Date('2569-09-05T09:00:00'),
-      borrowDate: new Date('2026-09-05T09:00:00'),
-      expectedReturnDate: new Date('2026-09-05T16:00:00'),
-      status: 'PENDING',
-      items: {
-        create: [
-          { itemId: itemSteth.id, quantity: 2, isReturned: false },
-          { itemId: itemIvArm.id, quantity: 1, isReturned: false },
-        ],
-      },
-    },
-  });
-
-  console.log('Seed completed successfully!');
+  console.log('--- Production Seed Completed Successfully! ---');
 }
 
-main()
+cleanAndSeed()
   .catch((e) => {
-    console.error(e);
+    console.error('Seed Error:', e);
     process.exit(1);
   })
   .finally(async () => {

@@ -69,6 +69,7 @@ export default function RepackPage() {
   const [printMode, setPrintMode] = useState<'all_packs' | 'lot_summary' | 'single_pack'>('all_packs');
   const [selectedPackForSinglePrint, setSelectedPackForSinglePrint] = useState<any | null>(null);
   const [labelQrs, setLabelQrs] = useState<{ [key: string]: string }>({});
+  const [previewQrModal, setPreviewQrModal] = useState<{ code: string; name: string; qrUrl: string } | null>(null);
 
   useEffect(() => {
     if (!selectedRecordForLabel) return;
@@ -79,7 +80,12 @@ export default function RepackPage() {
       if (selectedRecordForLabel.subLotNumber) {
         try {
           const payload = `${origin}/consumable/${encodeURIComponent(selectedRecordForLabel.subLotNumber)}`;
-          qrs[selectedRecordForLabel.subLotNumber] = await QRCode.toDataURL(payload, { width: 200, margin: 1 });
+          qrs[selectedRecordForLabel.subLotNumber] = await QRCode.toDataURL(payload, {
+            width: 360,
+            margin: 1,
+            errorCorrectionLevel: 'M',
+            color: { dark: '#000000', light: '#ffffff' }
+          });
         } catch (e) {}
       }
 
@@ -93,7 +99,12 @@ export default function RepackPage() {
         if (p.packCode) {
           try {
             const payload = `${origin}/consumable/${encodeURIComponent(p.packCode)}`;
-            qrs[p.packCode] = await QRCode.toDataURL(payload, { width: 140, margin: 1 });
+            qrs[p.packCode] = await QRCode.toDataURL(payload, {
+              width: 320,
+              margin: 1,
+              errorCorrectionLevel: 'M',
+              color: { dark: '#000000', light: '#ffffff' }
+            });
           } catch (e) {}
         }
       }
@@ -573,13 +584,22 @@ export default function RepackPage() {
                         >
                           {pack.status === 'AVAILABLE' ? 'พร้อมใช้งาน' : 'เบิกแล้ว'}
                         </span>
+                        <a
+                          href={`/consumable/${encodeURIComponent(pack.packCode)}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="p-1.5 rounded-lg border border-slate-200 hover:border-teal-500 hover:text-teal-600 hover:bg-teal-50 transition cursor-pointer text-slate-500"
+                          title="ดูหน้ารายละเอียดสาธารณะ (หน้าเดียวกับตอนสแกน QR)"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </a>
                         <button
                           onClick={() => {
                             setSelectedRecordForLabel(selectedRecordForPacks);
                             setSelectedPackForSinglePrint(pack);
                             setPrintMode('single_pack');
                           }}
-                          className="p-1.5 rounded-lg border border-slate-200 hover:border-teal-500 hover:text-teal-600 hover:bg-teal-50 transition cursor-pointer"
+                          className="p-1.5 rounded-lg border border-slate-200 hover:border-teal-500 hover:text-teal-600 hover:bg-teal-50 transition cursor-pointer text-slate-600"
                           title="พิมพ์ฉลากเฉพาะซองนี้"
                         >
                           <Printer className="w-3.5 h-3.5" />
@@ -995,26 +1015,42 @@ export default function RepackPage() {
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
                         {labelQrs[pack.packCode] ? (
-                          <img
-                            src={labelQrs[pack.packCode]}
-                            alt={pack.packCode}
-                            className="w-12 h-12 rounded border border-slate-200 bg-white p-0.5 flex-shrink-0 print:w-11 print:h-11"
-                          />
+                          <div
+                            onClick={() =>
+                              setPreviewQrModal({
+                                code: pack.packCode,
+                                name: selectedRecordForLabel.targetItem?.name || selectedRecordForLabel.sourceItem?.name || 'ซองเวชภัณฑ์',
+                                qrUrl: labelQrs[pack.packCode],
+                              })
+                            }
+                            className="relative group cursor-pointer flex-shrink-0"
+                            title="คลิกเพื่อดู QR ขยายใหญ่สำหรับสแกนผ่านหน้าจอ"
+                          >
+                            <img
+                              src={labelQrs[pack.packCode]}
+                              alt={pack.packCode}
+                              className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg border-2 border-slate-300 bg-white p-1 shadow-sm transition transform group-hover:scale-105 print:w-16 print:h-16 print:border-slate-800 print:shadow-none"
+                              style={{ imageRendering: 'pixelated' }}
+                            />
+                            <div className="absolute inset-0 bg-teal-900/10 rounded-lg opacity-0 group-hover:opacity-100 flex items-center justify-center transition print:hidden">
+                              <span className="bg-white/90 text-[9px] font-bold text-teal-800 px-1 py-0.5 rounded shadow">ขยาย</span>
+                            </div>
+                          </div>
                         ) : (
-                          <div className="w-12 h-12 rounded bg-slate-100 flex items-center justify-center text-[8px] text-slate-400 flex-shrink-0">
+                          <div className="w-16 h-16 rounded-lg bg-slate-100 flex items-center justify-center text-[9px] text-slate-400 flex-shrink-0">
                             QR...
                           </div>
                         )}
-                        <div className="flex-1 overflow-hidden">
-                          <div className="font-black text-slate-900 text-[11px] truncate">
+                        <div className="flex-1 overflow-hidden space-y-0.5">
+                          <div className="font-black text-slate-900 text-xs truncate">
                             {selectedRecordForLabel.targetItem?.name || selectedRecordForLabel.sourceItem?.name}
                           </div>
                           <div className="font-mono font-black text-teal-900 text-xs">
                             {pack.packCode}
                           </div>
-                          <div className="text-[10px] font-bold text-slate-700">
+                          <div className="text-[11px] font-bold text-slate-700">
                             บรรจุ {pack.unitsCount || selectedRecordForLabel.unitsPerPack} {selectedRecordForLabel.sourceItem?.usageUnit || 'ชิ้น'}
                           </div>
                         </div>
@@ -1118,13 +1154,29 @@ export default function RepackPage() {
 
                   <div className="flex items-center gap-3">
                     {labelQrs[selectedPackForSinglePrint.packCode] ? (
-                      <img
-                        src={labelQrs[selectedPackForSinglePrint.packCode]}
-                        alt={selectedPackForSinglePrint.packCode}
-                        className="w-16 h-16 rounded-lg border border-slate-200 bg-white p-0.5 flex-shrink-0"
-                      />
+                      <div
+                        onClick={() =>
+                          setPreviewQrModal({
+                            code: selectedPackForSinglePrint.packCode,
+                            name: selectedRecordForLabel.targetItem?.name || selectedRecordForLabel.sourceItem?.name || 'ซองเวชภัณฑ์',
+                            qrUrl: labelQrs[selectedPackForSinglePrint.packCode],
+                          })
+                        }
+                        className="relative group cursor-pointer flex-shrink-0"
+                        title="คลิกเพื่อดู QR ขยายใหญ่สำหรับสแกนผ่านหน้าจอ"
+                      >
+                        <img
+                          src={labelQrs[selectedPackForSinglePrint.packCode]}
+                          alt={selectedPackForSinglePrint.packCode}
+                          className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg border-2 border-slate-300 bg-white p-1 shadow-sm transition transform group-hover:scale-105 print:w-16 print:h-16"
+                          style={{ imageRendering: 'pixelated' }}
+                        />
+                        <div className="absolute inset-0 bg-teal-900/10 rounded-lg opacity-0 group-hover:opacity-100 flex items-center justify-center transition print:hidden">
+                          <span className="bg-white/90 text-[9px] font-bold text-teal-800 px-1 py-0.5 rounded shadow">ขยาย</span>
+                        </div>
+                      </div>
                     ) : (
-                      <div className="w-16 h-16 rounded-lg bg-slate-100 flex items-center justify-center text-xs text-slate-400 flex-shrink-0">
+                      <div className="w-20 h-20 rounded-lg bg-slate-100 flex items-center justify-center text-xs text-slate-400 flex-shrink-0">
                         QR...
                       </div>
                     )}
@@ -1190,6 +1242,54 @@ export default function RepackPage() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Enlarged QR Code Preview Modal for Screen Scanning */}
+      {previewQrModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-100 text-center space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                สแกน QR ผ่านหน้าจอ
+              </span>
+              <button
+                onClick={() => setPreviewQrModal(null)}
+                className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div>
+              <h4 className="text-sm font-black text-slate-900 line-clamp-2">
+                {previewQrModal.name}
+              </h4>
+              <p className="font-mono font-bold text-xs text-teal-800 mt-0.5">
+                {previewQrModal.code}
+              </p>
+            </div>
+
+            <div className="bg-slate-50 p-4 rounded-2xl inline-block border-2 border-dashed border-teal-500/40">
+              <img
+                src={previewQrModal.qrUrl}
+                alt={previewQrModal.code}
+                className="w-56 h-56 mx-auto rounded-xl bg-white p-2 shadow-sm"
+                style={{ imageRendering: 'pixelated' }}
+              />
+            </div>
+
+            <p className="text-xs text-slate-500 leading-relaxed">
+              📱 ใช้กล้องโทรศัพท์มือถือ หรือสแกนเนอร์ในระบบเพื่อดูรายละเอียดของซองนี้ได้ทันที
+            </p>
+
+            <button
+              onClick={() => setPreviewQrModal(null)}
+              className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition cursor-pointer"
+            >
+              ปิดหน้าต่างนี้
+            </button>
           </div>
         </div>
       )}

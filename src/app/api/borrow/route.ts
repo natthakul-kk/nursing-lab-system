@@ -37,10 +37,22 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { userId, courseId, purpose, borrowDate, expectedReturnDate, items } = body;
+    const { userId, courseId, purpose, borrowDate, expectedReturnDate, items, advisorName } = body;
 
     if (!userId || !purpose || !borrowDate || !expectedReturnDate || !items || items.length === 0) {
       return NextResponse.json({ error: 'กรุณากรอกข้อมูลให้ครบถ้วน' }, { status: 400 });
+    }
+
+    // Determine final advisorName: from course if provided, otherwise from user selection
+    let finalAdvisorName = advisorName || null;
+    if (courseId) {
+      const course = await prisma.course.findUnique({
+        where: { id: courseId },
+        select: { instructorName: true },
+      });
+      if (course?.instructorName) {
+        finalAdvisorName = course.instructorName;
+      }
     }
 
     const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
@@ -52,6 +64,7 @@ export async function POST(req: Request) {
         requestNumber,
         userId,
         courseId: courseId || null,
+        advisorName: finalAdvisorName,
         purpose,
         borrowDate: new Date(borrowDate),
         expectedReturnDate: new Date(expectedReturnDate),
@@ -67,6 +80,8 @@ export async function POST(req: Request) {
         items: {
           include: { item: true },
         },
+        course: true,
+        user: true,
       },
     });
 

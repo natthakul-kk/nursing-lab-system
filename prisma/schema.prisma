@@ -151,6 +151,11 @@ model BorrowRequest {
   approvedAt         DateTime?
   rejectionReason    String?
 
+  // Instructor / Advisor notification & awareness for students
+  advisorName            String?   // ชื่ออาจารย์ผู้สอนหรืออาจารย์ที่ปรึกษาที่รับทราบ
+  instructorAcknowledged Boolean   @default(false)
+  acknowledgedAt         DateTime?
+
   officerId          String?
   checkedOutAt       DateTime?
   checkedInAt        DateTime?
@@ -190,6 +195,11 @@ model RequisitionRequest {
   approver        User?     @relation("ApproverRequisitions", fields: [approverId], references: [id])
   approvedAt      DateTime?
   rejectionReason String?
+
+  // Instructor / Advisor notification & awareness for students
+  advisorName            String?   // ชื่ออาจารย์ประจำวิชาหรืออาจารย์ที่ปรึกษาที่รับทราบ
+  instructorAcknowledged Boolean   @default(false)
+  acknowledgedAt         DateTime?
 
   officerId       String?
   dispensedAt     DateTime?

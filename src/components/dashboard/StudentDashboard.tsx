@@ -14,7 +14,8 @@ import {
   Layers,
   ArrowRight,
   Info,
-  Check
+  Check,
+  GraduationCap
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
@@ -327,6 +328,12 @@ export default function StudentDashboard() {
                       {req.course && (
                         <span className="text-[11px] font-semibold text-teal-800 bg-teal-50 px-2 py-0.5 rounded-full border border-teal-100">
                           วิชา {req.course.code} - {req.course.name}
+                        </span>
+                      )}
+                      {(req.advisorName || req.course?.instructorName) && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full">
+                          <GraduationCap className="w-3.5 h-3.5 text-indigo-600" />
+                          <span>อ.ผู้รับทราบ: {req.advisorName || req.course?.instructorName}</span>
                         </span>
                       )}
                       <span

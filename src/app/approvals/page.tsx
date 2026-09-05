@@ -17,7 +17,8 @@ import {
   Check,
   Layers,
   History,
-  Tag
+  Tag,
+  GraduationCap
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
@@ -117,13 +118,20 @@ export default function ApprovalsPage() {
     }
   };
 
-  if (!isApprover && !isAdmin) {
+  const isTeacher =
+    currentUser?.role === 'APPROVER' ||
+    currentUser?.email?.includes('teacher') ||
+    currentUser?.name?.startsWith('อ.') ||
+    currentUser?.name?.startsWith('ผศ.') ||
+    currentUser?.name?.startsWith('รศ.');
+
+  if (!isApprover && !isAdmin && !isTeacher) {
     return (
       <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center text-amber-800">
         <AlertCircle className="w-8 h-8 mx-auto mb-2 text-amber-600" />
-        <h3 className="font-bold text-base">เฉพาะผู้อนุมัติหรือผู้บริหาร</h3>
+        <h3 className="font-bold text-base">เฉพาะอาจารย์ ผู้อนุมัติ หรือผู้บริหาร</h3>
         <p className="text-xs mt-1">
-          กรุณาสลับบทบาทเป็น "ผู้อนุมัติ (Approver)" หรือ "ผู้ดูแลระบบ (Admin)" จากแถบด้านบนเพื่อพิจารณาคำขอ
+          กรุณาสลับบทบาทเป็น "อาจารย์ผู้สอน", "ผู้อนุมัติ (Approver)" หรือ "ผู้ดูแลระบบ (Admin)" เพื่อพิจารณาคำขอ
         </p>
       </div>
     );
@@ -349,19 +357,25 @@ export default function ApprovalsPage() {
                       {getStageLabel(req.status, 'BORROW')}
                     </div>
 
-                    <div className="flex items-center gap-3 text-xs text-slate-500">
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
                       <div className="flex items-center gap-1">
                         <User className="w-3.5 h-3.5 text-slate-400" />
                         <span className="font-medium text-slate-800">{req.user?.name}</span>
                         {req.user?.studentId && (
-                          <span className="text-[10px] text-teal-700 bg-teal-50 px-1.5 py-0.2 rounded font-mono">
-                            ({req.user.studentId})
+                          <span className="text-[10px] text-teal-700 bg-teal-50 px-1.5 py-0.2 rounded font-mono border border-teal-200">
+                            {req.user.studentId}
                           </span>
                         )}
                       </div>
                       {req.course && (
                         <div className="font-medium text-teal-700 bg-teal-50 px-2 py-0.5 rounded">
                           {req.course.code}
+                        </div>
+                      )}
+                      {(req.advisorName || req.course?.instructorName) && (
+                        <div className="flex items-center gap-1 text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-full">
+                          <GraduationCap className="w-3.5 h-3.5 text-indigo-600" />
+                          <span>อ.ผู้รับทราบ: {req.advisorName || req.course?.instructorName}</span>
                         </div>
                       )}
                     </div>
@@ -468,11 +482,17 @@ export default function ApprovalsPage() {
                       {getStageLabel(req.status, 'REQUISITION')}
                     </div>
 
-                    <div className="flex items-center gap-3 text-xs">
+                    <div className="flex flex-wrap items-center gap-3 text-xs">
                       <span className="font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded">
                         [{req.course?.code}] {req.course?.name}
                       </span>
                       <span className="text-slate-500 font-medium">โดย {req.user?.name}</span>
+                      {(req.advisorName || req.course?.instructorName) && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-full">
+                          <GraduationCap className="w-3.5 h-3.5 text-indigo-600" />
+                          <span>อ.ผู้รับผิดชอบ: {req.advisorName || req.course?.instructorName}</span>
+                        </span>
+                      )}
                     </div>
                   </div>
 

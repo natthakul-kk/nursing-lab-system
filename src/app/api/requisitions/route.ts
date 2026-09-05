@@ -77,11 +77,24 @@ export async function POST(req: Request) {
       });
     }
 
+    // Find course instructor name
+    let advisorName = null;
+    if (courseId) {
+      const course = await prisma.course.findUnique({
+        where: { id: courseId },
+        select: { instructorName: true },
+      });
+      if (course?.instructorName) {
+        advisorName = course.instructorName;
+      }
+    }
+
     const reqRecord = await prisma.requisitionRequest.create({
       data: {
         requestNumber,
         userId,
         courseId,
+        advisorName,
         purpose,
         dateNeeded: new Date(dateNeeded),
         status: 'PENDING',
@@ -93,6 +106,7 @@ export async function POST(req: Request) {
       include: {
         items: { include: { item: true } },
         course: true,
+        user: true,
       },
     });
 

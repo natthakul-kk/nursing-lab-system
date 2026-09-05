@@ -20,7 +20,8 @@ import {
   BookOpen,
   Boxes,
   ShieldCheck,
-  Check
+  Check,
+  GraduationCap
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
@@ -134,6 +135,7 @@ export default function SchedulePage() {
         status: b.status,
         user: b.user,
         course: b.course,
+        advisorName: b.advisorName || b.course?.instructorName,
         purpose: b.purpose,
         pickupDate: b.borrowDate,
         returnDate: b.expectedReturnDate,
@@ -152,6 +154,7 @@ export default function SchedulePage() {
         status: r.status,
         user: r.user,
         course: r.course,
+        advisorName: r.advisorName || r.course?.instructorName,
         purpose: r.purpose,
         pickupDate: r.dateNeeded,
         returnDate: undefined,
@@ -504,14 +507,24 @@ export default function SchedulePage() {
                   )}
                 </div>
 
-                {/* 3. Course & Purpose */}
+                {/* 3. Course, Advisor & Purpose */}
                 <div className="space-y-1">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                    📚 รายวิชา & วัตถุประสงค์
+                    📚 รายวิชา / อาจารย์ผู้รับทราบ
                   </span>
-                  {task.course && (
+                  {task.course ? (
                     <div className="font-bold text-teal-800 text-xs">
                       {task.course.code} - {task.course.name}
+                    </div>
+                  ) : (
+                    <div className="text-slate-500 font-medium text-xs">
+                      กิจกรรมฝึกทักษะทั่วไป (นอกรายวิชา)
+                    </div>
+                  )}
+                  {task.advisorName && (
+                    <div className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-md">
+                      <GraduationCap className="w-3.5 h-3.5 text-indigo-600" />
+                      <span>อาจารย์: {task.advisorName}</span>
                     </div>
                   )}
                   <div className="text-slate-600 line-clamp-2 text-xs">

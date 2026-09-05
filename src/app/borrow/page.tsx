@@ -17,7 +17,8 @@ import {
   RotateCcw,
   Check,
   ShieldCheck,
-  Search
+  Search,
+  GraduationCap
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
@@ -32,8 +33,10 @@ export default function BorrowPage() {
 
   // New Request Modal
   const [showNewModal, setShowNewModal] = useState(false);
+  const [instructors, setInstructors] = useState<any[]>([]);
   const [newRequest, setNewRequest] = useState({
     courseId: '',
+    advisorName: '',
     purpose: '',
     borrowDate: '',
     expectedReturnDate: '',
@@ -50,10 +53,11 @@ export default function BorrowPage() {
 
   const fetchBorrowData = async () => {
     try {
-      const [borrowRes, itemsRes, coursesRes] = await Promise.all([
+      const [borrowRes, itemsRes, coursesRes, usersRes] = await Promise.all([
         fetch('/api/borrow'),
         fetch('/api/items?type=EQUIPMENT'),
         fetch('/api/courses'),
+        fetch('/api/users'),
       ]);
 
       if (borrowRes.ok) {
@@ -76,6 +80,20 @@ export default function BorrowPage() {
         if (cData.length > 0 && !newRequest.courseId) {
           setNewRequest((prev) => ({ ...prev, courseId: cData[0].id }));
         }
+      }
+      if (usersRes.ok) {
+        const uData = await usersRes.json();
+        // Filter teachers/approvers or instructors
+        const teacherList = uData.filter(
+          (u: any) =>
+            u.role === 'APPROVER' ||
+            u.email.includes('teacher') ||
+            u.email.includes('approver') ||
+            u.name.startsWith('อ.') ||
+            u.name.startsWith('ผศ.') ||
+            u.name.startsWith('รศ.')
+        );
+        setInstructors(teacherList.length > 0 ? teacherList : uData);
       }
     } catch (err) {
       console.error(err);
@@ -103,6 +121,7 @@ export default function BorrowPage() {
         body: JSON.stringify({
           userId: currentUser?.id,
           courseId: newRequest.courseId || null,
+          advisorName: newRequest.advisorName || null,
           purpose: newRequest.purpose,
           borrowDate: newRequest.borrowDate,
           expectedReturnDate: newRequest.expectedReturnDate,
@@ -114,6 +133,7 @@ export default function BorrowPage() {
         setShowNewModal(false);
         setNewRequest({
           courseId: courses[0]?.id || '',
+          advisorName: '',
           purpose: '',
           borrowDate: '',
           expectedReturnDate: '',
@@ -327,15 +347,26 @@ export default function BorrowPage() {
                   <div>{getStatusBadge(req.status)}</div>
                 </div>
 
-                <div className="flex items-center gap-4 text-xs text-slate-500">
+                <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
                   <div className="flex items-center gap-1.5 font-medium">
                     <User className="w-3.5 h-3.5 text-slate-400" />
                     <span>ผู้ยืม: {req.user?.name}</span>
+                    {req.user?.studentId && (
+                      <span className="font-mono text-[10px] text-teal-700 bg-teal-50 px-1.5 py-0.2 rounded border border-teal-200">
+                        {req.user.studentId}
+                      </span>
+                    )}
                   </div>
                   {req.course && (
                     <div className="flex items-center gap-1.5 font-medium text-teal-700 bg-teal-50 px-2 py-0.5 rounded">
                       <BookOpen className="w-3.5 h-3.5" />
                       <span>{req.course.code}</span>
+                    </div>
+                  )}
+                  {(req.advisorName || req.course?.instructorName) && (
+                    <div className="flex items-center gap-1 text-[11px] font-medium text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full">
+                      <GraduationCap className="w-3.5 h-3.5 text-indigo-600" />
+                      <span>อาจารย์: {req.advisorName || req.course?.instructorName}</span>
                     </div>
                   )}
                 </div>
@@ -485,10 +516,18 @@ export default function BorrowPage() {
                 </label>
                 <select
                   value={newRequest.courseId}
-                  onChange={(e) => setNewRequest({ ...newRequest, courseId: e.target.value })}
+                  onChange={(e) => {
+                    const cid = e.target.value;
+                    const cMatch = courses.find((c) => c.id === cid);
+                    setNewRequest({
+                      ...newRequest,
+                      courseId: cid,
+                      advisorName: cMatch ? cMatch.instructorName : (newRequest.advisorName || (instructors[0]?.name || '')),
+                    });
+                  }}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                 >
-                  <option value="">-- ไม่ระบุรายวิชา (ฝึกทักษะทั่วไป) --</option>
+                  <option value="">-- ไม่ระบุรายวิชา (ฝึกทักษะทั่วไป / ซ้อมอิสระ) --</option>
                   {courses.map((c) => (
                     <option key={c.id} value={c.id}>
                       [{c.code}] {c.name}
@@ -496,6 +535,55 @@ export default function BorrowPage() {
                   ))}
                 </select>
               </div>
+
+              {/* Instructor / Advisor notification box for students */}
+              {newRequest.courseId ? (
+                // Case 1: In a course -> Auto detect and notify course instructor
+                <div className="p-3 rounded-xl bg-blue-50/70 border border-blue-200 text-xs space-y-1">
+                  <div className="flex items-center gap-1.5 font-bold text-blue-900">
+                    <GraduationCap className="w-4 h-4 text-blue-600" />
+                    <span>อาจารย์ประจำรายวิชา (ผู้รับทราบการยืม):</span>
+                  </div>
+                  <div className="text-blue-800 font-semibold pl-5">
+                    {courses.find((c) => c.id === newRequest.courseId)?.instructorName || 'อาจารย์ผู้รับผิดชอบรายวิชา'}
+                  </div>
+                  <p className="text-[11px] text-blue-600 pl-5">
+                    ✓ ระบบจะแจ้งให้อาจารย์ประจำวิชาทราบโดยอัตโนมัติสำหรับการฝึกปฏิบัติตามหลักสูตร
+                  </p>
+                </div>
+              ) : (
+                // Case 2: Not in course -> Select teacher / advisor
+                <div className="p-3 rounded-xl bg-amber-50/70 border border-amber-200 text-xs space-y-2">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-900">
+                    <GraduationCap className="w-4 h-4 text-amber-600" />
+                    <span>อาจารย์ผู้รับทราบ / อาจารย์ที่ปรึกษาการฝึกซ้อม *</span>
+                  </div>
+                  <p className="text-[11px] text-amber-700">
+                    เนื่องจากไม่ได้นำไปใช้ในรายวิชา กรุณาเลือกอาจารย์ผู้รับทราบเพื่อให้เจ้าหน้าที่ตรวจสอบก่อนส่งมอบ
+                  </p>
+                  <div className="space-y-1.5">
+                    <select
+                      value={newRequest.advisorName}
+                      onChange={(e) => setNewRequest({ ...newRequest, advisorName: e.target.value })}
+                      className="w-full bg-white border border-amber-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-amber-500/20"
+                    >
+                      <option value="">-- เลือกอาจารย์ผู้รับทราบในระบบ --</option>
+                      {instructors.map((ins) => (
+                        <option key={ins.id} value={ins.name}>
+                          {ins.name} ({ins.department || 'อาจารย์พยาบาล'})
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="text"
+                      placeholder="หรือพิมพ์ระบุชื่ออาจารย์ด้วยตนเอง (หากไม่มีในรายชื่อ)"
+                      value={newRequest.advisorName}
+                      onChange={(e) => setNewRequest({ ...newRequest, advisorName: e.target.value })}
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-700"
+                    />
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>

@@ -85,7 +85,7 @@ export default function Sidebar() {
       label: 'ศูนย์อนุมัติคำขอ',
       href: '/approvals',
       icon: CheckSquare,
-      roles: ['ADMIN', 'OFFICER', 'APPROVER'],
+      roles: ['ADMIN', 'OFFICER', 'APPROVER', 'USER'],
       badgeCount: pendingCount,
     },
     {

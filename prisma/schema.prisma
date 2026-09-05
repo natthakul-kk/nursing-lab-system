@@ -294,9 +294,26 @@ model RepackRecord {
   sterileExpiryDate   DateTime? // วันหมดอายุหลังอบสเตอร์ไรด์
   sterilizeMethod     String?   // วิธีการทำให้ปราศจากเชื้อ เช่น "Autoclave (ไอน้ำ)", "ETO (แก๊ส)", "พร้อมใช้ไม่ต้องอบ"
   operatorId          String
-  operator            User      @relation(fields: [operatorId], references: [id])
+  operator            User              @relation(fields: [operatorId], references: [id])
   note                String?
-  createdAt           DateTime  @default(now())
+  createdAt           DateTime          @default(now())
+
+  packItems           RepackPackItem[]
 }
+
+model RepackPackItem {
+  id              String       @id @default(cuid())
+  repackRecordId  String
+  repackRecord    RepackRecord @relation(fields: [repackRecordId], references: [id], onDelete: Cascade)
+  packNumber      Int          // ซองที่ 1, 2, ... N
+  packCode        String       @unique // เช่น SL-GAUZE-260905-01-P01 หรือ SL-GAUZE-260905-01/01
+  unitsCount      Int          // จำนวนชิ้นในซองนี้ เช่น 10 แผ่น
+  status          String       @default("AVAILABLE") // "AVAILABLE", "DISPENSED", "EXPIRED", "DAMAGED"
+  dispensedTo     String?      // ผู้เบิก หรือวิชาที่นำไปใช้
+  dispensedAt     DateTime?
+  note            String?
+  createdAt       DateTime     @default(now())
+}
+
 
 

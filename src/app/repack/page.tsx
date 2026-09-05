@@ -21,7 +21,11 @@ import {
   Sparkles,
   Boxes,
   QrCode,
-  Info
+  Info,
+  ListOrdered,
+  CheckCircle,
+  Hash,
+  Eye
 } from 'lucide-react';
 import { TableLoadingRow } from '@/components/common/LoadingSpinner';
 
@@ -50,8 +54,13 @@ export default function RepackPage() {
   });
   const [submitting, setSubmitting] = useState(false);
 
+  // View Pack Items Modal
+  const [selectedRecordForPacks, setSelectedRecordForPacks] = useState<any | null>(null);
+
   // Print Label Modal
   const [selectedRecordForLabel, setSelectedRecordForLabel] = useState<any | null>(null);
+  const [printMode, setPrintMode] = useState<'all_packs' | 'lot_summary' | 'single_pack'>('all_packs');
+  const [selectedPackForSinglePrint, setSelectedPackForSinglePrint] = useState<any | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -65,7 +74,7 @@ export default function RepackPage() {
     } catch (err) {
       console.error(err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   };
 
@@ -135,8 +144,8 @@ export default function RepackPage() {
 
       const data = await res.json();
       if (res.ok) {
-        alert('บันทึกการแบ่งบรรจุย่อยสำเร็จ! ล็อตย่อย: ' + data.record?.subLotNumber);
-        setShowModal(false)
+        alert('บันทึกการแบ่งบรรจุย่อยสำเร็จ! ล็อตย่อย: ' + data.record?.subLotNumber + ' พร้อมสร้างรหัสซอง 1 ถึง ' + (data.record?.packItems?.length || form.totalPacksProduced) + ' เรียบร้อย');
+        setShowModal(false);
         fetchData();
       } else {
         alert(data.error || 'เกิดข้อผิดพลาดในการบันทึก');
@@ -156,7 +165,8 @@ export default function RepackPage() {
       r.subLotNumber.toLowerCase().includes(term) ||
       r.sourceItem?.name.toLowerCase().includes(term) ||
       r.sourceLot?.lotNumber.toLowerCase().includes(term) ||
-      r.operator?.name.toLowerCase().includes(term)
+      r.operator?.name.toLowerCase().includes(term) ||
+      (r.packItems && r.packItems.some((p: any) => p.packCode.toLowerCase().includes(term)))
     );
   });
 
@@ -170,7 +180,7 @@ export default function RepackPage() {
             งานแบ่งบรรจุเวชภัณฑ์ & สเตอร์ไรด์ (Repacking & Sterilization)
           </h2>
           <p className="text-xs text-slate-500 mt-1">
-            จัดการเบิกเวชภัณฑ์ห่อใหญ่มาแบ่งเป็นซองย่อย กำหนด Sub-lot อบฆ่าเชื้อ และพิมพ์สติกเกอร์ฉลากซอง
+            จัดการเบิกเวชภัณฑ์ห่อใหญ่มาแบ่งเป็นซองย่อย กำหนด Sub-lot อบฆ่าเชื้อ ติดตามรายซอง (Pack 1..N) และพิมพ์สติกเกอร์ฉลาก
           </p>
         </div>
 
@@ -253,7 +263,7 @@ export default function RepackPage() {
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="ค้นหาเลขที่บันทึก, รหัส Sub-lot, ชื่อเวชภัณฑ์, ล็อตเดิม..."
+            placeholder="ค้นหาเลขที่บันทึก, รหัส Sub-lot, รหัสซองย่อย, ชื่อเวชภัณฑ์..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
@@ -272,10 +282,10 @@ export default function RepackPage() {
                 <th className="py-3 px-4">ล็อตโรงงานเดิม (Source Lot)</th>
                 <th className="py-3 px-4">รหัส Sub-lot ใหม่ของแล็บ</th>
                 <th className="py-3 px-4 text-center">ขนาดบรรจุ</th>
-                <th className="py-3 px-4 text-center">จำนวนที่ได้</th>
+                <th className="py-3 px-4 text-center">จำนวนซองย่อย</th>
                 <th className="py-3 px-4">วันหมดอายุสเตอร์ไรด์</th>
                 <th className="py-3 px-4">ผู้บันทึก / วิธีการ</th>
-                <th className="py-3 px-4 text-right print:hidden">จัดการ</th>
+                <th className="py-3 px-4 text-right print:hidden">การจัดการ</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -325,10 +335,23 @@ export default function RepackPage() {
                     </td>
 
                     <td className="py-3.5 px-4 text-center">
-                      <span className="font-black text-slate-900 text-sm">
-                        {r.totalPacksProduced}
-                      </span>{' '}
-                      <span className="text-slate-400 text-xs">ซอง</span>
+                      <div className="inline-flex items-center gap-1.5">
+                        <span className="font-black text-slate-900 text-sm">
+                          {r.totalPacksProduced}
+                        </span>{' '}
+                        <span className="text-slate-400 text-xs">ซอง</span>
+                      </div>
+                      {r.packItems && r.packItems.length > 0 && (
+                        <div className="mt-1">
+                          <button
+                            onClick={() => setSelectedRecordForPacks(r)}
+                            className="inline-flex items-center gap-1 text-[10px] font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 px-2 py-0.5 rounded-full border border-teal-200/60 transition cursor-pointer"
+                          >
+                            <ListOrdered className="w-3 h-3" />
+                            <span>ดูซอง 1-{r.packItems.length}</span>
+                          </button>
+                        </div>
+                      )}
                     </td>
 
                     <td className="py-3.5 px-4">
@@ -348,14 +371,30 @@ export default function RepackPage() {
                     </td>
 
                     <td className="py-3.5 px-4 text-right print:hidden">
-                      <button
-                        onClick={() => setSelectedRecordForLabel(r)}
-                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 hover:border-teal-500 hover:text-teal-600 hover:bg-teal-50 font-bold transition text-[11px] cursor-pointer"
-                        title="พิมพ์สติกเกอร์ฉลากซองสเตอร์ไรด์"
-                      >
-                        <Printer className="w-3.5 h-3.5" />
-                        <span>พิมพ์ฉลาก</span>
-                      </button>
+                      <div className="inline-flex items-center gap-1.5">
+                        {r.packItems && r.packItems.length > 0 && (
+                          <button
+                            onClick={() => setSelectedRecordForPacks(r)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 hover:border-slate-300 hover:bg-slate-50 font-bold transition text-[11px] text-slate-700 cursor-pointer"
+                            title="ดูรายซองย่อย"
+                          >
+                            <Eye className="w-3.5 h-3.5 text-slate-500" />
+                            <span>รายซอง</span>
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            setSelectedRecordForLabel(r);
+                            setPrintMode('all_packs');
+                            setSelectedPackForSinglePrint(null);
+                          }}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 hover:border-teal-500 hover:text-teal-600 hover:bg-teal-50 font-bold transition text-[11px] cursor-pointer"
+                          title="พิมพ์สติกเกอร์ฉลากซองสเตอร์ไรด์"
+                        >
+                          <Printer className="w-3.5 h-3.5" />
+                          <span>พิมพ์ฉลาก</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -364,6 +403,114 @@ export default function RepackPage() {
           </table>
         </div>
       </div>
+
+      {/* ========================================================================= */}
+      {/* MODAL: VIEW INDIVIDUAL PACK ITEMS (รายซองย่อย 1..N) */}
+      {/* ========================================================================= */}
+      {selectedRecordForPacks && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600">
+                  <ListOrdered className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                    <span>รายการซองย่อยในล็อต</span>
+                    <span className="font-mono text-xs bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded border border-emerald-200">
+                      {selectedRecordForPacks.subLotNumber}
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    {selectedRecordForPacks.sourceItem?.name} | ผลิตได้ทั้งหมด {selectedRecordForPacks.totalPacksProduced} ซอง (ซองละ {selectedRecordForPacks.unitsPerPack} {selectedRecordForPacks.sourceItem?.usageUnit || 'ชิ้น'})
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedRecordForPacks(null)}
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content: List of Packs */}
+            <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {selectedRecordForPacks.packItems && selectedRecordForPacks.packItems.length > 0 ? (
+                  selectedRecordForPacks.packItems.map((pack: any) => (
+                    <div
+                      key={pack.id || pack.packNumber}
+                      className="p-3 rounded-2xl border border-slate-200/80 bg-slate-50/50 hover:bg-white hover:border-teal-300 transition flex items-center justify-between"
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-6 h-6 rounded-lg bg-teal-600 text-white font-bold text-xs flex items-center justify-center font-mono">
+                            #{pack.packNumber}
+                          </span>
+                          <span className="font-mono font-black text-slate-900 text-xs">
+                            {pack.packCode}
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-slate-500 pl-7">
+                          บรรจุ: <b>{pack.unitsCount || selectedRecordForPacks.unitsPerPack}</b> {selectedRecordForPacks.sourceItem?.usageUnit || 'ชิ้น'}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                            pack.status === 'AVAILABLE'
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                              : 'bg-slate-100 text-slate-500 border-slate-200'
+                          }`}
+                        >
+                          {pack.status === 'AVAILABLE' ? 'พร้อมใช้งาน' : 'เบิกแล้ว'}
+                        </span>
+                        <button
+                          onClick={() => {
+                            setSelectedRecordForLabel(selectedRecordForPacks);
+                            setSelectedPackForSinglePrint(pack);
+                            setPrintMode('single_pack');
+                          }}
+                          className="p-1.5 rounded-lg border border-slate-200 hover:border-teal-500 hover:text-teal-600 hover:bg-teal-50 transition cursor-pointer"
+                          title="พิมพ์ฉลากเฉพาะซองนี้"
+                        >
+                          <Printer className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="col-span-2 py-8 text-center text-slate-400">
+                    ไม่มีรายการซองย่อยที่ถูกสร้างสำหรับบันทึกนี้
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+              <span className="text-xs text-slate-500">
+                รวมทั้งหมด <b>{selectedRecordForPacks.packItems?.length || 0}</b> ซองย่อย
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setSelectedRecordForLabel(selectedRecordForPacks);
+                    setPrintMode('all_packs');
+                    setSelectedPackForSinglePrint(null);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition cursor-pointer"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>พิมพ์สติกเกอร์ครบทุกซอง (1..{selectedRecordForPacks.packItems?.length || selectedRecordForPacks.totalPacksProduced})</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* MODAL: NEW REPACK FORM */}
@@ -381,7 +528,7 @@ export default function RepackPage() {
                     บันทึกการแบ่งบรรจุเวชภัณฑ์ย่อย (Sub-packaging & Sterilization)
                   </h3>
                   <p className="text-xs text-slate-500">
-                    เบิกจากห่อใหญ่/ถุงใหญ่ ตัดสต็อกเดิม และสร้าง Sub-lot ปราศจากเชื้อใหม่
+                    เบิกจากห่อใหญ่/ถุงใหญ่ ตัดสต็อกเดิม และสร้าง Sub-lot ปราศจากเชื้อใหม่พร้อมสร้างรหัสรายซองอัตโนมัติ
                   </p>
                 </div>
               </div>
@@ -608,17 +755,22 @@ export default function RepackPage() {
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL: PRINT SUB-LOT STERILE LABELS */}
+      {/* MODAL: PRINT SUB-LOT STERILE LABELS (ครบทุกซองย่อย หรือ ล็อตรวม) */}
       {/* ========================================================================= */}
       {selectedRecordForLabel && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 print:hidden">
               <div className="flex items-center gap-2">
                 <Tag className="w-5 h-5 text-teal-600" />
-                <h3 className="font-bold text-slate-900 text-base">
-                  ฉลากติดซองเวชภัณฑ์ปราศจากเชื้อ (Sterile Label)
-                </h3>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-base">
+                    พิมพ์สติกเกอร์ฉลากซองเวชภัณฑ์ปราศจากเชื้อ (Sterile Label)
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    เลือกรูปแบบการพิมพ์สำหรับติดหน้าซองเวชภัณฑ์
+                  </p>
+                </div>
               </div>
               <button
                 onClick={() => setSelectedRecordForLabel(null)}
@@ -628,63 +780,215 @@ export default function RepackPage() {
               </button>
             </div>
 
-            {/* Printable Sticker Preview Box */}
-            <div className="border-2 border-dashed border-teal-500/40 bg-teal-50/30 p-5 rounded-2xl space-y-2 text-slate-900">
-              <div className="border-b border-slate-300 pb-2 text-center">
-                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                  คณะพยาบาลศาสตร์ - หน่วยจ่ายกลางและแล็บฝึกปฏิบัติการ
-                </div>
-                <div className="text-base font-black text-slate-900 mt-1">
-                  {selectedRecordForLabel.sourceItem?.name}
-                </div>
-                <div className="text-xs font-bold text-teal-800">
-                  บรรจุซองละ {selectedRecordForLabel.unitsPerPack} {selectedRecordForLabel.sourceItem?.usageUnit || 'ชิ้น'}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 text-xs py-1.5 font-medium">
-                <div>
-                  <span className="text-slate-500 text-[10px] block">รหัส Sub-lot:</span>
-                  <span className="font-mono font-bold text-slate-900">{selectedRecordForLabel.subLotNumber}</span>
-                </div>
-                <div>
-                  <span className="text-slate-500 text-[10px] block">อ้างอิง Lot เดิม:</span>
-                  <span className="font-mono text-slate-700">{selectedRecordForLabel.sourceLot?.lotNumber}</span>
-                </div>
-                <div>
-                  <span className="text-slate-500 text-[10px] block">วันที่แพ็ค/อบ:</span>
-                  <span>{new Date(selectedRecordForLabel.packedDate).toLocaleDateString('th-TH')}</span>
-                </div>
-                <div>
-                  <span className="text-slate-500 text-[10px] block">วันหมดอายุสเตอร์ไรด์:</span>
-                  <span className="font-bold text-rose-600">
-                    {selectedRecordForLabel.sterileExpiryDate
-                      ? new Date(selectedRecordForLabel.sterileExpiryDate).toLocaleDateString('th-TH')
-                      : '-'}
-                  </span>
-                </div>
-              </div>
-
-              <div className="pt-2 border-t border-slate-200 text-[10px] text-slate-500 flex justify-between items-center">
-                <span>วิธี: {selectedRecordForLabel.sterilizeMethod}</span>
-                <span>ผู้เตรียม: {selectedRecordForLabel.operator?.name}</span>
-              </div>
+            {/* Mode Selector (Hidden in Print) */}
+            <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-2xl print:hidden text-xs font-bold">
+              <button
+                onClick={() => setPrintMode('all_packs')}
+                className={`flex-1 py-2 rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                  printMode === 'all_packs'
+                    ? 'bg-white text-teal-700 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Layers className="w-4 h-4" />
+                <span>พิมพ์สติกเกอร์ครบทุกซอง ({selectedRecordForLabel.packItems?.length || selectedRecordForLabel.totalPacksProduced} ซอง)</span>
+              </button>
+              <button
+                onClick={() => setPrintMode('lot_summary')}
+                className={`flex-1 py-2 rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                  printMode === 'lot_summary'
+                    ? 'bg-white text-teal-700 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Tag className="w-4 h-4" />
+                <span>ฉลากสรุปรวมทั้งล็อต (1 ใบ)</span>
+              </button>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 print:hidden">
-              <button
-                onClick={() => setSelectedRecordForLabel(null)}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 transition cursor-pointer"
-              >
-                ปิด
-              </button>
-              <button
-                onClick={() => window.print()}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition cursor-pointer"
-              >
-                <Printer className="w-4 h-4" />
-                <span>พิมพ์สติกเกอร์ฉลากซอง</span>
-              </button>
+            {/* Printable Content Area */}
+            <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+              {/* MODE 1: ALL PACKS GRID */}
+              {printMode === 'all_packs' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 print:grid-cols-2 print:gap-2">
+                  {(selectedRecordForLabel.packItems && selectedRecordForLabel.packItems.length > 0
+                    ? selectedRecordForLabel.packItems
+                    : Array.from({ length: selectedRecordForLabel.totalPacksProduced }).map((_, idx) => ({
+                        packNumber: idx + 1,
+                        packCode: `${selectedRecordForLabel.subLotNumber}-P${String(idx + 1).padStart(2, '0')}`,
+                        unitsCount: selectedRecordForLabel.unitsPerPack,
+                      }))
+                  ).map((pack: any) => (
+                    <div
+                      key={pack.packCode || pack.packNumber}
+                      className="border-2 border-dashed border-teal-500/40 bg-teal-50/20 p-3.5 rounded-2xl space-y-1.5 text-slate-900 print:border-slate-800 print:bg-white print:p-2.5 print:rounded-lg print:break-inside-avoid"
+                    >
+                      <div className="border-b border-slate-200 pb-1 flex items-center justify-between">
+                        <span className="text-[9px] font-bold text-slate-500 uppercase">
+                          คณะพยาบาลศาสตร์ แล็บปฏิบัติการ
+                        </span>
+                        <span className="font-mono font-black text-[10px] text-teal-800 bg-teal-100 px-1.5 py-0.2 rounded">
+                          ซองที่ {pack.packNumber}/{selectedRecordForLabel.totalPacksProduced}
+                        </span>
+                      </div>
+
+                      <div className="font-black text-slate-900 text-xs">
+                        {selectedRecordForLabel.sourceItem?.name}
+                      </div>
+
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="font-mono font-bold text-teal-900">
+                          {pack.packCode}
+                        </span>
+                        <span className="font-bold text-slate-700">
+                          {pack.unitsCount || selectedRecordForLabel.unitsPerPack} {selectedRecordForLabel.sourceItem?.usageUnit || 'ชิ้น'}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-1 text-[10px] text-slate-600 pt-1 border-t border-slate-200">
+                        <div>
+                          <span>อบ: </span>
+                          <span className="font-medium">
+                            {new Date(selectedRecordForLabel.packedDate).toLocaleDateString('th-TH')}
+                          </span>
+                        </div>
+                        <div>
+                          <span>หมดอายุ: </span>
+                          <span className="font-bold text-rose-600">
+                            {selectedRecordForLabel.sterileExpiryDate
+                              ? new Date(selectedRecordForLabel.sterileExpiryDate).toLocaleDateString('th-TH')
+                              : '-'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="text-[9px] text-slate-400 flex justify-between pt-0.5">
+                        <span className="truncate max-w-[120px]">วิธี: {selectedRecordForLabel.sterilizeMethod?.split(' ')[0]}</span>
+                        <span className="truncate max-w-[100px]">ผู้เตรียม: {selectedRecordForLabel.operator?.name?.split(' ')[0]}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* MODE 2: LOT SUMMARY */}
+              {printMode === 'lot_summary' && (
+                <div className="border-2 border-dashed border-teal-500/40 bg-teal-50/30 p-5 rounded-2xl space-y-2 text-slate-900 print:border-slate-800 print:bg-white">
+                  <div className="border-b border-slate-300 pb-2 text-center">
+                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                      คณะพยาบาลศาสตร์ - หน่วยจ่ายกลางและแล็บฝึกปฏิบัติการ
+                    </div>
+                    <div className="text-base font-black text-slate-900 mt-1">
+                      {selectedRecordForLabel.sourceItem?.name}
+                    </div>
+                    <div className="text-xs font-bold text-teal-800">
+                      บรรจุซองละ {selectedRecordForLabel.unitsPerPack} {selectedRecordForLabel.sourceItem?.usageUnit || 'ชิ้น'} (รวม {selectedRecordForLabel.totalPacksProduced} ซอง)
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs py-1.5 font-medium">
+                    <div>
+                      <span className="text-slate-500 text-[10px] block">รหัส Sub-lot:</span>
+                      <span className="font-mono font-bold text-slate-900">{selectedRecordForLabel.subLotNumber}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 text-[10px] block">อ้างอิง Lot เดิม:</span>
+                      <span className="font-mono text-slate-700">{selectedRecordForLabel.sourceLot?.lotNumber}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 text-[10px] block">วันที่แพ็ค/อบ:</span>
+                      <span>{new Date(selectedRecordForLabel.packedDate).toLocaleDateString('th-TH')}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 text-[10px] block">วันหมดอายุสเตอร์ไรด์:</span>
+                      <span className="font-bold text-rose-600">
+                        {selectedRecordForLabel.sterileExpiryDate
+                          ? new Date(selectedRecordForLabel.sterileExpiryDate).toLocaleDateString('th-TH')
+                          : '-'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-200 text-[10px] text-slate-500 flex justify-between items-center">
+                    <span>วิธี: {selectedRecordForLabel.sterilizeMethod}</span>
+                    <span>ผู้เตรียม: {selectedRecordForLabel.operator?.name}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* MODE 3: SINGLE PACK */}
+              {printMode === 'single_pack' && selectedPackForSinglePrint && (
+                <div className="max-w-sm mx-auto border-2 border-dashed border-teal-500/40 bg-teal-50/30 p-4 rounded-2xl space-y-2 text-slate-900 print:border-slate-800 print:bg-white">
+                  <div className="border-b border-slate-200 pb-1.5 flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase">
+                      คณะพยาบาลศาสตร์ แล็บปฏิบัติการ
+                    </span>
+                    <span className="font-mono font-black text-xs text-teal-800 bg-teal-100 px-2 py-0.5 rounded">
+                      ซองที่ {selectedPackForSinglePrint.packNumber}/{selectedRecordForLabel.totalPacksProduced}
+                    </span>
+                  </div>
+
+                  <div className="font-black text-slate-900 text-sm">
+                    {selectedRecordForLabel.sourceItem?.name}
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-mono font-bold text-teal-900 text-sm">
+                      {selectedPackForSinglePrint.packCode}
+                    </span>
+                    <span className="font-bold text-slate-700">
+                      {selectedPackForSinglePrint.unitsCount || selectedRecordForLabel.unitsPerPack} {selectedRecordForLabel.sourceItem?.usageUnit || 'ชิ้น'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600 pt-1.5 border-t border-slate-200">
+                    <div>
+                      <span className="block text-[9px] text-slate-400">วันที่อบฆ่าเชื้อ:</span>
+                      <span className="font-medium">
+                        {new Date(selectedRecordForLabel.packedDate).toLocaleDateString('th-TH')}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="block text-[9px] text-slate-400">วันหมดอายุสเตอร์ไรด์:</span>
+                      <span className="font-bold text-rose-600">
+                        {selectedRecordForLabel.sterileExpiryDate
+                          ? new Date(selectedRecordForLabel.sterileExpiryDate).toLocaleDateString('th-TH')
+                          : '-'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="text-[10px] text-slate-400 flex justify-between pt-1 border-t border-slate-200">
+                    <span>วิธี: {selectedRecordForLabel.sterilizeMethod}</span>
+                    <span>ผู้เตรียม: {selectedRecordForLabel.operator?.name}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between pt-3 border-t border-slate-100 print:hidden">
+              <span className="text-xs text-slate-500">
+                {printMode === 'all_packs'
+                  ? `พร้อมพิมพ์สติกเกอร์จำนวน ${selectedRecordForLabel.packItems?.length || selectedRecordForLabel.totalPacksProduced} ใบ`
+                  : printMode === 'single_pack'
+                  ? `พิมพ์สติกเกอร์ซองที่ ${selectedPackForSinglePrint?.packNumber}`
+                  : 'พิมพ์ฉลากสรุปรวมทั้งล็อต 1 ใบ'}
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setSelectedRecordForLabel(null)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 transition cursor-pointer"
+                >
+                  ปิด
+                </button>
+                <button
+                  onClick={() => window.print()}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition cursor-pointer"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>พิมพ์ออกเครื่องพิมพ์</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

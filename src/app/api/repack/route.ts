@@ -11,6 +11,9 @@ export async function GET(req: Request) {
           sourceLot: true,
           targetItem: true,
           operator: true,
+          packItems: {
+            orderBy: { packNumber: 'asc' },
+          },
         },
         orderBy: { packedDate: 'desc' },
       }),
@@ -157,7 +160,17 @@ export async function POST(req: Request) {
       },
     });
 
-    // 5. Create RepackRecord
+    // 5. Create RepackRecord with individual RepackPackItems
+    const packItemsData = [];
+    for (let i = 1; i <= totalPacksProduced; i++) {
+      packItemsData.push({
+        packNumber: i,
+        packCode: `${autoSubLot}-P${String(i).padStart(2, '0')}`,
+        unitsCount: unitsPerPack || 1,
+        status: 'AVAILABLE',
+      });
+    }
+
     const record = await prisma.repackRecord.create({
       data: {
         recordNumber,
@@ -172,11 +185,17 @@ export async function POST(req: Request) {
         sterilizeMethod: sterilizeMethod || 'Autoclave (ไอน้ำ)',
         operatorId,
         note: note || null,
+        packItems: {
+          create: packItemsData,
+        },
       },
       include: {
         sourceItem: true,
         sourceLot: true,
         operator: true,
+        packItems: {
+          orderBy: { packNumber: 'asc' },
+        },
       },
     });
 

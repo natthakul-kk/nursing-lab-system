@@ -130,6 +130,7 @@ model StockLot {
   lotNumber         String
   quantityInitial   Int
   quantityRemaining Int
+  openPackRemainder Int       @default(0) // เศษชิ้นที่เหลือในซอง/กล่องที่เปิดใช้แล้ว (Loose pieces in opened pack)
   unitCost          Float
   expiryDate        DateTime?
   receivedDate      DateTime  @default(now())

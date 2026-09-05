@@ -43,9 +43,15 @@ export async function GET(req: Request) {
           ? item.assets.length
           : item.stockLots.reduce((sum, lot) => sum + lot.quantityRemaining, 0);
 
+      const openPackRemainder =
+        item.type === 'CONSUMABLE'
+          ? item.stockLots.reduce((sum, lot) => sum + (lot.openPackRemainder || 0), 0)
+          : 0;
+
       return {
         ...item,
         currentStock,
+        openPackRemainder,
         totalQuantity,
         isLowStock: currentStock <= item.minStockAlert,
       };

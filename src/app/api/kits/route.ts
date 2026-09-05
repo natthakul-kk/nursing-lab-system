@@ -44,6 +44,11 @@ export async function GET(req: Request) {
           maxAvailable = possibleSets;
         }
 
+        const openPackRemainder =
+          kitItem.item.type === 'CONSUMABLE'
+            ? kitItem.item.stockLots.reduce((sum, lot) => sum + (lot.openPackRemainder || 0), 0)
+            : 0;
+
         return {
           id: kitItem.id,
           itemId: kitItem.itemId,
@@ -51,10 +56,13 @@ export async function GET(req: Request) {
           code: kitItem.item.code,
           type: kitItem.item.type,
           unit: kitItem.item.unit,
+          usageUnit: kitItem.item.usageUnit,
+          conversionRatio: kitItem.item.conversionRatio || 1,
           category: kitItem.item.category.name,
           quantityPerKit: kitItem.quantity,
           currentStock: currentAvailableStock,
-          isSufficient: currentAvailableStock >= kitItem.quantity,
+          openPackRemainder,
+          isSufficient: currentAvailableStock >= kitItem.quantity || openPackRemainder >= kitItem.quantity,
         };
       });
 

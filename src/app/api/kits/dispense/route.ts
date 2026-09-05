@@ -2,17 +2,20 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 // POST: Instant Kit Preparation & Stock Dispensing for a Class Session
+// Supports: Open Pack Remainder & Bonus Remainder (เศษซองเปิด + แถมเศษเคลียร์ตู้)
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const {
       kitId,
-      setsToPrepare, // จำนวนชุดที่ต้องการจัด เช่น 5 ชุด
+      setsToPrepare, // จำนวนชุดที่ต้องการจัด เช่น 3 ชุด
       userId,
       courseId,
       instructorName,
       roomOrLocation,
       note,
+      useOpenPackFirst = true,     // ดึงจากเศษซองเปิดก่อนถ้ามี
+      giveRemainderAsBonus = false, // แถมเศษที่เหลือในซองให้นักศึกษาไปด้วย (เคลียร์ซองเปิด)
     } = body;
 
     if (!kitId || !setsToPrepare || Number(setsToPrepare) < 1) {
@@ -24,7 +27,7 @@ export async function POST(req: Request) {
 
     const numSets = Number(setsToPrepare);
 
-    // 1. Fetch PracticeKit with items and current stocks
+    // 1. Fetch PracticeKit with items and current stocks & lots
     const kit = await prisma.practiceKit.findUnique({
       where: { id: kitId },
       include: {
@@ -34,7 +37,12 @@ export async function POST(req: Request) {
               include: {
                 category: true,
                 stockLots: {
-                  where: { quantityRemaining: { gt: 0 } },
+                  where: {
+                    OR: [
+                      { quantityRemaining: { gt: 0 } },
+                      { openPackRemainder: { gt: 0 } },
+                    ],
+                  },
                   orderBy: [{ expiryDate: 'asc' }, { receivedDate: 'asc' }],
                 },
                 assets: {
@@ -57,18 +65,27 @@ export async function POST(req: Request) {
       course = await prisma.course.findUnique({ where: { id: courseId } });
     }
 
-    // 3. Pre-check stock availability for all items
+    // 3. Pre-check stock availability
     const shortageItems: string[] = [];
     kit.items.forEach((kitItem) => {
       const requiredQty = kitItem.quantity * numSets;
       if (kitItem.item.type === 'CONSUMABLE') {
-        const availableInLots = kitItem.item.stockLots.reduce(
+        const availableWholePacks = kitItem.item.stockLots.reduce(
           (sum, lot) => sum + lot.quantityRemaining,
           0
         );
-        if (availableInLots < requiredQty) {
+        const availableOpenPieces = kitItem.item.stockLots.reduce(
+          (sum, lot) => sum + (lot.openPackRemainder || 0),
+          0
+        );
+        const ratio = Number(kitItem.item.conversionRatio) || 1;
+        const totalPiecesAvailable = (availableWholePacks * ratio) + availableOpenPieces;
+
+        // If kitItem specifies in packs or pieces
+        const piecesNeeded = ratio > 1 ? requiredQty : requiredQty;
+        if (availableWholePacks < 1 && availableOpenPieces < piecesNeeded) {
           shortageItems.push(
-            `${kitItem.item.name}: ต้องการ ${requiredQty} ${kitItem.item.unit} แต่มีเพียง ${availableInLots} ${kitItem.item.unit}`
+            `${kitItem.item.name}: ต้องการ ${piecesNeeded} ${kitItem.item.usageUnit || kitItem.item.unit} แต่มีไม่พอ`
           );
         }
       }
@@ -90,77 +107,168 @@ export async function POST(req: Request) {
     const dispensedSummary: any[] = [];
     let totalValueDispensed = 0;
 
-    // 5. Execute FIFO deduction for consumable items
+    // 5. Execute Deduction with Open Pack & Bonus Support
     for (const kitItem of kit.items) {
       const requiredQty = kitItem.quantity * numSets;
 
       if (kitItem.item.type === 'CONSUMABLE') {
-        let remainingToDeduct = requiredQty;
+        const ratio = Number(kitItem.item.conversionRatio) || 1;
+        const isRepackWithPieces = ratio > 1;
+
+        let piecesNeeded = requiredQty;
+        let piecesTakenFromOpenPack = 0;
+        let wholePacksOpened = 0;
+        let remainderLeftInPack = 0;
+        let bonusPiecesGiven = 0;
         let itemTotalCost = 0;
         const usedLotsInfo: any[] = [];
 
         for (const lot of kitItem.item.stockLots) {
-          if (remainingToDeduct <= 0) break;
+          if (piecesNeeded <= 0) break;
 
-          const deductFromLot = Math.min(lot.quantityRemaining, remainingToDeduct);
-          const costForDeduction = deductFromLot * lot.unitCost;
+          let currentOpenRemainder = lot.openPackRemainder || 0;
+          let currentWholePacks = lot.quantityRemaining || 0;
 
-          // Deduct from stock lot
+          // Step A: Use loose pieces from already open pack if enabled
+          if (useOpenPackFirst && currentOpenRemainder > 0) {
+            const takeFromOpen = Math.min(currentOpenRemainder, piecesNeeded);
+            piecesTakenFromOpenPack += takeFromOpen;
+            currentOpenRemainder -= takeFromOpen;
+            piecesNeeded -= takeFromOpen;
+
+            // If user checked "giveRemainderAsBonus" and some remainder still sits in this open pack
+            if (giveRemainderAsBonus && currentOpenRemainder > 0 && piecesNeeded <= 0) {
+              bonusPiecesGiven += currentOpenRemainder;
+              currentOpenRemainder = 0;
+            }
+          }
+
+          // Step B: If more pieces still needed, open whole packs
+          if (piecesNeeded > 0 && currentWholePacks > 0) {
+            if (isRepackWithPieces) {
+              // Calculate how many whole packs to open
+              const packsRequired = Math.ceil(piecesNeeded / ratio);
+              const packsToDeduct = Math.min(currentWholePacks, packsRequired);
+              const piecesProvided = packsToDeduct * ratio;
+
+              wholePacksOpened += packsToDeduct;
+              currentWholePacks -= packsToDeduct;
+
+              const costForPacks = packsToDeduct * lot.unitCost;
+              itemTotalCost += costForPacks;
+
+              if (piecesProvided >= piecesNeeded) {
+                const leftover = piecesProvided - piecesNeeded;
+                piecesNeeded = 0;
+
+                if (giveRemainderAsBonus && leftover > 0) {
+                  // Give remainder to student as bonus
+                  bonusPiecesGiven += leftover;
+                  currentOpenRemainder = 0;
+                } else {
+                  // Keep remainder in open pack pool
+                  currentOpenRemainder += leftover;
+                  remainderLeftInPack = currentOpenRemainder;
+                }
+              } else {
+                piecesNeeded -= piecesProvided;
+              }
+            } else {
+              // Normal 1:1 unit item
+              const deductQty = Math.min(currentWholePacks, piecesNeeded);
+              wholePacksOpened += deductQty;
+              currentWholePacks -= deductQty;
+              itemTotalCost += deductQty * lot.unitCost;
+              piecesNeeded -= deductQty;
+            }
+          }
+
+          // Update stock lot in DB
           await prisma.stockLot.update({
             where: { id: lot.id },
             data: {
-              quantityRemaining: lot.quantityRemaining - deductFromLot,
+              quantityRemaining: currentWholePacks,
+              openPackRemainder: currentOpenRemainder,
             },
           });
 
-          // Create stock transaction record
+          // Build descriptive note for transaction
+          const noteDetails: string[] = [];
+          if (wholePacksOpened > 0) {
+            noteDetails.push(`เปิดซองใหม่ ${wholePacksOpened} ${kitItem.item.unit}`);
+          }
+          if (piecesTakenFromOpenPack > 0) {
+            noteDetails.push(`ดึงจากเศษซองเปิด ${piecesTakenFromOpenPack} ${kitItem.item.usageUnit || kitItem.item.unit}`);
+          }
+          if (bonusPiecesGiven > 0) {
+            noteDetails.push(`🎁 แถมเศษ ${bonusPiecesGiven} ${kitItem.item.usageUnit || kitItem.item.unit} เคลียร์ซอง`);
+          } else if (remainderLeftInPack > 0) {
+            noteDetails.push(`เก็บเศษในซองเปิด ${remainderLeftInPack} ${kitItem.item.usageUnit || kitItem.item.unit}`);
+          }
+
+          const fullNote = `จัดเตรียมชุดฝึก ${kit.name} (${numSets} ชุด) - ${noteDetails.join(' | ')}`;
+
+          // Record transaction
           await prisma.stockTransaction.create({
             data: {
               itemId: kitItem.itemId,
               lotId: lot.id,
               type: 'OUT_REQUISITION',
-              quantity: -deductFromLot,
+              quantity: -(wholePacksOpened || piecesTakenFromOpenPack),
               unitCost: lot.unitCost,
-              totalCost: costForDeduction,
+              totalCost: itemTotalCost,
               courseId: courseId || null,
               referenceNumber: prepReference,
               createdById: userId || null,
-              note: `จัดเตรียมชุดฝึก: ${kit.name} (${numSets} ชุด) สำหรับวิชา ${course ? `[${course.code}] ${course.name}` : 'ทั่วไป'}`,
+              note: fullNote,
             },
           });
 
           usedLotsInfo.push({
             lotNumber: lot.lotNumber,
-            deducted: deductFromLot,
+            wholePacksOpened,
+            piecesTakenFromOpenPack,
+            bonusPiecesGiven,
+            remainderLeftInPack: currentOpenRemainder,
             unitCost: lot.unitCost,
           });
-
-          itemTotalCost += costForDeduction;
-          remainingToDeduct -= deductFromLot;
         }
 
         totalValueDispensed += itemTotalCost;
+
         dispensedSummary.push({
           itemId: kitItem.itemId,
           name: kitItem.item.name,
           code: kitItem.item.code,
           type: 'CONSUMABLE',
           unit: kitItem.item.unit,
+          usageUnit: kitItem.item.usageUnit || kitItem.item.unit,
+          ratio,
+          isRepackWithPieces,
           qtyPerSet: kitItem.quantity,
-          totalQtyDispensed: requiredQty,
+          totalQtyRequested: requiredQty,
+          piecesTakenFromOpenPack,
+          wholePacksOpened,
+          bonusPiecesGiven,
+          remainderLeftInPack,
           totalCost: itemTotalCost,
           usedLots: usedLotsInfo,
         });
       } else {
-        // Equipment (Assigned to class session)
+        // Equipment
         dispensedSummary.push({
           itemId: kitItem.itemId,
           name: kitItem.item.name,
           code: kitItem.item.code,
           type: 'EQUIPMENT',
           unit: kitItem.item.unit,
+          usageUnit: kitItem.item.unit,
           qtyPerSet: kitItem.quantity,
-          totalQtyDispensed: requiredQty,
+          totalQtyRequested: requiredQty,
+          piecesTakenFromOpenPack: 0,
+          wholePacksOpened: requiredQty,
+          bonusPiecesGiven: 0,
+          remainderLeftInPack: 0,
           totalCost: 0,
           usedLots: [],
         });
@@ -184,6 +292,8 @@ export async function POST(req: Request) {
       instructorName: instructorName || '-',
       roomOrLocation: roomOrLocation || 'ห้องปฏิบัติการพยาบาล',
       note: note || '',
+      useOpenPackFirst,
+      giveRemainderAsBonus,
       totalValueDispensed,
       items: dispensedSummary,
     });

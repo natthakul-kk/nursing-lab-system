@@ -837,6 +837,13 @@ export default function InventoryPage() {
                                 </span>
                                 <span className="text-slate-500 text-xs">{item.unit}</span>
                               </div>
+                              {item.openPackRemainder > 0 && (
+                                <div className="mt-0.5">
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 font-bold text-[10px] border border-purple-200">
+                                    🔓 เศษเปิด {item.openPackRemainder} {item.usageUnit || 'ชิ้น'}
+                                  </span>
+                                </div>
+                              )}
                               {item.isLowStock && (
                                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-rose-50 text-rose-600 font-bold text-[10px]">
                                   <AlertTriangle className="w-2.5 h-2.5" /> ต่ำกว่าเกณฑ์ ({item.minStockAlert})
@@ -1144,6 +1151,11 @@ export default function InventoryPage() {
                                                 {lot.quantityRemaining}
                                               </span>{' '}
                                               {item.unit}
+                                              {lot.openPackRemainder > 0 && (
+                                                <span className="ml-2 px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 font-bold text-[10px] border border-purple-200">
+                                                  + เศษเปิด {lot.openPackRemainder} {item.usageUnit || 'ชิ้น'}
+                                                </span>
+                                              )}
                                             </td>
                                             <td className="py-2 text-slate-700">
                                               ฿{lot.unitCost.toFixed(2)}

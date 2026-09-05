@@ -89,6 +89,8 @@ export default function PracticeKitsPage() {
     instructorName: '',
     roomOrLocation: 'ห้องปฏิบัติการพยาบาล 1 (Lab 1)',
     note: '',
+    useOpenPackFirst: true,
+    giveRemainderAsBonus: false,
   });
   const [prepareSubmitting, setPrepareSubmitting] = useState(false);
 
@@ -202,6 +204,8 @@ export default function PracticeKitsPage() {
       instructorName: '',
       roomOrLocation: 'ห้องปฏิบัติการพยาบาล 1 (Lab 1)',
       note: 'จัดเตรียมชุดฝึกหัตถการประจำคาบเรียน',
+      useOpenPackFirst: true,
+      giveRemainderAsBonus: false,
     });
   };
 
@@ -222,6 +226,8 @@ export default function PracticeKitsPage() {
           instructorName: prepareForm.instructorName,
           roomOrLocation: prepareForm.roomOrLocation,
           note: prepareForm.note,
+          useOpenPackFirst: prepareForm.useOpenPackFirst,
+          giveRemainderAsBonus: prepareForm.giveRemainderAsBonus,
         }),
       });
 
@@ -788,6 +794,54 @@ export default function PracticeKitsPage() {
                 />
               </div>
 
+              {/* Open Pack & Remainder Options */}
+              <div className="p-3.5 bg-purple-50/70 border border-purple-200/80 rounded-2xl space-y-2.5">
+                <div className="text-xs font-bold text-purple-900 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <Package className="w-3.5 h-3.5 text-purple-700" />
+                    การจัดการซองย่อยและเศษคงเหลือ (Open Pack & Remainder):
+                  </span>
+                </div>
+
+                <div className="space-y-2 text-xs">
+                  <label className="flex items-start gap-2 cursor-pointer text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={prepareForm.useOpenPackFirst}
+                      onChange={(e) =>
+                        setPrepareForm({ ...prepareForm, useOpenPackFirst: e.target.checked })
+                      }
+                      className="mt-0.5 rounded text-teal-600 focus:ring-teal-500 w-4 h-4 cursor-pointer"
+                    />
+                    <div>
+                      <span className="font-bold text-slate-800">ดึงจากเศษซองเปิดก่อน (ถ้ามีเศษในซองเดิม)</span>
+                      <p className="text-[11px] text-slate-500">
+                        หากในคลังมีซองที่เคยเปิดใช้ค้างอยู่ ระบบจะดึงเศษชิ้นนั้นมาจัดให้ก่อน เพื่อไม่ให้มีซองเปิดค้างหลายซอง
+                      </p>
+                    </div>
+                  </label>
+
+                  <label className="flex items-start gap-2 cursor-pointer text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={prepareForm.giveRemainderAsBonus}
+                      onChange={(e) =>
+                        setPrepareForm({ ...prepareForm, giveRemainderAsBonus: e.target.checked })
+                      }
+                      className="mt-0.5 rounded text-purple-600 focus:ring-purple-500 w-4 h-4 cursor-pointer"
+                    />
+                    <div>
+                      <span className="font-bold text-purple-900 flex items-center gap-1">
+                        🎁 แถมเศษที่เหลือให้นักศึกษาไปด้วยเลย (เคลียร์ซองเปิด)
+                      </span>
+                      <p className="text-[11px] text-slate-500">
+                        หากเปิดซองแล้วมีเศษเหลือ หรือมีเศษเหลือน้อย จะแถมให้นักศึกษาไปทั้งหมด สต็อกเศษจะถูกตัดเป็น 0 ตู้สต็อกสะอาด
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
               {/* Pre-Check Stock Breakdown Table */}
               <div className="space-y-1.5 pt-2 border-t border-slate-100">
                 <div className="flex items-center justify-between text-[11px] font-bold text-slate-700">
@@ -823,16 +877,21 @@ export default function PracticeKitsPage() {
                           <span className="text-slate-700 truncate">{c.name}</span>
                         </div>
 
-                        <div className="flex items-center gap-3 font-mono text-[10px]">
+                        <div className="flex items-center gap-2.5 font-mono text-[10px]">
                           <span className="text-slate-700 font-bold">
                             ใช้ {totalNeeded} {c.unit}
                           </span>
+                          {c.openPackRemainder > 0 && (
+                            <span className="text-purple-700 font-bold bg-purple-50 px-1 py-0.5 rounded border border-purple-200">
+                              เศษเปิด {c.openPackRemainder}
+                            </span>
+                          )}
                           <span
                             className={`font-bold ${
                               isEnough ? 'text-emerald-600' : 'text-rose-600'
                             }`}
                           >
-                            {isEnough ? 'พอจัด ✅' : 'ไม่พอ ❌'}
+                            {isEnough ? 'พร้อม ✅' : 'ไม่พอ ❌'}
                           </span>
                         </div>
                       </div>
@@ -1158,8 +1217,28 @@ export default function PracticeKitsPage() {
                           <td className="p-2 border border-slate-300 text-center font-mono">
                             {item.qtyPerSet} {item.unit}
                           </td>
-                          <td className="p-2 border border-slate-300 text-center font-mono font-bold">
-                            {item.totalQtyDispensed} {item.unit}
+                          <td className="p-2 border border-slate-300 text-center font-mono">
+                            <div className="font-bold text-slate-900">{item.totalQtyRequested || item.totalQtyDispensed} {item.unit}</div>
+                            {item.piecesTakenFromOpenPack > 0 && (
+                              <div className="text-[10px] text-purple-700 font-sans font-medium">
+                                • จากเศษซองเปิด {item.piecesTakenFromOpenPack} {item.usageUnit}
+                              </div>
+                            )}
+                            {item.wholePacksOpened > 0 && (
+                              <div className="text-[10px] text-slate-600 font-sans">
+                                • ซองใหม่ {item.wholePacksOpened} {item.unit}
+                              </div>
+                            )}
+                            {item.bonusPiecesGiven > 0 && (
+                              <div className="text-[10px] text-emerald-700 font-sans font-bold bg-emerald-50 rounded px-1 py-0.2 mt-0.5">
+                                🎁 แถมเศษ {item.bonusPiecesGiven} {item.usageUnit}
+                              </div>
+                            )}
+                            {item.remainderLeftInPack > 0 && (
+                              <div className="text-[10px] text-slate-400 font-sans">
+                                (เหลือเศษในซอง {item.remainderLeftInPack} {item.usageUnit})
+                              </div>
+                            )}
                           </td>
                           <td className="p-2 border border-slate-300 text-center">
                             <div className="inline-flex items-center gap-2 text-[10px]">

@@ -358,6 +358,54 @@ export default function InventoryPage() {
     fetchCategories();
   }, []);
 
+
+  // ฟังก์ชันสร้างรหัสพัสดุอัตโนมัติตามประเภทและหมวดหมู่
+  const generateSuggestedItemCode = (type: string, categoryId: string, currentItems: any[]) => {
+    const cat = categories.find((c) => c.id === categoryId);
+    const catName = cat?.name || '';
+    
+    if (type === 'CONSUMABLE') {
+      let group = 'GEN';
+      if (catName.includes('ฉีด') || catName.includes('สารน้ำ') || catName.includes('IV')) {
+        group = 'IV';
+      } else if (catName.includes('แผล') || catName.includes('ผ่าตัด') || catName.includes('ฆ่าเชื้อ')) {
+        group = 'WD';
+      } else if (catName.includes('ป้องกัน') || catName.includes('PPE') || catName.includes('ถุงมือ')) {
+        group = 'PPE';
+      }
+
+      // หาเลขรหัสสูงสุดในกลุ่มนี้
+      const prefix = `CON-${group}-`;
+      const existingInGroup = currentItems.filter((i) => i.code && i.code.startsWith(prefix));
+      let maxNum = 0;
+      existingInGroup.forEach((i) => {
+        const parts = i.code.split('-');
+        const num = parseInt(parts[parts.length - 1], 10);
+        if (!isNaN(num) && num > maxNum) maxNum = num;
+      });
+      return `${prefix}${String(maxNum + 1).padStart(3, '0')}`;
+    } else {
+      let group = 'EQ';
+      if (catName.includes('หุ่น') || catName.includes('โมเดล')) {
+        group = 'MNK';
+      } else if (catName.includes('สัญญาณชีพ') || catName.includes('ตรวจ')) {
+        group = 'MED';
+      } else if (catName.includes('หัตถการ')) {
+        group = 'PRO';
+      }
+
+      const prefix = `EQ-${group}-`;
+      const existingInGroup = currentItems.filter((i) => i.code && i.code.startsWith(prefix));
+      let maxNum = 0;
+      existingInGroup.forEach((i) => {
+        const parts = i.code.split('-');
+        const num = parseInt(parts[parts.length - 1], 10);
+        if (!isNaN(num) && num > maxNum) maxNum = num;
+      });
+      return `${prefix}${String(maxNum + 1).padStart(3, '0')}`;
+    }
+  };
+
   const handleCreateItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newItem.code || !newItem.name || !newItem.categoryId) {
@@ -524,7 +572,23 @@ export default function InventoryPage() {
             </button>
 
             <button
-              onClick={() => setShowAddModal(true)}
+              onClick={() => {
+                const defaultCatId = categories[0]?.id || '';
+                const suggestedCode = generateSuggestedItemCode('CONSUMABLE', defaultCatId, items);
+                setNewItem({
+                  code: suggestedCode,
+                  name: '',
+                  type: 'CONSUMABLE',
+                  categoryId: defaultCatId,
+                  unit: 'กล่อง',
+                  usageUnit: '',
+                  conversionRatio: '' as any,
+                  minStockAlert: '' as any,
+                  location: '',
+                  description: '',
+                });
+                setShowAddModal(true);
+              }}
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition cursor-pointer"
             >
               <Plus className="w-4 h-4" />
@@ -1063,9 +1127,16 @@ export default function InventoryPage() {
                   </label>
                   <select
                     value={newItem.type}
-                    onChange={(e) =>
-                      setNewItem({ ...newItem, type: e.target.value })
-                    }
+                    onChange={(e) => {
+                      const newType = e.target.value;
+                      const suggested = generateSuggestedItemCode(newType, newItem.categoryId, items);
+                      setNewItem({
+                        ...newItem,
+                        type: newType,
+                        code: suggested,
+                        unit: newType === 'CONSUMABLE' ? 'กล่อง' : 'เครื่อง',
+                      });
+                    }}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                   >
                     <option value="EQUIPMENT">ครุภัณฑ์คงทน (Equipment)</option>
@@ -1074,19 +1145,35 @@ export default function InventoryPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    รหัสพัสดุ (Item Code)
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-700">
+                      รหัสพัสดุ (Item Code) *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const suggested = generateSuggestedItemCode(newItem.type, newItem.categoryId, items);
+                        setNewItem({ ...newItem, code: suggested });
+                      }}
+                      className="text-[10px] font-bold text-teal-700 hover:text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-200 transition cursor-pointer"
+                      title="กดเพื่อรันเลขรหัสถัดไปอัตโนมัติตามหมวดหมู่"
+                    >
+                      ⚡ รันรหัสอัตโนมัติ
+                    </button>
+                  </div>
                   <input
                     type="text"
                     required
-                    placeholder="เช่น EQ-MNK-003, CON-IV-005"
+                    placeholder="เช่น CON-IV-005, CON-PPE-002"
                     value={newItem.code}
                     onChange={(e) =>
                       setNewItem({ ...newItem, code: e.target.value })
                     }
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono font-bold text-teal-900 focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                   />
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    * ระบบสร้างรหัสให้อัตโนมัติตามหมวดหมู่ (แก้ไขเองได้)
+                  </p>
                 </div>
               </div>
 
@@ -1113,9 +1200,15 @@ export default function InventoryPage() {
                   </label>
                   <select
                     value={newItem.categoryId}
-                    onChange={(e) =>
-                      setNewItem({ ...newItem, categoryId: e.target.value })
-                    }
+                    onChange={(e) => {
+                      const newCatId = e.target.value;
+                      const suggested = generateSuggestedItemCode(newItem.type, newCatId, items);
+                      setNewItem({
+                        ...newItem,
+                        categoryId: newCatId,
+                        code: suggested,
+                      });
+                    }}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                   >
                     {categories.map((c) => (
@@ -1168,9 +1261,9 @@ export default function InventoryPage() {
                       <input
                         type="number"
                         min="1"
-                        placeholder="เช่น 50 (1 กล่อง = 50 คู่)"
+                        placeholder="เช่น 100"
                         value={newItem.conversionRatio}
-                        onChange={(e) => setNewItem({ ...newItem, conversionRatio: Math.max(1, Number(e.target.value) || 1) })}
+                        onChange={(e) => setNewItem({ ...newItem, conversionRatio: e.target.value === '' ? ('' as any) : Number(e.target.value) })}
                         className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-teal-800 focus:ring-2 focus:ring-teal-500"
                       />
                     </div>
@@ -1189,9 +1282,10 @@ export default function InventoryPage() {
                   <input
                     type="number"
                     min="1"
+                    placeholder="เช่น 5"
                     value={newItem.minStockAlert}
                     onChange={(e) =>
-                      setNewItem({ ...newItem, minStockAlert: Number(e.target.value) })
+                      setNewItem({ ...newItem, minStockAlert: e.target.value === '' ? ('' as any) : Number(e.target.value) })
                     }
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                   />

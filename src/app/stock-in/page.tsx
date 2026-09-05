@@ -32,8 +32,8 @@ export default function StockInPage() {
   const [form, setForm] = useState({
     itemId: '',
     lotNumber: '',
-    quantity: 50,
-    unitCost: 25.0,
+    quantity: '' as any,
+    unitCost: '' as any,
     expiryDate: '',
     supplier: '',
     assetCode: '',
@@ -157,8 +157,8 @@ export default function StockInPage() {
         setForm({
           itemId: form.itemId,
           lotNumber: '',
-          quantity: 50,
-          unitCost: 25.0,
+          quantity: '' as any,
+          unitCost: '' as any,
           expiryDate: '',
           supplier: '',
           assetCode: '',
@@ -304,7 +304,8 @@ export default function StockInPage() {
                       required
                       min="1"
                       value={form.quantity}
-                      onChange={(e) => setForm({ ...form, quantity: Number(e.target.value) })}
+                      placeholder="กรอกจำนวนที่รับเข้า..."
+                      onChange={(e) => setForm({ ...form, quantity: e.target.value === '' ? '' : Number(e.target.value) })}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                     />
                   </div>
@@ -320,7 +321,8 @@ export default function StockInPage() {
                         min="0"
                         required
                         value={form.unitCost}
-                        onChange={(e) => setForm({ ...form, unitCost: Number(e.target.value) })}
+                        placeholder="0.00"
+                        onChange={(e) => setForm({ ...form, unitCost: e.target.value === '' ? '' : Number(e.target.value) })}
                         className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 pl-7 text-xs font-bold text-emerald-700 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                       />
                       <span className="absolute left-2.5 top-2 text-slate-400 text-xs font-bold">฿</span>
@@ -334,10 +336,13 @@ export default function StockInPage() {
                     มูลค่ารับเข้ารวมในครั้งนี้:
                   </span>
                   <span className="text-base font-black text-emerald-700">
-                    ฿{(form.quantity * form.unitCost).toLocaleString('th-TH', {
-                      minimumFractionDigits: 2,
-                    })}{' '}
-                    บาท
+                    {form.quantity && form.unitCost ? (
+                      '฿' + (Number(form.quantity) * Number(form.unitCost)).toLocaleString('th-TH', {
+                        minimumFractionDigits: 2,
+                      }) + ' บาท'
+                    ) : (
+                      <span className="text-xs font-normal text-slate-400 italic">รอระบุจำนวนและราคา...</span>
+                    )}
                   </span>
                 </div>
 

@@ -22,9 +22,15 @@ import {
   Sparkles,
   Clock,
   Info,
-  RefreshCw
+  RefreshCw,
+  Printer,
+  Zap,
+  FileText,
+  CheckSquare,
+  MapPin,
+  Flame
 } from 'lucide-react';
-import LoadingSpinner, { TableLoadingRow } from '@/components/common/LoadingSpinner';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 export default function PracticeKitsPage() {
   const { currentUser, isOfficer, isAdmin } = useAuth();
@@ -37,7 +43,7 @@ export default function PracticeKitsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
 
-  // Quick Request Modal State
+  // Quick Request Modal State (For Student/Borrower)
   const [requestTargetKit, setRequestTargetKit] = useState<any | null>(null);
   const [requestForm, setRequestForm] = useState({
     setsRequested: 1,
@@ -61,6 +67,34 @@ export default function PracticeKitsPage() {
   });
   const [createSubmitting, setCreateSubmitting] = useState(false);
 
+  // Edit Kit Modal State
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editTargetKit, setEditTargetKit] = useState<any | null>(null);
+  const [editForm, setEditForm] = useState({
+    id: '',
+    code: '',
+    name: '',
+    category: 'หัตถการพื้นฐาน',
+    description: '',
+    targetCourse: '',
+    items: [{ itemId: '', quantity: 1 }],
+  });
+  const [editSubmitting, setEditSubmitting] = useState(false);
+
+  // Prepare Kit for Class Modal State (Direct Dispense by Staff/Officer)
+  const [prepareTargetKit, setPrepareTargetKit] = useState<any | null>(null);
+  const [prepareForm, setPrepareForm] = useState({
+    setsToPrepare: 5,
+    courseId: '',
+    instructorName: '',
+    roomOrLocation: 'ห้องปฏิบัติการพยาบาล 1 (Lab 1)',
+    note: '',
+  });
+  const [prepareSubmitting, setPrepareSubmitting] = useState(false);
+
+  // Checklist Sheet Print Modal State
+  const [prepChecklist, setPrepChecklist] = useState<any | null>(null);
+
   const fetchKitsAndItems = async () => {
     setLoading(true);
     try {
@@ -83,6 +117,7 @@ export default function PracticeKitsPage() {
         setCourses(cData);
         if (cData.length > 0 && !requestForm.courseId) {
           setRequestForm((prev) => ({ ...prev, courseId: cData[0].id }));
+          setPrepareForm((prev) => ({ ...prev, courseId: cData[0].id }));
         }
       }
     } catch (err) {
@@ -108,13 +143,14 @@ export default function PracticeKitsPage() {
     return matchesSearch && matchesCat;
   });
 
+  // Open Quick Request
   const handleOpenRequest = (kit: any) => {
     setRequestTargetKit(kit);
     setRequestForm({
       setsRequested: 1,
       courseId: courses[0]?.id || '',
       advisorName: '',
-      purpose: 'สำหรับการฝึกปฏิบัติการในรายวิชา',
+      purpose: 'สำหรับการฝึกปฏิบัติการในรายวิชา ' + (kit.targetCourse || ''),
       borrowDate: new Date().toISOString().slice(0, 16),
       expectedReturnDate: new Date(Date.now() + 4 * 3600 * 1000).toISOString().slice(0, 16),
     });
@@ -143,7 +179,7 @@ export default function PracticeKitsPage() {
 
       const data = await res.json();
       if (res.ok) {
-        alert('ยื่นคำขอชุดฝึก ' + requestTargetKit.name + ' จำนวน ' + requestForm.setsRequested + ' ชุด สำเร็จ! ระบบได้สร้างคำขอไปยังศูนย์อนุมัติเรียบร้อยแล้ว');
+        alert('ยื่นคำขอชุดฝึก ' + requestTargetKit.name + ' จำนวน ' + requestForm.setsRequested + ' ชุด สำเร็จ! ระบบได้ส่งเรื่องไปยังศูนย์อนุมัติเรียบร้อยแล้ว');
         setRequestTargetKit(null);
         fetchKitsAndItems();
       } else {
@@ -157,6 +193,110 @@ export default function PracticeKitsPage() {
     }
   };
 
+  // Open Prepare for Class Modal
+  const handleOpenPrepare = (kit: any) => {
+    setPrepareTargetKit(kit);
+    setPrepareForm({
+      setsToPrepare: Math.min(kit.maxAvailableKits || 1, 5) || 1,
+      courseId: courses[0]?.id || '',
+      instructorName: '',
+      roomOrLocation: 'ห้องปฏิบัติการพยาบาล 1 (Lab 1)',
+      note: 'จัดเตรียมชุดฝึกหัตถการประจำคาบเรียน',
+    });
+  };
+
+  const handleSubmitPrepare = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!prepareTargetKit) return;
+    setPrepareSubmitting(true);
+
+    try {
+      const res = await fetch('/api/kits/dispense', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          kitId: prepareTargetKit.id,
+          setsToPrepare: prepareForm.setsToPrepare,
+          userId: currentUser?.id,
+          courseId: prepareForm.courseId,
+          instructorName: prepareForm.instructorName,
+          roomOrLocation: prepareForm.roomOrLocation,
+          note: prepareForm.note,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setPrepareTargetKit(null);
+        setPrepChecklist(data);
+        fetchKitsAndItems();
+      } else {
+        alert(data.error || 'เกิดข้อผิดพลาดในการตัดสต็อกจัดเตรียมชุดฝึก');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+    } finally {
+      setPrepareSubmitting(false);
+    }
+  };
+
+  // Open Edit Kit Modal
+  const handleOpenEdit = (kit: any) => {
+    setEditTargetKit(kit);
+    setEditForm({
+      id: kit.id,
+      code: kit.code,
+      name: kit.name,
+      category: kit.category || 'หัตถการพื้นฐาน',
+      description: kit.description || '',
+      targetCourse: kit.targetCourse || '',
+      items: kit.components?.map((c: any) => ({
+        itemId: c.itemId,
+        quantity: c.quantityPerKit,
+      })) || [{ itemId: allItems[0]?.id || '', quantity: 1 }],
+    });
+    setShowEditModal(true);
+  };
+
+  const handleUpdateKit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editForm.name || editForm.items.length === 0) {
+      alert('กรุณากรอกชื่อชุดฝึกและเลือกส่วนประกอบอย่างน้อย 1 รายการ');
+      return;
+    }
+    setEditSubmitting(true);
+
+    try {
+      const res = await fetch('/api/kits/' + editForm.id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editForm.name,
+          category: editForm.category,
+          description: editForm.description,
+          targetCourse: editForm.targetCourse,
+          items: editForm.items,
+        }),
+      });
+
+      if (res.ok) {
+        setShowEditModal(false);
+        setEditTargetKit(null);
+        fetchKitsAndItems();
+      } else {
+        const err = await res.json();
+        alert(err.error || 'เกิดข้อผิดพลาดในการแก้ไขชุดฝึก');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+    } finally {
+      setEditSubmitting(false);
+    }
+  };
+
+  // Create Kit
   const handleAddKitItemRow = () => {
     if (allItems.length > 0) {
       setKitForm((prev) => ({
@@ -168,6 +308,22 @@ export default function PracticeKitsPage() {
 
   const handleRemoveKitItemRow = (idx: number) => {
     setKitForm((prev) => ({
+      ...prev,
+      items: prev.items.filter((_, i) => i !== idx),
+    }));
+  };
+
+  const handleAddEditItemRow = () => {
+    if (allItems.length > 0) {
+      setEditForm((prev) => ({
+        ...prev,
+        items: [...prev.items, { itemId: allItems[0].id, quantity: 1 }],
+      }));
+    }
+  };
+
+  const handleRemoveEditItemRow = (idx: number) => {
+    setEditForm((prev) => ({
       ...prev,
       items: prev.items.filter((_, i) => i !== idx),
     }));
@@ -225,6 +381,17 @@ export default function PracticeKitsPage() {
     }
   };
 
+  // Helper function to format item label with Repack / Unit / Stock
+  const getItemOptionLabel = (it: any) => {
+    const isRepack = it.code?.startsWith('RP-') || it.name?.includes('ซองละ') || it.name?.includes('ปลอดเชื้อ');
+    const typeLabel = isRepack
+      ? '📦 [Repack]'
+      : it.type === 'EQUIPMENT'
+      ? '🩺 [ครุภัณฑ์]'
+      : '🧪 [สิ้นเปลือง]';
+    return `${typeLabel} ${it.name} (${it.code}) - เหลือ ${it.currentStock ?? 0} ${it.unit}`;
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -235,7 +402,7 @@ export default function PracticeKitsPage() {
             ชุดฝึกปฏิบัติการพยาบาล (Practice Kits & Set Kits)
           </h2>
           <p className="text-xs text-slate-500 mt-1">
-            ชุดอุปกรณ์และเวชภัณฑ์สำเร็จรูปสำหรับฝึกหัตถการตามรายวิชา ขอยืมและเบิกได้ในคลิกเดียว
+            รวมรายการครุภัณฑ์ เวชภัณฑ์ทั่วไป และวัสดุแบ่งบรรจุ (Repack) สำเร็จรูปสำหรับคาบเรียนแล็บ ตัดสต็อกและพิมพ์ใบตรวจรับได้ทันที
           </p>
         </div>
 
@@ -251,52 +418,54 @@ export default function PracticeKitsPage() {
           {isStaff && (
             <button
               onClick={() => {
+                setKitForm({
+                  code: '',
+                  name: '',
+                  category: 'หัตถการพื้นฐาน',
+                  description: '',
+                  targetCourse: '',
+                  items: [{ itemId: allItems[0]?.id || '', quantity: 1 }],
+                });
                 setShowCreateModal(true);
-                if (allItems.length > 0 && !kitForm.items[0].itemId) {
-                  setKitForm((prev) => ({
-                    ...prev,
-                    items: [{ itemId: allItems[0].id, quantity: 1 }],
-                  }));
-                }
               }}
               className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>สร้างชุดฝึกใหม่</span>
+              <span>สร้างชุดฝึกปฏิบัติการใหม่</span>
             </button>
           )}
         </div>
       </div>
 
-      {/* Search and Category Filter */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl w-full md:w-auto overflow-x-auto">
+      {/* Filter and Search Bar */}
+      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-3 items-center justify-between">
+        <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
           <button
             onClick={() => setSelectedCategory('ALL')}
-            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition whitespace-nowrap cursor-pointer ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition cursor-pointer ${
               selectedCategory === 'ALL'
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-500 hover:text-slate-900'
+                ? 'bg-teal-600 text-white shadow-sm'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
-            ทุกหมวดหมู่ ({kits.length})
+            ทั้งหมด ({kits.length})
           </button>
           {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition whitespace-nowrap cursor-pointer ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition cursor-pointer ${
                 selectedCategory === cat
-                  ? 'bg-white text-teal-700 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-900'
+                  ? 'bg-teal-600 text-white shadow-sm'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
-              {cat} ({kits.filter((k) => k.category === cat).length})
+              {cat}
             </button>
           ))}
         </div>
 
-        <div className="relative w-full md:w-80">
+        <div className="relative w-full md:w-72">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
@@ -317,19 +486,10 @@ export default function PracticeKitsPage() {
       ) : filteredKits.length === 0 ? (
         <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center space-y-3">
           <BriefcaseMedical className="w-12 h-12 text-slate-300 mx-auto" />
-          <h3 className="text-base font-bold text-slate-700">ยังไม่มีชุดฝึกปฏิบัติการในระบบ</h3>
+          <h3 className="text-base font-bold text-slate-700">ยังไม่มีชุดฝึกปฏิบัติการในหมวดหมู่นี้</h3>
           <p className="text-xs text-slate-400 max-w-md mx-auto">
-            เจ้าหน้าที่แล็บหรือแอดมินสามารถสร้างชุดฝึกปฏิบัติการมาตรฐาน (เช่น ชุดทำแผล, ชุดสวนปัสสาวะ) เพื่อให้นิสิตและอาจารย์กดเลือกใช้ได้ทันที
+            เจ้าหน้าที่แล็บหรือแอดมินสามารถสร้างชุดฝึกมาตรฐาน พร้อมเลือกวัสดุย่อยที่แบ่งบรรจุ (Repack) เพื่อให้นิสิตและอาจารย์เบิกใช้ได้ทันที
           </p>
-          {isStaff && (
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md transition cursor-pointer mt-2"
-            >
-              <Plus className="w-4 h-4" />
-              <span>สร้างชุดฝึกปฏิบัติการแรก</span>
-            </button>
-          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -352,14 +512,24 @@ export default function PracticeKitsPage() {
                         {kit.name}
                       </h3>
                     </div>
+
                     {isStaff && (
-                      <button
-                        onClick={() => handleDeleteKit(kit)}
-                        className="text-slate-300 hover:text-rose-600 p-1 rounded-lg hover:bg-rose-50 transition cursor-pointer"
-                        title="ลบชุดฝึกนี้"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleOpenEdit(kit)}
+                          className="text-slate-400 hover:text-teal-600 p-1.5 rounded-lg hover:bg-teal-50 transition cursor-pointer"
+                          title="แก้ไขชุดฝึกนี้"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteKit(kit)}
+                          className="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition cursor-pointer"
+                          title="ลบชุดฝึกนี้"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     )}
                   </div>
 
@@ -380,37 +550,58 @@ export default function PracticeKitsPage() {
                     </p>
                   )}
 
-                  {/* Components Breakdown */}
+                  {/* Components Breakdown with Repack tags */}
                   <div className="pt-2 border-t border-slate-100 space-y-1.5">
                     <div className="text-[11px] font-bold text-slate-700 flex items-center justify-between">
                       <span>ส่วนประกอบในชุด ({kit.components?.length || 0} รายการ):</span>
                       <span className="text-[10px] text-slate-400 font-normal">จำนวนต่อ 1 ชุด</span>
                     </div>
-                    <div className="space-y-1 max-h-36 overflow-y-auto pr-1 text-xs">
-                      {kit.components?.map((c: any) => (
-                        <div
-                          key={c.id}
-                          className="flex items-center justify-between text-[11px] py-1 px-2 rounded bg-slate-50 border border-slate-100"
-                        >
-                          <div className="flex items-center gap-1.5 truncate max-w-[200px]">
-                            <span
-                              className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-                                c.type === 'EQUIPMENT' ? 'bg-blue-500' : 'bg-teal-500'
-                              }`}
-                            />
-                            <span className="text-slate-700 font-medium truncate">{c.name}</span>
+
+                    <div className="space-y-1.5 max-h-44 overflow-y-auto pr-1 text-xs">
+                      {kit.components?.map((c: any) => {
+                        const isRepack = c.code?.startsWith('RP-') || c.name?.includes('ซองละ') || c.name?.includes('ปลอดเชื้อ');
+
+                        return (
+                          <div
+                            key={c.id}
+                            className="flex items-center justify-between text-[11px] py-1.5 px-2.5 rounded-xl bg-slate-50 border border-slate-100/80 hover:bg-slate-100/80 transition"
+                          >
+                            <div className="flex items-center gap-1.5 truncate max-w-[210px]">
+                              {isRepack ? (
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200 flex-shrink-0">
+                                  Repack
+                                </span>
+                              ) : c.type === 'EQUIPMENT' ? (
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 flex-shrink-0">
+                                  ครุภัณฑ์
+                                </span>
+                              ) : (
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-teal-50 text-teal-700 border border-teal-200 flex-shrink-0">
+                                  สิ้นเปลือง
+                                </span>
+                              )}
+                              <span className="text-slate-700 font-medium truncate" title={c.name}>
+                                {c.name}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-2 text-right">
+                              <span className="text-slate-700 font-bold font-mono text-[11px]">
+                                x {c.quantityPerKit} {c.unit}
+                              </span>
+                              <span className="text-[10px] text-slate-400 font-mono">
+                                ({c.currentStock})
+                              </span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1 text-slate-600 font-bold font-mono text-[11px]">
-                            <span>x {c.quantityPerKit} {c.unit}</span>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
 
-                {/* Card Footer: Stock Readiness & Action */}
-                <div className="p-4 bg-slate-50/80 border-t border-slate-100 flex items-center justify-between gap-3">
+                {/* Card Footer: Stock Readiness & Actions */}
+                <div className="p-4 bg-slate-50/80 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
                   <div>
                     <div className="text-[10px] text-slate-400 font-medium">สต็อกพร้อมจัดได้</div>
                     <div
@@ -426,19 +617,35 @@ export default function PracticeKitsPage() {
                       ) : (
                         <>
                           <AlertTriangle className="w-4 h-4 text-rose-500" />
-                          <span>อุปกรณ์ไม่พอจัด</span>
+                          <span>อุปกรณ์/วัสดุไม่พอจัด</span>
                         </>
                       )}
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => handleOpenRequest(kit)}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition cursor-pointer"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-teal-200" />
-                    <span>ขอยืม/เบิกชุดนี้</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {/* For Staff: Direct Class Prep / Dispense */}
+                    {isStaff && (
+                      <button
+                        onClick={() => handleOpenPrepare(kit)}
+                        disabled={!isAvailable}
+                        className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1 px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-white text-xs font-bold shadow-sm shadow-amber-500/20 transition disabled:opacity-50 cursor-pointer"
+                        title="ตัดสต็อกและพิมพ์ใบจัดเตรียมชุดสำหรับคาบเรียน"
+                      >
+                        <Zap className="w-3.5 h-3.5" />
+                        <span>จัดเตรียมชุดแล็บ</span>
+                      </button>
+                    )}
+
+                    {/* Quick Request for Students/Users */}
+                    <button
+                      onClick={() => handleOpenRequest(kit)}
+                      className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1 px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition cursor-pointer"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-teal-200" />
+                      <span>ขอยืม/เบิกชุดนี้</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             );
@@ -447,7 +654,547 @@ export default function PracticeKitsPage() {
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL: QUICK REQUEST FOR KIT */}
+      {/* MODAL 1: PREPARE KIT FOR CLASS (INSTANT DISPENSE) */}
+      {/* ========================================================================= */}
+      {prepareTargetKit && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600">
+                  <Zap className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-base">
+                    จัดเตรียมชุดสำหรับคาบเรียน (Prepare for Class)
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    ตัดสต็อกวัสดุสิ้นเปลือง/Repack อัตโนมัติ (FIFO) พร้อมออกใบตรวจรับอุปกรณ์
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setPrepareTargetKit(null)}
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitPrepare} className="space-y-4">
+              {/* Kit Info */}
+              <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-mono font-bold text-teal-700 bg-teal-50 px-2 py-0.5 rounded border border-teal-200/60">
+                    {prepareTargetKit.code}
+                  </span>
+                  <div className="font-bold text-slate-900 text-xs mt-1">
+                    {prepareTargetKit.name}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-[10px] text-slate-400 font-medium">สต็อกพร้อมจัดสูงสุด</div>
+                  <div className="text-xs font-black text-emerald-600">
+                    {prepareTargetKit.maxAvailableKits} ชุด
+                  </div>
+                </div>
+              </div>
+
+              {/* Number of Sets to Prepare */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    จำนวนชุดที่ต้องการจัดเตรียม *
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max={prepareTargetKit.maxAvailableKits || 100}
+                    value={prepareForm.setsToPrepare}
+                    onChange={(e) =>
+                      setPrepareForm({
+                        ...prepareForm,
+                        setsToPrepare: Math.max(1, parseInt(e.target.value) || 1),
+                      })
+                    }
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-center text-teal-700 focus:ring-2 focus:ring-teal-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    สำหรับรายวิชา *
+                  </label>
+                  <select
+                    value={prepareForm.courseId}
+                    onChange={(e) => setPrepareForm({ ...prepareForm, courseId: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500"
+                    required
+                  >
+                    {courses.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.code} {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Instructor & Location */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    อาจารย์ผู้สอนประจำคาบ
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="เช่น อ. ดร. วิมลรัตน์"
+                    value={prepareForm.instructorName}
+                    onChange={(e) =>
+                      setPrepareForm({ ...prepareForm, instructorName: e.target.value })
+                    }
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    ห้องปฏิบัติการ / สถานที่
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="เช่น Lab 2 ตึกพยาบาลศาสตร์"
+                    value={prepareForm.roomOrLocation}
+                    onChange={(e) =>
+                      setPrepareForm({ ...prepareForm, roomOrLocation: e.target.value })
+                    }
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500"
+                  />
+                </div>
+              </div>
+
+              {/* Note */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  หมายเหตุเพิ่มเติม
+                </label>
+                <input
+                  type="text"
+                  placeholder="เช่น ฝึกหัตถการกลุ่มเรียนวันจันทร์บ่าย"
+                  value={prepareForm.note}
+                  onChange={(e) => setPrepareForm({ ...prepareForm, note: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs"
+                />
+              </div>
+
+              {/* Pre-Check Stock Breakdown Table */}
+              <div className="space-y-1.5 pt-2 border-t border-slate-100">
+                <div className="flex items-center justify-between text-[11px] font-bold text-slate-700">
+                  <span>ประมาณการยอดตัดสต็อก ({prepareForm.setsToPrepare} ชุด):</span>
+                  <span className="text-[10px] text-slate-400">หักยอด FIFO</span>
+                </div>
+
+                <div className="max-h-36 overflow-y-auto space-y-1 pr-1">
+                  {prepareTargetKit.components?.map((c: any) => {
+                    const totalNeeded = c.quantityPerKit * prepareForm.setsToPrepare;
+                    const isEnough = c.currentStock >= totalNeeded;
+                    const isRepack = c.code?.startsWith('RP-') || c.name?.includes('ซองละ');
+
+                    return (
+                      <div
+                        key={c.id}
+                        className="flex items-center justify-between text-[11px] py-1 px-2.5 rounded-lg bg-slate-50 border border-slate-100"
+                      >
+                        <div className="flex items-center gap-1.5 truncate max-w-[240px]">
+                          {isRepack ? (
+                            <span className="text-[8px] font-bold px-1 py-0.2 rounded bg-purple-100 text-purple-700">
+                              Repack
+                            </span>
+                          ) : c.type === 'EQUIPMENT' ? (
+                            <span className="text-[8px] font-bold px-1 py-0.2 rounded bg-blue-100 text-blue-700">
+                              ครุภัณฑ์
+                            </span>
+                          ) : (
+                            <span className="text-[8px] font-bold px-1 py-0.2 rounded bg-teal-100 text-teal-700">
+                              สิ้นเปลือง
+                            </span>
+                          )}
+                          <span className="text-slate-700 truncate">{c.name}</span>
+                        </div>
+
+                        <div className="flex items-center gap-3 font-mono text-[10px]">
+                          <span className="text-slate-700 font-bold">
+                            ใช้ {totalNeeded} {c.unit}
+                          </span>
+                          <span
+                            className={`font-bold ${
+                              isEnough ? 'text-emerald-600' : 'text-rose-600'
+                            }`}
+                          >
+                            {isEnough ? 'พอจัด ✅' : 'ไม่พอ ❌'}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setPrepareTargetKit(null)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 transition cursor-pointer"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  type="submit"
+                  disabled={prepareSubmitting}
+                  className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-white text-xs font-bold shadow-md shadow-amber-500/20 transition disabled:opacity-50 cursor-pointer inline-flex items-center gap-1.5"
+                >
+                  <Zap className="w-4 h-4" />
+                  <span>{prepareSubmitting ? 'กำลังตัดสต็อก...' : 'ยืนยันจัดเตรียมชุดแล็บ'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 2: EDIT PRACTICE KIT */}
+      {/* ========================================================================= */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] overflow-y-auto flex flex-col">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600">
+                  <Edit3 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-base">
+                    แก้ไขชุดฝึกปฏิบัติการ (Edit Practice Kit)
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    ปรับปรุงชื่อ รายวิชา และส่วนประกอบวัสดุย่อยในชุดฝึก
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateKit} className="space-y-4 flex-1">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    ชื่อชุดฝึกปฏิบัติการ *
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.name}
+                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">รหัสชุด</label>
+                  <input
+                    type="text"
+                    value={editForm.code}
+                    disabled
+                    className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono text-slate-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    หมวดหมู่หัตถการ
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.category}
+                    onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    รายวิชาที่ใช้บ่อย
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.targetCourse}
+                    onChange={(e) => setEditForm({ ...editForm, targetCourse: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  รายละเอียด / หัตถการที่ใช้
+                </label>
+                <textarea
+                  rows={2}
+                  value={editForm.description}
+                  onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs"
+                />
+              </div>
+
+              {/* Edit Components in Kit */}
+              <div className="space-y-2 pt-2 border-t border-slate-100">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-800">
+                    รายการอุปกรณ์และเวชภัณฑ์ในชุด (ต่อ 1 เซ็ต) *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleAddEditItemRow}
+                    className="inline-flex items-center gap-1 text-xs font-bold text-teal-600 hover:text-teal-700 cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> เพิ่มส่วนประกอบ
+                  </button>
+                </div>
+
+                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                  {editForm.items.map((row, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200/80"
+                    >
+                      <div className="flex-1">
+                        <select
+                          value={row.itemId}
+                          onChange={(e) => {
+                            const updated = [...editForm.items];
+                            updated[idx].itemId = e.target.value;
+                            setEditForm({ ...editForm, items: updated });
+                          }}
+                          className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium"
+                          required
+                        >
+                          {allItems.map((it) => (
+                            <option key={it.id} value={it.id}>
+                              {getItemOptionLabel(it)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="w-24">
+                        <input
+                          type="number"
+                          min="1"
+                          value={row.quantity}
+                          onChange={(e) => {
+                            const updated = [...editForm.items];
+                            updated[idx].quantity = Math.max(1, parseInt(e.target.value) || 1);
+                            setEditForm({ ...editForm, items: updated });
+                          }}
+                          className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-center text-xs font-bold"
+                          placeholder="จำนวน"
+                          required
+                        />
+                      </div>
+
+                      {editForm.items.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveEditItemRow(idx)}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 transition cursor-pointer"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  type="submit"
+                  disabled={editSubmitting}
+                  className="px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition disabled:opacity-50 cursor-pointer"
+                >
+                  {editSubmitting ? 'กำลังบันทึก...' : 'บันทึกการแก้ไขชุดฝึก'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 3: CHECKLIST PRINT SHEET */}
+      {/* ========================================================================= */}
+      {prepChecklist && (
+        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-100 space-y-5 max-h-[92vh] overflow-y-auto print:max-w-none print:shadow-none print:border-none print:p-0">
+            {/* Action Bar (Hidden on Print) */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 print:hidden">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                <span className="font-bold text-slate-800 text-sm">
+                  ตัดสต็อกและจัดเตรียมชุดฝึกสำเร็จ!
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => window.print()}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition cursor-pointer"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>พิมพ์ใบตรวจรับชุดฝึก (Print)</span>
+                </button>
+                <button
+                  onClick={() => setPrepChecklist(null)}
+                  className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Printable Document Container */}
+            <div className="space-y-4 text-slate-800 print:text-black">
+              {/* Header */}
+              <div className="text-center space-y-1 pb-3 border-b-2 border-slate-800">
+                <h2 className="text-lg font-bold">
+                  คณะพยาบาลศาสตร์ / วิทยาลัยพยาบาล
+                </h2>
+                <h3 className="text-sm font-semibold text-slate-600 print:text-black">
+                  ใบรายการจัดเตรียมและตรวจรับชุดฝึกปฏิบัติการ (Practice Kit Preparation Checklist)
+                </h3>
+                <div className="flex items-center justify-center gap-4 text-xs font-mono text-slate-500 pt-1">
+                  <span>เลขที่เอกสาร: <b>{prepChecklist.prepReference}</b></span>
+                  <span>วันที่: <b>{new Date(prepChecklist.preparedAt).toLocaleString('th-TH')}</b></span>
+                </div>
+              </div>
+
+              {/* Kit & Course Details */}
+              <div className="grid grid-cols-2 gap-3 text-xs bg-slate-50 p-3 rounded-xl border border-slate-200 print:bg-transparent print:border-slate-400">
+                <div>
+                  <span className="text-slate-500">ชุดฝึกปฏิบัติการ:</span>{' '}
+                  <b className="text-slate-900 font-bold">{prepChecklist.kit.name} ({prepChecklist.kit.code})</b>
+                </div>
+                <div>
+                  <span className="text-slate-500">จำนวนที่จัดเตรียม:</span>{' '}
+                  <b className="text-teal-700 font-black text-sm">{prepChecklist.numSets} ชุด</b>
+                </div>
+                <div>
+                  <span className="text-slate-500">สำหรับรายวิชา:</span>{' '}
+                  <b>{prepChecklist.course ? `[${prepChecklist.course.code}] ${prepChecklist.course.name}` : 'ทั่วไป'}</b>
+                </div>
+                <div>
+                  <span className="text-slate-500">อาจารย์ผู้สอน:</span>{' '}
+                  <b>{prepChecklist.instructorName}</b>
+                </div>
+                <div>
+                  <span className="text-slate-500">สถานที่ / ห้องแล็บ:</span>{' '}
+                  <b>{prepChecklist.roomOrLocation}</b>
+                </div>
+                <div>
+                  <span className="text-slate-500">หมายเหตุ:</span>{' '}
+                  <span>{prepChecklist.note || '-'}</span>
+                </div>
+              </div>
+
+              {/* Checklist Items Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs text-left border-collapse border border-slate-300">
+                  <thead className="bg-slate-100 text-slate-700 font-bold border-b border-slate-300">
+                    <tr>
+                      <th className="p-2 border border-slate-300 text-center w-10">ลำดับ</th>
+                      <th className="p-2 border border-slate-300">รายการอุปกรณ์ / เวชภัณฑ์</th>
+                      <th className="p-2 border border-slate-300 text-center w-24">ประเภท</th>
+                      <th className="p-2 border border-slate-300 text-center w-20">ต่อ 1 ชุด</th>
+                      <th className="p-2 border border-slate-300 text-center w-24">รวมที่จัด ({prepChecklist.numSets} ชุด)</th>
+                      <th className="p-2 border border-slate-300 text-center w-28">ตรวจรับอุปกรณ์</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {prepChecklist.items?.map((item: any, idx: number) => {
+                      const isRepack = item.code?.startsWith('RP-') || item.name?.includes('ซองละ');
+
+                      return (
+                        <tr key={idx} className="border-b border-slate-200">
+                          <td className="p-2 border border-slate-300 text-center font-mono">{idx + 1}</td>
+                          <td className="p-2 border border-slate-300">
+                            <div className="font-semibold text-slate-800">{item.name}</div>
+                            <div className="text-[10px] text-slate-400 font-mono">{item.code}</div>
+                          </td>
+                          <td className="p-2 border border-slate-300 text-center">
+                            {isRepack ? (
+                              <span className="font-bold text-purple-700">Repack</span>
+                            ) : item.type === 'EQUIPMENT' ? (
+                              <span className="font-bold text-blue-700">ครุภัณฑ์</span>
+                            ) : (
+                              <span className="font-bold text-teal-700">สิ้นเปลือง</span>
+                            )}
+                          </td>
+                          <td className="p-2 border border-slate-300 text-center font-mono">
+                            {item.qtyPerSet} {item.unit}
+                          </td>
+                          <td className="p-2 border border-slate-300 text-center font-mono font-bold">
+                            {item.totalQtyDispensed} {item.unit}
+                          </td>
+                          <td className="p-2 border border-slate-300 text-center">
+                            <div className="inline-flex items-center gap-2 text-[10px]">
+                              <span>[  ] ครบ</span>
+                              <span>[  ] ชำรุด</span>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Sign-off Signature Section */}
+              <div className="grid grid-cols-2 gap-8 pt-8 text-xs text-center">
+                <div className="space-y-6">
+                  <div>ลงชื่อ ................................................................</div>
+                  <div>( ................................................................ )</div>
+                  <div className="text-slate-500 font-medium">เจ้าหน้าที่ผู้จัดเตรียมชุดฝึก</div>
+                </div>
+
+                <div className="space-y-6">
+                  <div>ลงชื่อ ................................................................</div>
+                  <div>( ................................................................ )</div>
+                  <div className="text-slate-500 font-medium">อาจารย์ผู้สอน / ตัวแทนนิสิตผู้ตรวจรับ</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 4: QUICK REQUEST FOR KIT (EXISTING) */}
       {/* ========================================================================= */}
       {requestTargetKit && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
@@ -478,17 +1225,14 @@ export default function PracticeKitsPage() {
               {/* Number of Kits */}
               <div className="p-3.5 bg-teal-50/70 border border-teal-100 rounded-2xl flex items-center justify-between gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-teal-900 mb-0.5">
-                    จำนวนชุดที่ต้องการ (เซ็ต)
-                  </label>
-                  <span className="text-[11px] text-teal-700">
-                    สต็อกในแล็บปัจจุบันพร้อมจัดได้สูงสุด: <b>{requestTargetKit.maxAvailableKits}</b> ชุด
-                  </span>
+                  <div className="text-xs font-bold text-teal-900">จำนวนชุดที่ต้องการขอเบิก/ยืม</div>
+                  <div className="text-[11px] text-teal-700">สต็อกพร้อมจัดได้สูงสุด: {requestTargetKit.maxAvailableKits} ชุด</div>
                 </div>
-                <div className="w-28">
+                <div className="w-24">
                   <input
                     type="number"
                     min="1"
+                    max={requestTargetKit.maxAvailableKits || 100}
                     value={requestForm.setsRequested}
                     onChange={(e) =>
                       setRequestForm({
@@ -496,7 +1240,7 @@ export default function PracticeKitsPage() {
                         setsRequested: Math.max(1, parseInt(e.target.value) || 1),
                       })
                     }
-                    className="w-full bg-white border border-teal-300 rounded-xl px-3 py-2 text-center text-base font-black text-teal-950 focus:ring-2 focus:ring-teal-500"
+                    className="w-full bg-white border border-teal-200 rounded-xl px-2.5 py-1.5 text-center font-bold text-sm text-teal-900 focus:ring-2 focus:ring-teal-500"
                     required
                   />
                 </div>
@@ -582,17 +1326,6 @@ export default function PracticeKitsPage() {
                 />
               </div>
 
-              {/* Auto Summary Breakdown */}
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl text-[11px] space-y-1.5">
-                <div className="font-bold text-slate-800 flex items-center gap-1.5">
-                  <Info className="w-3.5 h-3.5 text-teal-600" /> ระบบจะทำการสร้างคำขออัตโนมัติ:
-                </div>
-                <div className="text-slate-600 pl-5 space-y-1">
-                  <div>• <b>คำขอยืมครุภัณฑ์:</b> จะรวมชิ้นส่วนครุภัณฑ์ทั้งหมดคูณด้วย {requestForm.setsRequested} ชุด</div>
-                  <div>• <b>คำขอเบิกวัสดุสิ้นเปลือง:</b> จะรวมเวชภัณฑ์สิ้นเปลืองทั้งหมดคูณด้วย {requestForm.setsRequested} ชุด</div>
-                </div>
-              </div>
-
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
                 <button
                   type="button"
@@ -616,7 +1349,7 @@ export default function PracticeKitsPage() {
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL: CREATE PRACTICE KIT */}
+      {/* MODAL 5: CREATE PRACTICE KIT */}
       {/* ========================================================================= */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
@@ -631,7 +1364,7 @@ export default function PracticeKitsPage() {
                     สร้างชุดฝึกปฏิบัติการใหม่ (New Practice Kit)
                   </h3>
                   <p className="text-xs text-slate-500">
-                    กำหนดชุดอุปกรณ์และเวชภัณฑ์มาตรฐานสำหรับนิสิตและอาจารย์
+                    เลือกเครื่องมือ ครุภัณฑ์ และวัสดุย่อยที่ Repack แล้วมารวมเป็นชุดหัตถการมาตรฐาน
                   </p>
                 </div>
               </div>
@@ -715,7 +1448,7 @@ export default function PracticeKitsPage() {
                 />
               </div>
 
-              {/* Item Components in Kit */}
+              {/* Item Components in Kit with Repack labels */}
               <div className="space-y-2 pt-2 border-t border-slate-100">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-slate-800">
@@ -732,7 +1465,10 @@ export default function PracticeKitsPage() {
 
                 <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
                   {kitForm.items.map((row, idx) => (
-                    <div key={idx} className="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200/80">
+                    <div
+                      key={idx}
+                      className="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200/80"
+                    >
                       <div className="flex-1">
                         <select
                           value={row.itemId}
@@ -741,12 +1477,12 @@ export default function PracticeKitsPage() {
                             updated[idx].itemId = e.target.value;
                             setKitForm({ ...kitForm, items: updated });
                           }}
-                          className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs"
+                          className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium"
                           required
                         >
                           {allItems.map((it) => (
                             <option key={it.id} value={it.id}>
-                              [{it.type === 'EQUIPMENT' ? 'ครุภัณฑ์' : 'สิ้นเปลือง'}] {it.name} ({it.code})
+                              {getItemOptionLabel(it)}
                             </option>
                           ))}
                         </select>
@@ -793,10 +1529,9 @@ export default function PracticeKitsPage() {
                 <button
                   type="submit"
                   disabled={createSubmitting}
-                  className="px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition disabled:opacity-50 cursor-pointer inline-flex items-center gap-1.5"
+                  className="px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition disabled:opacity-50 cursor-pointer"
                 >
-                  <Plus className="w-4 h-4" />
-                  <span>{createSubmitting ? 'กำลังบันทึก...' : 'สร้างชุดฝึก'}</span>
+                  {createSubmitting ? 'กำลังบันทึก...' : 'สร้างชุดฝึกปฏิบัติการ'}
                 </button>
               </div>
             </form>

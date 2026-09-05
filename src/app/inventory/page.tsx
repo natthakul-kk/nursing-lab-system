@@ -33,6 +33,9 @@ import {
   FileSpreadsheet,
   Download,
   Upload,
+  Folder,
+  FolderPlus,
+  Settings,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { TableLoadingRow } from '@/components/common/LoadingSpinner';
@@ -48,6 +51,18 @@ export default function InventoryPage() {
   const [filterType, setFilterType] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
+
+
+  // Category Management State
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [categoryForm, setCategoryForm] = useState({
+    id: '',
+    name: '',
+    type: 'CONSUMABLE',
+    description: '',
+  });
+  const [isEditingCategory, setIsEditingCategory] = useState(false);
+  const [categorySubmitting, setCategorySubmitting] = useState(false);
 
   // Bulk Import state
   const [showBulkModal, setShowBulkModal] = useState(false);
@@ -406,6 +421,67 @@ export default function InventoryPage() {
     }
   };
 
+
+  const handleOpenAddCategory = () => {
+    setCategoryForm({ id: '', name: '', type: 'CONSUMABLE', description: '' });
+    setIsEditingCategory(false);
+    setShowCategoryModal(true);
+  };
+
+  const handleEditCategory = (cat: any) => {
+    setCategoryForm({
+      id: cat.id,
+      name: cat.name,
+      type: cat.type || 'CONSUMABLE',
+      description: cat.description || '',
+    });
+    setIsEditingCategory(true);
+  };
+
+  const handleSaveCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!categoryForm.name.trim()) return;
+    setCategorySubmitting(true);
+    try {
+      const url = isEditingCategory ? `/api/categories/${categoryForm.id}` : '/api/categories';
+      const method = isEditingCategory ? 'PUT' : 'POST';
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(categoryForm),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setCategoryForm({ id: '', name: '', type: 'CONSUMABLE', description: '' });
+        setIsEditingCategory(false);
+        await fetchCategories();
+        await fetchItems();
+      } else {
+        alert(data.error || 'เกิดข้อผิดพลาดในการบันทึกหมวดหมู่');
+      }
+    } catch (err) {
+      alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
+    } finally {
+      setCategorySubmitting(false);
+    }
+  };
+
+  const handleDeleteCategory = async (cat: any) => {
+    if (!confirm(`คุณต้องการลบหมวดหมู่ "${cat.name}" ใช่หรือไม่?`)) return;
+    try {
+      const res = await fetch(`/api/categories/${cat.id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (res.ok) {
+        await fetchCategories();
+        await fetchItems();
+      } else {
+        alert(data.error || 'ไม่สามารถลบหมวดหมู่ได้');
+      }
+    } catch (err) {
+      alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
+    }
+  };
+
   const handleCreateItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newItem.code || !newItem.name || !newItem.categoryId) {
@@ -557,7 +633,16 @@ export default function InventoryPage() {
         </div>
 
         {isOfficer && (
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <button
+              onClick={handleOpenAddCategory}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold shadow-sm transition cursor-pointer"
+              title="จัดการหมวดหมู่พัสดุ (เพิ่ม, แก้ไขชื่อ, ลบหมวดหมู่)"
+            >
+              <Folder className="w-4 h-4 text-teal-600" />
+              <span>จัดการหมวดหมู่ ({categories.length})</span>
+            </button>
+
             <button
               onClick={() => {
                 setShowBulkModal(true);
@@ -2226,6 +2311,157 @@ export default function InventoryPage() {
           </div>
         </div>
       )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: CATEGORY MANAGEMENT (เพิ่ม, แก้ไข, ลบ หมวดหมู่พัสดุ) */}
+      {/* ========================================================================= */}
+      {showCategoryModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600">
+                  <Folder className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-base">
+                    จัดการหมวดหมู่พัสดุและครุภัณฑ์ (Categories)
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    เพิ่มหมวดหมู่ใหม่ แก้ไขชื่อ หรือลบหมวดหมู่ที่ไม่ได้ใช้งาน
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowCategoryModal(false)}
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Form to Add / Edit Category */}
+            <form onSubmit={handleSaveCategory} className="p-4 bg-teal-50/50 border border-teal-200/80 rounded-2xl space-y-3">
+              <div className="text-xs font-bold text-teal-900 flex items-center justify-between">
+                <span>{isEditingCategory ? '✏️ กำลังแก้ไขหมวดหมู่' : '➕ เพิ่มหมวดหมู่ใหม่'}</span>
+                {isEditingCategory && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCategoryForm({ id: '', name: '', type: 'CONSUMABLE', description: '' });
+                      setIsEditingCategory(false);
+                    }}
+                    className="text-[11px] text-teal-700 hover:underline"
+                  >
+                    ยกเลิกการแก้ไข (สร้างใหม่)
+                  </button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="sm:col-span-2">
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    ชื่อหมวดหมู่ *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="เช่น เวชภัณฑ์ฉีดและให้สารน้ำ, อุปกรณ์ทำแผล"
+                    value={categoryForm.name}
+                    onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-teal-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    ประเภทการใช้งาน *
+                  </label>
+                  <select
+                    value={categoryForm.type}
+                    onChange={(e) => setCategoryForm({ ...categoryForm, type: e.target.value })}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500"
+                  >
+                    <option value="CONSUMABLE">วัสดุสิ้นเปลือง</option>
+                    <option value="EQUIPMENT">ครุภัณฑ์คงทน</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-1">
+                <button
+                  type="submit"
+                  disabled={categorySubmitting}
+                  className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition cursor-pointer disabled:opacity-50"
+                >
+                  {categorySubmitting ? 'กำลังบันทึก...' : isEditingCategory ? 'บันทึกการแก้ไข' : '+ เพิ่มหมวดหมู่นี้'}
+                </button>
+              </div>
+            </form>
+
+            {/* List of Existing Categories */}
+            <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+              <div className="text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+                <span>รายการหมวดหมู่ที่มีอยู่ในระบบทั้งหมด ({categories.length} หมวด)</span>
+              </div>
+
+              <div className="divide-y divide-slate-100 border border-slate-200 rounded-2xl overflow-hidden bg-white">
+                {categories.map((cat) => (
+                  <div
+                    key={cat.id}
+                    className="p-3.5 hover:bg-slate-50/80 transition flex items-center justify-between gap-3"
+                  >
+                    <div className="space-y-0.5">
+                      <div className="font-bold text-slate-900 text-xs flex items-center gap-2">
+                        <span>{cat.name}</span>
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                            cat.type === 'EQUIPMENT'
+                              ? 'bg-blue-50 text-blue-800 border-blue-200'
+                              : 'bg-teal-50 text-teal-800 border-teal-200'
+                          }`}
+                        >
+                          {cat.type === 'EQUIPMENT' ? 'ครุภัณฑ์คงทน' : 'วัสดุสิ้นเปลือง'}
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-slate-400">
+                        มีพัสดุในหมวดนี้: <b>{cat._count?.items ?? items.filter((i) => i.categoryId === cat.id).length}</b> รายการ
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => handleEditCategory(cat)}
+                        className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:text-teal-600 hover:border-teal-300 hover:bg-teal-50 transition cursor-pointer"
+                        title="แก้ไขชื่อหมวดหมู่"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteCategory(cat)}
+                        className="p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:text-rose-600 hover:border-rose-300 hover:bg-rose-50 transition cursor-pointer"
+                        title="ลบหมวดหมู่นี้"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-slate-100 text-right">
+              <button
+                onClick={() => setShowCategoryModal(false)}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition cursor-pointer"
+              >
+                ปิดหน้าต่าง
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

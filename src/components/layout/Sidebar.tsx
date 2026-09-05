@@ -139,7 +139,7 @@ export default function Sidebar() {
   );
 
   return (
-    <aside className="w-64 flex-shrink-0 bg-slate-900 text-slate-300 min-h-[calc(100vh-4rem)] flex flex-col justify-between p-4 shadow-xl">
+    <aside className="w-64 flex-shrink-0 bg-slate-900 text-slate-300 h-full flex flex-col justify-between p-4 shadow-xl overflow-y-auto">
       <div>
         <div className="px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
           <span>เมนูที่ได้รับสิทธิ์</span>

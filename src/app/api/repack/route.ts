@@ -105,90 +105,85 @@ export async function POST(req: Request) {
     const totalSourceCost = sourceQtyUsed * sourceLot.unitCost;
     const unitCostPerPack = totalPacksProduced > 0 ? totalSourceCost / totalPacksProduced : 0;
 
-    // Run inside interactive transaction
-    const result = await prisma.$transaction(async (tx) => {
-      // 1. Deduct source lot
-      await tx.stockLot.update({
-        where: { id: sourceLotId },
-        data: {
-          quantityRemaining: { decrement: sourceQtyUsed },
-        },
-      });
+    // 1. Deduct source lot
+    await prisma.stockLot.update({
+      where: { id: sourceLotId },
+      data: {
+        quantityRemaining: { decrement: sourceQtyUsed },
+      },
+    });
 
-      // 2. Record Transaction OUT_REPACK
-      await tx.stockTransaction.create({
-        data: {
-          itemId: sourceItemId,
-          lotId: sourceLotId,
-          type: 'OUT_REQUISITION',
-          quantity: sourceQtyUsed,
-          unitCost: sourceLot.unitCost,
-          totalCost: totalSourceCost,
-          referenceNumber: recordNumber,
-          createdById: operatorId,
-          note: 'เบิกแบ่งบรรจุย่อย: ' + autoSubLot + ' (ได้ ' + totalPacksProduced + ' ซองย่อย)',
-        },
-      });
+    // 2. Record Transaction OUT_REPACK
+    await prisma.stockTransaction.create({
+      data: {
+        itemId: sourceItemId,
+        lotId: sourceLotId,
+        type: 'OUT_REQUISITION',
+        quantity: sourceQtyUsed,
+        unitCost: sourceLot.unitCost,
+        totalCost: totalSourceCost,
+        referenceNumber: recordNumber,
+        createdById: operatorId,
+        note: 'เบิกแบ่งบรรจุย่อย: ' + autoSubLot + ' (ได้ ' + totalPacksProduced + ' ซองย่อย)',
+      },
+    });
 
-      // 3. Create or Add to new Sub-lot in stockLots
-      const newSubLot = await tx.stockLot.create({
-        data: {
-          itemId: sourceItemId,
-          lotNumber: autoSubLot,
-          quantityInitial: totalPacksProduced,
-          quantityRemaining: totalPacksProduced,
-          unitCost: unitCostPerPack,
-          expiryDate: parsedSterileExpiry || sourceLot.expiryDate,
-          receivedDate: parsedPackedDate,
-          supplier: 'แล็บพยาบาลแบ่งบรรจุย่อย (Sterile Pack)',
-        },
-      });
+    // 3. Create or Add to new Sub-lot in stockLots
+    const newSubLot = await prisma.stockLot.create({
+      data: {
+        itemId: sourceItemId,
+        lotNumber: autoSubLot,
+        quantityInitial: totalPacksProduced,
+        quantityRemaining: totalPacksProduced,
+        unitCost: unitCostPerPack,
+        expiryDate: parsedSterileExpiry || sourceLot.expiryDate,
+        receivedDate: parsedPackedDate,
+        supplier: 'แล็บพยาบาลแบ่งบรรจุย่อย (Sterile Pack)',
+      },
+    });
 
-      // 4. Record Transaction IN for new sub-lot
-      await tx.stockTransaction.create({
-        data: {
-          itemId: sourceItemId,
-          lotId: newSubLot.id,
-          type: 'IN',
-          quantity: totalPacksProduced,
-          unitCost: unitCostPerPack,
-          totalCost: totalSourceCost,
-          referenceNumber: recordNumber,
-          createdById: operatorId,
-          note: 'รับเข้าจากการแบ่งบรรจุย่อย ' + autoSubLot + ' (ขนาด ' + (unitsPerPack || 1) + ' ชิ้น/ซอง)',
-        },
-      });
+    // 4. Record Transaction IN for new sub-lot
+    await prisma.stockTransaction.create({
+      data: {
+        itemId: sourceItemId,
+        lotId: newSubLot.id,
+        type: 'IN',
+        quantity: totalPacksProduced,
+        unitCost: unitCostPerPack,
+        totalCost: totalSourceCost,
+        referenceNumber: recordNumber,
+        createdById: operatorId,
+        note: 'รับเข้าจากการแบ่งบรรจุย่อย ' + autoSubLot + ' (ขนาด ' + (unitsPerPack || 1) + ' ชิ้น/ซอง)',
+      },
+    });
 
-      // 5. Create RepackRecord
-      const record = await tx.repackRecord.create({
-        data: {
-          recordNumber,
-          sourceItemId,
-          sourceLotId,
-          sourceQtyUsed,
-          subLotNumber: autoSubLot,
-          unitsPerPack: unitsPerPack || 1,
-          totalPacksProduced,
-          packedDate: parsedPackedDate,
-          sterileExpiryDate: parsedSterileExpiry,
-          sterilizeMethod: sterilizeMethod || 'Autoclave (ไอน้ำ)',
-          operatorId,
-          note: note || null,
-        },
-        include: {
-          sourceItem: true,
-          sourceLot: true,
-          operator: true,
-        },
-      });
-
-      return record;
+    // 5. Create RepackRecord
+    const record = await prisma.repackRecord.create({
+      data: {
+        recordNumber,
+        sourceItemId,
+        sourceLotId,
+        sourceQtyUsed,
+        subLotNumber: autoSubLot,
+        unitsPerPack: unitsPerPack || 1,
+        totalPacksProduced,
+        packedDate: parsedPackedDate,
+        sterileExpiryDate: parsedSterileExpiry,
+        sterilizeMethod: sterilizeMethod || 'Autoclave (ไอน้ำ)',
+        operatorId,
+        note: note || null,
+      },
+      include: {
+        sourceItem: true,
+        sourceLot: true,
+        operator: true,
+      },
     });
 
     return NextResponse.json({
       success: true,
       message: 'บันทึกการแบ่งบรรจุย่อยสำเร็จ รหัสล็อตใหม่: ' + autoSubLot,
-      record: result,
+      record,
     });
   } catch (error: any) {
     console.error('Repack API Error:', error);

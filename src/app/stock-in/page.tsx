@@ -72,11 +72,37 @@ export default function StockInPage() {
     fetchItemsAndHistory();
   }, []);
 
+  const handleItemSelect = (selectedId: string) => {
+    const it = items.find((i) => i.id === selectedId);
+    if (!it) {
+      setForm((prev) => ({ ...prev, itemId: selectedId }));
+      return;
+    }
+
+    if (activeTab === 'EQUIPMENT') {
+      const nextSeq = (it.assets?.length || 0) + 1;
+      const currentYearThai = new Date().getFullYear() + 543;
+      // Extract prefix from item code (e.g. EQ-AED-001 -> AED)
+      const prefix = it.code.replace('EQ-', '').replace(/-\d+$/, '') || 'EQ';
+      const suggestedAssetCode = `${prefix}-${currentYearThai}-${String(nextSeq).padStart(3, '0')}`;
+
+      setForm((prev) => ({
+        ...prev,
+        itemId: selectedId,
+        sequenceNumber: nextSeq,
+        assetCode: prev.assetCode || suggestedAssetCode,
+        location: prev.location || it.location || '',
+      }));
+    } else {
+      setForm((prev) => ({ ...prev, itemId: selectedId }));
+    }
+  };
+
   const handleTabChange = (tab: 'CONSUMABLE' | 'EQUIPMENT') => {
     setActiveTab(tab);
     const available = items.filter((i) => i.type === tab);
     if (available.length > 0) {
-      setForm((prev) => ({ ...prev, itemId: available[0].id }));
+      handleItemSelect(available[0].id);
     }
   };
 
@@ -200,7 +226,7 @@ export default function StockInPage() {
               </label>
               <select
                 value={form.itemId}
-                onChange={(e) => setForm({ ...form, itemId: e.target.value })}
+                onChange={(e) => handleItemSelect(e.target.value)}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
               >
                 {eligibleItems.map((item) => (

@@ -145,7 +145,12 @@ export default function RepackPage() {
     );
     const firstLot = validLots[0];
     const todayStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
-    const suggestedSubLot = 'SL-' + (item?.code || 'MED') + '-' + todayStr + '-01';
+    const baseSubLotPrefix = 'SL-' + (item?.code || 'MED') + '-' + todayStr;
+    const existingForToday = records.filter(
+      (r) => r.subLotNumber && r.subLotNumber.startsWith(baseSubLotPrefix)
+    );
+    const nextIndex = existingForToday.length + 1;
+    const suggestedSubLot = `${baseSubLotPrefix}-${String(nextIndex).padStart(2, '0')}`;
 
     // Default sterile expiry: 3 months from now
     const threeMonths = new Date();

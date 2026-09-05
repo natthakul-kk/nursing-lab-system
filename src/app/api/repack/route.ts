@@ -174,8 +174,32 @@ export async function POST(req: Request) {
     let autoSubLot = subLotNumber ? subLotNumber.trim().toUpperCase() : '';
     if (!autoSubLot) {
       const todayStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
-      autoSubLot = 'SL-' + (sourceLot.item.code || 'MED') + '-' + todayStr + '-' + String(count + 1).padStart(2, '0');
+      autoSubLot = 'SL-' + (sourceLot.item.code || 'MED') + '-' + todayStr + '-01';
     }
+
+    // Ensure autoSubLot and its packCodes do not collide with any existing record or packCode
+    let candidateSubLot = autoSubLot;
+    let suffix = 1;
+    while (true) {
+      const existingRecord = await prisma.repackRecord.findFirst({
+        where: { subLotNumber: candidateSubLot },
+      });
+      const existingPack = await prisma.repackPackItem.findFirst({
+        where: { packCode: { startsWith: `${candidateSubLot}-P` } },
+      });
+      const existingLot = await prisma.stockLot.findFirst({
+        where: { lotNumber: candidateSubLot },
+      });
+
+      if (!existingRecord && !existingPack && !existingLot) {
+        break;
+      }
+
+      suffix++;
+      const baseClean = autoSubLot.replace(/-\d+$/, '');
+      candidateSubLot = `${baseClean}-${String(suffix).padStart(2, '0')}`;
+    }
+    autoSubLot = candidateSubLot;
 
     const parsedPackedDate = packedDate ? new Date(packedDate) : new Date();
     const parsedSterileExpiry = sterileExpiryDate ? new Date(sterileExpiryDate) : null;

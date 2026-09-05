@@ -30,7 +30,11 @@ import {
   Edit,
   Trash2,
   FileEdit,
+  FileSpreadsheet,
+  Download,
+  Upload,
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { TableLoadingRow } from '@/components/common/LoadingSpinner';
 
 export default function InventoryPage() {
@@ -44,6 +48,19 @@ export default function InventoryPage() {
   const [filterType, setFilterType] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
+
+  // Bulk Import state
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [bulkFile, setBulkFile] = useState<File | null>(null);
+  const [previewData, setPreviewData] = useState<any[]>([]);
+  const [bulkSubmitting, setBulkSubmitting] = useState(false);
+  const [bulkResult, setBulkResult] = useState<{
+    itemsCreated: number;
+    itemsUpdated: number;
+    assetsCreated: number;
+    lotsCreated: number;
+    errors?: string[];
+  } | null>(null);
 
   // Repair & Maintenance Modals
   const [repairTarget, setRepairTarget] = useState<{ asset: any; itemName: string } | null>(null);
@@ -382,6 +399,93 @@ export default function InventoryPage() {
     return matchesType && matchesSearch;
   });
 
+  const handleDownloadTemplate = () => {
+    const sampleData = [
+      {
+        'ชื่อรายการ': 'เครื่องกระตุกหัวใจไฟฟ้า AED Trainer',
+        'รหัสพัสดุ': 'EQ-AED-01',
+        'ประเภท (EQUIPMENT/CONSUMABLE)': 'EQUIPMENT',
+        'หมวดหมู่': 'อุปกรณ์ช่วยชีวิตและฉุกเฉิน',
+        'หน่วยนับ': 'เครื่อง',
+        'จำนวนรับเข้า': 2,
+        'ราคาต่อหน่วย': 45000,
+        'สถานที่จัดเก็บ': 'ห้องแล็บ 402 ตู้ฉุกเฉิน',
+        'คำอธิบาย': 'เครื่องฝึกช่วยฟื้นคืนชีพ AED แบบมีเสียงแนะนำ',
+        'รหัสแล็บ (ขึ้นต้น)': 'AED-2569-',
+        'เลขครุภัณฑ์ราชการ': 'พย.69-02-0045, พย.69-02-0046',
+      },
+      {
+        'ชื่อรายการ': 'ถุงมือตรวจโรคสเตอร์ไรด์ เบอร์ 7',
+        'รหัสพัสดุ': 'CS-GLOVE-07',
+        'ประเภท (EQUIPMENT/CONSUMABLE)': 'CONSUMABLE',
+        'หมวดหมู่': 'เวชภัณฑ์ปลอดเชื้อ',
+        'หน่วยนับ': 'กล่อง',
+        'จำนวนรับเข้า': 50,
+        'ราคาต่อหน่วย': 220,
+        'สถานที่จัดเก็บ': 'ตู้เก็บเวชภัณฑ์ ชั้น 2',
+        'คำอธิบาย': 'ถุงมือยางธรรมชาติชนิดมีแป้ง กล่องละ 50 คู่',
+        'หมายเลขล็อต': 'LOT-2026-A1',
+        'วันหมดอายุ (YYYY-MM-DD)': '2028-12-31',
+      },
+    ];
+
+    const ws = XLSX.utils.json_to_sheet(sampleData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'แบบฟอร์มนำเข้าพัสดุ');
+    XLSX.writeFile(wb, 'Template_Items_and_Assets.xlsx');
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBulkFile(file);
+    setBulkResult(null);
+
+    try {
+      const buffer = await file.arrayBuffer();
+      const wb = XLSX.read(buffer, { type: 'array' });
+      const sheetName = wb.SheetNames[0];
+      const sheet = wb.Sheets[sheetName];
+      const jsonData: any[] = XLSX.utils.sheet_to_json(sheet);
+
+      if (jsonData.length === 0) {
+        alert('ไฟล์ไม่มีข้อมูลหรือข้อมูลว่างเปล่า');
+        return;
+      }
+      setPreviewData(jsonData);
+    } catch (err) {
+      console.error(err);
+      alert('ไม่สามารถอ่านไฟล์ได้ กรุณาตรวจสอบว่าเป็นไฟล์ .xlsx หรือ .csv ที่ถูกต้อง');
+    }
+  };
+
+  const handleBulkSubmit = async () => {
+    if (previewData.length === 0) return;
+    setBulkSubmitting(true);
+    setBulkResult(null);
+
+    try {
+      const res = await fetch('/api/items/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: previewData }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setBulkResult(data);
+        fetchItems();
+      } else {
+        alert(data.error || 'เกิดข้อผิดพลาดในการนำเข้าข้อมูล');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
+    } finally {
+      setBulkSubmitting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -397,13 +501,28 @@ export default function InventoryPage() {
         </div>
 
         {isOfficer && (
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>เพิ่มรายการใหม่</span>
-          </button>
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => {
+                setShowBulkModal(true);
+                setBulkFile(null);
+                setPreviewData([]);
+                setBulkResult(null);
+              }}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold shadow-md transition cursor-pointer"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+              <span>นำเข้าจาก Excel</span>
+            </button>
+
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>เพิ่มรายการใหม่</span>
+            </button>
+          </div>
         )}
       </div>
 
@@ -1754,6 +1873,162 @@ export default function InventoryPage() {
           itemName={selectedAssetForQr.itemName}
           onClose={() => setSelectedAssetForQr(null)}
         />
+      )}
+
+      {/* Bulk Import Modal */}
+      {showBulkModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-3xl w-full p-6 shadow-2xl border border-slate-100 max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600">
+                  <FileSpreadsheet className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-base">
+                    นำเข้าพัสดุและครุภัณฑ์คงทนจากไฟล์ Excel / CSV
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    นำเข้ารายการวัสดุสิ้นเปลืองพร้อมล็อต หรือครุภัณฑ์คงทนพร้อมรหัสแล็บและเลขครุภัณฑ์ราชการ
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowBulkModal(false)}
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 py-4 overflow-y-auto flex-1">
+              {/* Step 1: Download Template */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="space-y-0.5">
+                  <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded-full bg-teal-600 text-white text-[10px] flex items-center justify-center font-bold">1</span>
+                    ดาวน์โหลดแม่แบบไฟล์ Excel สำหรับนำเข้าพัสดุ
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    มีตัวอย่างทั้ง <b>ครุภัณฑ์คงทน (EQUIPMENT)</b> และ <b>วัสดุสิ้นเปลือง (CONSUMABLE)</b>
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleDownloadTemplate}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-bold shadow-sm transition flex-shrink-0 cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5 text-teal-600" />
+                  <span>ดาวน์โหลด Template (.xlsx)</span>
+                </button>
+              </div>
+
+              {/* Step 2: Upload File */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
+                <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-full bg-teal-600 text-white text-[10px] flex items-center justify-center font-bold">2</span>
+                  เลือกไฟล์ที่กรอกข้อมูลแล้ว (.xlsx, .xls, .csv)
+                </div>
+
+                <div className="border-2 border-dashed border-slate-300 hover:border-teal-500 rounded-2xl p-6 text-center transition bg-white">
+                  <Upload className="w-8 h-8 mx-auto text-slate-400 mb-2" />
+                  <label className="cursor-pointer">
+                    <span className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-sm inline-block transition">
+                      เลือกไฟล์จากคอมพิวเตอร์
+                    </span>
+                    <input
+                      type="file"
+                      accept=".xlsx,.xls,.csv"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+                  <p className="text-[11px] text-slate-400 mt-2">
+                    {bulkFile ? `ไฟล์ที่เลือก: ${bulkFile.name}` : 'รองรับไฟล์ Excel และ CSV'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Preview Box */}
+              {previewData.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-800">
+                    <span>ตัวอย่างข้อมูลที่จะนำเข้า ({previewData.length} แถว)</span>
+                    <span className="text-[11px] text-teal-600 font-medium">แสดง 5 แถวแรก</span>
+                  </div>
+                  <div className="overflow-x-auto border border-slate-200 rounded-xl max-h-48">
+                    <table className="w-full text-left text-[11px]">
+                      <thead className="bg-slate-100 text-slate-700 font-bold">
+                        <tr>
+                          {Object.keys(previewData[0] || {}).slice(0, 7).map((col) => (
+                            <th key={col} className="p-2 whitespace-nowrap">{col}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {previewData.slice(0, 5).map((row, idx) => (
+                          <tr key={idx} className="hover:bg-slate-50">
+                            {Object.keys(previewData[0] || {}).slice(0, 7).map((col) => (
+                              <td key={col} className="p-2 whitespace-nowrap text-slate-600">
+                                {String(row[col] ?? '-')}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Result Summary */}
+              {bulkResult && (
+                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 space-y-1">
+                  <div className="text-xs font-bold flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" /> นำเข้าข้อมูลเรียบร้อยแล้ว
+                  </div>
+                  <p className="text-xs">
+                    รายการใหม่: <b>{bulkResult.itemsCreated}</b> รายการ | อัปเดต: <b>{bulkResult.itemsUpdated}</b> รายการ
+                  </p>
+                  <p className="text-xs text-emerald-800">
+                    ครุภัณฑ์รายชิ้น (Assets) ที่สร้าง: <b>{bulkResult.assetsCreated}</b> ชิ้น | สต็อกล็อต (Lots) ที่สร้าง: <b>{bulkResult.lotsCreated}</b> ล็อต
+                  </p>
+                  {bulkResult.errors && bulkResult.errors.length > 0 && (
+                    <div className="mt-2 text-[11px] text-rose-700 bg-rose-50 p-2 rounded-lg border border-rose-200">
+                      <b>พบข้อผิดพลาดบางรายการ:</b>
+                      <ul className="list-disc pl-4 mt-0.5 space-y-0.5">
+                        {bulkResult.errors.map((e, idx) => (
+                          <li key={idx}>{e}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setShowBulkModal(false)}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 cursor-pointer"
+              >
+                ปิดหน้าต่าง
+              </button>
+              {previewData.length > 0 && (
+                <button
+                  type="button"
+                  disabled={bulkSubmitting}
+                  onClick={handleBulkSubmit}
+                  className="px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition disabled:opacity-50 cursor-pointer inline-flex items-center gap-1.5"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>{bulkSubmitting ? 'กำลังนำเข้าข้อมูล...' : `ยืนยันนำเข้า ${previewData.length} รายการ`}</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -14,8 +14,14 @@ import {
   Building2,
   CheckCircle2,
   Edit3,
-  Trash2
+  Trash2,
+  FileSpreadsheet,
+  Download,
+  Upload,
+  AlertCircle,
+  X
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { TableLoadingRow } from '@/components/common/LoadingSpinner';
 
 export default function UsersPage() {
@@ -23,6 +29,11 @@ export default function UsersPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [bulkFile, setBulkFile] = useState<File | null>(null);
+  const [previewData, setPreviewData] = useState<any[]>([]);
+  const [bulkSubmitting, setBulkSubmitting] = useState(false);
+  const [bulkResult, setBulkResult] = useState<{ created: number; updated: number; errors?: string[] } | null>(null);
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
@@ -109,6 +120,91 @@ export default function UsersPage() {
     }
   };
 
+  const handleDownloadTemplate = () => {
+    const sampleData = [
+      {
+        'ชื่อ-นามสกุล': 'นายสมชาย พยาบาลดี',
+        'อีเมล': 'somchai.p@nurse.ac.th',
+        'บทบาท': 'USER',
+        'ภาควิชา/คณะ': 'การพยาบาลพื้นฐาน',
+        'รหัสนิสิต/บุคลากร': '66010001',
+        'เบอร์โทร': '0812345678',
+      },
+      {
+        'ชื่อ-นามสกุล': 'นางสาวพยาบาล รักเด็ก',
+        'อีเมล': 'nurse.r@nurse.ac.th',
+        'บทบาท': 'USER',
+        'ภาควิชา/คณะ': 'การพยาบาลเด็ก',
+        'รหัสนิสิต/บุคลากร': '66010002',
+        'เบอร์โทร': '0898765432',
+      },
+      {
+        'ชื่อ-นามสกุล': 'ผศ.ดร.อาจารย์ ประจำวิชา',
+        'อีเมล': 'instructor@nurse.ac.th',
+        'บทบาท': 'APPROVER',
+        'ภาควิชา/คณะ': 'คณะพยาบาลศาสตร์',
+        'รหัสนิสิต/บุคลากร': 'T0042',
+        'เบอร์โทร': '0861112233',
+      },
+    ];
+
+    const ws = XLSX.utils.json_to_sheet(sampleData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'แบบฟอร์มผู้ใช้งาน');
+    XLSX.writeFile(wb, 'Template_User_Accounts.xlsx');
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBulkFile(file);
+    setBulkResult(null);
+
+    try {
+      const buffer = await file.arrayBuffer();
+      const wb = XLSX.read(buffer, { type: 'array' });
+      const sheetName = wb.SheetNames[0];
+      const sheet = wb.Sheets[sheetName];
+      const jsonData: any[] = XLSX.utils.sheet_to_json(sheet);
+
+      if (jsonData.length === 0) {
+        alert('ไฟล์ไม่มีข้อมูลหรือข้อมูลว่างเปล่า');
+        return;
+      }
+      setPreviewData(jsonData);
+    } catch (err) {
+      console.error(err);
+      alert('ไม่สามารถอ่านไฟล์ได้ กรุณาตรวจสอบว่าเป็นไฟล์ .xlsx หรือ .csv ที่ถูกต้อง');
+    }
+  };
+
+  const handleBulkSubmit = async () => {
+    if (previewData.length === 0) return;
+    setBulkSubmitting(true);
+    setBulkResult(null);
+
+    try {
+      const res = await fetch('/api/users/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ users: previewData }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setBulkResult(data);
+        fetchUsers();
+      } else {
+        alert(data.error || 'เกิดข้อผิดพลาดในการนำเข้าข้อมูล');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
+    } finally {
+      setBulkSubmitting(false);
+    }
+  };
+
   const getRoleBadge = (role: string) => {
     switch (role) {
       case 'ADMIN':
@@ -151,13 +247,28 @@ export default function UsersPage() {
           </p>
         </div>
 
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>เพิ่มบัญชีผู้ใช้</span>
-        </button>
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => {
+              setShowBulkModal(true);
+              setBulkFile(null);
+              setPreviewData([]);
+              setBulkResult(null);
+            }}
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold shadow-md transition cursor-pointer"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+            <span>นำเข้าจาก Excel / CSV</span>
+          </button>
+
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>เพิ่มบัญชีผู้ใช้</span>
+          </button>
+        </div>
       </div>
 
       {/* Role Descriptions Grid */}
@@ -515,6 +626,159 @@ export default function UsersPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Import Modal */}
+      {showBulkModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600">
+                  <FileSpreadsheet className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-base">
+                    นำเข้าบัญชีผู้ใช้งานจากไฟล์ Excel / CSV
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    นำเข้ารายชื่อนิสิตทั้งชั้นปี, อาจารย์ หรือเจ้าหน้าที่พร้อมกันทีละหลายรายการ
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowBulkModal(false)}
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 py-4 overflow-y-auto flex-1">
+              {/* Step 1: Download Template */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="space-y-0.5">
+                  <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded-full bg-teal-600 text-white text-[10px] flex items-center justify-center font-bold">1</span>
+                    ดาวน์โหลดแม่แบบไฟล์ Excel
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    ใช้เทมเพลตมาตรฐานที่มีหัวตารางถูกต้อง (ชื่อ-นามสกุล, อีเมล, บทบาท, ภาควิชา, รหัส, เบอร์โทร)
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleDownloadTemplate}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-bold shadow-sm transition flex-shrink-0 cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5 text-teal-600" />
+                  <span>ดาวน์โหลด Template (.xlsx)</span>
+                </button>
+              </div>
+
+              {/* Step 2: Upload File */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
+                <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-full bg-teal-600 text-white text-[10px] flex items-center justify-center font-bold">2</span>
+                  เลือกไฟล์ที่กรอกข้อมูลแล้ว (.xlsx, .xls, .csv)
+                </div>
+
+                <div className="border-2 border-dashed border-slate-300 hover:border-teal-500 rounded-2xl p-6 text-center transition bg-white">
+                  <Upload className="w-8 h-8 mx-auto text-slate-400 mb-2" />
+                  <label className="cursor-pointer">
+                    <span className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-sm inline-block transition">
+                      เลือกไฟล์จากคอมพิวเตอร์
+                    </span>
+                    <input
+                      type="file"
+                      accept=".xlsx,.xls,.csv"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+                  <p className="text-[11px] text-slate-400 mt-2">
+                    {bulkFile ? `ไฟล์ที่เลือก: ${bulkFile.name}` : 'รองรับไฟล์ Excel และ CSV'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Preview Box */}
+              {previewData.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-800">
+                    <span>ตัวอย่างข้อมูลที่จะนำเข้า ({previewData.length} รายการ)</span>
+                    <span className="text-[11px] text-teal-600 font-medium">แสดง 5 แถวแรก</span>
+                  </div>
+                  <div className="overflow-x-auto border border-slate-200 rounded-xl max-h-48">
+                    <table className="w-full text-left text-[11px]">
+                      <thead className="bg-slate-100 text-slate-700 font-bold">
+                        <tr>
+                          {Object.keys(previewData[0] || {}).slice(0, 6).map((col) => (
+                            <th key={col} className="p-2 whitespace-nowrap">{col}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {previewData.slice(0, 5).map((row, idx) => (
+                          <tr key={idx} className="hover:bg-slate-50">
+                            {Object.keys(previewData[0] || {}).slice(0, 6).map((col) => (
+                              <td key={col} className="p-2 whitespace-nowrap text-slate-600">
+                                {String(row[col] ?? '-')}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Result Summary */}
+              {bulkResult && (
+                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 space-y-1">
+                  <div className="text-xs font-bold flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" /> นำเข้าข้อมูลเรียบร้อยแล้ว
+                  </div>
+                  <p className="text-xs">
+                    สร้างผู้ใช้ใหม่: <b>{bulkResult.created}</b> บัญชี | อัปเดตข้อมูลเดิม: <b>{bulkResult.updated}</b> บัญชี
+                  </p>
+                  {bulkResult.errors && bulkResult.errors.length > 0 && (
+                    <div className="mt-2 text-[11px] text-rose-700 bg-rose-50 p-2 rounded-lg border border-rose-200">
+                      <b>พบข้อผิดพลาดบางรายการ:</b>
+                      <ul className="list-disc pl-4 mt-0.5 space-y-0.5">
+                        {bulkResult.errors.map((e, idx) => (
+                          <li key={idx}>{e}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setShowBulkModal(false)}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 cursor-pointer"
+              >
+                ปิดหน้าต่าง
+              </button>
+              {previewData.length > 0 && (
+                <button
+                  type="button"
+                  disabled={bulkSubmitting}
+                  onClick={handleBulkSubmit}
+                  className="px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition disabled:opacity-50 cursor-pointer inline-flex items-center gap-1.5"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>{bulkSubmitting ? 'กำลังนำเข้าข้อมูล...' : `ยืนยันนำเข้า ${previewData.length} รายการ`}</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

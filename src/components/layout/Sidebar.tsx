@@ -102,6 +102,12 @@ export default function Sidebar() {
       roles: ['ADMIN', 'OFFICER', 'APPROVER'],
     },
     {
+      label: 'รายงาน & วิเคราะห์ข้อมูล',
+      href: '/reports',
+      icon: BarChart3,
+      roles: ['ADMIN', 'OFFICER', 'APPROVER'],
+    },
+    {
       label: 'จัดการผู้ใช้ & สิทธิ์',
       href: '/users',
       icon: Users,

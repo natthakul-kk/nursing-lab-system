@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import AssetQrModal from '@/components/qrcode/AssetQrModal';
+import ConsumableQrModal from '@/components/qrcode/ConsumableQrModal';
 import { formatImageUrl } from '@/lib/image-helper';
 import {
   Boxes,
@@ -46,6 +47,7 @@ export default function InventoryPage() {
 
   const [items, setItems] = useState<any[]>([]);
   const [selectedAssetForQr, setSelectedAssetForQr] = useState<{ asset: any; itemName: string } | null>(null);
+  const [selectedLotForQr, setSelectedLotForQr] = useState<{ lot: any; item: any } | null>(null);
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState<string>('ALL');
@@ -1138,6 +1140,7 @@ export default function InventoryPage() {
                                           <th className="py-2">ราคาต้นทุน/หน่วย</th>
                                           <th className="py-2">วันหมดอายุ</th>
                                           <th className="py-2">ผู้จัดจำหน่าย</th>
+                                          <th className="py-2 text-right">ป้าย QR</th>
                                         </tr>
                                       </thead>
                                       <tbody className="divide-y divide-slate-100 font-medium">
@@ -1172,11 +1175,22 @@ export default function InventoryPage() {
                                             <td className="py-2 text-slate-500">
                                               {lot.supplier || '-'}
                                             </td>
+                                            <td className="py-2 text-right">
+                                              <button
+                                                type="button"
+                                                onClick={() => setSelectedLotForQr({ lot, item })}
+                                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-700 text-[11px] font-bold transition border border-teal-200 cursor-pointer"
+                                                title="พิมพ์ป้ายสติกเกอร์ QR Code ประจำล็อตนี้"
+                                              >
+                                                <QrCode className="w-3.5 h-3.5" />
+                                                <span>พิมพ์ป้าย QR ล็อต</span>
+                                              </button>
+                                            </td>
                                           </tr>
                                         ))}
                                         {(!item.stockLots || item.stockLots.length === 0) && (
                                           <tr>
-                                            <td colSpan={5} className="py-3 text-center text-slate-400">
+                                            <td colSpan={6} className="py-3 text-center text-slate-400">
                                               ไม่มีล็อตคงคลังที่มียอดเหลือ
                                             </td>
                                           </tr>
@@ -2165,6 +2179,15 @@ export default function InventoryPage() {
           asset={selectedAssetForQr.asset}
           itemName={selectedAssetForQr.itemName}
           onClose={() => setSelectedAssetForQr(null)}
+        />
+      )}
+
+      {/* Modal: Consumable Lot QR Sticker Print */}
+      {selectedLotForQr && (
+        <ConsumableQrModal
+          item={selectedLotForQr.item}
+          lot={selectedLotForQr.lot}
+          onClose={() => setSelectedLotForQr(null)}
         />
       )}
 

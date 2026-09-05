@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import QRCode from 'qrcode';
 import { useAuth } from '@/lib/auth-context';
 import {
   PackageCheck,
@@ -67,6 +68,39 @@ export default function RepackPage() {
   const [selectedRecordForLabel, setSelectedRecordForLabel] = useState<any | null>(null);
   const [printMode, setPrintMode] = useState<'all_packs' | 'lot_summary' | 'single_pack'>('all_packs');
   const [selectedPackForSinglePrint, setSelectedPackForSinglePrint] = useState<any | null>(null);
+  const [labelQrs, setLabelQrs] = useState<{ [key: string]: string }>({});
+
+  useEffect(() => {
+    if (!selectedRecordForLabel) return;
+    async function genPackQrs() {
+      const qrs: { [key: string]: string } = {};
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      
+      if (selectedRecordForLabel.subLotNumber) {
+        try {
+          const payload = `${origin}/inventory?search=${encodeURIComponent(selectedRecordForLabel.subLotNumber)}`;
+          qrs[selectedRecordForLabel.subLotNumber] = await QRCode.toDataURL(payload, { width: 200, margin: 1 });
+        } catch (e) {}
+      }
+
+      const packs = selectedRecordForLabel.packItems && selectedRecordForLabel.packItems.length > 0
+        ? selectedRecordForLabel.packItems
+        : Array.from({ length: selectedRecordForLabel.totalPacksProduced }).map((_, idx) => ({
+            packCode: `${selectedRecordForLabel.subLotNumber}-P${String(idx + 1).padStart(2, '0')}`,
+          }));
+
+      for (const p of packs) {
+        if (p.packCode) {
+          try {
+            const payload = `${origin}/inventory?search=${encodeURIComponent(p.packCode)}`;
+            qrs[p.packCode] = await QRCode.toDataURL(payload, { width: 140, margin: 1 });
+          } catch (e) {}
+        }
+      }
+      setLabelQrs(qrs);
+    }
+    genPackQrs();
+  }, [selectedRecordForLabel]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -907,7 +941,7 @@ export default function RepackPage() {
                   ).map((pack: any) => (
                     <div
                       key={pack.packCode || pack.packNumber}
-                      className="border-2 border-dashed border-teal-500/40 bg-teal-50/20 p-3.5 rounded-2xl space-y-1.5 text-slate-900 print:border-slate-800 print:bg-white print:p-2.5 print:rounded-lg print:break-inside-avoid"
+                      className="border-2 border-dashed border-teal-500/40 bg-teal-50/20 p-2.5 rounded-2xl space-y-1.5 text-slate-900 print:border-slate-800 print:bg-white print:p-2 print:rounded-lg print:break-inside-avoid"
                     >
                       <div className="border-b border-slate-200 pb-1 flex items-center justify-between">
                         <span className="text-[9px] font-bold text-slate-500 uppercase">
@@ -918,20 +952,32 @@ export default function RepackPage() {
                         </span>
                       </div>
 
-                      <div className="font-black text-slate-900 text-xs">
-                        {selectedRecordForLabel.targetItem?.name || selectedRecordForLabel.sourceItem?.name}
+                      <div className="flex items-center gap-2">
+                        {labelQrs[pack.packCode] ? (
+                          <img
+                            src={labelQrs[pack.packCode]}
+                            alt={pack.packCode}
+                            className="w-12 h-12 rounded border border-slate-200 bg-white p-0.5 flex-shrink-0 print:w-11 print:h-11"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded bg-slate-100 flex items-center justify-center text-[8px] text-slate-400 flex-shrink-0">
+                            QR...
+                          </div>
+                        )}
+                        <div className="flex-1 overflow-hidden">
+                          <div className="font-black text-slate-900 text-[11px] truncate">
+                            {selectedRecordForLabel.targetItem?.name || selectedRecordForLabel.sourceItem?.name}
+                          </div>
+                          <div className="font-mono font-black text-teal-900 text-xs">
+                            {pack.packCode}
+                          </div>
+                          <div className="text-[10px] font-bold text-slate-700">
+                            บรรจุ {pack.unitsCount || selectedRecordForLabel.unitsPerPack} {selectedRecordForLabel.sourceItem?.usageUnit || 'ชิ้น'}
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="flex items-center justify-between text-[11px]">
-                        <span className="font-mono font-bold text-teal-900">
-                          {pack.packCode}
-                        </span>
-                        <span className="font-bold text-slate-700">
-                          {pack.unitsCount || selectedRecordForLabel.unitsPerPack} {selectedRecordForLabel.sourceItem?.usageUnit || 'ชิ้น'}
-                        </span>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-1 text-[10px] text-slate-600 pt-1 border-t border-slate-200">
+                      <div className="grid grid-cols-2 gap-1 text-[9.5px] text-slate-600 pt-1 border-t border-slate-200">
                         <div>
                           <span>อบ: </span>
                           <span className="font-medium">
@@ -948,7 +994,7 @@ export default function RepackPage() {
                         </div>
                       </div>
 
-                      <div className="text-[9px] text-slate-400 flex justify-between pt-0.5">
+                      <div className="text-[8.5px] text-slate-400 flex justify-between pt-0.5">
                         <span className="truncate max-w-[120px]">วิธี: {selectedRecordForLabel.sterilizeMethod?.split(' ')[0]}</span>
                         <span className="truncate max-w-[100px]">ผู้เตรียม: {selectedRecordForLabel.operator?.name?.split(' ')[0]}</span>
                       </div>
@@ -959,7 +1005,7 @@ export default function RepackPage() {
 
               {/* MODE 2: LOT SUMMARY */}
               {printMode === 'lot_summary' && (
-                <div className="border-2 border-dashed border-teal-500/40 bg-teal-50/30 p-5 rounded-2xl space-y-2 text-slate-900 print:border-slate-800 print:bg-white">
+                <div className="border-2 border-dashed border-teal-500/40 bg-teal-50/30 p-5 rounded-2xl space-y-3 text-slate-900 print:border-slate-800 print:bg-white">
                   <div className="border-b border-slate-300 pb-2 text-center">
                     <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                       คณะพยาบาลศาสตร์ - หน่วยจ่ายกลางและแล็บฝึกปฏิบัติการ
@@ -972,26 +1018,39 @@ export default function RepackPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 text-xs py-1.5 font-medium">
-                    <div>
-                      <span className="text-slate-500 text-[10px] block">รหัส Sub-lot:</span>
-                      <span className="font-mono font-bold text-slate-900">{selectedRecordForLabel.subLotNumber}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 text-[10px] block">อ้างอิง Lot เดิม:</span>
-                      <span className="font-mono text-slate-700">{selectedRecordForLabel.sourceLot?.lotNumber}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 text-[10px] block">วันที่แพ็ค/อบ:</span>
-                      <span>{new Date(selectedRecordForLabel.packedDate).toLocaleDateString('th-TH')}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 text-[10px] block">วันหมดอายุสเตอร์ไรด์:</span>
-                      <span className="font-bold text-rose-600">
-                        {selectedRecordForLabel.sterileExpiryDate
-                          ? new Date(selectedRecordForLabel.sterileExpiryDate).toLocaleDateString('th-TH')
-                          : '-'}
-                      </span>
+                  <div className="flex items-center gap-4">
+                    {labelQrs[selectedRecordForLabel.subLotNumber] ? (
+                      <img
+                        src={labelQrs[selectedRecordForLabel.subLotNumber]}
+                        alt={selectedRecordForLabel.subLotNumber}
+                        className="w-20 h-20 rounded-xl border border-slate-200 bg-white p-1 flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="w-20 h-20 rounded-xl bg-slate-100 flex items-center justify-center text-xs text-slate-400 flex-shrink-0">
+                        สร้าง QR...
+                      </div>
+                    )}
+                    <div className="grid grid-cols-2 gap-2 text-xs font-medium flex-1">
+                      <div>
+                        <span className="text-slate-500 text-[10px] block">รหัส Sub-lot:</span>
+                        <span className="font-mono font-bold text-slate-900">{selectedRecordForLabel.subLotNumber}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 text-[10px] block">อ้างอิง Lot เดิม:</span>
+                        <span className="font-mono text-slate-700">{selectedRecordForLabel.sourceLot?.lotNumber}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 text-[10px] block">วันที่แพ็ค/อบ:</span>
+                        <span>{new Date(selectedRecordForLabel.packedDate).toLocaleDateString('th-TH')}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 text-[10px] block">วันหมดอายุสเตอร์ไรด์:</span>
+                        <span className="font-bold text-rose-600">
+                          {selectedRecordForLabel.sterileExpiryDate
+                            ? new Date(selectedRecordForLabel.sterileExpiryDate).toLocaleDateString('th-TH')
+                            : '-'}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
@@ -1004,7 +1063,7 @@ export default function RepackPage() {
 
               {/* MODE 3: SINGLE PACK */}
               {printMode === 'single_pack' && selectedPackForSinglePrint && (
-                <div className="max-w-sm mx-auto border-2 border-dashed border-teal-500/40 bg-teal-50/30 p-4 rounded-2xl space-y-2 text-slate-900 print:border-slate-800 print:bg-white">
+                <div className="max-w-sm mx-auto border-2 border-dashed border-teal-500/40 bg-teal-50/30 p-4 rounded-2xl space-y-2.5 text-slate-900 print:border-slate-800 print:bg-white">
                   <div className="border-b border-slate-200 pb-1.5 flex items-center justify-between">
                     <span className="text-[10px] font-bold text-slate-500 uppercase">
                       คณะพยาบาลศาสตร์ แล็บปฏิบัติการ
@@ -1014,17 +1073,29 @@ export default function RepackPage() {
                     </span>
                   </div>
 
-                  <div className="font-black text-slate-900 text-sm">
-                    {selectedRecordForLabel.sourceItem?.name}
-                  </div>
-
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-mono font-bold text-teal-900 text-sm">
-                      {selectedPackForSinglePrint.packCode}
-                    </span>
-                    <span className="font-bold text-slate-700">
-                      {selectedPackForSinglePrint.unitsCount || selectedRecordForLabel.unitsPerPack} {selectedRecordForLabel.sourceItem?.usageUnit || 'ชิ้น'}
-                    </span>
+                  <div className="flex items-center gap-3">
+                    {labelQrs[selectedPackForSinglePrint.packCode] ? (
+                      <img
+                        src={labelQrs[selectedPackForSinglePrint.packCode]}
+                        alt={selectedPackForSinglePrint.packCode}
+                        className="w-16 h-16 rounded-lg border border-slate-200 bg-white p-0.5 flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 rounded-lg bg-slate-100 flex items-center justify-center text-xs text-slate-400 flex-shrink-0">
+                        QR...
+                      </div>
+                    )}
+                    <div className="flex-1 overflow-hidden space-y-0.5">
+                      <div className="font-black text-slate-900 text-sm truncate">
+                        {selectedRecordForLabel.sourceItem?.name}
+                      </div>
+                      <div className="font-mono font-bold text-teal-900 text-xs">
+                        {selectedPackForSinglePrint.packCode}
+                      </div>
+                      <div className="text-xs font-bold text-slate-700">
+                        บรรจุ {selectedPackForSinglePrint.unitsCount || selectedRecordForLabel.unitsPerPack} {selectedRecordForLabel.sourceItem?.usageUnit || 'ชิ้น'}
+                      </div>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600 pt-1.5 border-t border-slate-200">

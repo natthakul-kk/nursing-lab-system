@@ -48,6 +48,8 @@ export async function POST(req: Request) {
       sourceItemId,
       sourceLotId,
       sourceQtyUsed,
+      customUsageUnit,
+      customRatio,
       subLotNumber,
       unitsPerPack,
       totalPacksProduced,
@@ -56,6 +58,11 @@ export async function POST(req: Request) {
       sterilizeMethod,
       operatorId,
       note,
+      // Target item options
+      targetItemId: rawTargetItemId,
+      autoCreateTargetItem,
+      targetItemName: rawTargetItemName,
+      targetItemCode: rawTargetItemCode,
     } = body;
 
     if (!sourceItemId || !sourceLotId || !sourceQtyUsed || sourceQtyUsed <= 0) {
@@ -91,6 +98,55 @@ export async function POST(req: Request) {
       );
     }
 
+    // Determine or create Target Item (เวชภัณฑ์สำเร็จรูปแบ่งบรรจุสเตอร์ไรด์ หน่วยเป็น 'ซอง')
+    let finalTargetItemId = rawTargetItemId || null;
+    const effectiveUsageUnit = customUsageUnit || sourceLot.item.usageUnit || 'ชิ้น';
+    const effectiveUnitsPerPack = Number(unitsPerPack) || 1;
+
+    if (!finalTargetItemId) {
+      // Auto-generate code & name for target item
+      const defaultTargetCode = rawTargetItemCode?.trim() || `RP-${sourceLot.item.code}-${effectiveUnitsPerPack}`;
+      const defaultTargetName = rawTargetItemName?.trim() || `${sourceLot.item.name} (ซอง ${effectiveUnitsPerPack} ${effectiveUsageUnit} ปลอดเชื้อ)`;
+
+      // Check if target item already exists with this code
+      let existingTarget = await prisma.item.findUnique({
+        where: { code: defaultTargetCode },
+      });
+
+      if (!existingTarget) {
+        // Find if any item has exact same name
+        existingTarget = await prisma.item.findFirst({
+          where: { name: defaultTargetName },
+        });
+      }
+
+      if (existingTarget) {
+        finalTargetItemId = existingTarget.id;
+      } else {
+        // Create new Target Item with unit: "ซอง"
+        const createdItem = await prisma.item.create({
+          data: {
+            code: defaultTargetCode,
+            name: defaultTargetName,
+            type: 'CONSUMABLE',
+            categoryId: sourceLot.item.categoryId,
+            unit: 'ซอง',
+            usageUnit: effectiveUsageUnit,
+            conversionRatio: effectiveUnitsPerPack,
+            location: sourceLot.item.location ? `${sourceLot.item.location} (ตู้เก็บของสเตอร์ไรด์)` : 'ห้องปฏิบัติการพยาบาล (ตู้ปลอดเชื้อ)',
+            description: `เวชภัณฑ์แบ่งบรรจุและสเตอร์ไรด์จาก ${sourceLot.item.name} (ซองละ ${effectiveUnitsPerPack} ${effectiveUsageUnit})`,
+            minStockAlert: 10,
+          },
+        });
+        finalTargetItemId = createdItem.id;
+      }
+    }
+
+    // Fetch final target item detail for logging/naming
+    const targetItem = await prisma.item.findUnique({
+      where: { id: finalTargetItemId },
+    });
+
     // Generate record number
     const count = await prisma.repackRecord.count();
     const recordNumber = 'RP-' + new Date().getFullYear() + '-' + String(count + 1).padStart(4, '0');
@@ -116,7 +172,7 @@ export async function POST(req: Request) {
       },
     });
 
-    // 2. Record Transaction OUT_REPACK
+    // 2. Record Transaction OUT_REQUISITION for source item
     await prisma.stockTransaction.create({
       data: {
         itemId: sourceItemId,
@@ -127,28 +183,28 @@ export async function POST(req: Request) {
         totalCost: totalSourceCost,
         referenceNumber: recordNumber,
         createdById: operatorId,
-        note: 'เบิกแบ่งบรรจุย่อย: ' + autoSubLot + ' (ได้ ' + totalPacksProduced + ' ซองย่อย)',
+        note: `เบิกแบ่งบรรจุย่อยเข้าสู่: ${targetItem?.name || 'เวชภัณฑ์สเตอร์ไรด์'} [Sub-lot: ${autoSubLot}] (${totalPacksProduced} ซอง)`,
       },
     });
 
-    // 3. Create or Add to new Sub-lot in stockLots
+    // 3. Create or Add to new Sub-lot in stockLots belonging to TARGET ITEM (หน่วย: ซอง)
     const newSubLot = await prisma.stockLot.create({
       data: {
-        itemId: sourceItemId,
+        itemId: finalTargetItemId,
         lotNumber: autoSubLot,
         quantityInitial: totalPacksProduced,
         quantityRemaining: totalPacksProduced,
         unitCost: unitCostPerPack,
         expiryDate: parsedSterileExpiry || sourceLot.expiryDate,
         receivedDate: parsedPackedDate,
-        supplier: 'แล็บพยาบาลแบ่งบรรจุย่อย (Sterile Pack)',
+        supplier: `แล็บพยาบาลแบ่งบรรจุสเตอร์ไรด์ (จาก Lot ${sourceLot.lotNumber})`,
       },
     });
 
-    // 4. Record Transaction IN for new sub-lot
+    // 4. Record Transaction IN for Target Item
     await prisma.stockTransaction.create({
       data: {
-        itemId: sourceItemId,
+        itemId: finalTargetItemId,
         lotId: newSubLot.id,
         type: 'IN',
         quantity: totalPacksProduced,
@@ -156,7 +212,7 @@ export async function POST(req: Request) {
         totalCost: totalSourceCost,
         referenceNumber: recordNumber,
         createdById: operatorId,
-        note: 'รับเข้าจากการแบ่งบรรจุย่อย ' + autoSubLot + ' (ขนาด ' + (unitsPerPack || 1) + ' ชิ้น/ซอง)',
+        note: `รับเข้าเวชภัณฑ์แบ่งบรรจุสำเร็จรูป ${autoSubLot} (ขนาด ${effectiveUnitsPerPack} ${effectiveUsageUnit}/ซอง) รวม ${totalPacksProduced} ซอง`,
       },
     });
 
@@ -166,7 +222,7 @@ export async function POST(req: Request) {
       packItemsData.push({
         packNumber: i,
         packCode: `${autoSubLot}-P${String(i).padStart(2, '0')}`,
-        unitsCount: unitsPerPack || 1,
+        unitsCount: effectiveUnitsPerPack,
         status: 'AVAILABLE',
       });
     }
@@ -177,8 +233,9 @@ export async function POST(req: Request) {
         sourceItemId,
         sourceLotId,
         sourceQtyUsed,
+        targetItemId: finalTargetItemId,
         subLotNumber: autoSubLot,
-        unitsPerPack: unitsPerPack || 1,
+        unitsPerPack: effectiveUnitsPerPack,
         totalPacksProduced,
         packedDate: parsedPackedDate,
         sterileExpiryDate: parsedSterileExpiry,
@@ -192,6 +249,7 @@ export async function POST(req: Request) {
       include: {
         sourceItem: true,
         sourceLot: true,
+        targetItem: true,
         operator: true,
         packItems: {
           orderBy: { packNumber: 'asc' },
@@ -201,7 +259,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      message: 'บันทึกการแบ่งบรรจุย่อยสำเร็จ รหัสล็อตใหม่: ' + autoSubLot,
+      message: `บันทึกการแบ่งบรรจุสำเร็จ! รับเข้าสต็อกพัสดุ: ${targetItem?.name} จำนวน ${totalPacksProduced} ซอง (Sub-lot: ${autoSubLot})`,
       record,
     });
   } catch (error: any) {

@@ -53,6 +53,10 @@ export default function RepackPage() {
     sterileExpiryDate: '',
     sterilizeMethod: 'Autoclave ไอน้ำแรงดันสูง (121°C)',
     note: '',
+    targetOption: 'auto', // 'auto' | 'existing'
+    targetItemId: '',
+    targetItemName: '',
+    targetItemCode: '',
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -104,6 +108,8 @@ export default function RepackPage() {
     const defaultUsageUnit = item?.usageUnit || 'คู่';
     const suggestedUnitsPerPack = Math.max(1, Math.round(defaultRatio / 10) || 2);
     const suggestedTotalPacks = Math.max(1, Math.floor(defaultRatio / suggestedUnitsPerPack));
+    const suggestedTargetCode = `RP-${item?.code || 'MED'}-${suggestedUnitsPerPack}`;
+    const suggestedTargetName = `${item?.name || 'เวชภัณฑ์'} (ซองละ ${suggestedUnitsPerPack} ${defaultUsageUnit} ปลอดเชื้อ)`;
 
     setForm((prev) => ({
       ...prev,
@@ -116,20 +122,31 @@ export default function RepackPage() {
       totalPacksProduced: suggestedTotalPacks,
       subLotNumber: suggestedSubLot,
       sterileExpiryDate: defaultSterileExpiry,
+      targetOption: 'auto',
+      targetItemId: '',
+      targetItemName: suggestedTargetName,
+      targetItemCode: suggestedTargetCode,
     }));
   };
 
   // Auto calculate total packs produced using dynamic customRatio
-  const handleCalcPacks = (qtyUsed: number, unitsPerPack: number, ratioOverride?: number) => {
+  const handleCalcPacks = (qtyUsed: number, unitsPerPack: number, ratioOverride?: number, usageUnitOverride?: string) => {
     const ratio = ratioOverride !== undefined ? ratioOverride : (form.customRatio || selectedSourceItem?.conversionRatio || 50);
+    const uUnit = usageUnitOverride !== undefined ? usageUnitOverride : (form.customUsageUnit || selectedSourceItem?.usageUnit || 'ชิ้น');
     const totalUnits = qtyUsed * ratio;
     const produced = unitsPerPack > 0 ? Math.floor(totalUnits / unitsPerPack) : 1;
+    const suggestedTargetCode = `RP-${selectedSourceItem?.code || 'MED'}-${unitsPerPack}`;
+    const suggestedTargetName = `${selectedSourceItem?.name || 'เวชภัณฑ์'} (ซองละ ${unitsPerPack} ${uUnit} ปลอดเชื้อ)`;
+
     setForm((prev) => ({
       ...prev,
       sourceQtyUsed: qtyUsed,
       unitsPerPack,
       customRatio: ratio,
+      customUsageUnit: uUnit,
       totalPacksProduced: produced > 0 ? produced : 1,
+      targetItemCode: prev.targetOption === 'auto' ? suggestedTargetCode : prev.targetItemCode,
+      targetItemName: prev.targetOption === 'auto' ? suggestedTargetName : prev.targetItemName,
     }));
   };
 
@@ -299,10 +316,10 @@ export default function RepackPage() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
-                <TableLoadingRow colSpan={9} message="กำลังโหลดประวัติการแบ่งบรรจุเวชภัณฑ์..." />
+                <TableLoadingRow colSpan={10} message="กำลังโหลดประวัติการแบ่งบรรจุเวชภัณฑ์..." />
               ) : filteredRecords.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-12 text-center text-slate-400">
+                  <td colSpan={10} className="py-12 text-center text-slate-400">
                     <Scissors className="w-8 h-8 text-slate-300 mx-auto mb-2" />
                     <span>ยังไม่มีประวัติการแบ่งบรรจุเวชภัณฑ์ในระบบ</span>
                   </td>
@@ -319,17 +336,42 @@ export default function RepackPage() {
 
                     <td className="py-3.5 px-4">
                       <div className="font-bold text-slate-900 text-xs">{r.sourceItem?.name}</div>
-                      <span className="font-mono text-[10px] text-teal-700 bg-teal-50 px-1.5 py-0.2 rounded font-semibold">
-                        {r.sourceItem?.code}
-                      </span>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="font-mono text-[10px] text-teal-700 bg-teal-50 px-1.5 py-0.2 rounded font-semibold">
+                          {r.sourceItem?.code}
+                        </span>
+                        <span className="text-[10px] text-slate-500">
+                          (หน่วย: {r.sourceItem?.unit})
+                        </span>
+                      </div>
+                    </td>
+
+                    <td className="py-3.5 px-4">
+                      {r.targetItem ? (
+                        <div>
+                          <div className="font-bold text-teal-900 text-xs">{r.targetItem.name}</div>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="font-mono text-[10px] text-emerald-800 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded font-semibold">
+                              {r.targetItem.code}
+                            </span>
+                            <span className="text-[10px] font-bold text-emerald-700">
+                              (หน่วย: {r.targetItem.unit})
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-slate-400 text-xs italic">
+                          {r.sourceItem?.name} (ซองย่อย)
+                        </div>
+                      )}
                     </td>
 
                     <td className="py-3.5 px-4">
                       <span className="font-mono text-xs font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
                         {r.sourceLot?.lotNumber}
                       </span>
-                      <div className="text-[10px] text-slate-400 mt-0.5">
-                        เบิกใช้: {r.sourceQtyUsed} {r.sourceItem?.unit}
+                      <div className="text-[10px] text-slate-500 mt-0.5">
+                        เบิก: <b className="text-slate-800">{r.sourceQtyUsed}</b> {r.sourceItem?.unit}
                       </div>
                     </td>
 
@@ -718,10 +760,106 @@ export default function RepackPage() {
                 </div>
               </div>
 
-              {/* Step 3: Sub-lot, Sterilization & Expiry */}
+
+              {/* Step 2.5: Target Item Specification (สร้าง/ผูกรายการพัสดุปลายทาง หน่วย: ซอง) */}
+              <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 space-y-3">
+                <div className="text-xs font-bold text-emerald-950 flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded-full bg-emerald-700 text-white text-[10px] flex items-center justify-center font-bold">3</span>
+                    <span>รายการเวชภัณฑ์สำเร็จรูปปลายทาง (หน่วยสต็อก: ซอง)</span>
+                  </div>
+                  <span className="text-[10px] font-medium text-emerald-800 bg-white px-2 py-0.5 rounded-full border border-emerald-200">
+                    แยกทะเบียนชัดเจน หน่วยเป็น "ซอง" 100%
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-4 text-xs font-medium text-slate-700">
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="targetOption"
+                      value="auto"
+                      checked={form.targetOption === 'auto'}
+                      onChange={() => setForm({ ...form, targetOption: 'auto' })}
+                      className="text-teal-600 focus:ring-teal-500"
+                    />
+                    <span>สร้าง/ใช้รายการเวชภัณฑ์แบ่งบรรจุอัตโนมัติ (แนะนำ)</span>
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="targetOption"
+                      value="existing"
+                      checked={form.targetOption === 'existing'}
+                      onChange={() => setForm({ ...form, targetOption: 'existing' })}
+                      className="text-teal-600 focus:ring-teal-500"
+                    />
+                    <span>เลือกรายการพัสดุที่มีอยู่แล้วในระบบ</span>
+                  </label>
+                </div>
+
+                {form.targetOption === 'auto' ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        ชื่อพัสดุสำเร็จรูปปลายทาง (ในทะเบียนพัสดุ) *
+                      </label>
+                      <input
+                        type="text"
+                        value={form.targetItemName}
+                        onChange={(e) => setForm({ ...form, targetItemName: e.target.value })}
+                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-teal-500"
+                        placeholder="เช่น ถุงมือตรวจโรคปลอดเชื้อ (ซองละ 2 คู่)"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        รหัสพัสดุปลายทาง *
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={form.targetItemCode}
+                          onChange={(e) => setForm({ ...form, targetItemCode: e.target.value })}
+                          className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono font-bold text-teal-800 focus:ring-2 focus:ring-teal-500"
+                          placeholder="เช่น RP-CON-PPE-001-2"
+                          required
+                        />
+                        <span className="text-xs font-bold text-slate-600 bg-white px-2.5 py-2 rounded-xl border border-slate-200 whitespace-nowrap">
+                          หน่วย: ซอง
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      เลือกรายการเวชภัณฑ์ปลายทางที่ต้องการรับเข้า *
+                    </label>
+                    <select
+                      value={form.targetItemId}
+                      onChange={(e) => setForm({ ...form, targetItemId: e.target.value })}
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-teal-500"
+                      required={form.targetOption === 'existing'}
+                    >
+                      <option value="">-- เลือกรายการเวชภัณฑ์ปลายทาง --</option>
+                      {consumableItems
+                        .filter((item) => item.id !== form.sourceItemId)
+                        .map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {item.name} ({item.code}) - หน่วยสต็อก: {item.unit}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              {/* Step 4: Sub-lot, Sterilization & Expiry */}
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
                 <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                  <span className="w-5 h-5 rounded-full bg-teal-600 text-white text-[10px] flex items-center justify-center font-bold">3</span>
+                  <span className="w-5 h-5 rounded-full bg-teal-600 text-white text-[10px] flex items-center justify-center font-bold">4</span>
                   กำหนดรหัส Sub-lot และการสเตอร์ไรด์
                 </div>
 
@@ -886,7 +1024,7 @@ export default function RepackPage() {
                       </div>
 
                       <div className="font-black text-slate-900 text-xs">
-                        {selectedRecordForLabel.sourceItem?.name}
+                        {selectedRecordForLabel.targetItem?.name || selectedRecordForLabel.sourceItem?.name}
                       </div>
 
                       <div className="flex items-center justify-between text-[11px]">
@@ -932,7 +1070,7 @@ export default function RepackPage() {
                       คณะพยาบาลศาสตร์ - หน่วยจ่ายกลางและแล็บฝึกปฏิบัติการ
                     </div>
                     <div className="text-base font-black text-slate-900 mt-1">
-                      {selectedRecordForLabel.sourceItem?.name}
+                      {selectedRecordForLabel.targetItem?.name || selectedRecordForLabel.sourceItem?.name}
                     </div>
                     <div className="text-xs font-bold text-teal-800">
                       บรรจุซองละ {selectedRecordForLabel.unitsPerPack} {selectedRecordForLabel.sourceItem?.usageUnit || 'ชิ้น'} (รวม {selectedRecordForLabel.totalPacksProduced} ซอง)

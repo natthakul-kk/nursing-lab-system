@@ -78,7 +78,7 @@ export default function RepackPage() {
       
       if (selectedRecordForLabel.subLotNumber) {
         try {
-          const payload = `${origin}/inventory?search=${encodeURIComponent(selectedRecordForLabel.subLotNumber)}`;
+          const payload = `${origin}/consumable/${encodeURIComponent(selectedRecordForLabel.subLotNumber)}`;
           qrs[selectedRecordForLabel.subLotNumber] = await QRCode.toDataURL(payload, { width: 200, margin: 1 });
         } catch (e) {}
       }
@@ -92,7 +92,7 @@ export default function RepackPage() {
       for (const p of packs) {
         if (p.packCode) {
           try {
-            const payload = `${origin}/inventory?search=${encodeURIComponent(p.packCode)}`;
+            const payload = `${origin}/consumable/${encodeURIComponent(p.packCode)}`;
             qrs[p.packCode] = await QRCode.toDataURL(payload, { width: 140, margin: 1 });
           } catch (e) {}
         }

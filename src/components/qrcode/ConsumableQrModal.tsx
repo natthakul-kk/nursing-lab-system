@@ -35,7 +35,7 @@ export default function ConsumableQrModal({ item, lot, onClose }: ConsumableQrMo
     async function generateQr() {
       try {
         const origin = typeof window !== 'undefined' ? window.location.origin : '';
-        const qrPayload = `${origin}/inventory?search=${encodeURIComponent(lot.lotNumber)}`;
+        const qrPayload = `${origin}/consumable/${encodeURIComponent(lot.lotNumber)}`;
 
         const url = await QRCode.toDataURL(qrPayload, {
           width: 300,

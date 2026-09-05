@@ -53,6 +53,19 @@ export async function GET(
     });
 
     if (!asset) {
+      // Check if this code belongs to a consumable box, pack, lot, or item
+      const isBox = await prisma.stockLotBox.findFirst({ where: { boxCode: decodedCode } });
+      const isPack = await prisma.repackPackItem.findFirst({ where: { packCode: decodedCode } });
+      const isLot = await prisma.stockLot.findFirst({ where: { lotNumber: decodedCode } });
+      const isItem = await prisma.item.findFirst({ where: { code: decodedCode, type: 'CONSUMABLE' } });
+
+      if (isBox || isPack || isLot || isItem) {
+        return NextResponse.json(
+          { redirectUrl: `/consumable/${encodeURIComponent(decodedCode)}` },
+          { status: 200 }
+        );
+      }
+
       return NextResponse.json(
         { error: `ไม่พบข้อมูลครุภัณฑ์รหัส "${decodedCode}" ในระบบ` },
         { status: 404 }

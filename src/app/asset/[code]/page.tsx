@@ -47,6 +47,10 @@ export default function PublicAssetPage() {
         const res = await fetch(`/api/assets/public/${encodeURIComponent(rawCode)}`);
         if (res.ok) {
           const data = await res.json();
+          if (data.redirectUrl) {
+            window.location.replace(data.redirectUrl);
+            return;
+          }
           setAsset(data);
         } else {
           const err = await res.json();

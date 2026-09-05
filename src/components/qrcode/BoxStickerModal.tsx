@@ -44,7 +44,7 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
 
       for (const box of boxes) {
         try {
-          const payload = `${origin}/inventory?search=${encodeURIComponent(box.boxCode)}`;
+          const payload = `${origin}/consumable/${encodeURIComponent(box.boxCode)}`;
           qrs[box.boxCode] = await QRCode.toDataURL(payload, {
             width: 160,
             margin: 1,

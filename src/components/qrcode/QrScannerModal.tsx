@@ -41,6 +41,14 @@ export default function QrScannerModal({ isOpen, onClose }: QrScannerModalProps)
       return;
     }
 
+    // Check if it's a URL like http.../consumable/[code]
+    const consumableUrlMatch = cleanText.match(/\/consumable\/([^\/\?#]+)/);
+    if (consumableUrlMatch && consumableUrlMatch[1]) {
+      const code = decodeURIComponent(consumableUrlMatch[1]);
+      stopScannerAndNavigate(`/consumable/${encodeURIComponent(code)}`);
+      return;
+    }
+
     // 2. Check if it's JSON
     if (cleanText.startsWith('{') && cleanText.endsWith('}')) {
       try {
@@ -49,12 +57,29 @@ export default function QrScannerModal({ isOpen, onClose }: QrScannerModalProps)
           stopScannerAndNavigate(`/asset/${encodeURIComponent(parsed.assetCode)}`);
           return;
         }
+        if (parsed.boxCode || parsed.packCode || parsed.lotNumber) {
+          stopScannerAndNavigate(`/consumable/${encodeURIComponent(parsed.boxCode || parsed.packCode || parsed.lotNumber)}`);
+          return;
+        }
       } catch (e) {
         // ignore
       }
     }
 
-    // 3. Plain asset code
+    // 3. Plain code check: if starts with CON-, RP-, SL-, or has -B / -P, it's a consumable
+    const upperText = cleanText.toUpperCase();
+    if (
+      upperText.startsWith('CON-') ||
+      upperText.startsWith('RP-') ||
+      upperText.startsWith('SL-') ||
+      upperText.includes('-B') ||
+      upperText.includes('-P')
+    ) {
+      stopScannerAndNavigate(`/consumable/${encodeURIComponent(cleanText)}`);
+      return;
+    }
+
+    // Default to asset code
     stopScannerAndNavigate(`/asset/${encodeURIComponent(cleanText)}`);
   };
 

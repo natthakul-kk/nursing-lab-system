@@ -34,15 +34,9 @@ export default function AssetQrModal({ asset, itemName, onClose }: AssetQrModalP
   useEffect(() => {
     async function generateQr() {
       try {
-        // Data payload encoded into QR code
-        const qrPayload = JSON.stringify({
-          app: 'NURSING_LAB_SYS',
-          assetCode: asset.assetCode,
-          govCode: asset.govAssetCode || '',
-          name: title,
-          seq: asset.sequenceNumber || 1,
-          loc: asset.location || '',
-        });
+        // Direct URL payload encoded into QR code for camera scanning
+        const origin = typeof window !== 'undefined' ? window.location.origin : '';
+        const qrPayload = `${origin}/asset/${encodeURIComponent(asset.assetCode)}`;
 
         const url = await QRCode.toDataURL(qrPayload, {
           width: 320,
@@ -213,11 +207,16 @@ export default function AssetQrModal({ asset, itemName, onClose }: AssetQrModalP
           {/* QR Image */}
           <div className="flex justify-center my-1">
             {qrDataUrl ? (
-              <img
-                src={qrDataUrl}
-                alt={`QR Code ${asset.assetCode}`}
-                className="w-44 h-44 rounded-xl shadow-sm border border-slate-200 p-1 bg-white"
-              />
+              <div className="flex flex-col items-center">
+                <img
+                  src={qrDataUrl}
+                  alt={`QR Code ${asset.assetCode}`}
+                  className="w-44 h-44 rounded-xl shadow-sm border border-slate-200 p-1 bg-white"
+                />
+                <span className="text-[10px] text-teal-700 font-medium mt-1.5 flex items-center gap-1">
+                  📱 สแกนด้วยกล้องมือถือเพื่อดูข้อมูลออนไลน์ทันที
+                </span>
+              </div>
             ) : (
               <div className="w-44 h-44 flex items-center justify-center text-xs text-slate-400">
                 กำลังสร้าง QR Code...

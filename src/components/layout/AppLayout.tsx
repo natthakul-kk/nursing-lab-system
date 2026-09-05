@@ -11,8 +11,9 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { isLoading } = useAuth();
   const isLoginPage = pathname === '/login';
+  const isPublicAssetPage = pathname?.startsWith('/asset/');
 
-  if (isLoginPage) {
+  if (isLoginPage || isPublicAssetPage) {
     return <main className="min-h-screen">{children}</main>;
   }
 

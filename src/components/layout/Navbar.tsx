@@ -13,13 +13,17 @@ import {
   Building2,
   LogOut,
   LogIn,
-  UserCog
+  UserCog,
+  Camera,
+  QrCode
 } from 'lucide-react';
 import ProfileModal from '@/components/profile/ProfileModal';
+import QrScannerModal from '@/components/qrcode/QrScannerModal';
 
 export default function Navbar() {
   const { currentUser, availableUsers, switchUserById, logout } = useAuth();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   const getRoleBadge = (role?: UserRole) => {
     switch (role) {
@@ -93,6 +97,16 @@ export default function Navbar() {
           </div>
         </div>
 
+        {/* Quick QR Scanner Button */}
+        <button
+          onClick={() => setIsScannerOpen(true)}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-700 text-xs font-bold transition border border-teal-200 shadow-sm cursor-pointer"
+          title="เปิดกล้องสแกน QR Code เพื่อดูข้อมูลครุภัณฑ์ทันที"
+        >
+          <Camera className="w-3.5 h-3.5 text-teal-600" />
+          <span className="hidden md:inline">สแกน QR</span>
+        </button>
+
         {/* Current User Info, Profile Edit & Logout Button */}
         {currentUser ? (
           <div className="flex items-center gap-2 sm:gap-3 pl-2 sm:border-l border-slate-200">
@@ -136,6 +150,9 @@ export default function Navbar() {
 
       {/* Profile Modal */}
       <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
+
+      {/* QR Scanner Modal */}
+      <QrScannerModal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} />
     </header>
   );
 }

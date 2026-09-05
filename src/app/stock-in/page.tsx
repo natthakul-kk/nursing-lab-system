@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import BoxStickerModal from '@/components/qrcode/BoxStickerModal';
 import { useAuth } from '@/lib/auth-context';
 import {
   ArrowDownToLine,
@@ -48,6 +49,7 @@ export default function StockInPage() {
   });
 
   const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
+  const [newlyStockedBoxesData, setNewlyStockedBoxesData] = useState<{ item: any; lot: any; boxes: any[] } | null>(null);
 
   const fetchItemsAndHistory = async () => {
     try {
@@ -153,7 +155,16 @@ export default function StockInPage() {
       });
 
       if (res.ok) {
+        const data = await res.json();
         setSuccessMessage('บันทึกการรับเข้าเรียบร้อยแล้ว');
+        if (activeTab === 'CONSUMABLE' && data.boxes && data.boxes.length > 0) {
+          const curItem = items.find((i) => i.id === form.itemId);
+          setNewlyStockedBoxesData({
+            item: curItem || { name: 'เวชภัณฑ์', code: 'CON', unit: 'กล่อง' },
+            lot: data.lot,
+            boxes: data.boxes,
+          });
+        }
         setForm({
           itemId: form.itemId,
           lotNumber: '',
@@ -173,7 +184,7 @@ export default function StockInPage() {
         });
         setIsCustomCode(false);
         fetchItemsAndHistory();
-        setTimeout(() => setSuccessMessage(null), 4000);
+        setTimeout(() => setSuccessMessage(null), 8000);
       } else {
         const err = await res.json();
         alert(err.error || 'เกิดข้อผิดพลาดในการบันทึก');
@@ -610,6 +621,16 @@ export default function StockInPage() {
           </div>
         </div>
       </div>
+
+      {/* Modal: Box-Level Stickers Print */}
+      {newlyStockedBoxesData && (
+        <BoxStickerModal
+          item={newlyStockedBoxesData.item}
+          lot={newlyStockedBoxesData.lot}
+          boxes={newlyStockedBoxesData.boxes}
+          onClose={() => setNewlyStockedBoxesData(null)}
+        />
+      )}
     </div>
   );
 }

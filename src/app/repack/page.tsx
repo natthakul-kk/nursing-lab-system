@@ -697,13 +697,51 @@ export default function RepackPage() {
                 </div>
 
                 {selectedSourceItem && (
-                  <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-200/80">
-                    <span className="text-slate-600">
-                      คงเหลือในล็อตนี้: <b className="text-teal-700 font-black">{selectedSourceLot?.quantityRemaining || 0}</b> {selectedSourceItem.unit}
-                    </span>
-                    <span className="text-emerald-700 font-bold bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
-                      1 {selectedSourceItem.unit} = {form.customRatio} {form.customUsageUnit || selectedSourceItem.usageUnit || 'ชิ้น'}
-                    </span>
+                  <div className="space-y-2 pt-2 border-t border-slate-200/80">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-slate-600">
+                        คงเหลือในล็อตนี้: <b className="text-teal-700 font-black">{selectedSourceLot?.quantityRemaining || 0}</b> {selectedSourceItem.unit}
+                      </span>
+                      <span className="text-emerald-700 font-bold bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                        1 {selectedSourceItem.unit} = {form.customRatio} {form.customUsageUnit || selectedSourceItem.usageUnit || 'ชิ้น'}
+                      </span>
+                    </div>
+
+                    {/* Pick Guidance for Boxes */}
+                    {selectedSourceLot && (() => {
+                      const recommendedBox =
+                        selectedSourceLot.boxes?.find((b: any) => b.status === 'IN_USE') ||
+                        selectedSourceLot.boxes?.find((b: any) => b.status === 'IN_STOCK');
+
+                      if (!recommendedBox) return null;
+
+                      return (
+                        <div className="p-2.5 bg-emerald-100/70 border border-emerald-300 rounded-xl flex items-center justify-between text-xs animate-fadeIn">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white font-bold text-xs flex items-center justify-center flex-shrink-0">
+                              📦
+                            </div>
+                            <div>
+                              <div className="font-extrabold text-emerald-950 flex items-center gap-1.5">
+                                <span>💡 ระบบแนะนำให้หยิบ: <b>กล่องที่ {recommendedBox.boxNumberInLot}</b></span>
+                                <span className="font-mono text-[11px] text-emerald-800 font-black">[{recommendedBox.boxCode}]</span>
+                                <span className="text-[10px] bg-emerald-200 text-emerald-900 px-1.5 py-0.2 rounded font-mono font-bold">
+                                  กล่อง {recommendedBox.boxNumberInYear}/{recommendedBox.year}
+                                </span>
+                                {recommendedBox.status === 'IN_USE' && (
+                                  <span className="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded font-bold">
+                                    เปิดใช้อยู่
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[10.5px] text-emerald-800 pt-0.5">
+                                รับเข้า: {new Date(selectedSourceLot.receivedDate).toLocaleDateString('th-TH')} | หมดอายุ: {selectedSourceLot.expiryDate ? new Date(selectedSourceLot.expiryDate).toLocaleDateString('th-TH') : '-'}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
               </div>

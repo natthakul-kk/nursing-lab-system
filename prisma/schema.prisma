@@ -140,6 +140,7 @@ model StockLot {
 
   stockTransactions StockTransaction[]
   repackRecords     RepackRecord[]
+  boxes             StockLotBox[]
 }
 
 model StockTransaction {
@@ -318,3 +319,24 @@ model RepackPackItem {
 
 
 
+
+
+model StockLotBox {
+  id              String    @id @default(cuid())
+  lotId           String
+  lot             StockLot  @relation(fields: [lotId], references: [id], onDelete: Cascade)
+  itemId          String
+  boxCode         String    @unique // เช่น "CON-PPE-001-2569-B001"
+  boxNumberInLot  Int       // ลำดับกล่องในล็อต เช่น 1, 2, ...
+  boxNumberInYear Int       // ลำดับกล่องในปีนี้ เช่น 1, 2, ...
+  year            String    @default("2569") // ปี พ.ศ.
+  status          String    @default("IN_STOCK") // "IN_STOCK", "IN_USE", "DEPLETED"
+  openedAt        DateTime?
+  depletedAt      DateTime?
+  note            String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([itemId, year])
+  @@index([lotId])
+}

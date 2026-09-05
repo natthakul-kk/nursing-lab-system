@@ -27,6 +27,11 @@ export async function GET(req: Request) {
         stockLots: {
           where: { quantityRemaining: { gt: 0 } },
           orderBy: { expiryDate: 'asc' },
+          include: {
+            boxes: {
+              orderBy: { boxNumberInLot: 'asc' },
+            },
+          },
         },
       },
       orderBy: { code: 'asc' },

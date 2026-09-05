@@ -4,9 +4,11 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import AssetQrModal from '@/components/qrcode/AssetQrModal';
 import ConsumableQrModal from '@/components/qrcode/ConsumableQrModal';
+import BoxStickerModal from '@/components/qrcode/BoxStickerModal';
 import { formatImageUrl } from '@/lib/image-helper';
 import {
   Boxes,
+  Box,
   Search,
   Filter,
   Plus,
@@ -48,6 +50,7 @@ export default function InventoryPage() {
   const [items, setItems] = useState<any[]>([]);
   const [selectedAssetForQr, setSelectedAssetForQr] = useState<{ asset: any; itemName: string } | null>(null);
   const [selectedLotForQr, setSelectedLotForQr] = useState<{ lot: any; item: any } | null>(null);
+  const [selectedLotForBoxStickers, setSelectedLotForBoxStickers] = useState<{ item: any; lot: any; boxes: any[] } | null>(null);
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState<string>('ALL');
@@ -1144,50 +1147,82 @@ export default function InventoryPage() {
                                         </tr>
                                       </thead>
                                       <tbody className="divide-y divide-slate-100 font-medium">
-                                        {item.stockLots?.map((lot: any) => (
-                                          <tr key={lot.id}>
-                                            <td className="py-2 font-mono font-bold text-teal-800">
-                                              {lot.lotNumber}
-                                            </td>
-                                            <td className="py-2">
-                                              <span className="font-bold text-slate-900">
-                                                {lot.quantityRemaining}
-                                              </span>{' '}
-                                              {item.unit}
-                                              {lot.openPackRemainder > 0 && (
-                                                <span className="ml-2 px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 font-bold text-[10px] border border-purple-200">
-                                                  + เศษเปิด {lot.openPackRemainder} {item.usageUnit || 'ชิ้น'}
-                                                </span>
-                                              )}
-                                            </td>
-                                            <td className="py-2 text-slate-700">
-                                              ฿{lot.unitCost.toFixed(2)}
-                                            </td>
-                                            <td className="py-2">
-                                              {lot.expiryDate ? (
-                                                <span className="text-slate-800">
-                                                  {new Date(lot.expiryDate).toLocaleDateString('th-TH')}
-                                                </span>
-                                              ) : (
-                                                <span className="text-slate-400">ไม่ระบุ</span>
-                                              )}
-                                            </td>
-                                            <td className="py-2 text-slate-500">
-                                              {lot.supplier || '-'}
-                                            </td>
-                                            <td className="py-2 text-right">
-                                              <button
-                                                type="button"
-                                                onClick={() => setSelectedLotForQr({ lot, item })}
-                                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-700 text-[11px] font-bold transition border border-teal-200 cursor-pointer"
-                                                title="พิมพ์ป้ายสติกเกอร์ QR Code ประจำล็อตนี้"
-                                              >
-                                                <QrCode className="w-3.5 h-3.5" />
-                                                <span>พิมพ์ป้าย QR ล็อต</span>
-                                              </button>
-                                            </td>
-                                          </tr>
-                                        ))}
+                                        {item.stockLots?.map((lot: any) => {
+                                          const nextBox =
+                                            lot.boxes?.find((b: any) => b.status === 'IN_USE') ||
+                                            lot.boxes?.find((b: any) => b.status === 'IN_STOCK');
+
+                                          return (
+                                            <tr key={lot.id}>
+                                              <td className="py-2 font-mono font-bold text-teal-800">
+                                                <div>{lot.lotNumber}</div>
+                                                {nextBox && (
+                                                  <div className="mt-1">
+                                                    <span className="font-sans text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-300 px-1.5 py-0.5 rounded-md inline-flex items-center gap-1">
+                                                      👉 หยิบกล่อง #{nextBox.boxNumberInLot} ({nextBox.boxCode})
+                                                    </span>
+                                                  </div>
+                                                )}
+                                              </td>
+                                              <td className="py-2">
+                                                <span className="font-bold text-slate-900">
+                                                  {lot.quantityRemaining}
+                                                </span>{' '}
+                                                {item.unit}
+                                                {lot.openPackRemainder > 0 && (
+                                                  <span className="ml-2 px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 font-bold text-[10px] border border-purple-200">
+                                                    + เศษเปิด {lot.openPackRemainder} {item.usageUnit || 'ชิ้น'}
+                                                  </span>
+                                                )}
+                                              </td>
+                                              <td className="py-2 text-slate-700">
+                                                ฿{lot.unitCost.toFixed(2)}
+                                              </td>
+                                              <td className="py-2">
+                                                {lot.expiryDate ? (
+                                                  <span className="text-slate-800">
+                                                    {new Date(lot.expiryDate).toLocaleDateString('th-TH')}
+                                                  </span>
+                                                ) : (
+                                                  <span className="text-slate-400">ไม่ระบุ</span>
+                                                )}
+                                              </td>
+                                              <td className="py-2 text-slate-500">
+                                                {lot.supplier || '-'}
+                                              </td>
+                                              <td className="py-2 text-right">
+                                                <div className="flex items-center justify-end gap-1.5">
+                                                  {lot.boxes && lot.boxes.length > 0 && (
+                                                    <button
+                                                      type="button"
+                                                      onClick={() =>
+                                                        setSelectedLotForBoxStickers({
+                                                          item,
+                                                          lot,
+                                                          boxes: lot.boxes,
+                                                        })
+                                                      }
+                                                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-teal-600 hover:bg-teal-500 text-white text-[11px] font-bold shadow-sm transition cursor-pointer"
+                                                      title="พิมพ์สติกเกอร์ประจำกล่อง/หน่วยย่อยของล็อตนี้"
+                                                    >
+                                                      <Box className="w-3.5 h-3.5" />
+                                                      <span>สติกเกอร์รายกล่อง ({lot.boxes.length})</span>
+                                                    </button>
+                                                  )}
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => setSelectedLotForQr({ lot, item })}
+                                                    className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-700 text-[11px] font-bold transition border border-teal-200 cursor-pointer"
+                                                    title="พิมพ์ป้ายสติกเกอร์ QR Code ประจำล็อตนี้"
+                                                  >
+                                                    <QrCode className="w-3.5 h-3.5" />
+                                                    <span>ป้าย QR ล็อต</span>
+                                                  </button>
+                                                </div>
+                                              </td>
+                                            </tr>
+                                          );
+                                        })}
                                         {(!item.stockLots || item.stockLots.length === 0) && (
                                           <tr>
                                             <td colSpan={6} className="py-3 text-center text-slate-400">
@@ -2188,6 +2223,16 @@ export default function InventoryPage() {
           item={selectedLotForQr.item}
           lot={selectedLotForQr.lot}
           onClose={() => setSelectedLotForQr(null)}
+        />
+      )}
+
+      {/* Modal: Box-Level Stickers Print */}
+      {selectedLotForBoxStickers && (
+        <BoxStickerModal
+          item={selectedLotForBoxStickers.item}
+          lot={selectedLotForBoxStickers.lot}
+          boxes={selectedLotForBoxStickers.boxes}
+          onClose={() => setSelectedLotForBoxStickers(null)}
         />
       )}
 

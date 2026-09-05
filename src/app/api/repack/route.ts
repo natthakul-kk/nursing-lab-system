@@ -39,6 +39,11 @@ export async function GET(req: Request) {
               ],
             },
             orderBy: { expiryDate: 'asc' },
+            include: {
+              boxes: {
+                orderBy: { boxNumberInLot: 'asc' },
+              },
+            },
           },
         },
         orderBy: { name: 'asc' },

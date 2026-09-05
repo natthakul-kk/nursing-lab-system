@@ -65,7 +65,40 @@ export async function POST(req: Request) {
         },
       });
 
-      return NextResponse.json({ success: true, lot, transaction: tx });
+      // Auto-generate boxes for this consumable lot with yearly sequence
+      const currentYearThai = String(new Date().getFullYear() + 543);
+      const maxBox = await prisma.stockLotBox.findFirst({
+        where: { itemId, year: currentYearThai },
+        orderBy: { boxNumberInYear: 'desc' },
+      });
+      let currentYearCounter = maxBox ? maxBox.boxNumberInYear : 0;
+
+      const cleanItemCode = (item.code || 'ITEM').replace(/[^a-zA-Z0-9-]/g, '');
+      const boxesData = [];
+      const boxesCount = Math.min(qty, 200);
+      for (let i = 1; i <= boxesCount; i++) {
+        currentYearCounter++;
+        boxesData.push({
+          lotId: lot.id,
+          itemId: item.id,
+          boxCode: `${cleanItemCode}-${currentYearThai}-B${String(currentYearCounter).padStart(3, '0')}`,
+          boxNumberInLot: i,
+          boxNumberInYear: currentYearCounter,
+          year: currentYearThai,
+          status: 'IN_STOCK',
+        });
+      }
+
+      if (boxesData.length > 0) {
+        await prisma.stockLotBox.createMany({ data: boxesData });
+      }
+
+      const createdBoxes = await prisma.stockLotBox.findMany({
+        where: { lotId: lot.id },
+        orderBy: { boxNumberInLot: 'asc' },
+      });
+
+      return NextResponse.json({ success: true, lot, transaction: tx, boxes: createdBoxes });
     } else {
       // Equipment
       if (!assetCode) {

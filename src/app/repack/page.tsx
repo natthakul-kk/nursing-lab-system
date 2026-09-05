@@ -44,6 +44,8 @@ export default function RepackPage() {
     sourceItemId: '',
     sourceLotId: '',
     sourceQtyUsed: 1,
+    customUsageUnit: '',
+    customRatio: 50,
     subLotNumber: '',
     unitsPerPack: 10,
     totalPacksProduced: 10,
@@ -98,28 +100,35 @@ export default function RepackPage() {
     threeMonths.setMonth(threeMonths.getMonth() + 3);
     const defaultSterileExpiry = threeMonths.toISOString().split('T')[0];
 
+    const defaultRatio = item?.conversionRatio || 50;
+    const defaultUsageUnit = item?.usageUnit || 'คู่';
+    const suggestedUnitsPerPack = Math.max(1, Math.round(defaultRatio / 10) || 2);
+    const suggestedTotalPacks = Math.max(1, Math.floor(defaultRatio / suggestedUnitsPerPack));
+
     setForm((prev) => ({
       ...prev,
       sourceItemId: itemId,
       sourceLotId: firstLot?.id || '',
       sourceQtyUsed: 1,
-      unitsPerPack: item?.conversionRatio ? Math.round(item.conversionRatio / 10) || 10 : 10,
-      totalPacksProduced: item?.conversionRatio ? Math.round(item.conversionRatio / 10) || 10 : 10,
+      customUsageUnit: defaultUsageUnit,
+      customRatio: defaultRatio,
+      unitsPerPack: suggestedUnitsPerPack,
+      totalPacksProduced: suggestedTotalPacks,
       subLotNumber: suggestedSubLot,
       sterileExpiryDate: defaultSterileExpiry,
     }));
   };
 
-  // Auto calculate total packs produced
-  const handleCalcPacks = (qtyUsed: number, unitsPerPack: number) => {
-    if (!selectedSourceItem) return;
-    const ratio = selectedSourceItem.conversionRatio || 100;
+  // Auto calculate total packs produced using dynamic customRatio
+  const handleCalcPacks = (qtyUsed: number, unitsPerPack: number, ratioOverride?: number) => {
+    const ratio = ratioOverride !== undefined ? ratioOverride : (form.customRatio || selectedSourceItem?.conversionRatio || 50);
     const totalUnits = qtyUsed * ratio;
     const produced = unitsPerPack > 0 ? Math.floor(totalUnits / unitsPerPack) : 1;
     setForm((prev) => ({
       ...prev,
       sourceQtyUsed: qtyUsed,
       unitsPerPack,
+      customRatio: ratio,
       totalPacksProduced: produced > 0 ? produced : 1,
     }));
   };
@@ -593,22 +602,66 @@ export default function RepackPage() {
                 </div>
 
                 {selectedSourceItem && (
-                  <div className="text-[11px] text-teal-800 bg-teal-50 p-2.5 rounded-xl border border-teal-100 flex items-center justify-between">
-                    <span>
-                      อัตราแปลงหน่วยที่ตั้งไว้: <b>1 {selectedSourceItem.unit} = {selectedSourceItem.conversionRatio || 100} {selectedSourceItem.usageUnit || 'ชิ้น/กรัม'}</b>
-                    </span>
-                    <span className="text-slate-500">
-                      คงเหลือในล็อตนี้: <b>{selectedSourceLot?.quantityRemaining || 0} {selectedSourceItem.unit}</b>
-                    </span>
+                  <div className="space-y-2.5 pt-1 border-t border-slate-200/80">
+                    <div className="flex items-center justify-between text-[11px] text-slate-500">
+                      <span>คงเหลือพร้อมใช้ในล็อตนี้: <b className="text-slate-900">{selectedSourceLot?.quantityRemaining || 0} {selectedSourceItem.unit}</b></span>
+                      <span className="text-teal-700 font-medium">1 {selectedSourceItem.unit} = {form.customRatio} {form.customUsageUnit}</span>
+                    </div>
+
+                    <div className="p-3 bg-teal-50/70 border border-teal-200 rounded-2xl space-y-2">
+                      <div className="flex items-center justify-between text-xs font-bold text-teal-900">
+                        <span className="flex items-center gap-1.5">⚡ การแปลงหน่วยสต็อกใหญ่เป็นหน่วยย่อยสำหรับรอบนี้</span>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-600 mb-0.5">
+                            หน่วยย่อยใช้งาน (เช่น คู่, ชิ้น, แผ่น, กรัม)
+                          </label>
+                          <input
+                            type="text"
+                            value={form.customUsageUnit}
+                            onChange={(e) => setForm({ ...form, customUsageUnit: e.target.value })}
+                            className="w-full bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-teal-500"
+                            placeholder="เช่น คู่, ชิ้น"
+                            required
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-600 mb-0.5">
+                            1 {selectedSourceItem.unit} มีจำนวนเท่ากับ (? {form.customUsageUnit || 'หน่วยย่อย'})
+                          </label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={form.customRatio}
+                            onChange={(e) => {
+                              const r = Math.max(1, Number(e.target.value) || 1);
+                              handleCalcPacks(form.sourceQtyUsed, form.unitsPerPack, r);
+                            }}
+                            className="w-full bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-black text-teal-800 focus:ring-2 focus:ring-teal-500 text-center"
+                            required
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
 
               {/* Step 2: Packaging Spec & Calculation */}
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
-                <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                  <span className="w-5 h-5 rounded-full bg-teal-600 text-white text-[10px] flex items-center justify-center font-bold">2</span>
-                  กำหนดจำนวนที่เบิกและขนาดซองย่อย
+                <div className="text-xs font-bold text-slate-800 flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded-full bg-teal-600 text-white text-[10px] flex items-center justify-center font-bold">2</span>
+                    <span>กำหนดจำนวนที่เบิกและขนาดซองย่อย</span>
+                  </div>
+                  {selectedSourceItem && (
+                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
+                      รวมเนื้อเวชภัณฑ์ที่เบิก: {form.sourceQtyUsed * (form.customRatio || 50)} {form.customUsageUnit || 'หน่วย'}
+                    </span>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -632,7 +685,7 @@ export default function RepackPage() {
 
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      ขนาดต่อ 1 ซองย่อย ({selectedSourceItem?.usageUnit || 'ชิ้น/กรัม'}) *
+                      ขนาดต่อ 1 ซองย่อย ({form.customUsageUnit || selectedSourceItem?.usageUnit || 'ชิ้น'}) *
                     </label>
                     <input
                       type="number"

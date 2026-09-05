@@ -183,6 +183,8 @@ export default function InventoryPage() {
     code: '',
     categoryId: '',
     unit: 'เครื่อง',
+    usageUnit: '',
+    conversionRatio: 1,
     minStockAlert: 5,
     location: '',
     description: '',
@@ -255,6 +257,8 @@ export default function InventoryPage() {
       code: item.code || '',
       categoryId: item.categoryId || (categories[0]?.id || ''),
       unit: item.unit || 'เครื่อง',
+      usageUnit: item.usageUnit || '',
+      conversionRatio: item.conversionRatio || (item.type === 'CONSUMABLE' ? 1 : 1),
       minStockAlert: item.minStockAlert || 5,
       location: item.location || '',
       description: item.description || '',
@@ -312,6 +316,8 @@ export default function InventoryPage() {
     type: 'EQUIPMENT',
     categoryId: '',
     unit: 'เครื่อง',
+    usageUnit: '',
+    conversionRatio: 1,
     minStockAlert: 5,
     location: '',
     description: '',
@@ -373,6 +379,8 @@ export default function InventoryPage() {
           type: 'EQUIPMENT',
           categoryId: categories[0]?.id || '',
           unit: 'เครื่อง',
+          usageUnit: '',
+          conversionRatio: 1,
           minStockAlert: 5,
           location: '',
           description: '',
@@ -607,10 +615,15 @@ export default function InventoryPage() {
                       <tr className="hover:bg-slate-50/60 transition">
                         <td className="py-3.5 px-4">
                           <div className="font-bold text-slate-900 text-sm">{item.name}</div>
-                          <div className="flex items-center gap-2 mt-0.5">
+                          <div className="flex items-center flex-wrap gap-2 mt-0.5">
                             <span className="font-mono text-[11px] font-semibold text-teal-700 bg-teal-50 px-1.5 py-0.5 rounded">
                               {item.code}
                             </span>
+                            {item.type === 'CONSUMABLE' && item.usageUnit && (
+                              <span className="text-[10px] font-bold text-teal-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                                1 {item.unit} = {item.conversionRatio || 1} {item.usageUnit}
+                              </span>
+                            )}
                             {item.description && (
                               <span className="text-slate-400 text-[11px] truncate max-w-xs">
                                 {item.description}
@@ -1106,12 +1119,12 @@ export default function InventoryPage() {
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    หน่วยนับ
+                    {newItem.type === 'CONSUMABLE' ? 'หน่วยจัดซื้อ/คลังหลัก (Unit) *' : 'หน่วยนับ *'}
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="เช่น ตัว, เครื่อง, กล่อง, ขวด, ชิ้น"
+                    placeholder={newItem.type === 'CONSUMABLE' ? "เช่น กล่อง, ถุง, ห่อ, ขวด" : "เช่น ตัว, เครื่อง, ชิ้น"}
                     value={newItem.unit}
                     onChange={(e) =>
                       setNewItem({ ...newItem, unit: e.target.value })
@@ -1120,6 +1133,44 @@ export default function InventoryPage() {
                   />
                 </div>
               </div>
+
+              {newItem.type === 'CONSUMABLE' && (
+                <div className="p-3.5 bg-teal-50/50 border border-teal-200/80 rounded-2xl space-y-2.5">
+                  <div className="text-xs font-bold text-teal-900 flex items-center gap-1.5">
+                    <span>⚡ กำหนดหน่วยย่อยและการแปลงสต็อก (Unit of Measure)</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        หน่วยย่อยใช้งานจริง (Usage Unit)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="เช่น คู่, ชิ้น, แผ่น, ก้อน, กรัม"
+                        value={newItem.usageUnit}
+                        onChange={(e) => setNewItem({ ...newItem, usageUnit: e.target.value })}
+                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        อัตราส่วนแปลงหน่วย (1 {newItem.unit || 'หน่วยหลัก'} = ? {newItem.usageUnit || 'หน่วยย่อย'})
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        placeholder="เช่น 50 (1 กล่อง = 50 คู่)"
+                        value={newItem.conversionRatio}
+                        onChange={(e) => setNewItem({ ...newItem, conversionRatio: Math.max(1, Number(e.target.value) || 1) })}
+                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-teal-800 focus:ring-2 focus:ring-teal-500"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-slate-500">
+                    * เช่น ถุงมือ 1 <b>{newItem.unit || 'กล่อง'}</b> มี <b>{newItem.conversionRatio || 50}</b> <b>{newItem.usageUnit || 'คู่'}</b> ช่วยให้เวลาเบิกแบ่งซองคำนวณจำนวนซองและตัดสต็อกได้ตรงความจริง
+                  </p>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>

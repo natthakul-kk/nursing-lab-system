@@ -68,6 +68,8 @@ export async function POST(req: Request) {
         type: body.type, // "EQUIPMENT" or "CONSUMABLE"
         categoryId: body.categoryId,
         unit: body.unit,
+        usageUnit: body.usageUnit ? String(body.usageUnit).trim() : null,
+        conversionRatio: body.conversionRatio ? Number(body.conversionRatio) : (body.type === 'CONSUMABLE' ? 1 : null),
         minStockAlert: Number(body.minStockAlert) || 5,
         location: body.location,
         description: body.description,

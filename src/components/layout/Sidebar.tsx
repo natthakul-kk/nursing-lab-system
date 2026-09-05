@@ -17,7 +17,8 @@ import {
   Shield,
   GraduationCap,
   UserCog,
-  CalendarDays
+  CalendarDays,
+  BriefcaseMedical
 } from 'lucide-react';
 import ProfileModal from '@/components/profile/ProfileModal';
 
@@ -80,6 +81,13 @@ export default function Sidebar() {
       href: '/requisitions',
       icon: FileSpreadsheet,
       roles: ['ADMIN', 'OFFICER', 'APPROVER', 'USER'],
+    },
+    {
+      label: 'ชุดฝึกปฏิบัติการ (Kits)',
+      href: '/kits',
+      icon: BriefcaseMedical,
+      roles: ['ADMIN', 'OFFICER', 'APPROVER', 'USER'],
+      badge: 'แนะนำ',
     },
     {
       label: 'ศูนย์อนุมัติคำขอ',

@@ -76,6 +76,7 @@ model Item {
   stockTransactions StockTransaction[]
   borrowItems       BorrowItem[]
   requisitionItems  RequisitionItem[]
+  practiceKitItems  PracticeKitItem[]
 }
 
 model EquipmentAsset {
@@ -242,3 +243,28 @@ model RequisitionItem {
   unitCost             Float              @default(0)
   totalCost            Float              @default(0)
 }
+
+model PracticeKit {
+  id           String            @id @default(cuid())
+  code         String            @unique
+  name         String
+  category     String            @default("หัตถการพื้นฐาน")
+  description  String?
+  targetCourse String?
+  imageUrl     String?
+  isActive     Boolean           @default(true)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  items        PracticeKitItem[]
+}
+
+model PracticeKitItem {
+  id        String      @id @default(cuid())
+  kitId     String
+  kit       PracticeKit @relation(fields: [kitId], references: [id], onDelete: Cascade)
+  itemId    String
+  item      Item        @relation(fields: [itemId], references: [id])
+  quantity  Int         @default(1)
+}
+

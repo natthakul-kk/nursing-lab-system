@@ -1845,7 +1845,7 @@ export default function InventoryPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    หน่วยนับ *
+                    {editItemTarget?.type === 'CONSUMABLE' ? 'หน่วยจัดซื้อ/คลังหลัก (เช่น กล่อง, ถุง, ห่อ) *' : 'หน่วยนับ *'}
                   </label>
                   <input
                     type="text"
@@ -1855,7 +1855,7 @@ export default function InventoryPage() {
                     onChange={(e) =>
                       setEditItemForm({ ...editItemForm, unit: e.target.value })
                     }
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                   />
                 </div>
 
@@ -1874,6 +1874,48 @@ export default function InventoryPage() {
                   />
                 </div>
               </div>
+
+              {/* ส่วนกำหนดและแก้ไขหน่วยย่อย สำหรับวัสดุสิ้นเปลือง */}
+              {editItemTarget?.type === 'CONSUMABLE' && (
+                <div className="p-3.5 bg-teal-50/60 border border-teal-200 rounded-2xl space-y-2.5">
+                  <div className="text-xs font-bold text-teal-900 flex items-center justify-between">
+                    <span>⚡ กำหนดหน่วยย่อยและการแปลงสต็อก (เช่น 1 กล่อง = กี่คู่)</span>
+                    <span className="text-[10px] text-teal-700 bg-white px-2 py-0.5 rounded-full border border-teal-200">
+                      ใช้คำนวณอัตโนมัติเวลาแบ่งบรรจุ
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        หน่วยย่อยใช้งานจริง
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="เช่น คู่, ชิ้น, แผ่น, ก้อน, กรัม"
+                        value={editItemForm.usageUnit}
+                        onChange={(e) => setEditItemForm({ ...editItemForm, usageUnit: e.target.value })}
+                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-teal-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        1 {editItemForm.unit || 'หน่วยหลัก'} มีกี่ {editItemForm.usageUnit || 'หน่วยย่อย'} ?
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        placeholder="เช่น 100 (1 กล่อง = 100 คู่)"
+                        value={editItemForm.conversionRatio}
+                        onChange={(e) => setEditItemForm({ ...editItemForm, conversionRatio: Math.max(1, Number(e.target.value) || 1) })}
+                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-black text-center text-teal-800 focus:ring-2 focus:ring-teal-500"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-teal-800 bg-teal-100/60 p-2 rounded-xl">
+                    💡 ตัวอย่าง: ถุงมือ 1 <b>{editItemForm.unit || 'กล่อง'}</b> มี <b>{editItemForm.conversionRatio || 100}</b> <b>{editItemForm.usageUnit || 'คู่'}</b>
+                  </p>
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">

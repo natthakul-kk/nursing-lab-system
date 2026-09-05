@@ -36,7 +36,6 @@ export async function GET(req: Request) {
               NOT: [
                 { lotNumber: { startsWith: 'SL-' } },
                 { lotNumber: { startsWith: 'RP-' } },
-                { supplier: { contains: 'แบ่งบรรจุ' } },
               ],
             },
             orderBy: { expiryDate: 'asc' },

@@ -17,6 +17,7 @@ export async function POST(req: Request) {
       supplier,
       // For Equipment:
       assetCode,
+      govAssetCode,
       serialNumber,
       sequenceNumber,
       location,
@@ -68,7 +69,7 @@ export async function POST(req: Request) {
     } else {
       // Equipment
       if (!assetCode) {
-        return NextResponse.json({ error: 'กรุณาระบุรหัสครุภัณฑ์ (Asset Code)' }, { status: 400 });
+        return NextResponse.json({ error: 'กรุณาระบุรหัสประจำชิ้น (Asset Code)' }, { status: 400 });
       }
 
       // Find next sequence number if not explicitly specified
@@ -84,6 +85,7 @@ export async function POST(req: Request) {
         data: {
           itemId,
           assetCode,
+          govAssetCode: govAssetCode || null,
           sequenceNumber: seq,
           serialNumber: serialNumber || null,
           location: location || item.location || 'ห้องปฏิบัติการพยาบาล',

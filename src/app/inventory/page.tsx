@@ -22,12 +22,18 @@ import {
   Eye,
   QrCode,
   DollarSign,
-  Image as ImageIcon
+  Image as ImageIcon,
+  History,
+  X,
+  Check,
+  RotateCcw,
 } from 'lucide-react';
 import { TableLoadingRow } from '@/components/common/LoadingSpinner';
 
 export default function InventoryPage() {
-  const { isOfficer } = useAuth();
+  const { currentUser, isOfficer, isAdmin } = useAuth();
+  const isStaff = isOfficer || isAdmin;
+
   const [items, setItems] = useState<any[]>([]);
   const [selectedAssetForQr, setSelectedAssetForQr] = useState<{ asset: any; itemName: string } | null>(null);
   const [categories, setCategories] = useState<any[]>([]);
@@ -35,6 +41,104 @@ export default function InventoryPage() {
   const [filterType, setFilterType] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
+
+  // Repair & Maintenance Modals
+  const [repairTarget, setRepairTarget] = useState<{ asset: any; itemName: string } | null>(null);
+  const [completeTarget, setCompleteTarget] = useState<{ asset: any; itemName: string } | null>(null);
+  const [historyTarget, setHistoryTarget] = useState<{ asset: any; itemName: string } | null>(null);
+
+  const [repairForm, setRepairForm] = useState({
+    issue: '',
+    repairShop: 'ศูนย์ซ่อมบำรุงพัสดุ / ช่างประจำคณะ',
+    repairCost: 0,
+    technicianNote: '',
+  });
+
+  const [completeForm, setCompleteForm] = useState({
+    technicianNote: 'ซ่อมแซมเสร็จสมบูรณ์ ทดสอบระบบใช้งานได้ปกติ คืนเข้าสต็อก',
+    repairCost: 0,
+    repairShop: '',
+  });
+
+  const [maintenanceSubmitting, setMaintenanceSubmitting] = useState(false);
+
+  const handleSendRepair = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!repairTarget || !repairForm.issue) {
+      alert('กรุณาระบุอาการชำรุด');
+      return;
+    }
+    setMaintenanceSubmitting(true);
+    try {
+      const res = await fetch('/api/maintenance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'SEND_REPAIR',
+          assetId: repairTarget.asset.id,
+          issue: repairForm.issue,
+          repairShop: repairForm.repairShop,
+          repairCost: repairForm.repairCost,
+          technicianNote: repairForm.technicianNote,
+          userId: currentUser?.id,
+        }),
+      });
+      if (res.ok) {
+        setRepairTarget(null);
+        setRepairForm({
+          issue: '',
+          repairShop: 'ศูนย์ซ่อมบำรุงพัสดุ / ช่างประจำคณะ',
+          repairCost: 0,
+          technicianNote: '',
+        });
+        await fetchItems();
+      } else {
+        const err = await res.json();
+        alert(err.error || 'เกิดข้อผิดพลาดในการส่งซ่อม');
+      }
+    } catch (err) {
+      alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+    } finally {
+      setMaintenanceSubmitting(false);
+    }
+  };
+
+  const handleCompleteRepair = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!completeTarget) return;
+    setMaintenanceSubmitting(true);
+    try {
+      const activeLog = completeTarget.asset.maintenanceLogs?.find((l: any) => l.status === 'UNDER_REPAIR');
+      const res = await fetch('/api/maintenance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'COMPLETE_REPAIR',
+          assetId: completeTarget.asset.id,
+          logId: activeLog?.id,
+          technicianNote: completeForm.technicianNote,
+          repairCost: completeForm.repairCost || activeLog?.repairCost || 0,
+          repairShop: completeForm.repairShop || activeLog?.repairShop,
+        }),
+      });
+      if (res.ok) {
+        setCompleteTarget(null);
+        setCompleteForm({
+          technicianNote: 'ซ่อมแซมเสร็จสมบูรณ์ ทดสอบระบบใช้งานได้ปกติ คืนเข้าสต็อก',
+          repairCost: 0,
+          repairShop: '',
+        });
+        await fetchItems();
+      } else {
+        const err = await res.json();
+        alert(err.error || 'เกิดข้อผิดพลาดในการบันทึกการซ่อมเสร็จ');
+      }
+    } catch (err) {
+      alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+    } finally {
+      setMaintenanceSubmitting(false);
+    }
+  };
 
   // Modal State
   const [showAddModal, setShowAddModal] = useState(false);
@@ -336,40 +440,81 @@ export default function InventoryPage() {
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     {item.assets?.map((asset: any) => {
                                       const photoUrl = formatImageUrl(asset.imageUrl || item.imageUrl);
+                                      const activeLog = asset.maintenanceLogs?.find((l: any) => l.status === 'UNDER_REPAIR') || asset.maintenanceLogs?.[0];
                                       return (
                                         <div
                                           key={asset.id}
                                           className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-white hover:border-teal-300 transition space-y-2.5 shadow-sm"
                                         >
+                                          {/* Card Header: Dual-Code and Status */}
                                           <div className="flex items-start justify-between gap-2">
-                                            <div className="flex items-center gap-2">
-                                              <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-teal-100 text-teal-800">
-                                                เครื่อง/ชิ้นที่ {asset.sequenceNumber || 1}
-                                              </span>
-                                              <span className="font-mono font-black text-slate-900 text-xs tracking-wider">
-                                                {asset.assetCode}
-                                              </span>
+                                            <div>
+                                              <div className="flex items-center gap-2">
+                                                <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-teal-100 text-teal-800">
+                                                  เครื่อง/ชิ้นที่ {asset.sequenceNumber || 1}
+                                                </span>
+                                                <span className="font-mono font-black text-slate-900 text-xs tracking-wider">
+                                                  {asset.assetCode}
+                                                </span>
+                                              </div>
+                                              {asset.govAssetCode && (
+                                                <div className="mt-1 flex items-center gap-1 font-mono text-[10px] text-slate-500 font-medium">
+                                                  <Tag className="w-3 h-3 text-slate-400" />
+                                                  <span>เลขครุภัณฑ์: {asset.govAssetCode}</span>
+                                                </div>
+                                              )}
                                             </div>
 
                                             <div>
                                               {asset.status === 'AVAILABLE' && (
-                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
                                                   พร้อมใช้
                                                 </span>
                                               )}
                                               {asset.status === 'BORROWED' && (
-                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">
+                                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">
                                                   ถูกยืมอยู่
                                                 </span>
                                               )}
                                               {asset.status === 'MAINTENANCE' && (
-                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">
-                                                  ซ่อมบำรุง
+                                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 flex items-center gap-1">
+                                                  <Wrench className="w-3 h-3" />
+                                                  กำลังซ่อมบำรุง
                                                 </span>
                                               )}
                                             </div>
                                           </div>
 
+                                          {/* Role-based Maintenance Banner / Details */}
+                                          {asset.status === 'MAINTENANCE' && (
+                                            !isStaff ? (
+                                              <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-100 text-rose-800 text-[11px] flex items-center gap-2">
+                                                <Wrench className="w-4 h-4 text-rose-600 flex-shrink-0" />
+                                                <span>อุปกรณ์ชิ้นนี้อยู่ระหว่างการซ่อมบำรุง ไม่สามารถเลือกยืมได้ชั่วคราว</span>
+                                              </div>
+                                            ) : (
+                                              <div className="p-2.5 rounded-xl bg-rose-50/80 border border-rose-200 text-slate-700 text-[11px] space-y-1">
+                                                <div className="flex items-center justify-between text-rose-800 font-bold">
+                                                  <span className="flex items-center gap-1">
+                                                    <Wrench className="w-3.5 h-3.5 text-rose-600" />
+                                                    ข้อมูลการส่งซ่อมบำรุง
+                                                  </span>
+                                                  <span className="text-[10px] text-slate-500 font-normal">
+                                                    {activeLog?.sentDate ? new Date(activeLog.sentDate).toLocaleDateString('th-TH') : ''}
+                                                  </span>
+                                                </div>
+                                                <div><strong className="text-slate-900">อาการชำรุด:</strong> {activeLog?.issue || asset.note || 'รอการตรวจสอบ'}</div>
+                                                {activeLog?.repairShop && (
+                                                  <div><strong className="text-slate-900">ส่งซ่อมที่:</strong> {activeLog.repairShop}</div>
+                                                )}
+                                                {activeLog?.repairCost && activeLog.repairCost > 0 ? (
+                                                  <div><strong className="text-slate-900">ประมาณการค่าซ่อม:</strong> ฿{Number(activeLog.repairCost).toLocaleString('th-TH')} บาท</div>
+                                                ) : null}
+                                              </div>
+                                            )
+                                          )}
+
+                                          {/* Asset Meta Details */}
                                           <div className="flex items-center gap-3 text-xs">
                                             {photoUrl ? (
                                               <img
@@ -414,10 +559,57 @@ export default function InventoryPage() {
                                           </div>
 
                                           {/* Action Buttons */}
-                                          <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between">
-                                            <div className="text-[10px] text-slate-400">
-                                              {asset.note || 'สภาพปกติ'}
+                                          <div className="pt-2 border-t border-slate-200/60 flex flex-wrap items-center justify-between gap-2">
+                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                              {/* Restore to Available (Staff only) */}
+                                              {isStaff && asset.status === 'MAINTENANCE' && (
+                                                <button
+                                                  onClick={() => {
+                                                    setCompleteTarget({ asset, itemName: item.name });
+                                                    setCompleteForm({
+                                                      technicianNote: 'ซ่อมแซมเสร็จสมบูรณ์ ทดสอบระบบใช้งานได้ปกติ คืนเข้าสต็อก',
+                                                      repairCost: activeLog?.repairCost || 0,
+                                                      repairShop: activeLog?.repairShop || '',
+                                                    });
+                                                  }}
+                                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold shadow-sm transition cursor-pointer"
+                                                >
+                                                  <CheckCircle2 className="w-3 h-3" />
+                                                  <span>ซ่อมเสร็จ / คืนสต็อก</span>
+                                                </button>
+                                              )}
+
+                                              {/* Send to Repair (Staff only) */}
+                                              {isStaff && asset.status === 'AVAILABLE' && (
+                                                <button
+                                                  onClick={() => {
+                                                    setRepairTarget({ asset, itemName: item.name });
+                                                    setRepairForm({
+                                                      issue: '',
+                                                      repairShop: 'ศูนย์ซ่อมบำรุงพัสดุ / ช่างประจำคณะ',
+                                                      repairCost: 0,
+                                                      technicianNote: '',
+                                                    });
+                                                  }}
+                                                  className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 text-[11px] font-bold transition border border-rose-200 cursor-pointer"
+                                                >
+                                                  <Wrench className="w-3 h-3" />
+                                                  <span>ส่งซ่อม</span>
+                                                </button>
+                                              )}
+
+                                              {/* View Repair History (Staff only) */}
+                                              {isStaff && asset.maintenanceLogs && asset.maintenanceLogs.length > 0 && (
+                                                <button
+                                                  onClick={() => setHistoryTarget({ asset, itemName: item.name })}
+                                                  className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-medium transition cursor-pointer"
+                                                >
+                                                  <History className="w-3 h-3 text-slate-500" />
+                                                  <span>ประวัติ ({asset.maintenanceLogs.length})</span>
+                                                </button>
+                                              )}
                                             </div>
+
                                             <button
                                               onClick={() =>
                                                 setSelectedAssetForQr({
@@ -425,7 +617,7 @@ export default function InventoryPage() {
                                                   itemName: item.name,
                                                 })
                                               }
-                                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-700 text-xs font-bold transition border border-teal-200 cursor-pointer"
+                                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-700 text-xs font-bold transition border border-teal-200 cursor-pointer ml-auto"
                                             >
                                               <QrCode className="w-3.5 h-3.5" />
                                               <span>พิมพ์ป้าย QR Code</span>
@@ -683,6 +875,320 @@ export default function InventoryPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Send to Repair */}
+      {repairTarget && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <Wrench className="w-4 h-4 text-rose-600" />
+                แจ้งชำรุด / ส่งซ่อมบำรุง
+              </h3>
+              <button
+                onClick={() => setRepairTarget(null)}
+                className="text-slate-400 hover:text-slate-600 text-lg font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1">
+              <div className="font-bold text-slate-800">{repairTarget.itemName}</div>
+              <div className="font-mono text-teal-700 font-bold">
+                รหัสแล็บ: {repairTarget.asset.assetCode}
+              </div>
+              {repairTarget.asset.govAssetCode && (
+                <div className="font-mono text-slate-500 text-[11px]">
+                  เลขครุภัณฑ์: {repairTarget.asset.govAssetCode}
+                </div>
+              )}
+            </div>
+
+            <form onSubmit={handleSendRepair} className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  อาการชำรุด / สาเหตุที่ส่งซ่อม *
+                </label>
+                <textarea
+                  required
+                  rows={3}
+                  placeholder="เช่น หน้าจอไม่ติด, สายไฟชำรุด, แบตเตอรี่เสื่อมสภาพ, สัญญาณเตือนผิดปกติ"
+                  value={repairForm.issue}
+                  onChange={(e) => setRepairForm({ ...repairForm, issue: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  ส่งซ่อมที่ / ช่างผู้รับผิดชอบ
+                </label>
+                <input
+                  type="text"
+                  value={repairForm.repairShop}
+                  onChange={(e) => setRepairForm({ ...repairForm, repairShop: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  ประมาณการค่าซ่อม (บาท)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="0"
+                    value={repairForm.repairCost}
+                    onChange={(e) => setRepairForm({ ...repairForm, repairCost: Number(e.target.value) })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 pl-7 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+                  />
+                  <span className="absolute left-2.5 top-2 text-slate-400 text-xs font-bold">฿</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  หมายเหตุเพิ่มเติม (ถ้ามี)
+                </label>
+                <input
+                  type="text"
+                  placeholder="เช่น กำหนดส่งคืนโดยประมาณ 15 วันทำการ"
+                  value={repairForm.technicianNote}
+                  onChange={(e) => setRepairForm({ ...repairForm, technicianNote: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setRepairTarget(null)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 transition"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  type="submit"
+                  disabled={maintenanceSubmitting}
+                  className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-md shadow-rose-600/20 transition disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Wrench className="w-3.5 h-3.5" />
+                  <span>{maintenanceSubmitting ? 'กำลังบันทึก...' : 'ยืนยันส่งซ่อมบำรุง'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Complete Repair & Restore to Stock */}
+      {completeTarget && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                บันทึกผลซ่อมเสร็จ & คืนสต็อกพร้อมใช้
+              </h3>
+              <button
+                onClick={() => setCompleteTarget(null)}
+                className="text-slate-400 hover:text-slate-600 text-lg font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1">
+              <div className="font-bold text-slate-800">{completeTarget.itemName}</div>
+              <div className="font-mono text-teal-700 font-bold">
+                รหัสแล็บ: {completeTarget.asset.assetCode}
+              </div>
+              {completeTarget.asset.govAssetCode && (
+                <div className="font-mono text-slate-500 text-[11px]">
+                  เลขครุภัณฑ์: {completeTarget.asset.govAssetCode}
+                </div>
+              )}
+            </div>
+
+            <form onSubmit={handleCompleteRepair} className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  ผลการซ่อมแซมและการทดสอบใช้งาน *
+                </label>
+                <textarea
+                  required
+                  rows={3}
+                  placeholder="เช่น เปลี่ยนอะไหล่ชุดแผงวงจรและแบตเตอรี่ใหม่ ทดสอบใช้งานผ่านเกณฑ์มาตรฐาน"
+                  value={completeForm.technicianNote}
+                  onChange={(e) => setCompleteForm({ ...completeForm, technicianNote: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    ค่าใช้จ่ายจริง (บาท)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="0"
+                      value={completeForm.repairCost}
+                      onChange={(e) => setCompleteForm({ ...completeForm, repairCost: Number(e.target.value) })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 pl-7 text-xs font-bold text-emerald-700 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                    />
+                    <span className="absolute left-2.5 top-2 text-slate-400 text-xs font-bold">฿</span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    ร้าน/ศูนย์ที่ซ่อม
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="เช่น ช่างประจำคณะ / บจก. เมดิคอล"
+                    value={completeForm.repairShop}
+                    onChange={(e) => setCompleteForm({ ...completeForm, repairShop: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-800 text-[11px] leading-relaxed">
+                * เมื่อกดยืนยัน อุปกรณ์ชิ้นนี้จะเปลี่ยนสถานะเป็น <strong>"พร้อมใช้ (AVAILABLE)"</strong> และนิสิต/อาจารย์จะสามารถเลือกยืมได้ทันที
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setCompleteTarget(null)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 transition"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  type="submit"
+                  disabled={maintenanceSubmitting}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  <span>{maintenanceSubmitting ? 'กำลังบันทึก...' : 'คืนเข้าสต็อกพร้อมใช้'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Repair History */}
+      {historyTarget && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 flex-shrink-0">
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <History className="w-4 h-4 text-teal-600" />
+                ประวัติการซ่อมบำรุง
+              </h3>
+              <button
+                onClick={() => setHistoryTarget(null)}
+                className="text-slate-400 hover:text-slate-600 text-lg font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1 flex-shrink-0">
+              <div className="font-bold text-slate-800">{historyTarget.itemName}</div>
+              <div className="flex items-center gap-3">
+                <span className="font-mono text-teal-700 font-bold">
+                  รหัสแล็บ: {historyTarget.asset.assetCode}
+                </span>
+                {historyTarget.asset.govAssetCode && (
+                  <span className="font-mono text-slate-500 text-[11px]">
+                    เลขครุภัณฑ์: {historyTarget.asset.govAssetCode}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="overflow-y-auto space-y-3 pr-1 flex-1">
+              {historyTarget.asset.maintenanceLogs?.map((log: any) => {
+                const isCompleted = log.status === 'COMPLETED';
+                return (
+                  <div
+                    key={log.id}
+                    className="p-3.5 rounded-xl border border-slate-200 bg-white space-y-2 text-xs shadow-sm"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          isCompleted
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : 'bg-rose-100 text-rose-800'
+                        }`}
+                      >
+                        {isCompleted ? '✓ ซ่อมเสร็จสมบูรณ์' : '🔧 กำลังอยู่ระหว่างการซ่อม'}
+                      </span>
+                      <span className="text-[11px] text-slate-400">
+                        ส่งซ่อมเมื่อ {new Date(log.sentDate).toLocaleDateString('th-TH')}
+                      </span>
+                    </div>
+
+                    <div>
+                      <strong className="text-slate-800">อาการชำรุด:</strong> {log.issue}
+                    </div>
+
+                    {log.repairShop && (
+                      <div className="text-slate-600 text-[11px]">
+                        <strong>ผู้ซ่อม/ร้าน:</strong> {log.repairShop}
+                      </div>
+                    )}
+
+                    {log.repairCost > 0 && (
+                      <div className="text-emerald-700 font-bold text-[11px]">
+                        <strong>ค่าใช้จ่าย:</strong> ฿{Number(log.repairCost).toLocaleString('th-TH')} บาท
+                      </div>
+                    )}
+
+                    {log.technicianNote && (
+                      <div className="p-2 rounded-lg bg-slate-50 border border-slate-100 text-slate-700 text-[11px]">
+                        <strong>บันทึกผลการซ่อม:</strong> {log.technicianNote}
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-100">
+                      <span>ผู้บันทึก: {log.handledBy?.name || 'เจ้าหน้าที่ห้องปฏิบัติการ'}</span>
+                      {log.completedDate && (
+                        <span>เสร็จสิ้น: {new Date(log.completedDate).toLocaleDateString('th-TH')}</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {(!historyTarget.asset.maintenanceLogs || historyTarget.asset.maintenanceLogs.length === 0) && (
+                <div className="py-8 text-center text-xs text-slate-400">
+                  ไม่มีประวัติการซ่อมบำรุงสำหรับชิ้นนี้
+                </div>
+              )}
+            </div>
+
+            <div className="pt-2 border-t border-slate-100 text-right flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => setHistoryTarget(null)}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition"
+              >
+                ปิด
+              </button>
+            </div>
           </div>
         </div>
       )}

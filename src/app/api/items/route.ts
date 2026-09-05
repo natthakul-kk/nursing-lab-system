@@ -15,7 +15,15 @@ export async function GET(req: Request) {
       where: whereCondition,
       include: {
         category: true,
-        assets: true,
+        assets: {
+          include: {
+            maintenanceLogs: {
+              orderBy: { sentDate: 'desc' },
+              include: { handledBy: { select: { name: true } } },
+            },
+          },
+          orderBy: { sequenceNumber: 'asc' },
+        },
         stockLots: {
           where: { quantityRemaining: { gt: 0 } },
           orderBy: { expiryDate: 'asc' },

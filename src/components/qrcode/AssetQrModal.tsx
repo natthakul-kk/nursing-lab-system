@@ -9,6 +9,7 @@ interface AssetQrModalProps {
   asset: {
     id: string;
     assetCode: string;
+    govAssetCode?: string | null;
     sequenceNumber?: number | null;
     serialNumber?: string | null;
     location?: string | null;
@@ -37,6 +38,7 @@ export default function AssetQrModal({ asset, itemName, onClose }: AssetQrModalP
         const qrPayload = JSON.stringify({
           app: 'NURSING_LAB_SYS',
           assetCode: asset.assetCode,
+          govCode: asset.govAssetCode || '',
           name: title,
           seq: asset.sequenceNumber || 1,
           loc: asset.location || '',
@@ -147,6 +149,7 @@ export default function AssetQrModal({ asset, itemName, onClose }: AssetQrModalP
             <div class="seq-badge">เครื่อง/ชิ้นที่ ${asset.sequenceNumber || 1}</div>
             <img src="${qrDataUrl}" class="qr-img" />
             <div class="asset-code">${asset.assetCode}</div>
+            ${asset.govAssetCode ? `<div style="font-family: monospace; font-size: 11px; color: #64748b; margin-top: -4px; margin-bottom: 6px;">เลขครุภัณฑ์: ${asset.govAssetCode}</div>` : ''}
             <div class="details">
               <div><strong>สถานที่เก็บ:</strong> ${asset.location || 'ห้องปฏิบัติการพยาบาล'}</div>
               ${asset.serialNumber ? `<div><strong>Serial No.:</strong> ${asset.serialNumber}</div>` : ''}
@@ -223,8 +226,17 @@ export default function AssetQrModal({ asset, itemName, onClose }: AssetQrModalP
           </div>
 
           {/* Asset Code */}
-          <div className="font-mono font-black text-lg text-slate-900 tracking-wider">
-            {asset.assetCode}
+          <div>
+            <div className="font-mono font-black text-lg text-slate-900 tracking-wider">
+              {asset.assetCode}
+            </div>
+            {asset.govAssetCode && (
+              <div className="mt-1">
+                <span className="font-mono text-[11px] text-slate-500 font-semibold bg-slate-200/70 px-2 py-0.5 rounded-md inline-block">
+                  เลขครุภัณฑ์: {asset.govAssetCode}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Detailed attributes in label */}

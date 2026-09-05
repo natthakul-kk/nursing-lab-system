@@ -27,6 +27,7 @@ model User {
   requisitionRequests RequisitionRequest[] @relation("UserRequisitions")
   approvedRequisitions RequisitionRequest[] @relation("ApproverRequisitions")
   stockTransactions   StockTransaction[]
+  maintenanceLogs     MaintenanceLog[]
 }
 
 model Course {
@@ -81,7 +82,8 @@ model EquipmentAsset {
   id             String    @id @default(cuid())
   itemId         String
   item           Item      @relation(fields: [itemId], references: [id])
-  assetCode      String    @unique
+  assetCode      String    @unique // รหัสประจำชิ้นในแล็บ (Lab Internal ID) เช่น AED-01, KD-01
+  govAssetCode   String?   // เลขครุภัณฑ์ทางราชการ (ยาว) เช่น 7440-001-0001/2569
   sequenceNumber Int       @default(1) // ลำดับ เช่น เครื่องที่ 1, ชิ้นที่ 2
   serialNumber   String?
   location       String?   // สถานที่จัดเก็บเฉพาะชิ้น เช่น ตู้ฉุกเฉิน ห้อง Lab 1
@@ -94,7 +96,25 @@ model EquipmentAsset {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  borrowItems    BorrowItem[]
+  borrowItems     BorrowItem[]
+  maintenanceLogs MaintenanceLog[]
+}
+
+model MaintenanceLog {
+  id             String         @id @default(cuid())
+  assetId        String
+  asset          EquipmentAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  issue          String         // อาการชำรุด / ปัญหาที่พบ
+  sentDate       DateTime       @default(now()) // วันที่ส่งซ่อม
+  completedDate  DateTime?      // วันที่ซ่อมเสร็จ
+  repairShop     String?        // ผู้รับซ่อม / ศูนย์ซ่อม / ซ่อมเอง
+  repairCost     Float          @default(0) // ค่าใช้จ่ายในการซ่อม
+  status         String         @default("UNDER_REPAIR") // "UNDER_REPAIR", "COMPLETED", "CANNOT_REPAIR"
+  technicianNote String?        // บันทึกผลการซ่อม / หมายเหตุช่าง
+  handledById    String?
+  handledBy      User?          @relation(fields: [handledById], references: [id])
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 }
 
 model StockLot {

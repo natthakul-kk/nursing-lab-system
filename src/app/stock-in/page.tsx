@@ -32,6 +32,7 @@ export default function StockInPage() {
     expiryDate: '',
     supplier: '',
     assetCode: '',
+    govAssetCode: '',
     sequenceNumber: 1,
     serialNumber: '',
     location: '',
@@ -137,6 +138,7 @@ export default function StockInPage() {
           expiryDate: '',
           supplier: '',
           assetCode: '',
+          govAssetCode: '',
           sequenceNumber: 1,
           serialNumber: '',
           location: '',
@@ -329,24 +331,47 @@ export default function StockInPage() {
               </>
             ) : (
               <>
+                {/* 1. Codes: Lab Code & Gov Asset Code */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      รหัสครุภัณฑ์ (Asset Code / QR Tag) *
+                      รหัสประจำชิ้นในแล็บ (Lab Asset Code / สติกเกอร์ QR) *
                     </label>
                     <input
                       type="text"
                       required
-                      placeholder="เช่น AED-2569-001, CPR-2569-004"
+                      placeholder="เช่น AED-2569-001, KD-01 (ชามรูปไต), TRY-02"
                       value={form.assetCode}
                       onChange={(e) => setForm({ ...form, assetCode: e.target.value })}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono font-bold focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                     />
+                    <p className="text-[10px] text-slate-400 mt-1">
+                      * รหัสสั้นกระชับ ใช้สำหรับพิมพ์ป้าย QR Code ติดบนชิ้นอุปกรณ์ และให้นิสิตระบุเวลายืม-คืน
+                    </p>
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      ลำดับของครุภัณฑ์ (เช่น เครื่องที่ 1, ชิ้นที่ 2) *
+                      เลขครุภัณฑ์ทางราชการ (Gov Asset Code) <span className="text-slate-400 font-normal">(ถ้ามี)</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="เช่น 7440-001-0001/2569 (ปล่อยว่างได้สำหรับวัสดุคงทน)"
+                      value={form.govAssetCode}
+                      onChange={(e) => setForm({ ...form, govAssetCode: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                    />
+                    <p className="text-[10px] text-slate-400 mt-1">
+                      * หากเป็นวัสดุคงทน (เช่น ถาด, ชามรูปไต) ที่ไม่มีเลขครุภัณฑ์ราชการ สามารถเว้นว่างไว้ได้
+                    </p>
+                  </div>
+                </div>
+
+                {/* 2. Sequence & Serial Number */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      ลำดับของครุภัณฑ์/ชิ้น (เช่น เครื่องที่ 1, ใบที่ 2) *
                     </label>
                     <input
                       type="number"
@@ -357,8 +382,22 @@ export default function StockInPage() {
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-teal-800 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                     />
                   </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Serial Number (จากผู้ผลิต ถ้ามี)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="เช่น SN-ZOLL-8801"
+                      value={form.serialNumber}
+                      onChange={(e) => setForm({ ...form, serialNumber: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                    />
+                  </div>
                 </div>
 
+                {/* 3. Location & Received Date */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
@@ -376,21 +415,6 @@ export default function StockInPage() {
 
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Serial Number (จากผู้ผลิต)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="เช่น SN-ZOLL-8801"
-                      value={form.serialNumber}
-                      onChange={(e) => setForm({ ...form, serialNumber: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
                       วันที่รับเข้า (Received Date)
                     </label>
                     <input
@@ -400,25 +424,27 @@ export default function StockInPage() {
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                     />
                   </div>
+                </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      ราคาจัดซื้อ / มูลค่าต่อเครื่อง (บาท)
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        min="0"
-                        placeholder="เช่น 65000"
-                        value={form.cost}
-                        onChange={(e) => setForm({ ...form, cost: Number(e.target.value) })}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 pl-7 text-xs font-bold text-emerald-700 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
-                      />
-                      <span className="absolute left-2.5 top-2 text-slate-400 text-xs font-bold">฿</span>
-                    </div>
+                {/* 4. Cost */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    ราคาจัดซื้อ / มูลค่าต่อเครื่อง (บาท)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="เช่น 65000"
+                      value={form.cost}
+                      onChange={(e) => setForm({ ...form, cost: Number(e.target.value) })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 pl-7 text-xs font-bold text-emerald-700 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                    />
+                    <span className="absolute left-2.5 top-2 text-slate-400 text-xs font-bold">฿</span>
                   </div>
                 </div>
 
+                {/* 5. Image URL */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
                     ลิงก์รูปภาพครุภัณฑ์ (รองรับ Google Drive Share Link)

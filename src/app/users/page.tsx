@@ -19,7 +19,8 @@ import {
   Download,
   Upload,
   AlertCircle,
-  X
+  X,
+  Search,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { TableLoadingRow } from '@/components/common/LoadingSpinner';
@@ -28,6 +29,8 @@ export default function UsersPage() {
   const { availableUsers, isAdmin } = useAuth();
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedTab, setSelectedTab] = useState<string>('ALL');
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [bulkFile, setBulkFile] = useState<File | null>(null);
@@ -234,6 +237,36 @@ export default function UsersPage() {
     }
   };
 
+  const tabCounts = {
+    ALL: users.length,
+    ADMIN: users.filter((u) => u.role === 'ADMIN').length,
+    OFFICER: users.filter((u) => u.role === 'OFFICER').length,
+    APPROVER: users.filter((u) => u.role === 'APPROVER').length,
+    USER: users.filter((u) => u.role === 'USER').length,
+  };
+
+  const filteredUsers = users.filter((u) => {
+    if (selectedTab !== 'ALL' && u.role !== selectedTab) {
+      return false;
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      const name = (u.name || '').toLowerCase();
+      const email = (u.email || '').toLowerCase();
+      const dept = (u.department || '').toLowerCase();
+      const studentId = (u.studentId || '').toLowerCase();
+      const phone = (u.phone || '').toLowerCase();
+      return (
+        name.includes(q) ||
+        email.includes(q) ||
+        dept.includes(q) ||
+        studentId.includes(q) ||
+        phone.includes(q)
+      );
+    }
+    return true;
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -271,42 +304,147 @@ export default function UsersPage() {
         </div>
       </div>
 
-      {/* Role Descriptions Grid */}
+      {/* Role Descriptions Grid (Interactive Click to Filter) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-4 rounded-2xl bg-purple-50 border border-purple-100 space-y-1.5">
-          <div className="font-bold text-purple-900 text-xs flex items-center gap-1.5">
-            <ShieldCheck className="w-4 h-4 text-purple-600" /> แอดมิน (Admin)
+        <div
+          onClick={() => setSelectedTab(selectedTab === 'ADMIN' ? 'ALL' : 'ADMIN')}
+          className={`p-4 rounded-2xl bg-purple-50 border transition cursor-pointer hover:shadow-md ${
+            selectedTab === 'ADMIN'
+              ? 'border-purple-400 ring-2 ring-purple-400 shadow-md bg-purple-100/70'
+              : 'border-purple-100'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <div className="font-bold text-purple-900 text-xs flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 text-purple-600" /> แอดมิน (Admin)
+            </div>
+            <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-purple-200/80 text-purple-800">
+              {tabCounts.ADMIN} คน
+            </span>
           </div>
-          <p className="text-[11px] text-purple-800 leading-relaxed">
+          <p className="text-[11px] text-purple-800 leading-relaxed mt-1.5">
             ดูแลระบบทั้งหมด เพิ่ม/แก้ไขผู้ใช้งาน กำหนดสิทธิ์ และเข้าถึงรายงานและข้อมูลทุกส่วน
           </p>
         </div>
 
-        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-100 space-y-1.5">
-          <div className="font-bold text-emerald-900 text-xs flex items-center gap-1.5">
-            <Activity className="w-4 h-4 text-emerald-600" /> เจ้าหน้าที่แล็บ (Officer)
+        <div
+          onClick={() => setSelectedTab(selectedTab === 'OFFICER' ? 'ALL' : 'OFFICER')}
+          className={`p-4 rounded-2xl bg-emerald-50 border transition cursor-pointer hover:shadow-md ${
+            selectedTab === 'OFFICER'
+              ? 'border-emerald-400 ring-2 ring-emerald-400 shadow-md bg-emerald-100/70'
+              : 'border-emerald-100'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <div className="font-bold text-emerald-900 text-xs flex items-center gap-1.5">
+              <Activity className="w-4 h-4 text-emerald-600" /> เจ้าหน้าที่แล็บ (Officer)
+            </div>
+            <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-emerald-200/80 text-emerald-800">
+              {tabCounts.OFFICER} คน
+            </span>
           </div>
-          <p className="text-[11px] text-emerald-800 leading-relaxed">
+          <p className="text-[11px] text-emerald-800 leading-relaxed mt-1.5">
             จัดการคลังพัสดุ รับเข้าสต็อก ตรวจจ่ายอุปกรณ์ และตรวจรับคืนพร้อมประเมินสภาพ
           </p>
         </div>
 
-        <div className="p-4 rounded-2xl bg-amber-50 border border-amber-100 space-y-1.5">
-          <div className="font-bold text-amber-900 text-xs flex items-center gap-1.5">
-            <UserCheck className="w-4 h-4 text-amber-600" /> ผู้อนุมัติ (Approver)
+        <div
+          onClick={() => setSelectedTab(selectedTab === 'APPROVER' ? 'ALL' : 'APPROVER')}
+          className={`p-4 rounded-2xl bg-amber-50 border transition cursor-pointer hover:shadow-md ${
+            selectedTab === 'APPROVER'
+              ? 'border-amber-400 ring-2 ring-amber-400 shadow-md bg-amber-100/70'
+              : 'border-amber-100'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <div className="font-bold text-amber-900 text-xs flex items-center gap-1.5">
+              <UserCheck className="w-4 h-4 text-amber-600" /> ผู้อนุมัติ (Approver)
+            </div>
+            <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-amber-200/80 text-amber-800">
+              {tabCounts.APPROVER} คน
+            </span>
           </div>
-          <p className="text-[11px] text-amber-800 leading-relaxed">
+          <p className="text-[11px] text-amber-800 leading-relaxed mt-1.5">
             พิจารณาอนุมัติคำขอยืมครุภัณฑ์ และคำขอเบิกวัสดุสิ้นเปลืองสำหรับรายวิชา
           </p>
         </div>
 
-        <div className="p-4 rounded-2xl bg-blue-50 border border-blue-100 space-y-1.5">
-          <div className="font-bold text-blue-900 text-xs flex items-center gap-1.5">
-            <GraduationCap className="w-4 h-4 text-blue-600" /> ผู้ใช้งาน (User)
+        <div
+          onClick={() => setSelectedTab(selectedTab === 'USER' ? 'ALL' : 'USER')}
+          className={`p-4 rounded-2xl bg-blue-50 border transition cursor-pointer hover:shadow-md ${
+            selectedTab === 'USER'
+              ? 'border-blue-400 ring-2 ring-blue-400 shadow-md bg-blue-100/70'
+              : 'border-blue-100'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <div className="font-bold text-blue-900 text-xs flex items-center gap-1.5">
+              <GraduationCap className="w-4 h-4 text-blue-600" /> ผู้ใช้งาน (User)
+            </div>
+            <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-blue-200/80 text-blue-800">
+              {tabCounts.USER} คน
+            </span>
           </div>
-          <p className="text-[11px] text-blue-800 leading-relaxed">
+          <p className="text-[11px] text-blue-800 leading-relaxed mt-1.5">
             อาจารย์ผู้สอนหรือนิสิต ค้นหาของในคลัง ยื่นคำขอยืมหรือเบิกวัสดุสำหรับเรียน
           </p>
+        </div>
+      </div>
+
+      {/* Role Filter Tabs & Search Bar */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-sm">
+        {/* Role Tabs */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          {[
+            { key: 'ALL', label: 'ทั้งหมด (รวม)', icon: Users, count: tabCounts.ALL },
+            { key: 'ADMIN', label: 'ผู้ดูแลระบบ', icon: ShieldCheck, count: tabCounts.ADMIN },
+            { key: 'OFFICER', label: 'เจ้าหน้าที่แล็บ', icon: Activity, count: tabCounts.OFFICER },
+            { key: 'APPROVER', label: 'ผู้อนุมัติ/อาจารย์', icon: UserCheck, count: tabCounts.APPROVER },
+            { key: 'USER', label: 'ผู้ใช้ทั่วไป/นิสิต', icon: GraduationCap, count: tabCounts.USER },
+          ].map((tab) => {
+            const isSelected = selectedTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setSelectedTab(tab.key)}
+                className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                  isSelected
+                    ? 'bg-slate-900 text-white shadow-sm ring-2 ring-slate-700/50'
+                    : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                }`}
+              >
+                <tab.icon className={`w-3.5 h-3.5 ${isSelected ? 'text-teal-400' : 'text-slate-400'}`} />
+                <span>{tab.label}</span>
+                <span
+                  className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${
+                    isSelected ? 'bg-teal-500 text-white' : 'bg-slate-200 text-slate-700'
+                  }`}
+                >
+                  {tab.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Search Box */}
+        <div className="relative w-full md:w-64">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            placeholder="ค้นหาชื่อ, อีเมล, รหัส, ภาควิชา..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -327,14 +465,32 @@ export default function UsersPage() {
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <TableLoadingRow colSpan={6} message="กำลังโหลดรายชื่อผู้ใช้งานและกำหนดสิทธิ์..." />
-              ) : users.length === 0 ? (
+              ) : filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-slate-400">
-                    ไม่พบข้อมูลผู้ใช้งานในระบบ
+                  <td colSpan={6} className="py-12 text-center text-slate-400">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <Users className="w-8 h-8 text-slate-300" />
+                      <span className="text-xs font-medium">
+                        {searchQuery
+                          ? `ไม่พบผู้ใช้งานที่ตรงกับคำค้นหา "${searchQuery}"`
+                          : `ไม่พบผู้ใช้งานในกลุ่ม "${selectedTab === 'ALL' ? 'ทั้งหมด' : selectedTab}"`}
+                      </span>
+                      {(selectedTab !== 'ALL' || searchQuery) && (
+                        <button
+                          onClick={() => {
+                            setSelectedTab('ALL');
+                            setSearchQuery('');
+                          }}
+                          className="text-xs text-teal-600 hover:text-teal-700 font-bold underline cursor-pointer mt-1"
+                        >
+                          ล้างตัวกรองทั้งหมด
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ) : (
-                users.map((u) => (
+                filteredUsers.map((u) => (
                 <tr key={u.id} className="hover:bg-slate-50/60 transition">
                   <td className="py-3.5 px-4">
                     <div className="font-bold text-slate-900 text-xs">{u.name}</div>

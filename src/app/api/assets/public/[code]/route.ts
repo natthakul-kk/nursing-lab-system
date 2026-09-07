@@ -38,7 +38,7 @@ export async function GET(
             borrowRequest: {
               include: {
                 user: {
-                  select: { name: true, department: true, studentId: true },
+                  select: { name: true, department: true, studentId: true, phone: true },
                 },
                 course: {
                   select: { code: true, name: true },
@@ -74,17 +74,46 @@ export async function GET(
 
     // Active borrow details if status is BORROWED
     let activeBorrow = null;
-    if (asset.status === 'BORROWED' && asset.borrowItems.length > 0) {
-      const latestBorrowReq = asset.borrowItems[0]?.borrowRequest;
+    if (asset.status === 'BORROWED') {
+      // Find active borrow item
+      const activeItem = await prisma.borrowItem.findFirst({
+        where: {
+          assetId: asset.id,
+          isReturned: false,
+          borrowRequest: { status: 'BORROWED' },
+        },
+        include: {
+          borrowRequest: {
+            include: {
+              user: {
+                select: { name: true, department: true, studentId: true, phone: true },
+              },
+              course: {
+                select: { code: true, name: true },
+              },
+            },
+          },
+        },
+        orderBy: { id: 'desc' },
+      });
+
+      const latestBorrowReq = activeItem?.borrowRequest || asset.borrowItems[0]?.borrowRequest;
       if (latestBorrowReq && latestBorrowReq.status === 'BORROWED') {
+        const expectedDate = new Date(latestBorrowReq.expectedReturnDate);
+        const isOverdue = new Date() > expectedDate;
+
         activeBorrow = {
-          borrowerName: latestBorrowReq.user?.name,
-          borrowerStudentId: latestBorrowReq.user?.studentId,
-          department: latestBorrowReq.user?.department,
+          requestNumber: latestBorrowReq.requestNumber,
+          borrowerName: latestBorrowReq.user?.name || 'ไม่ระบุชื่อ',
+          borrowerStudentId: latestBorrowReq.user?.studentId || null,
+          borrowerPhone: latestBorrowReq.user?.phone || null,
+          department: latestBorrowReq.user?.department || 'นิสิตพยาบาล',
           borrowDate: latestBorrowReq.borrowDate,
           expectedReturnDate: latestBorrowReq.expectedReturnDate,
+          isOverdue,
           purpose: latestBorrowReq.purpose,
           course: latestBorrowReq.course ? `[${latestBorrowReq.course.code}] ${latestBorrowReq.course.name}` : null,
+          advisorName: latestBorrowReq.advisorName,
         };
       }
     }

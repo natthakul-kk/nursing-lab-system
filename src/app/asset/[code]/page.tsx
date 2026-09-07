@@ -249,22 +249,85 @@ export default function PublicAssetPage() {
               </div>
             )}
 
+            {/* Available Banner */}
+            {isAvailable && (
+              <div className="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-200 text-emerald-950 text-xs space-y-1">
+                <div className="font-bold flex items-center gap-1.5 text-emerald-800 text-sm">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" /> ครุภัณฑ์นี้พร้อมใช้งานในห้องแล็บ
+                </div>
+                <div className="text-emerald-700 font-medium">
+                  สถานะว่าง ไม่มีคิวยืมค้างอยู่ สามารถยื่นคำขอเพื่อนำไปฝึกปฏิบัติการได้ทันที
+                </div>
+              </div>
+            )}
+
             {/* Borrowed Banner (If currently borrowed) */}
             {isBorrowed && asset.activeBorrow && (
-              <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 text-blue-900 text-xs space-y-1.5">
-                <div className="font-bold flex items-center gap-1.5 text-blue-800 text-sm">
-                  <Clock className="w-4 h-4 text-blue-600" /> กำลังถูกยืมใช้งาน
-                </div>
-                <div><b>ผู้ยืม:</b> {asset.activeBorrow.borrowerName} ({asset.activeBorrow.department || 'นิสิตพยาบาล'})</div>
-                {asset.activeBorrow.expectedReturnDate && (
-                  <div>
-                    <b>กำหนดส่งคืน:</b>{' '}
-                    {new Date(asset.activeBorrow.expectedReturnDate).toLocaleString('th-TH')}
+              <div className={`p-4 rounded-2xl border text-xs space-y-2.5 ${
+                asset.activeBorrow.isOverdue
+                  ? 'bg-amber-50/90 border-amber-300 text-amber-950'
+                  : 'bg-blue-50/90 border-blue-200 text-blue-950'
+              }`}>
+                <div className="flex items-center justify-between pb-2 border-b border-slate-200/60">
+                  <div className="font-black flex items-center gap-1.5 text-sm">
+                    <Clock className={`w-4 h-4 ${asset.activeBorrow.isOverdue ? 'text-amber-600' : 'text-blue-600'}`} />
+                    <span>กำลังถูกยืมใช้งาน</span>
                   </div>
-                )}
-                {asset.activeBorrow.course && (
-                  <div><b>สำหรับรายวิชา:</b> {asset.activeBorrow.course}</div>
-                )}
+                  {asset.activeBorrow.isOverdue ? (
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-rose-100 text-rose-700 border border-rose-300 animate-pulse">
+                      ⚠️ เกินกำหนดส่งคืน
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                      กำลังใช้งาน
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  <div className="p-2.5 bg-white/80 rounded-xl border border-slate-200/60">
+                    <span className="text-[10px] font-bold text-slate-400 block">ผู้ยืมปัจจุบัน</span>
+                    <span className="font-bold text-slate-900 text-xs">
+                      {asset.activeBorrow.borrowerName}
+                    </span>
+                    {asset.activeBorrow.borrowerStudentId && (
+                      <span className="text-[11px] text-slate-500 block">
+                        รหัสนิสิต: {asset.activeBorrow.borrowerStudentId}
+                      </span>
+                    )}
+                    <span className="text-[11px] text-slate-500 block">
+                      {asset.activeBorrow.department}
+                    </span>
+                  </div>
+
+                  <div className="p-2.5 bg-white/80 rounded-xl border border-slate-200/60">
+                    <span className="text-[10px] font-bold text-slate-400 block">กำหนดวันเวลาส่งคืน</span>
+                    <span className={`font-bold text-xs block ${asset.activeBorrow.isOverdue ? 'text-rose-600' : 'text-slate-900'}`}>
+                      {asset.activeBorrow.expectedReturnDate
+                        ? new Date(asset.activeBorrow.expectedReturnDate).toLocaleString('th-TH')
+                        : 'ไม่ระบุ'}
+                    </span>
+                    {asset.activeBorrow.borrowDate && (
+                      <span className="text-[11px] text-slate-400 block mt-0.5">
+                        ยืมเมื่อ: {new Date(asset.activeBorrow.borrowDate).toLocaleDateString('th-TH')}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-1 text-[11px] pt-1 text-slate-700">
+                  {asset.activeBorrow.course && (
+                    <div><b>วิชาที่นำไปใช้:</b> {asset.activeBorrow.course}</div>
+                  )}
+                  {asset.activeBorrow.purpose && (
+                    <div><b>วัตถุประสงค์:</b> {asset.activeBorrow.purpose}</div>
+                  )}
+                  {asset.activeBorrow.requestNumber && (
+                    <div className="font-mono text-[10px] text-slate-400">
+                      เลขคำขอ: {asset.activeBorrow.requestNumber}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 

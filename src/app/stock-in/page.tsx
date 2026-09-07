@@ -24,6 +24,7 @@ export default function StockInPage() {
   const { currentUser, isOfficer } = useAuth();
   const [items, setItems] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'CONSUMABLE' | 'EQUIPMENT'>('CONSUMABLE');
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -60,10 +61,7 @@ export default function StockInPage() {
       if (itemsRes.ok) {
         const data = await itemsRes.json();
         setItems(data);
-        const consumables = data.filter((i: any) => i.type === 'CONSUMABLE');
-        if (consumables.length > 0 && !form.itemId) {
-          setForm((prev) => ({ ...prev, itemId: consumables[0].id }));
-        }
+        // Keep form.itemId empty by default so user selects explicitly
       }
       if (dashRes.ok) {
         const dash = await dashRes.json();
@@ -127,6 +125,8 @@ export default function StockInPage() {
 
   const handleTabChange = (tab: 'CONSUMABLE' | 'EQUIPMENT') => {
     setActiveTab(tab);
+    setSelectedCategory('');
+    setForm((prev) => ({ ...prev, itemId: '' }));
     const available = items.filter((i) => i.type === tab);
     if (available.length > 0) {
       handleItemSelect(available[0].id);
@@ -258,21 +258,77 @@ export default function StockInPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                เลือกรายการพัสดุ / ครุภัณฑ์
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-slate-700">
+                เลือกรายการพัสดุ / ครุภัณฑ์ <span className="text-rose-500">*</span>
               </label>
-              <select
-                value={form.itemId}
-                onChange={(e) => handleItemSelect(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
-              >
-                {eligibleItems.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    [{item.code}] {item.name} (คงเหลือ: {item.currentStock} {item.unit})
-                  </option>
-                ))}
-              </select>
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                {/* 1. Category Filter Dropdown */}
+                <div className="sm:col-span-5">
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => {
+                      const catVal = e.target.value;
+                      setSelectedCategory(catVal);
+                      if (catVal && form.itemId) {
+                        const it = items.find((x) => x.id === form.itemId);
+                        if (it && (it.category?.id !== catVal && it.category?.name !== catVal && it.categoryId !== catVal)) {
+                          setForm((prev) => ({ ...prev, itemId: '' }));
+                        }
+                      }
+                    }}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-700 font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  >
+                    <option value="">-- ทุกหมวดหมู่ (กรองตามหมวด) --</option>
+                    {(() => {
+                      const catMap = new Map<string, string>();
+                      eligibleItems.forEach((it: any) => {
+                        if (it.category?.name) {
+                          catMap.set(it.category.id || it.category.name, it.category.name);
+                        }
+                      });
+                      return Array.from(catMap.entries()).map(([id, name]) => (
+                        <option key={id} value={id}>
+                          📁 {name}
+                        </option>
+                      ));
+                    })()}
+                  </select>
+                </div>
+
+                {/* 2. Item Dropdown */}
+                <div className="sm:col-span-7">
+                  <select
+                    value={form.itemId}
+                    required
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      handleItemSelect(val);
+                      const it = items.find((x) => x.id === val);
+                      if (it?.category?.id) {
+                        setSelectedCategory(it.category.id);
+                      }
+                    }}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  >
+                    {(() => {
+                      const filtered = selectedCategory
+                        ? eligibleItems.filter((i) => (i.category?.id === selectedCategory || i.category?.name === selectedCategory || i.categoryId === selectedCategory))
+                        : eligibleItems;
+                      return (
+                        <>
+                          <option value="">-- กรุณาเลือกรายการ ({filtered.length} รายการ) --</option>
+                          {filtered.map((item) => (
+                            <option key={item.id} value={item.id}>
+                              [{item.code}] {item.name} (คงเหลือ: {item.currentStock} {item.unit})
+                            </option>
+                          ))}
+                        </>
+                      );
+                    })()}
+                  </select>
+                </div>
+              </div>
             </div>
 
             {activeTab === 'CONSUMABLE' ? (
@@ -574,8 +630,17 @@ export default function StockInPage() {
                 disabled={submitting}
                 className="w-full py-3 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
               >
-                <CheckCircle2 className="w-4 h-4" />
-                <span>{submitting ? 'กำลังบันทึกข้อมูล...' : 'ยืนยันบันทึกรับเข้าสต็อก'}</span>
+                {submitting ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>กำลังบันทึกรับเข้าสต็อก...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>ยืนยันบันทึกรับเข้าสต็อก</span>
+                  </>
+                )}
               </button>
             </div>
           </form>

@@ -73,19 +73,10 @@ export default function BorrowPage() {
       if (itemsRes.ok) {
         const items = await itemsRes.json();
         setEquipmentList(items);
-        if (items.length > 0 && !newRequest.selectedItems[0].itemId) {
-          setNewRequest((prev) => ({
-            ...prev,
-            selectedItems: [{ itemId: items[0].id, quantity: 1 }],
-          }));
-        }
       }
       if (coursesRes.ok) {
         const cData = await coursesRes.json();
         setCourses(cData);
-        if (cData.length > 0 && !newRequest.courseId) {
-          setNewRequest((prev) => ({ ...prev, courseId: cData[0].id }));
-        }
       }
       if (usersRes.ok) {
         const uData = await usersRes.json();
@@ -118,6 +109,11 @@ export default function BorrowPage() {
       alert('กรุณากรอกข้อมูลให้ครบถ้วน');
       return;
     }
+    const emptyItem = newRequest.selectedItems.find((it) => !it.itemId);
+    if (emptyItem) {
+      alert('กรุณาเลือกรายการครุภัณฑ์ให้ครบทุกแถว');
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -138,12 +134,12 @@ export default function BorrowPage() {
       if (res.ok) {
         setShowNewModal(false);
         setNewRequest({
-          courseId: courses[0]?.id || '',
+          courseId: '',
           advisorName: '',
           purpose: '',
           borrowDate: '',
           expectedReturnDate: '',
-          selectedItems: [{ itemId: equipmentList[0]?.id || '', quantity: 1 }],
+          selectedItems: [{ itemId: '', quantity: 1 }],
         });
         fetchBorrowData();
       } else {
@@ -577,17 +573,19 @@ export default function BorrowPage() {
                     setNewRequest({
                       ...newRequest,
                       courseId: cid,
-                      advisorName: cMatch ? cMatch.instructorName : (newRequest.advisorName || (instructors[0]?.name || '')),
+                      advisorName: cMatch ? cMatch.instructorName : (newRequest.advisorName || ''),
                     });
                   }}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                 >
-                  <option value="">-- ไม่ระบุรายวิชา (ฝึกทักษะทั่วไป / ซ้อมอิสระ) --</option>
-                  {courses.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      [{c.code}] {c.name}
-                    </option>
-                  ))}
+                  <option value="">-- ไม่ระบุรายวิชา (ฝึกทักษะทั่วไป / ซ้อมอิสระนอกหลักสูตร) --</option>
+                  <optgroup label="เลือกรายวิชาในหลักสูตร">
+                    {courses.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        [{c.code}] {c.name}
+                      </option>
+                    ))}
+                  </optgroup>
                 </select>
               </div>
 
@@ -686,46 +684,135 @@ export default function BorrowPage() {
 
               {/* Items Selection */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  เลือกครุภัณฑ์ที่ต้องการยืม
-                </label>
-                <div className="space-y-2">
-                  {newRequest.selectedItems.map((sItem, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <select
-                        value={sItem.itemId}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setNewRequest((prev) => {
-                            const updated = [...prev.selectedItems];
-                            updated[idx].itemId = val;
-                            return { ...prev, selectedItems: updated };
-                          });
-                        }}
-                        className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium"
-                      >
-                        {equipmentList.map((eq) => (
-                          <option key={eq.id} value={eq.id}>
-                            {eq.name} (พร้อมใช้ {eq.currentStock} {eq.unit})
-                          </option>
-                        ))}
-                      </select>
-                      <input
-                        type="number"
-                        min="1"
-                        value={sItem.quantity}
-                        onChange={(e) => {
-                          const val = Number(e.target.value);
-                          setNewRequest((prev) => {
-                            const updated = [...prev.selectedItems];
-                            updated[idx].quantity = val;
-                            return { ...prev, selectedItems: updated };
-                          });
-                        }}
-                        className="w-20 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-center"
-                      />
-                    </div>
-                  ))}
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold text-slate-700">
+                    เลือกครุภัณฑ์ที่ต้องการยืม <span className="text-rose-500">*</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewRequest((prev) => ({
+                        ...prev,
+                        selectedItems: [...prev.selectedItems, { itemId: '', quantity: 1, categoryId: '' } as any],
+                      }));
+                    }}
+                    className="text-xs font-bold text-teal-600 hover:text-teal-700 flex items-center gap-1 cursor-pointer"
+                  >
+                    + เพิ่มรายการยืม
+                  </button>
+                </div>
+                <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1">
+                  {newRequest.selectedItems.map((sItem: any, idx: number) => {
+                    // Extract unique categories from equipmentList
+                    const categoryMap = new Map<string, string>();
+                    equipmentList.forEach((eq: any) => {
+                      if (eq.category?.name) {
+                        categoryMap.set(eq.category.id || eq.category.name, eq.category.name);
+                      }
+                    });
+                    const selectedCat = sItem.categoryId || '';
+                    const filteredEquipments = selectedCat
+                      ? equipmentList.filter((eq: any) => (eq.category?.id === selectedCat || eq.category?.name === selectedCat))
+                      : equipmentList;
+
+                    return (
+                      <div key={idx} className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
+                          {/* 1. Category Filter Dropdown */}
+                          <div className="sm:col-span-4">
+                            <select
+                              value={selectedCat}
+                              onChange={(e) => {
+                                const catVal = e.target.value;
+                                setNewRequest((prev: any) => {
+                                  const updated = [...prev.selectedItems];
+                                  updated[idx].categoryId = catVal;
+                                  // Reset selected item if current item is not in this category
+                                  if (catVal && updated[idx].itemId) {
+                                    const it = equipmentList.find((x) => x.id === updated[idx].itemId);
+                                    if (it && (it.category?.id !== catVal && it.category?.name !== catVal)) {
+                                      updated[idx].itemId = '';
+                                    }
+                                  }
+                                  return { ...prev, selectedItems: updated };
+                                });
+                              }}
+                              className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 font-medium focus:ring-2 focus:ring-teal-500/20"
+                            >
+                              <option value="">-- ทุกหมวดหมู่ --</option>
+                              {Array.from(categoryMap.entries()).map(([id, name]) => (
+                                <option key={id} value={id}>
+                                  📁 {name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          {/* 2. Item Dropdown */}
+                          <div className="sm:col-span-5">
+                            <select
+                              value={sItem.itemId}
+                              required
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                const it = equipmentList.find((x) => x.id === val);
+                                setNewRequest((prev: any) => {
+                                  const updated = [...prev.selectedItems];
+                                  updated[idx].itemId = val;
+                                  if (it?.category?.id) {
+                                    updated[idx].categoryId = it.category.id;
+                                  }
+                                  return { ...prev, selectedItems: updated };
+                                });
+                              }}
+                              className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-medium focus:ring-2 focus:ring-teal-500/20"
+                            >
+                              <option value="">-- กรุณาเลือกครุภัณฑ์ ({filteredEquipments.length} รายการ) --</option>
+                              {filteredEquipments.map((eq) => (
+                                <option key={eq.id} value={eq.id}>
+                                  {eq.name} (พร้อมใช้ {eq.currentStock} {eq.unit})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          {/* 3. Quantity & Remove button */}
+                          <div className="sm:col-span-3 flex items-center gap-1.5">
+                            <input
+                              type="number"
+                              min="1"
+                              value={sItem.quantity}
+                              onChange={(e) => {
+                                const val = Number(e.target.value);
+                                setNewRequest((prev: any) => {
+                                  const updated = [...prev.selectedItems];
+                                  updated[idx].quantity = val;
+                                  return { ...prev, selectedItems: updated };
+                                });
+                              }}
+                              className="w-full bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-xs font-bold text-center"
+                              placeholder="จำนวน"
+                            />
+                            {newRequest.selectedItems.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setNewRequest((prev: any) => ({
+                                    ...prev,
+                                    selectedItems: prev.selectedItems.filter((_: any, i: number) => i !== idx),
+                                  }));
+                                }}
+                                className="p-1.5 text-slate-400 hover:text-rose-500 transition cursor-pointer"
+                                title="ลบแถวนี้"
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -742,7 +829,10 @@ export default function BorrowPage() {
                   disabled={submitting}
                   className="px-5 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition disabled:opacity-50"
                 >
-                  {submitting ? 'กำลังส่งคำขอ...' : 'ส่งคำขอยืมครุภัณฑ์'}
+                  <span className="inline-flex items-center gap-1.5">
+                    {submitting && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                    <span>{submitting ? 'กำลังส่งคำขอยืมครุภัณฑ์...' : 'ส่งคำขอยืมครุภัณฑ์'}</span>
+                  </span>
                 </button>
               </div>
             </form>

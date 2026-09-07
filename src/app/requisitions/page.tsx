@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/lib/auth-context';
 import {
+  useAuth } from '@/lib/auth-context';
+import {
+  RefreshCw,
   FileSpreadsheet,
   Plus,
   Clock,
@@ -63,19 +65,10 @@ export default function RequisitionsPage() {
       if (itemsRes.ok) {
         const items = await itemsRes.json();
         setConsumables(items);
-        if (items.length > 0 && !newReq.items[0].itemId) {
-          setNewReq((prev) => ({
-            ...prev,
-            items: [{ itemId: items[0].id, quantity: 10 }],
-          }));
-        }
       }
       if (coursesRes.ok) {
         const cData = await coursesRes.json();
         setCourses(cData);
-        if (cData.length > 0 && !newReq.courseId) {
-          setNewReq((prev) => ({ ...prev, courseId: cData[0].id }));
-        }
       }
     } catch (err) {
       console.error(err);
@@ -107,7 +100,12 @@ export default function RequisitionsPage() {
   const handleCreateRequisition = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newReq.courseId || !newReq.purpose || !newReq.dateNeeded) {
-      alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+      alert('กรุณากรอกข้อมูลและเลือกรายวิชาทางการพยาบาลให้ครบถ้วน');
+      return;
+    }
+    const emptyRow = newReq.items.find((it) => !it.itemId);
+    if (emptyRow) {
+      alert('กรุณาเลือกรายการวัสดุสิ้นเปลืองให้ครบทุกแถว');
       return;
     }
 
@@ -128,10 +126,10 @@ export default function RequisitionsPage() {
       if (res.ok) {
         setShowNewModal(false);
         setNewReq({
-          courseId: courses[0]?.id || '',
+          courseId: '',
           purpose: '',
           dateNeeded: '',
-          items: [{ itemId: consumables[0]?.id || '', quantity: 10 }],
+          items: [{ itemId: '', quantity: 10 }],
         });
         fetchRequisitions();
       } else {
@@ -445,9 +443,11 @@ export default function RequisitionsPage() {
                   </label>
                   <select
                     value={newReq.courseId}
+                    required
                     onChange={(e) => setNewReq({ ...newReq, courseId: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                   >
+                    <option value="">-- กรุณาเลือกรายวิชาที่ขอเบิกใช้งาน --</option>
                     {courses.map((c) => (
                       <option key={c.id} value={c.id}>
                         [{c.code}] {c.name}
@@ -499,54 +499,111 @@ export default function RequisitionsPage() {
                   </button>
                 </div>
 
-                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                  {newReq.items.map((row, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <select
-                        value={row.itemId}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setNewReq((prev) => {
-                            const updated = [...prev.items];
-                            updated[idx].itemId = val;
-                            return { ...prev, items: updated };
-                          });
-                        }}
-                        className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium"
-                      >
-                        {consumables.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.name} (คงเหลือ: {c.currentStock} {c.unit})
-                          </option>
-                        ))}
-                      </select>
+                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                  {newReq.items.map((row: any, idx) => {
+                    const categoryMap = new Map<string, string>();
+                    consumables.forEach((c: any) => {
+                      if (c.category?.name) {
+                        categoryMap.set(c.category.id || c.category.name, c.category.name);
+                      }
+                    });
+                    const selectedCat = row.categoryId || '';
+                    const filteredConsumables = selectedCat
+                      ? consumables.filter((c: any) => (c.category?.id === selectedCat || c.category?.name === selectedCat))
+                      : consumables;
 
-                      <input
-                        type="number"
-                        min="1"
-                        value={row.quantity}
-                        onChange={(e) => {
-                          const val = Number(e.target.value);
-                          setNewReq((prev) => {
-                            const updated = [...prev.items];
-                            updated[idx].quantity = val;
-                            return { ...prev, items: updated };
-                          });
-                        }}
-                        className="w-20 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-center"
-                      />
+                    return (
+                      <div key={idx} className="p-2 bg-slate-50 border border-slate-200 rounded-xl">
+                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
+                          {/* Category Filter */}
+                          <div className="sm:col-span-4">
+                            <select
+                              value={selectedCat}
+                              onChange={(e) => {
+                                const catVal = e.target.value;
+                                setNewReq((prev: any) => {
+                                  const updated = [...prev.items];
+                                  updated[idx].categoryId = catVal;
+                                  if (catVal && updated[idx].itemId) {
+                                    const it = consumables.find((x) => x.id === updated[idx].itemId);
+                                    if (it && (it.category?.id !== catVal && it.category?.name !== catVal)) {
+                                      updated[idx].itemId = '';
+                                    }
+                                  }
+                                  return { ...prev, items: updated };
+                                });
+                              }}
+                              className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 font-medium focus:ring-2 focus:ring-teal-500/20"
+                            >
+                              <option value="">-- ทุกหมวดหมู่ --</option>
+                              {Array.from(categoryMap.entries()).map(([id, name]) => (
+                                <option key={id} value={id}>
+                                  📁 {name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
 
-                      {newReq.items.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveItemRow(idx)}
-                          className="p-2 text-slate-400 hover:text-rose-500 transition"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
+                          {/* Item Dropdown */}
+                          <div className="sm:col-span-5">
+                            <select
+                              value={row.itemId}
+                              required
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                const it = consumables.find((x) => x.id === val);
+                                setNewReq((prev: any) => {
+                                  const updated = [...prev.items];
+                                  updated[idx].itemId = val;
+                                  if (it?.category?.id) {
+                                    updated[idx].categoryId = it.category.id;
+                                  }
+                                  return { ...prev, items: updated };
+                                });
+                              }}
+                              className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-medium focus:ring-2 focus:ring-teal-500/20"
+                            >
+                              <option value="">-- เลือกรายการวัสดุ ({filteredConsumables.length}) --</option>
+                              {filteredConsumables.map((c) => (
+                                <option key={c.id} value={c.id}>
+                                  {c.name} (คงเหลือ: {c.currentStock} {c.unit})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          {/* Quantity & Delete */}
+                          <div className="sm:col-span-3 flex items-center gap-1.5">
+                            <input
+                              type="number"
+                              min="1"
+                              value={row.quantity}
+                              onChange={(e) => {
+                                const val = Number(e.target.value);
+                                setNewReq((prev: any) => {
+                                  const updated = [...prev.items];
+                                  updated[idx].quantity = val;
+                                  return { ...prev, items: updated };
+                                });
+                              }}
+                              className="w-full bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-xs font-bold text-center"
+                              placeholder="จำนวน"
+                            />
+                            {newReq.items.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveItemRow(idx)}
+                                className="p-1.5 text-slate-400 hover:text-rose-500 transition cursor-pointer"
+                                title="ลบรายการนี้"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -563,7 +620,10 @@ export default function RequisitionsPage() {
                   disabled={submitting}
                   className="px-5 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition disabled:opacity-50"
                 >
-                  {submitting ? 'กำลังส่งคำขอ...' : 'ส่งคำขอเบิกวัสดุ'}
+                  <span className="inline-flex items-center gap-1.5">
+                    {submitting && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                    <span>{submitting ? 'กำลังส่งคำขอเบิกวัสดุ...' : 'ส่งคำขอเบิกวัสดุ'}</span>
+                  </span>
                 </button>
               </div>
             </form>

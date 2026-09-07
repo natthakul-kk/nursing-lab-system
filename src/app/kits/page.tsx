@@ -117,10 +117,6 @@ export default function PracticeKitsPage() {
       if (coursesRes.ok) {
         const cData = await coursesRes.json();
         setCourses(cData);
-        if (cData.length > 0 && !requestForm.courseId) {
-          setRequestForm((prev) => ({ ...prev, courseId: cData[0].id }));
-          setPrepareForm((prev) => ({ ...prev, courseId: cData[0].id }));
-        }
       }
     } catch (err) {
       console.error(err);
@@ -150,7 +146,7 @@ export default function PracticeKitsPage() {
     setRequestTargetKit(kit);
     setRequestForm({
       setsRequested: 1,
-      courseId: courses[0]?.id || '',
+      courseId: '',
       advisorName: '',
       purpose: 'สำหรับการฝึกปฏิบัติการในรายวิชา ' + (kit.targetCourse || ''),
       borrowDate: new Date().toISOString().slice(0, 16),
@@ -738,9 +734,10 @@ export default function PracticeKitsPage() {
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500"
                     required
                   >
+                    <option value="">-- กรุณาเลือกรายวิชาที่จัดเตรียม --</option>
                     {courses.map((c) => (
                       <option key={c.id} value={c.id}>
-                        {c.code} {c.name}
+                        [{c.code}] {c.name}
                       </option>
                     ))}
                   </select>
@@ -1036,23 +1033,59 @@ export default function PracticeKitsPage() {
                       key={idx}
                       className="flex items-center gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200/80"
                     >
-                      <div className="flex-1">
-                        <select
-                          value={row.itemId}
-                          onChange={(e) => {
-                            const updated = [...editForm.items];
-                            updated[idx].itemId = e.target.value;
-                            setEditForm({ ...editForm, items: updated });
-                          }}
-                          className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium"
-                          required
-                        >
-                          {allItems.map((it) => (
-                            <option key={it.id} value={it.id}>
-                              {getItemOptionLabel(it)}
-                            </option>
-                          ))}
-                        </select>
+                      <div className="flex-1 grid grid-cols-1 sm:grid-cols-12 gap-1.5">
+                        <div className="sm:col-span-5">
+                          <select
+                            value={(row as any).categoryId || ''}
+                            onChange={(e) => {
+                              const catVal = e.target.value;
+                              const updated = [...editForm.items];
+                              (updated[idx] as any).categoryId = catVal;
+                              if (catVal && updated[idx].itemId) {
+                                const it = allItems.find((x) => x.id === updated[idx].itemId);
+                                if (it && (it.category?.id !== catVal && it.category?.name !== catVal && it.categoryId !== catVal)) {
+                                  updated[idx].itemId = '';
+                                }
+                              }
+                              setEditForm({ ...editForm, items: updated });
+                            }}
+                            className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-700"
+                          >
+                            <option value="">-- ทุกหมวดหมู่ --</option>
+                            {(() => {
+                              const catMap = new Map<string, string>();
+                              allItems.forEach((it: any) => {
+                                if (it.category?.name) catMap.set(it.category.id || it.category.name, it.category.name);
+                              });
+                              return Array.from(catMap.entries()).map(([id, name]) => (
+                                <option key={id} value={id}>📁 {name}</option>
+                              ));
+                            })()}
+                          </select>
+                        </div>
+                        <div className="sm:col-span-7">
+                          <select
+                            value={row.itemId}
+                            onChange={(e) => {
+                              const updated = [...editForm.items];
+                              updated[idx].itemId = e.target.value;
+                              const it = allItems.find((x) => x.id === e.target.value);
+                              if (it?.category?.id) (updated[idx] as any).categoryId = it.category.id;
+                              setEditForm({ ...editForm, items: updated });
+                            }}
+                            className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium"
+                            required
+                          >
+                            <option value="">-- กรุณาเลือกรายการ --</option>
+                            {allItems
+                              .filter((it: any) => !(row as any).categoryId || it.category?.id === (row as any).categoryId || it.category?.name === (row as any).categoryId || it.categoryId === (row as any).categoryId)
+                              .map((it) => (
+                                <option key={it.id} value={it.id}>
+                                  {getItemOptionLabel(it)}
+                                </option>
+                              ))}
+                          </select>
+                        </div>
                       </div>
 
                       <div className="w-24">
@@ -1337,9 +1370,10 @@ export default function PracticeKitsPage() {
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500"
                     required
                   >
+                    <option value="">-- กรุณาเลือกรายวิชาที่นำชุดไปใช้ --</option>
                     {courses.map((c) => (
                       <option key={c.id} value={c.id}>
-                        {c.code} {c.name}
+                        [{c.code}] {c.name}
                       </option>
                     ))}
                   </select>
@@ -1419,7 +1453,8 @@ export default function PracticeKitsPage() {
                   className="px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition disabled:opacity-50 cursor-pointer inline-flex items-center gap-1.5"
                 >
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>{requestSubmitting ? 'กำลังส่งคำขอ...' : 'ยืนยันยื่นคำขอชุดฝึก'}</span>
+                  {requestSubmitting && <RefreshCw className="w-4 h-4 animate-spin" />}
+                  <span>{requestSubmitting ? 'กำลังส่งคำขอชุดฝึก...' : 'ยืนยันยื่นคำขอชุดฝึก'}</span>
                 </button>
               </div>
             </form>
@@ -1548,23 +1583,59 @@ export default function PracticeKitsPage() {
                       key={idx}
                       className="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200/80"
                     >
-                      <div className="flex-1">
-                        <select
-                          value={row.itemId}
-                          onChange={(e) => {
-                            const updated = [...kitForm.items];
-                            updated[idx].itemId = e.target.value;
-                            setKitForm({ ...kitForm, items: updated });
-                          }}
-                          className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium"
-                          required
-                        >
-                          {allItems.map((it) => (
-                            <option key={it.id} value={it.id}>
-                              {getItemOptionLabel(it)}
-                            </option>
-                          ))}
-                        </select>
+                      <div className="flex-1 grid grid-cols-1 sm:grid-cols-12 gap-1.5">
+                        <div className="sm:col-span-5">
+                          <select
+                            value={(row as any).categoryId || ''}
+                            onChange={(e) => {
+                              const catVal = e.target.value;
+                              const updated = [...kitForm.items];
+                              (updated[idx] as any).categoryId = catVal;
+                              if (catVal && updated[idx].itemId) {
+                                const it = allItems.find((x) => x.id === updated[idx].itemId);
+                                if (it && (it.category?.id !== catVal && it.category?.name !== catVal && it.categoryId !== catVal)) {
+                                  updated[idx].itemId = '';
+                                }
+                              }
+                              setKitForm({ ...kitForm, items: updated });
+                            }}
+                            className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-700"
+                          >
+                            <option value="">-- ทุกหมวดหมู่ --</option>
+                            {(() => {
+                              const catMap = new Map<string, string>();
+                              allItems.forEach((it: any) => {
+                                if (it.category?.name) catMap.set(it.category.id || it.category.name, it.category.name);
+                              });
+                              return Array.from(catMap.entries()).map(([id, name]) => (
+                                <option key={id} value={id}>📁 {name}</option>
+                              ));
+                            })()}
+                          </select>
+                        </div>
+                        <div className="sm:col-span-7">
+                          <select
+                            value={row.itemId}
+                            onChange={(e) => {
+                              const updated = [...kitForm.items];
+                              updated[idx].itemId = e.target.value;
+                              const it = allItems.find((x) => x.id === e.target.value);
+                              if (it?.category?.id) (updated[idx] as any).categoryId = it.category.id;
+                              setKitForm({ ...kitForm, items: updated });
+                            }}
+                            className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium"
+                            required
+                          >
+                            <option value="">-- กรุณาเลือกรายการ --</option>
+                            {allItems
+                              .filter((it: any) => !(row as any).categoryId || it.category?.id === (row as any).categoryId || it.category?.name === (row as any).categoryId || it.categoryId === (row as any).categoryId)
+                              .map((it) => (
+                                <option key={it.id} value={it.id}>
+                                  {getItemOptionLabel(it)}
+                                </option>
+                              ))}
+                          </select>
+                        </div>
                       </div>
 
                       <div className="w-24">

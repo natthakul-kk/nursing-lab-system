@@ -453,8 +453,8 @@ export default function PracticePage() {
       isCustomSkill: slotSkills.length === 0,
       customSkillText: '',
       objectives: '',
-      advisorName: courses.length > 0 ? courses[0].instructorName : (teachers.length > 0 ? teachers[0].name : ''),
-      courseId: courses.length > 0 ? courses[0].id : '',
+      advisorName: '',
+      courseId: '',
       practiceKitId: matchedKit ? matchedKit.id : '',
       additionalEquipment: '',
     });
@@ -2793,17 +2793,19 @@ export default function PracticePage() {
                       setBookingForm({
                         ...bookingForm,
                         courseId: cid,
-                        advisorName: c?.instructorName || (teachers.length > 0 ? teachers[0].name : ''),
+                        advisorName: c?.instructorName || '',
                       });
                     }}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                   >
-                    <option value="">-- ไม่อยู่ในรายวิชา (ฝึกอิสระ/OSCE) --</option>
-                    {courses.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        [{c.code}] {c.name}
-                      </option>
-                    ))}
+                    <option value="">-- ฝึกอิสระ / นอกรายวิชา (OSCE) --</option>
+                    <optgroup label="เลือกรายวิชาในหลักสูตร">
+                      {courses.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          [{c.code}] {c.name}
+                        </option>
+                      ))}
+                    </optgroup>
                   </select>
                 </div>
 
@@ -2823,7 +2825,7 @@ export default function PracticePage() {
                       onChange={(e) => setBookingForm({ ...bookingForm, advisorName: e.target.value })}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                     >
-                      <option value="">-- เลือกอาจารย์ที่ปรึกษา --</option>
+                      <option value="">-- กรุณาเลือกอาจารย์ผู้รับรอง --</option>
                       {teachers.map((t) => (
                         <option key={t.id} value={t.name}>
                           {t.name} ({t.department || 'คณะพยาบาลศาสตร์'})

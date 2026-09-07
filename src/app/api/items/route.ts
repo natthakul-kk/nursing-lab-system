@@ -37,6 +37,7 @@ export async function GET(req: Request) {
           imageUrl: true,
           status: true,
           categoryId: true,
+          category: { select: { id: true, name: true } },
           assets: {
             where: { status: 'AVAILABLE' },
             select: { id: true },

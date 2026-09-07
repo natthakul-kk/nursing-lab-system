@@ -39,6 +39,7 @@ export default function ApprovalsPage() {
   const [rejectItem, setRejectItem] = useState<{ id: string; type: 'BORROW' | 'REQUISITION' | 'PRACTICE' } | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [acknowledgingId, setAcknowledgingId] = useState<string | null>(null);
 
   const fetchData = async () => {
     try {
@@ -102,7 +103,7 @@ export default function ApprovalsPage() {
   };
 
   const handleAcknowledge = async (id: string, type: 'BORROW' | 'REQUISITION') => {
-    setSubmitting(true);
+    setAcknowledgingId(id);
     try {
       const endpoint = type === 'BORROW' ? `/api/borrow/${id}` : `/api/requisitions/${id}`;
       const res = await fetch(endpoint, {
@@ -116,14 +117,14 @@ export default function ApprovalsPage() {
       });
 
       if (res.ok) {
-        fetchData();
+        await fetchData();
       } else {
         alert('เกิดข้อผิดพลาดในการบันทึกการรับทราบ');
       }
     } catch (err) {
       alert('Network error');
     } finally {
-      setSubmitting(false);
+      setAcknowledgingId(null);
     }
   };
 
@@ -510,17 +511,17 @@ export default function ApprovalsPage() {
                       <div className="flex items-center justify-end gap-2">
                         {!req.instructorAcknowledged && (isTeacher || isAdmin || isApprover) && (
                           <button
-                            disabled={submitting}
+                            disabled={acknowledgingId === req.id || submitting}
                             onClick={() => handleAcknowledge(req.id, 'BORROW')}
                             className="px-3.5 py-2 rounded-xl text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed border border-indigo-200 shadow-sm transition cursor-pointer flex items-center gap-1.5"
                             title="อาจารย์ประจำวิชากดรับทราบก่อนส่งต่อการอนุมัติขั้นสุดท้าย"
                           >
-                            {submitting ? (
+                            {acknowledgingId === req.id ? (
                               <RefreshCw className="w-3.5 h-3.5 animate-spin text-indigo-600" />
                             ) : (
                               <GraduationCap className="w-3.5 h-3.5 text-indigo-600" />
                             )}
-                            <span>{submitting ? 'กำลังบันทึกรับทราบ...' : 'อาจารย์กดรับทราบคำขอ'}</span>
+                            <span>{acknowledgingId === req.id ? 'กำลังบันทึกการรับทราบ...' : 'อาจารย์กดรับทราบคำขอ'}</span>
                           </button>
                         )}
                         <button
@@ -673,17 +674,17 @@ export default function ApprovalsPage() {
                       <div className="flex items-center justify-end gap-2">
                         {!req.instructorAcknowledged && (isTeacher || isAdmin || isApprover) && (
                           <button
-                            disabled={submitting}
+                            disabled={acknowledgingId === req.id || submitting}
                             onClick={() => handleAcknowledge(req.id, 'REQUISITION')}
                             className="px-3.5 py-2 rounded-xl text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed border border-indigo-200 shadow-sm transition cursor-pointer flex items-center gap-1.5"
                             title="อาจารย์ประจำวิชากดรับทราบก่อนส่งต่อการอนุมัติขั้นสุดท้าย"
                           >
-                            {submitting ? (
+                            {acknowledgingId === req.id ? (
                               <RefreshCw className="w-3.5 h-3.5 animate-spin text-indigo-600" />
                             ) : (
                               <GraduationCap className="w-3.5 h-3.5 text-indigo-600" />
                             )}
-                            <span>{submitting ? 'กำลังบันทึกรับทราบ...' : 'อาจารย์กดรับทราบคำขอ'}</span>
+                            <span>{acknowledgingId === req.id ? 'กำลังบันทึกการรับทราบ...' : 'อาจารย์กดรับทราบคำขอ'}</span>
                           </button>
                         )}
                         <button

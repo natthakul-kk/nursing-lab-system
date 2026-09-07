@@ -49,6 +49,7 @@ export default function RequisitionsPage() {
   // Action Dispense Modal
   const [activeReqForDispense, setActiveReqForDispense] = useState<any | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [acknowledgingId, setAcknowledgingId] = useState<string | null>(null);
 
   const fetchRequisitions = async () => {
     try {
@@ -172,7 +173,7 @@ export default function RequisitionsPage() {
   };
 
   const handleAcknowledge = async (reqId: string) => {
-    setSubmitting(true);
+    setAcknowledgingId(reqId);
     try {
       const res = await fetch(`/api/requisitions/${reqId}`, {
         method: 'PUT',
@@ -185,7 +186,7 @@ export default function RequisitionsPage() {
       });
 
       if (res.ok) {
-        fetchRequisitions();
+        await fetchRequisitions();
       } else {
         const err = await res.json();
         alert(err.error || 'Failed to acknowledge');
@@ -193,7 +194,7 @@ export default function RequisitionsPage() {
     } catch (err) {
       alert('Error updating requisition');
     } finally {
-      setSubmitting(false);
+      setAcknowledgingId(null);
     }
   };
 
@@ -399,12 +400,21 @@ export default function RequisitionsPage() {
                     คำขอนี้ยังรอยืนยันการรับทราบจากอาจารย์ประจำวิชา
                   </span>
                   <button
-                    disabled={submitting}
+                    disabled={acknowledgingId === req.id || submitting}
                     onClick={() => handleAcknowledge(req.id)}
-                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md shadow-indigo-600/20 transition cursor-pointer"
+                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-400 disabled:cursor-not-allowed text-white text-xs font-bold shadow-md shadow-indigo-600/20 transition cursor-pointer"
                   >
-                    <GraduationCap className="w-4 h-4" />
-                    <span>อาจารย์กดรับทราบคำขอ (Acknowledge)</span>
+                    {acknowledgingId === req.id ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <span>กำลังบันทึกการรับทราบ...</span>
+                      </>
+                    ) : (
+                      <>
+                        <GraduationCap className="w-4 h-4" />
+                        <span>อาจารย์กดรับทราบคำขอ (Acknowledge)</span>
+                      </>
+                    )}
                   </button>
                 </div>
               )}

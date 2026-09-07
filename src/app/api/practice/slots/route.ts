@@ -10,6 +10,11 @@ export async function GET(req: Request) {
     const where: any = {};
     if (roomId) where.roomId = roomId;
 
+    const startDateParam = searchParams.get('startDate');
+    const endDateParam = searchParams.get('endDate');
+    const monthParam = searchParams.get('month'); // 1-12
+    const yearParam = searchParams.get('year'); // e.g. 2026
+
     if (dateParam) {
       const targetDate = new Date(dateParam);
       const startOfDay = new Date(targetDate);
@@ -21,16 +26,38 @@ export async function GET(req: Request) {
         gte: startOfDay,
         lte: endOfDay,
       };
+    } else if (startDateParam && endDateParam) {
+      const start = new Date(startDateParam);
+      start.setUTCHours(0, 0, 0, 0);
+      const end = new Date(endDateParam);
+      end.setUTCHours(23, 59, 59, 999);
+
+      where.date = {
+        gte: start,
+        lte: end,
+      };
+    } else if (monthParam && yearParam) {
+      const y = parseInt(yearParam, 10);
+      const m = parseInt(monthParam, 10) - 1;
+      const startOfMonth = new Date(Date.UTC(y, m, 1, 0, 0, 0, 0));
+      const endOfMonth = new Date(Date.UTC(y, m + 1, 0, 23, 59, 59, 999));
+
+      where.date = {
+        gte: startOfMonth,
+        lte: endOfMonth,
+      };
     } else {
-      // Default: from today onwards for the next 14 days
+      // Default: current month +/- 15 days or 30 days
       const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const future = new Date();
-      future.setDate(today.getDate() + 14);
+      const past = new Date(today);
+      past.setDate(today.getDate() - 15);
+      past.setHours(0, 0, 0, 0);
+      const future = new Date(today);
+      future.setDate(today.getDate() + 45);
       future.setHours(23, 59, 59, 999);
 
       where.date = {
-        gte: today,
+        gte: past,
         lte: future,
       };
     }

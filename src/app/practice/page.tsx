@@ -31,7 +31,10 @@ import {
   SlidersHorizontal,
   Info,
   Calendar,
-  BriefcaseMedical
+  BriefcaseMedical,
+  ChevronLeft,
+  LayoutGrid,
+  CalendarRange
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
@@ -59,12 +62,30 @@ export default function PracticePage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  // Filter States
+  // Filter States & Calendar Mode
+  const [viewMode, setViewMode] = useState<'CALENDAR' | 'LIST'>('CALENDAR');
+  const [currentMonth, setCurrentMonth] = useState<Date>(() => {
+    const d = new Date();
+    d.setDate(1);
+    return d;
+  });
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     return new Date().toISOString().slice(0, 10);
   });
   const [selectedRoomId, setSelectedRoomId] = useState<string>('ALL');
   const [bookingStatusFilter, setBookingStatusFilter] = useState<string>('ALL');
+
+  // Create Slot / Event Modal State (Staff / Teacher)
+  const [showCreateSlotModal, setShowCreateSlotModal] = useState(false);
+  const [createSlotForm, setCreateSlotForm] = useState({
+    roomId: '',
+    date: new Date().toISOString().slice(0, 10),
+    startTime: '13:00',
+    endTime: '16:00',
+    maxCapacity: 6,
+    isOpen: true,
+    closeReason: '',
+  });
 
   // Booking Modal State
   const [showBookingModal, setShowBookingModal] = useState(false);
@@ -104,11 +125,29 @@ export default function PracticePage() {
     rulesNotice: '',
   });
 
+  // Month navigation helpers
+  const handlePrevMonth = () => {
+    setCurrentMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+  };
+
+  const handleNextMonth = () => {
+    setCurrentMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  };
+
+  const handleTodayMonth = () => {
+    const today = new Date();
+    setCurrentMonth(new Date(today.getFullYear(), today.getMonth(), 1));
+    setSelectedDate(today.toISOString().slice(0, 10));
+  };
+
   // 1. Fetch All Initial Data
   const fetchData = async () => {
     try {
+      const year = currentMonth.getFullYear();
+      const month = currentMonth.getMonth() + 1;
+
       const [slotsRes, roomsRes, bookingsRes, configRes, statsRes, coursesRes, kitsRes] = await Promise.all([
-        fetch(`/api/practice/slots?date=${selectedDate}`),
+        fetch(`/api/practice/slots?year=${year}&month=${month}`),
         fetch('/api/practice/rooms'),
         fetch(`/api/practice/bookings${currentUser?.role === 'USER' && !isTeacher ? `?userId=${currentUser.id}` : ''}`),
         fetch('/api/practice/config'),
@@ -118,7 +157,13 @@ export default function PracticePage() {
       ]);
 
       if (slotsRes.ok) setSlots(await slotsRes.json());
-      if (roomsRes.ok) setRooms(await roomsRes.json());
+      if (roomsRes.ok) {
+        const rList = await roomsRes.json();
+        setRooms(rList);
+        if (rList.length > 0 && !createSlotForm.roomId) {
+          setCreateSlotForm((prev) => ({ ...prev, roomId: rList[0].id }));
+        }
+      }
       if (bookingsRes.ok) setBookings(await bookingsRes.json());
       if (configRes.ok) {
         const c = await configRes.json();
@@ -141,7 +186,7 @@ export default function PracticePage() {
 
   useEffect(() => {
     fetchData();
-  }, [selectedDate, currentUser]);
+  }, [currentMonth, currentUser]);
 
   // Generate QR Code when QR modal opens
   useEffect(() => {
@@ -213,6 +258,44 @@ export default function PracticePage() {
         html5ScannerRef.current.clear();
       } catch (e) {}
       html5ScannerRef.current = null;
+    }
+  };
+
+  // 1.5 Actions: Create Open Session (Staff / Teacher)
+  const handleCreateSlot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!createSlotForm.roomId || !createSlotForm.date || !createSlotForm.startTime || !createSlotForm.endTime) {
+      alert('กรุณากรอกข้อมูลห้อง, วันที่ และช่วงเวลาให้ครบถ้วน');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/practice/slots', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          roomId: createSlotForm.roomId,
+          date: createSlotForm.date,
+          startTime: createSlotForm.startTime,
+          endTime: createSlotForm.endTime,
+          maxCapacity: Number(createSlotForm.maxCapacity) || 6,
+          isOpen: createSlotForm.isOpen,
+          closeReason: createSlotForm.closeReason || null,
+        }),
+      });
+
+      if (res.ok) {
+        alert('สร้างรอบเปิดห้องแล็บสำเร็จ!');
+        setShowCreateSlotModal(false);
+        fetchData();
+      } else {
+        const err = await res.json();
+        alert(err.error || 'ไม่สามารถสร้างรอบเวลาได้');
+      }
+    } catch (err) {
+      alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -446,15 +529,68 @@ export default function PracticePage() {
     return b.status === bookingStatusFilter;
   });
 
-  // Quick Date Chips (Today + next 6 days)
-  const dateChips = Array.from({ length: 7 }).map((_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() + i);
-    const dateStr = d.toISOString().slice(0, 10);
-    const dayName = d.toLocaleDateString('th-TH', { weekday: 'short' });
-    const dayNumber = d.getDate();
-    const monthName = d.toLocaleDateString('th-TH', { month: 'short' });
-    return { dateStr, label: `${dayName} ${dayNumber} ${monthName}`, isToday: i === 0 };
+  // Monthly Calendar Grid Generator
+  const year = currentMonth.getFullYear();
+  const month = currentMonth.getMonth(); // 0-indexed
+  const firstDayOfWeek = new Date(year, month, 1).getDay(); // 0 (Sun) - 6 (Sat)
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+  // Calendar cells: 42 cells (6 rows x 7 cols)
+  const calendarCells = [];
+  // 1. Previous month padding
+  for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+    const dayNum = daysInPrevMonth - i;
+    const d = new Date(year, month - 1, dayNum);
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+    calendarCells.push({
+      dateStr,
+      dayNumber: dayNum,
+      isCurrentMonth: false,
+      isToday: false,
+    });
+  }
+  // 2. Current month days
+  const todayDateStr = new Date().toISOString().slice(0, 10);
+  for (let dayNum = 1; dayNum <= daysInMonth; dayNum++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+    calendarCells.push({
+      dateStr,
+      dayNumber: dayNum,
+      isCurrentMonth: true,
+      isToday: dateStr === todayDateStr,
+    });
+  }
+  // 3. Next month padding
+  const remainingCells = 42 - calendarCells.length;
+  for (let dayNum = 1; dayNum <= remainingCells; dayNum++) {
+    const d = new Date(year, month + 1, dayNum);
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+    calendarCells.push({
+      dateStr,
+      dayNumber: dayNum,
+      isCurrentMonth: false,
+      isToday: false,
+    });
+  }
+
+  // Group slots by dateStr for fast lookup in calendar
+  const slotsByDate: Record<string, any[]> = {};
+  filteredSlots.forEach((slot) => {
+    const dStr = new Date(slot.date).toISOString().slice(0, 10);
+    if (!slotsByDate[dStr]) slotsByDate[dStr] = [];
+    slotsByDate[dStr].push(slot);
+  });
+
+  // Slots for the currently selected date (detail sidebar / list)
+  const selectedDateSlots = filteredSlots.filter((slot) => {
+    return new Date(slot.date).toISOString().slice(0, 10) === selectedDate;
+  });
+
+  // Thai Month Display string, e.g. "กันยายน 2569"
+  const thaiMonthDisplay = currentMonth.toLocaleDateString('th-TH', {
+    month: 'long',
+    year: 'numeric',
   });
 
   return (
@@ -564,196 +700,583 @@ export default function PracticePage() {
         </div>
       </div>
 
-      {/* TAB 1: TIMETABLE & SLOTS */}
+      {/* TAB 1: TIMETABLE & CALENDAR VIEW */}
       {activeTab === 'TIMETABLE' && (
         <div className="space-y-6">
-          {/* Filter Bar: Date Chips & Room Filter */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-teal-600" />
-                  เลือกวันที่ต้องการเข้าฝึกปฏิบัติการ
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  ระบบเปิดให้จองล่วงหน้าได้ {config?.maxAdvanceDays || 7} วัน
-                </p>
+          {/* Calendar Controls & Filter Bar */}
+          <div className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-sm space-y-4">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              {/* Left: Month Navigator & View Switcher */}
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center bg-slate-100/80 p-1 rounded-2xl border border-slate-200">
+                  <button
+                    onClick={handlePrevMonth}
+                    title="เดือนก่อนหน้า"
+                    className="p-2 hover:bg-white rounded-xl text-slate-700 hover:text-teal-700 transition cursor-pointer shadow-none hover:shadow-sm"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <div className="px-4 py-1 text-center min-w-[160px]">
+                    <span className="text-sm font-black text-slate-900 capitalize block">
+                      {thaiMonthDisplay}
+                    </span>
+                    <span className="text-[10px] text-slate-500 font-medium">
+                      (พ.ศ. {currentMonth.getFullYear() + 543})
+                    </span>
+                  </div>
+                  <button
+                    onClick={handleNextMonth}
+                    title="เดือนถัดไป"
+                    className="p-2 hover:bg-white rounded-xl text-slate-700 hover:text-teal-700 transition cursor-pointer shadow-none hover:shadow-sm"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <button
+                  onClick={handleTodayMonth}
+                  className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition cursor-pointer"
+                >
+                  วันนี้
+                </button>
+
+                {/* View Mode Toggle */}
+                <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold">
+                  <button
+                    onClick={() => setViewMode('CALENDAR')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition cursor-pointer ${
+                      viewMode === 'CALENDAR'
+                        ? 'bg-white text-teal-700 shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Calendar className="w-3.5 h-3.5" />
+                    <span>รูปปฏิทิน</span>
+                  </button>
+                  <button
+                    onClick={() => setViewMode('LIST')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition cursor-pointer ${
+                      viewMode === 'LIST'
+                        ? 'bg-white text-teal-700 shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <LayoutGrid className="w-3.5 h-3.5" />
+                    <span>รายการการ์ด</span>
+                  </button>
+                </div>
               </div>
 
-              {/* Room Dropdown */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-600 whitespace-nowrap">ห้องแล็บ:</span>
-                <select
-                  value={selectedRoomId}
-                  onChange={(e) => setSelectedRoomId(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
-                >
-                  <option value="ALL">ทุกห้องปฏิบัติการ ({rooms.length} ห้อง)</option>
-                  {rooms.map((r) => (
-                    <option key={r.id} value={r.id}>
-                      {r.name}
-                    </option>
-                  ))}
-                </select>
+              {/* Right: Room Filter & Create Open Session Button */}
+              <div className="flex flex-wrap items-center gap-2.5">
+                {/* Room Filter */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-600 whitespace-nowrap">ห้องแล็บ:</span>
+                  <select
+                    value={selectedRoomId}
+                    onChange={(e) => setSelectedRoomId(e.target.value)}
+                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  >
+                    <option value="ALL">ทุกห้องปฏิบัติการ ({rooms.length} ห้อง)</option>
+                    {rooms.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Officer/Teacher: Create Open Session Button */}
+                {canManageSlots && (
+                  <button
+                    onClick={() => {
+                      setCreateSlotForm({
+                        roomId: rooms.length > 0 ? rooms[0].id : '',
+                        date: selectedDate || new Date().toISOString().slice(0, 10),
+                        startTime: '13:00',
+                        endTime: '16:00',
+                        maxCapacity: 6,
+                        isOpen: true,
+                        closeReason: '',
+                      });
+                      setShowCreateSlotModal(true);
+                    }}
+                    className="px-4 py-2 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white rounded-xl text-xs font-bold shadow-md shadow-teal-600/20 flex items-center gap-1.5 transition cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>+ สร้างรอบเปิดแล็บ (Event)</span>
+                  </button>
+                )}
               </div>
             </div>
 
-            {/* Date Chips Carousel */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin">
-              {dateChips.map((chip) => (
-                <button
-                  key={chip.dateStr}
-                  onClick={() => setSelectedDate(chip.dateStr)}
-                  className={`flex-shrink-0 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer flex flex-col items-center min-w-[100px] border ${
-                    selectedDate === chip.dateStr
-                      ? 'bg-teal-600 text-white border-teal-600 shadow-md shadow-teal-600/20'
-                      : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200'
-                  }`}
-                >
-                  <span className="text-[11px] font-semibold">{chip.label}</span>
-                  {chip.isToday && (
-                    <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-bold mt-0.5 ${
-                      selectedDate === chip.dateStr ? 'bg-white/20 text-white' : 'bg-teal-100 text-teal-800'
-                    }`}>
-                      วันนี้
-                    </span>
-                  )}
-                </button>
-              ))}
+            {/* Quick Legend Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100 text-[11px] text-slate-500">
+              <div className="flex items-center gap-4">
+                <span className="font-semibold text-slate-700">สัญลักษณ์สถานะ:</span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> ว่าง (เปิดรับจอง)
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span> เต็มแล้ว
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span> ปิดรอบ/งดบริการ
+                </span>
+              </div>
+              <div className="text-slate-400">
+                คลิกที่วันบนปฏิทินเพื่อดูรายละเอียดรอบเวลา หรือยื่นจอง
+              </div>
             </div>
           </div>
 
-          {/* Slots Grid */}
-          {loading ? (
-            <div className="bg-white rounded-2xl border border-slate-200/80 p-8 text-center shadow-sm">
-              <LoadingSpinner
-                message="กำลังโหลดตารางช่วงเวลา..."
-                submessage="กำลังดึงข้อมูลความจุและสถานะการเปิดรับจองจาก Supabase"
-              />
-            </div>
-          ) : filteredSlots.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-slate-200/80 p-12 text-center text-slate-400 text-xs shadow-sm space-y-2">
-              <CalendarDays className="w-10 h-10 text-slate-300 mx-auto" />
-              <p className="font-bold text-slate-700">ไม่มีช่วงเวลาเปิดให้บริการในวันที่เลือก</p>
-              <p>กรุณาเลือกวันอื่น หรือติดต่อเจ้าหน้าที่ห้องแล็บเพื่อเปิดรอบเวลาเพิ่มเติม</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {filteredSlots.map((slot) => {
-                const isOpen = slot.isOpen;
-                const isFull = slot.isFull;
+          {/* VIEW 1: MONTHLY INTERACTIVE CALENDAR GRID */}
+          {viewMode === 'CALENDAR' && (
+            <div className="space-y-6">
+              <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden">
+                {/* 7 Days of the Week Header */}
+                <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50/80 text-center text-xs font-black text-slate-700 py-3">
+                  <div className="text-rose-600">อาทิตย์</div>
+                  <div>จันทร์</div>
+                  <div>อังคาร</div>
+                  <div>พุธ</div>
+                  <div>พฤหัสบดี</div>
+                  <div>ศุกร์</div>
+                  <div className="text-indigo-600">เสาร์</div>
+                </div>
 
-                return (
-                  <div
-                    key={slot.id}
-                    className={`rounded-2xl border p-5 shadow-sm transition flex flex-col justify-between space-y-4 ${
-                      !isOpen
-                        ? 'bg-slate-50/80 border-slate-200 opacity-80'
-                        : isFull
-                        ? 'bg-white border-amber-200'
-                        : 'bg-white border-slate-200/90 hover:shadow-md hover:border-teal-300'
-                    }`}
-                  >
-                    <div>
-                      {/* Top Header: Room & Status */}
-                      <div className="flex items-start justify-between gap-2 pb-3 border-b border-slate-100">
-                        <div>
-                          <span className="font-mono text-[10px] font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded">
-                            {slot.room?.code}
+                {/* 42 Calendar Cells (6 rows x 7 cols) */}
+                <div className="grid grid-cols-7 divide-x divide-y divide-slate-100">
+                  {calendarCells.map((cell, idx) => {
+                    const cellSlots = slotsByDate[cell.dateStr] || [];
+                    const isSelected = selectedDate === cell.dateStr;
+                    const hasOpen = cellSlots.some((s) => s.isOpen && !s.isFull);
+                    const isAllFull = cellSlots.length > 0 && cellSlots.every((s) => s.isOpen && s.isFull);
+                    const isAllClosed = cellSlots.length > 0 && cellSlots.every((s) => !s.isOpen);
+
+                    return (
+                      <div
+                        key={idx}
+                        onClick={() => setSelectedDate(cell.dateStr)}
+                        className={`min-h-[105px] sm:min-h-[125px] p-2 flex flex-col justify-between transition cursor-pointer relative group ${
+                          !cell.isCurrentMonth
+                            ? 'bg-slate-50/40 text-slate-300'
+                            : isSelected
+                            ? 'bg-teal-50/50 ring-2 ring-inset ring-teal-500'
+                            : 'bg-white hover:bg-slate-50/80'
+                        }`}
+                      >
+                        {/* Day Number Header */}
+                        <div className="flex items-center justify-between mb-1">
+                          <span
+                            className={`text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full transition ${
+                              cell.isToday
+                                ? 'bg-teal-600 text-white shadow-sm'
+                                : isSelected
+                                ? 'bg-teal-100 text-teal-900'
+                                : cell.isCurrentMonth
+                                ? 'text-slate-800'
+                                : 'text-slate-400'
+                            }`}
+                          >
+                            {cell.dayNumber}
                           </span>
-                          <h4 className="text-sm font-bold text-slate-900 mt-1 line-clamp-1">
-                            {slot.room?.name}
-                          </h4>
-                          {slot.room?.location && (
-                            <span className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
-                              <MapPin className="w-3 h-3 text-slate-400" />
-                              {slot.room.location}
-                            </span>
+
+                          {/* Quick count indicator or Add icon for staff */}
+                          {canManageSlots && cell.isCurrentMonth && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCreateSlotForm({
+                                  roomId: rooms.length > 0 ? rooms[0].id : '',
+                                  date: cell.dateStr,
+                                  startTime: '13:00',
+                                  endTime: '16:00',
+                                  maxCapacity: 6,
+                                  isOpen: true,
+                                  closeReason: '',
+                                });
+                                setShowCreateSlotModal(true);
+                              }}
+                              title={`สร้างรอบเปิดแล็บวันที่ ${cell.dateStr}`}
+                              className="opacity-0 group-hover:opacity-100 w-5 h-5 rounded-full bg-teal-100 hover:bg-teal-200 text-teal-700 flex items-center justify-center text-xs transition"
+                            >
+                              +
+                            </button>
                           )}
                         </div>
 
-                        {/* Status Badge */}
-                        <div>
-                          {!isOpen ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
-                              <Lock className="w-3 h-3 text-rose-600" /> ปิดรอบ
-                            </span>
-                          ) : isFull ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
-                              <Users className="w-3 h-3 text-amber-600" /> เต็มแล้ว
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                              <Unlock className="w-3 h-3 text-emerald-600" /> ว่าง {slot.availableSeats} ที่
-                            </span>
+                        {/* Event Chips List inside Day Cell */}
+                        <div className="flex-1 space-y-1 overflow-y-auto max-h-[75px] scrollbar-none">
+                          {cellSlots.slice(0, 3).map((slot) => {
+                            const isOpen = slot.isOpen;
+                            const isFull = slot.isFull;
+
+                            return (
+                              <div
+                                key={slot.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedDate(cell.dateStr);
+                                }}
+                                className={`px-1.5 py-0.5 rounded text-[10px] font-bold truncate flex items-center justify-between border transition ${
+                                  !isOpen
+                                    ? 'bg-rose-50 text-rose-700 border-rose-200 line-through opacity-70'
+                                    : isFull
+                                    ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                    : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
+                                }`}
+                                title={`${slot.room?.name || 'Lab'} (${slot.startTime}-${slot.endTime}) ${
+                                  !isOpen ? 'ปิดรอบ' : isFull ? 'เต็ม' : `ว่าง ${slot.availableSeats}/${slot.maxCapacity}`
+                                }`}
+                              >
+                                <span className="truncate">
+                                  {slot.startTime}-{slot.endTime} {slot.room?.code?.replace('LAB-', '') || ''}
+                                </span>
+                                <span className="text-[9px] font-mono ml-1 flex-shrink-0">
+                                  {isOpen ? `${slot.availableSeats}ที่` : 'ปิด'}
+                                </span>
+                              </div>
+                            );
+                          })}
+
+                          {cellSlots.length > 3 && (
+                            <div className="text-[9px] font-bold text-teal-700 text-center pt-0.5">
+                              +{cellSlots.length - 3} รอบเพิ่มเติม
+                            </div>
                           )}
                         </div>
-                      </div>
 
-                      {/* Time & Capacity Info */}
-                      <div className="mt-3 space-y-2 text-xs">
-                        <div className="flex items-center justify-between text-slate-700 font-semibold bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-                          <span className="flex items-center gap-1.5">
-                            <Clock className="w-4 h-4 text-teal-600" />
-                            {slot.startTime} - {slot.endTime} น.
-                          </span>
-                          <span className="text-slate-500 font-normal text-[11px]">
-                            ความจุ: <strong>{slot.bookedCount}</strong> / {slot.maxCapacity} คน
-                          </span>
-                        </div>
-
-                        {!isOpen && slot.closeReason && (
-                          <div className="bg-rose-50 border border-rose-100 p-2.5 rounded-xl text-rose-700 text-[11px] flex items-start gap-1.5">
-                            <AlertTriangle className="w-3.5 h-3.5 text-rose-600 flex-shrink-0 mt-0.5" />
-                            <span>เหตุผลที่ปิด: {slot.closeReason}</span>
+                        {/* Cell footer indicator if slots exist */}
+                        {cellSlots.length === 0 && cell.isCurrentMonth && (
+                          <div className="text-[10px] text-slate-300 text-center py-1 opacity-0 group-hover:opacity-100 transition">
+                            ไม่มีรอบ
                           </div>
                         )}
                       </div>
-                    </div>
+                    );
+                  })}
+                </div>
+              </div>
 
-                    {/* Footer Actions */}
-                    <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
-                      {/* Booking Button for Student */}
-                      {isOpen && !isFull && (
-                        <button
-                          onClick={() => handleOpenBookingModal(slot)}
-                          className="w-full py-2 px-3 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs shadow-md shadow-teal-600/20 transition cursor-pointer flex items-center justify-center gap-1.5"
-                        >
-                          <Sparkles className="w-3.5 h-3.5" />
-                          <span>ขอยื่นจองรอบเวลานี้</span>
-                        </button>
-                      )}
+              {/* Selected Day Details Panel */}
+              <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-2">
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                      <CalendarRange className="w-5 h-5 text-teal-600" />
+                      <span>
+                        รอบเวลาเปิดให้บริการในวันที่{' '}
+                        {new Date(selectedDate).toLocaleDateString('th-TH', {
+                          weekday: 'long',
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric',
+                        })}
+                      </span>
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      พบทั้งหมด {selectedDateSlots.length} รอบเวลาในวันที่เลือก
+                    </p>
+                  </div>
 
-                      {/* Staff Slot Toggle Button (Open/Close) */}
-                      {canManageSlots && (
-                        <button
-                          onClick={() => {
-                            setSlotToToggle(slot);
-                            setCloseReasonInput(slot.closeReason || '');
-                          }}
-                          className={`w-full py-1.5 px-3 rounded-xl text-xs font-bold border transition cursor-pointer flex items-center justify-center gap-1.5 ${
-                            isOpen
-                              ? 'text-rose-700 bg-rose-50 hover:bg-rose-100 border-rose-200'
-                              : 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border-emerald-200'
+                  {/* Add Slot on this date for Staff */}
+                  {canManageSlots && (
+                    <button
+                      onClick={() => {
+                        setCreateSlotForm({
+                          roomId: rooms.length > 0 ? rooms[0].id : '',
+                          date: selectedDate,
+                          startTime: '13:00',
+                          endTime: '16:00',
+                          maxCapacity: 6,
+                          isOpen: true,
+                          closeReason: '',
+                        });
+                        setShowCreateSlotModal(true);
+                      }}
+                      className="px-3.5 py-1.5 bg-teal-50 hover:bg-teal-100 text-teal-800 rounded-xl text-xs font-bold border border-teal-200 transition cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Plus className="w-3.5 h-3.5 text-teal-600" />
+                      <span>+ เพิ่มรอบเวลาในวันนี้</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Slots Grid for Selected Date */}
+                {selectedDateSlots.length === 0 ? (
+                  <div className="py-10 text-center text-slate-400 space-y-2">
+                    <CalendarDays className="w-10 h-10 text-slate-300 mx-auto" />
+                    <p className="text-xs font-bold text-slate-700">ไม่มีรอบเวลาเปิดให้บริการในวันที่เลือก</p>
+                    <p className="text-xs">
+                      {canManageSlots
+                        ? 'กดปุ่ม "+ เพิ่มรอบเวลาในวันนี้" เพื่อเปิดรอบให้นิสิตยื่นจอง'
+                        : 'กรุณาเลือกวันอื่นบนปฏิทิน หรือติดต่ออาจารย์/เจ้าหน้าที่เพื่อเปิดรอบเวลา'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {selectedDateSlots.map((slot) => {
+                      const isOpen = slot.isOpen;
+                      const isFull = slot.isFull;
+
+                      return (
+                        <div
+                          key={slot.id}
+                          className={`rounded-2xl border p-4 shadow-sm transition flex flex-col justify-between space-y-3 ${
+                            !isOpen
+                              ? 'bg-slate-50 border-slate-200 opacity-80'
+                              : isFull
+                              ? 'bg-white border-amber-200'
+                              : 'bg-white border-slate-200/90 hover:shadow-md hover:border-teal-300'
                           }`}
                         >
-                          {isOpen ? (
-                            <>
-                              <Lock className="w-3.5 h-3.5 text-rose-600" />
-                              <span>อาจารย์/จนท. ปิดรอบนี้</span>
-                            </>
-                          ) : (
-                            <>
-                              <Unlock className="w-3.5 h-3.5 text-emerald-600" />
-                              <span>เปิดรอบนี้ให้จองได้</span>
-                            </>
-                          )}
-                        </button>
-                      )}
-                    </div>
+                          <div>
+                            {/* Room Header */}
+                            <div className="flex items-start justify-between gap-2 pb-2.5 border-b border-slate-100">
+                              <div>
+                                <span className="font-mono text-[10px] font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded">
+                                  {slot.room?.code}
+                                </span>
+                                <h4 className="text-sm font-bold text-slate-900 mt-1 line-clamp-1">
+                                  {slot.room?.name}
+                                </h4>
+                                {slot.room?.location && (
+                                  <span className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
+                                    <MapPin className="w-3 h-3 text-slate-400" />
+                                    {slot.room.location}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Status Badge */}
+                              <div>
+                                {!isOpen ? (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                                    <Lock className="w-3 h-3 text-rose-600" /> ปิดรอบ
+                                  </span>
+                                ) : isFull ? (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                    <Users className="w-3 h-3 text-amber-600" /> เต็มแล้ว
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                    <Unlock className="w-3 h-3 text-emerald-600" /> ว่าง {slot.availableSeats} ที่
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Time & Capacity Info */}
+                            <div className="mt-2.5 space-y-1.5 text-xs">
+                              <div className="flex items-center justify-between text-slate-700 font-semibold bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                                <span className="flex items-center gap-1.5">
+                                  <Clock className="w-4 h-4 text-teal-600" />
+                                  {slot.startTime} - {slot.endTime} น.
+                                </span>
+                                <span className="text-slate-500 font-normal text-[11px]">
+                                  ความจุ: <strong>{slot.bookedCount}</strong> / {slot.maxCapacity} คน
+                                </span>
+                              </div>
+
+                              {!isOpen && slot.closeReason && (
+                                <div className="bg-rose-50 border border-rose-100 p-2 rounded-xl text-rose-700 text-[11px] flex items-start gap-1.5">
+                                  <AlertTriangle className="w-3.5 h-3.5 text-rose-600 flex-shrink-0 mt-0.5" />
+                                  <span>เหตุผลที่ปิด: {slot.closeReason}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Footer Actions */}
+                          <div className="pt-2 border-t border-slate-100 flex flex-col gap-2">
+                            {isOpen && !isFull && (
+                              <button
+                                onClick={() => handleOpenBookingModal(slot)}
+                                className="w-full py-2 px-3 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs shadow-md shadow-teal-600/20 transition cursor-pointer flex items-center justify-center gap-1.5"
+                              >
+                                <Sparkles className="w-3.5 h-3.5" />
+                                <span>ขอยื่นจองรอบนี้</span>
+                              </button>
+                            )}
+
+                            {canManageSlots && (
+                              <button
+                                onClick={() => {
+                                  setSlotToToggle(slot);
+                                  setCloseReasonInput(slot.closeReason || '');
+                                }}
+                                className={`w-full py-1.5 px-3 rounded-xl text-xs font-bold border transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                                  isOpen
+                                    ? 'text-rose-700 bg-rose-50 hover:bg-rose-100 border-rose-200'
+                                    : 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border-emerald-200'
+                                }`}
+                              >
+                                {isOpen ? (
+                                  <>
+                                    <Lock className="w-3.5 h-3.5 text-rose-600" />
+                                    <span>อาจารย์/จนท. ปิดรอบนี้</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Unlock className="w-3.5 h-3.5 text-emerald-600" />
+                                    <span>เปิดรอบนี้ให้จองได้</span>
+                                  </>
+                                )}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* VIEW 2: CARD / LIST VIEW */}
+          {viewMode === 'LIST' && (
+            <div className="space-y-4">
+              {loading ? (
+                <div className="bg-white rounded-2xl border border-slate-200/80 p-8 text-center shadow-sm">
+                  <LoadingSpinner
+                    message="กำลังโหลดตารางช่วงเวลา..."
+                    submessage="กำลังดึงข้อมูลความจุและสถานะการเปิดรับจองจาก Supabase"
+                  />
+                </div>
+              ) : filteredSlots.length === 0 ? (
+                <div className="bg-white rounded-2xl border border-slate-200/80 p-12 text-center text-slate-400 text-xs shadow-sm space-y-2">
+                  <CalendarDays className="w-10 h-10 text-slate-300 mx-auto" />
+                  <p className="font-bold text-slate-700">ไม่มีช่วงเวลาเปิดให้บริการในเดือนนี้</p>
+                  <p>กรุณาเปลี่ยนเดือน หรือให้เจ้าหน้าที่สร้างรอบเวลาเปิดให้บริการ</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {filteredSlots.map((slot) => {
+                    const isOpen = slot.isOpen;
+                    const isFull = slot.isFull;
+
+                    return (
+                      <div
+                        key={slot.id}
+                        className={`rounded-2xl border p-5 shadow-sm transition flex flex-col justify-between space-y-4 ${
+                          !isOpen
+                            ? 'bg-slate-50/80 border-slate-200 opacity-80'
+                            : isFull
+                            ? 'bg-white border-amber-200'
+                            : 'bg-white border-slate-200/90 hover:shadow-md hover:border-teal-300'
+                        }`}
+                      >
+                        <div>
+                          {/* Top Header: Date & Room & Status */}
+                          <div className="flex items-start justify-between gap-2 pb-3 border-b border-slate-100">
+                            <div>
+                              <div className="flex items-center gap-1.5 mb-1">
+                                <span className="font-mono text-[10px] font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded">
+                                  {slot.room?.code}
+                                </span>
+                                <span className="text-[11px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded">
+                                  {new Date(slot.date).toLocaleDateString('th-TH', {
+                                    day: 'numeric',
+                                    month: 'short',
+                                    year: '2-digit',
+                                  })}
+                                </span>
+                              </div>
+                              <h4 className="text-sm font-bold text-slate-900 mt-1 line-clamp-1">
+                                {slot.room?.name}
+                              </h4>
+                              {slot.room?.location && (
+                                <span className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
+                                  <MapPin className="w-3 h-3 text-slate-400" />
+                                  {slot.room.location}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Status Badge */}
+                            <div>
+                              {!isOpen ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                                  <Lock className="w-3 h-3 text-rose-600" /> ปิดรอบ
+                                </span>
+                              ) : isFull ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                  <Users className="w-3 h-3 text-amber-600" /> เต็มแล้ว
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                  <Unlock className="w-3 h-3 text-emerald-600" /> ว่าง {slot.availableSeats} ที่
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Time & Capacity Info */}
+                          <div className="mt-3 space-y-2 text-xs">
+                            <div className="flex items-center justify-between text-slate-700 font-semibold bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                              <span className="flex items-center gap-1.5">
+                                <Clock className="w-4 h-4 text-teal-600" />
+                                {slot.startTime} - {slot.endTime} น.
+                              </span>
+                              <span className="text-slate-500 font-normal text-[11px]">
+                                ความจุ: <strong>{slot.bookedCount}</strong> / {slot.maxCapacity} คน
+                              </span>
+                            </div>
+
+                            {!isOpen && slot.closeReason && (
+                              <div className="bg-rose-50 border border-rose-100 p-2.5 rounded-xl text-rose-700 text-[11px] flex items-start gap-1.5">
+                                <AlertTriangle className="w-3.5 h-3.5 text-rose-600 flex-shrink-0 mt-0.5" />
+                                <span>เหตุผลที่ปิด: {slot.closeReason}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Footer Actions */}
+                        <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
+                          {isOpen && !isFull && (
+                            <button
+                              onClick={() => handleOpenBookingModal(slot)}
+                              className="w-full py-2 px-3 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs shadow-md shadow-teal-600/20 transition cursor-pointer flex items-center justify-center gap-1.5"
+                            >
+                              <Sparkles className="w-3.5 h-3.5" />
+                              <span>ขอยื่นจองรอบเวลานี้</span>
+                            </button>
+                          )}
+
+                          {canManageSlots && (
+                            <button
+                              onClick={() => {
+                                setSlotToToggle(slot);
+                                setCloseReasonInput(slot.closeReason || '');
+                              }}
+                              className={`w-full py-1.5 px-3 rounded-xl text-xs font-bold border transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                                isOpen
+                                  ? 'text-rose-700 bg-rose-50 hover:bg-rose-100 border-rose-200'
+                                  : 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border-emerald-200'
+                              }`}
+                            >
+                              {isOpen ? (
+                                <>
+                                  <Lock className="w-3.5 h-3.5 text-rose-600" />
+                                  <span>อาจารย์/จนท. ปิดรอบนี้</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Unlock className="w-3.5 h-3.5 text-emerald-600" />
+                                  <span>เปิดรอบนี้ให้จองได้</span>
+                                </>
+                              )}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -1107,6 +1630,174 @@ export default function PracticePage() {
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* MODAL: CREATE OPEN PRACTICE SESSION / EVENT (Staff / Teacher) */}
+      {showCreateSlotModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-start justify-between pb-3 border-b border-slate-100">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-teal-700 bg-teal-50 px-2.5 py-0.5 rounded-full border border-teal-100">
+                  สำหรับอาจารย์ / เจ้าหน้าที่ห้องแล็บ
+                </span>
+                <h3 className="text-lg font-black text-slate-900 mt-1 flex items-center gap-2">
+                  <CalendarRange className="w-5 h-5 text-teal-600" />
+                  สร้างรอบเปิดห้องแล็บ (Open Session / Event)
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  กำหนดห้องปฏิบัติการ วันที่ เวลา และความจุ เพื่อเปิดให้นิสิตยื่นขอเข้าฝึกปฏิบัติด้วยตนเอง
+                </p>
+              </div>
+              <button
+                onClick={() => setShowCreateSlotModal(false)}
+                className="text-slate-400 hover:text-slate-600 text-lg font-bold p-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateSlot} className="space-y-4">
+              {/* Room Select */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  ห้องปฏิบัติการที่เปิดให้บริการ <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  required
+                  value={createSlotForm.roomId}
+                  onChange={(e) => setCreateSlotForm({ ...createSlotForm, roomId: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                >
+                  {rooms.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.name} ({r.code}) {r.location ? `• ${r.location}` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Date & Time Presets */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    วันที่เปิดรอบ <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={createSlotForm.date}
+                    onChange={(e) => setCreateSlotForm({ ...createSlotForm, date: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    ความจุผู้เข้าฝึกสูงสุด (คน) <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={50}
+                    required
+                    value={createSlotForm.maxCapacity}
+                    onChange={(e) => setCreateSlotForm({ ...createSlotForm, maxCapacity: Number(e.target.value) })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  />
+                </div>
+              </div>
+
+              {/* Time Slots & Quick Preset Buttons */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-slate-700">
+                    ช่วงเวลาเปิดให้บริการ <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold">
+                    <button
+                      type="button"
+                      onClick={() => setCreateSlotForm({ ...createSlotForm, startTime: '09:00', endTime: '12:00' })}
+                      className="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 transition"
+                    >
+                      เช้า (09-12)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCreateSlotForm({ ...createSlotForm, startTime: '13:00', endTime: '16:00' })}
+                      className="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 transition"
+                    >
+                      บ่าย (13-16)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCreateSlotForm({ ...createSlotForm, startTime: '16:30', endTime: '19:30' })}
+                      className="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 transition"
+                    >
+                      เย็น (16:30-19:30)
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <span className="text-[10px] text-slate-500 font-medium">เวลาเริ่ม:</span>
+                    <input
+                      type="time"
+                      required
+                      value={createSlotForm.startTime}
+                      onChange={(e) => setCreateSlotForm({ ...createSlotForm, startTime: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 mt-0.5"
+                    />
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-500 font-medium">เวลาสิ้นสุด:</span>
+                    <input
+                      type="time"
+                      required
+                      value={createSlotForm.endTime}
+                      onChange={(e) => setCreateSlotForm({ ...createSlotForm, endTime: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 mt-0.5"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Status toggle */}
+              <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                <input
+                  type="checkbox"
+                  id="slotIsOpen"
+                  checked={createSlotForm.isOpen}
+                  onChange={(e) => setCreateSlotForm({ ...createSlotForm, isOpen: e.target.checked })}
+                  className="rounded text-teal-600 focus:ring-teal-500 w-4 h-4 cursor-pointer"
+                />
+                <label htmlFor="slotIsOpen" className="text-xs font-bold text-slate-700 cursor-pointer">
+                  เปิดให้รับการจองได้ทันที (หากไม่เลือก นิสิตจะเห็นเป็นรอบที่ยังปิดอยู่)
+                </label>
+              </div>
+
+              {/* Actions */}
+              <div className="pt-3 flex items-center justify-end gap-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateSlotModal(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 cursor-pointer"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition cursor-pointer flex items-center gap-1.5"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>บันทึกและสร้างรอบเปิดแล็บ</span>
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 

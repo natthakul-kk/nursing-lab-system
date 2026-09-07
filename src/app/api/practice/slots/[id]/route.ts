@@ -5,7 +5,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   try {
     const { id } = await params;
     const body = await req.json();
-    const { isOpen, closeReason, maxCapacity } = body;
+    const { isOpen, closeReason, maxCapacity, startTime, endTime, roomId, date } = body;
 
     const dataToUpdate: any = {};
     if (isOpen !== undefined) {
@@ -19,6 +19,20 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     }
     if (maxCapacity !== undefined) {
       dataToUpdate.maxCapacity = Number(maxCapacity);
+    }
+    if (startTime !== undefined) {
+      dataToUpdate.startTime = startTime;
+    }
+    if (endTime !== undefined) {
+      dataToUpdate.endTime = endTime;
+    }
+    if (roomId !== undefined) {
+      dataToUpdate.roomId = roomId;
+    }
+    if (date !== undefined) {
+      const d = new Date(date);
+      d.setHours(0, 0, 0, 0);
+      dataToUpdate.date = d;
     }
 
     const updated = await prisma.practiceSlot.update({

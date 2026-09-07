@@ -34,7 +34,9 @@ import {
   BriefcaseMedical,
   ChevronLeft,
   LayoutGrid,
-  CalendarRange
+  CalendarRange,
+  Edit,
+  Trash2
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
@@ -82,6 +84,18 @@ export default function PracticePage() {
     date: new Date().toISOString().slice(0, 10),
     startTime: '13:00',
     endTime: '16:00',
+    maxCapacity: 6,
+    isOpen: true,
+    closeReason: '',
+  });
+
+  // Edit Slot / Event Modal State (Staff / Teacher)
+  const [slotToEdit, setSlotToEdit] = useState<any>(null);
+  const [editSlotForm, setEditSlotForm] = useState({
+    roomId: '',
+    date: '',
+    startTime: '',
+    endTime: '',
     maxCapacity: 6,
     isOpen: true,
     closeReason: '',
@@ -291,6 +305,79 @@ export default function PracticePage() {
       } else {
         const err = await res.json();
         alert(err.error || 'ไม่สามารถสร้างรอบเวลาได้');
+      }
+    } catch (err) {
+      alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // 1.6 Actions: Open Edit Slot Modal
+  const handleOpenEditSlotModal = (slot: any) => {
+    setSlotToEdit(slot);
+    setEditSlotForm({
+      roomId: slot.roomId,
+      date: new Date(slot.date).toISOString().slice(0, 10),
+      startTime: slot.startTime,
+      endTime: slot.endTime,
+      maxCapacity: slot.maxCapacity,
+      isOpen: slot.isOpen,
+      closeReason: slot.closeReason || '',
+    });
+  };
+
+  // 1.7 Actions: Update Slot
+  const handleUpdateSlot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!slotToEdit) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/practice/slots/${slotToEdit.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          roomId: editSlotForm.roomId,
+          date: editSlotForm.date,
+          startTime: editSlotForm.startTime,
+          endTime: editSlotForm.endTime,
+          maxCapacity: Number(editSlotForm.maxCapacity) || 6,
+          isOpen: editSlotForm.isOpen,
+          closeReason: editSlotForm.isOpen ? null : editSlotForm.closeReason || 'ปิดรอบโดยเจ้าหน้าที่',
+        }),
+      });
+
+      if (res.ok) {
+        alert('แก้ไขข้อมูลรอบเวลาสำเร็จ!');
+        setSlotToEdit(null);
+        fetchData();
+      } else {
+        const err = await res.json();
+        alert(err.error || 'เกิดข้อผิดพลาดในการแก้ไขรอบเวลา');
+      }
+    } catch (err) {
+      alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // 1.8 Actions: Delete Slot
+  const handleDeleteSlot = async (slotId: string) => {
+    if (!confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรอบเวลานี้ออกจากระบบ? หากมีนิสิตจองแล้วจะไม่สามารถลบได้')) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/practice/slots/${slotId}`, {
+        method: 'DELETE',
+      });
+
+      if (res.ok) {
+        alert('ลบรอบเวลาเรียบร้อยแล้ว');
+        setSlotToEdit(null);
+        fetchData();
+      } else {
+        const err = await res.json();
+        alert(err.error || 'ไม่สามารถลบรอบเวลานี้ได้');
       }
     } catch (err) {
       alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
@@ -1101,29 +1188,39 @@ export default function PracticePage() {
                             )}
 
                             {canManageSlots && (
-                              <button
-                                onClick={() => {
-                                  setSlotToToggle(slot);
-                                  setCloseReasonInput(slot.closeReason || '');
-                                }}
-                                className={`w-full py-1.5 px-3 rounded-xl text-xs font-bold border transition cursor-pointer flex items-center justify-center gap-1.5 ${
-                                  isOpen
-                                    ? 'text-rose-700 bg-rose-50 hover:bg-rose-100 border-rose-200'
-                                    : 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border-emerald-200'
-                                }`}
-                              >
-                                {isOpen ? (
-                                  <>
-                                    <Lock className="w-3.5 h-3.5 text-rose-600" />
-                                    <span>อาจารย์/จนท. ปิดรอบนี้</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Unlock className="w-3.5 h-3.5 text-emerald-600" />
-                                    <span>เปิดรอบนี้ให้จองได้</span>
-                                  </>
-                                )}
-                              </button>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => handleOpenEditSlotModal(slot)}
+                                  className="flex-1 py-1.5 px-2.5 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition cursor-pointer flex items-center justify-center gap-1"
+                                >
+                                  <Edit className="w-3.5 h-3.5 text-slate-600" />
+                                  <span>แก้ไขรอบ</span>
+                                </button>
+
+                                <button
+                                  onClick={() => {
+                                    setSlotToToggle(slot);
+                                    setCloseReasonInput(slot.closeReason || '');
+                                  }}
+                                  className={`flex-1 py-1.5 px-2.5 rounded-xl text-xs font-bold border transition cursor-pointer flex items-center justify-center gap-1 ${
+                                    isOpen
+                                      ? 'text-rose-700 bg-rose-50 hover:bg-rose-100 border-rose-200'
+                                      : 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border-emerald-200'
+                                  }`}
+                                >
+                                  {isOpen ? (
+                                    <>
+                                      <Lock className="w-3.5 h-3.5 text-rose-600" />
+                                      <span>ปิดรับจอง</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Unlock className="w-3.5 h-3.5 text-emerald-600" />
+                                      <span>เปิดรับจอง</span>
+                                    </>
+                                  )}
+                                </button>
+                              </div>
                             )}
                           </div>
                         </div>
@@ -1247,29 +1344,39 @@ export default function PracticePage() {
                           )}
 
                           {canManageSlots && (
-                            <button
-                              onClick={() => {
-                                setSlotToToggle(slot);
-                                setCloseReasonInput(slot.closeReason || '');
-                              }}
-                              className={`w-full py-1.5 px-3 rounded-xl text-xs font-bold border transition cursor-pointer flex items-center justify-center gap-1.5 ${
-                                isOpen
-                                  ? 'text-rose-700 bg-rose-50 hover:bg-rose-100 border-rose-200'
-                                  : 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border-emerald-200'
-                              }`}
-                            >
-                              {isOpen ? (
-                                <>
-                                  <Lock className="w-3.5 h-3.5 text-rose-600" />
-                                  <span>อาจารย์/จนท. ปิดรอบนี้</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Unlock className="w-3.5 h-3.5 text-emerald-600" />
-                                  <span>เปิดรอบนี้ให้จองได้</span>
-                                </>
-                              )}
-                            </button>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleOpenEditSlotModal(slot)}
+                                className="flex-1 py-1.5 px-2.5 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition cursor-pointer flex items-center justify-center gap-1"
+                              >
+                                <Edit className="w-3.5 h-3.5 text-slate-600" />
+                                <span>แก้ไขรอบ</span>
+                              </button>
+
+                              <button
+                                onClick={() => {
+                                  setSlotToToggle(slot);
+                                  setCloseReasonInput(slot.closeReason || '');
+                                }}
+                                className={`flex-1 py-1.5 px-2.5 rounded-xl text-xs font-bold border transition cursor-pointer flex items-center justify-center gap-1 ${
+                                  isOpen
+                                    ? 'text-rose-700 bg-rose-50 hover:bg-rose-100 border-rose-200'
+                                    : 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border-emerald-200'
+                                }`}
+                              >
+                                {isOpen ? (
+                                  <>
+                                    <Lock className="w-3.5 h-3.5 text-rose-600" />
+                                    <span>ปิดรับจอง</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Unlock className="w-3.5 h-3.5 text-emerald-600" />
+                                    <span>เปิดรับจอง</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
                           )}
                         </div>
                       </div>
@@ -1795,6 +1902,203 @@ export default function PracticePage() {
                   <Check className="w-4 h-4" />
                   <span>บันทึกและสร้างรอบเปิดแล็บ</span>
                 </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: EDIT PRACTICE SLOT / EVENT (Staff / Teacher) */}
+      {slotToEdit && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-start justify-between pb-3 border-b border-slate-100">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-teal-700 bg-teal-50 px-2.5 py-0.5 rounded-full border border-teal-100">
+                  แก้ไขข้อมูลรอบเวลา
+                </span>
+                <h3 className="text-lg font-black text-slate-900 mt-1 flex items-center gap-2">
+                  <Edit className="w-5 h-5 text-teal-600" />
+                  แก้ไขรอบเปิดห้องแล็บ
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  ปรับเปลี่ยนห้อง วันที่ เวลาเปิดให้บริการ หรือจำนวนความจุผู้เข้าฝึก
+                </p>
+              </div>
+              <button
+                onClick={() => setSlotToEdit(null)}
+                className="text-slate-400 hover:text-slate-600 text-lg font-bold p-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateSlot} className="space-y-4">
+              {/* Room Select */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  ห้องปฏิบัติการที่เปิดให้บริการ <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  required
+                  value={editSlotForm.roomId}
+                  onChange={(e) => setEditSlotForm({ ...editSlotForm, roomId: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                >
+                  {rooms.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.name} ({r.code}) {r.location ? `• ${r.location}` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Date & Max Capacity */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    วันที่เปิดรอบ <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={editSlotForm.date}
+                    onChange={(e) => setEditSlotForm({ ...editSlotForm, date: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    ความจุผู้เข้าฝึกสูงสุด (คน) <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={50}
+                    required
+                    value={editSlotForm.maxCapacity}
+                    onChange={(e) => setEditSlotForm({ ...editSlotForm, maxCapacity: Number(e.target.value) })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  />
+                </div>
+              </div>
+
+              {/* Time Slots & Quick Preset Buttons */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-slate-700">
+                    ช่วงเวลาเปิดให้บริการ <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold">
+                    <button
+                      type="button"
+                      onClick={() => setEditSlotForm({ ...editSlotForm, startTime: '09:00', endTime: '12:00' })}
+                      className="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 transition"
+                    >
+                      เช้า (09-12)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditSlotForm({ ...editSlotForm, startTime: '13:00', endTime: '16:00' })}
+                      className="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 transition"
+                    >
+                      บ่าย (13-16)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditSlotForm({ ...editSlotForm, startTime: '16:30', endTime: '19:30' })}
+                      className="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 transition"
+                    >
+                      เย็น (16:30-19:30)
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <span className="text-[10px] text-slate-500 font-medium">เวลาเริ่ม:</span>
+                    <input
+                      type="time"
+                      required
+                      value={editSlotForm.startTime}
+                      onChange={(e) => setEditSlotForm({ ...editSlotForm, startTime: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 mt-0.5"
+                    />
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-500 font-medium">เวลาสิ้นสุด:</span>
+                    <input
+                      type="time"
+                      required
+                      value={editSlotForm.endTime}
+                      onChange={(e) => setEditSlotForm({ ...editSlotForm, endTime: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 mt-0.5"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Status toggle & Reason */}
+              <div className="space-y-2 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="editSlotIsOpen"
+                    checked={editSlotForm.isOpen}
+                    onChange={(e) => setEditSlotForm({ ...editSlotForm, isOpen: e.target.checked })}
+                    className="rounded text-teal-600 focus:ring-teal-500 w-4 h-4 cursor-pointer"
+                  />
+                  <label htmlFor="editSlotIsOpen" className="text-xs font-bold text-slate-700 cursor-pointer">
+                    เปิดให้รับการจองได้ (Active)
+                  </label>
+                </div>
+
+                {!editSlotForm.isOpen && (
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                      เหตุผลที่ปิดรอบเวลา (จะแสดงให้นิสิตเห็น)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="เช่น คาบเรียนปฏิบัติการประจำ, ซ่อมบำรุงหุ่น"
+                      value={editSlotForm.closeReason}
+                      onChange={(e) => setEditSlotForm({ ...editSlotForm, closeReason: e.target.value })}
+                      className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Actions & Delete Button */}
+              <div className="pt-3 flex items-center justify-between border-t border-slate-100">
+                <button
+                  type="button"
+                  disabled={submitting}
+                  onClick={() => handleDeleteSlot(slotToEdit.id)}
+                  className="px-3.5 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 transition cursor-pointer flex items-center gap-1.5"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                  <span>ลบรอบนี้</span>
+                </button>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSlotToEdit(null)}
+                    className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 cursor-pointer"
+                  >
+                    ยกเลิก
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="px-5 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Check className="w-4 h-4" />
+                    <span>บันทึกการแก้ไข</span>
+                  </button>
+                </div>
               </div>
             </form>
           </div>

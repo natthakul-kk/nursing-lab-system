@@ -40,6 +40,7 @@ export default function ApprovalsPage() {
   const [rejectionReason, setRejectionReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [acknowledgingId, setAcknowledgingId] = useState<string | null>(null);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
 
   const fetchData = async () => {
     try {
@@ -73,6 +74,7 @@ export default function ApprovalsPage() {
   }, []);
 
   const handleApprove = async (id: string, type: 'BORROW' | 'REQUISITION' | 'PRACTICE') => {
+    setApprovingId(id);
     setSubmitting(true);
     try {
       const endpoint =
@@ -98,6 +100,7 @@ export default function ApprovalsPage() {
     } catch (err) {
       alert('Network error');
     } finally {
+      setApprovingId(null);
       setSubmitting(false);
     }
   };
@@ -565,7 +568,7 @@ export default function ApprovalsPage() {
                           onClick={() => handleApprove(req.id, 'BORROW')}
                           className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-teal-600 hover:bg-teal-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-teal-600/20 transition cursor-pointer flex items-center gap-1.5"
                         >
-                          {submitting ? (
+                          {approvingId === req.id ? (
                             <>
                               <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                               <span>กำลังอนุมัติ...</span>
@@ -728,7 +731,7 @@ export default function ApprovalsPage() {
                           onClick={() => handleApprove(req.id, 'REQUISITION')}
                           className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-teal-600 hover:bg-teal-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-teal-600/20 transition cursor-pointer flex items-center gap-1.5"
                         >
-                          {submitting ? (
+                          {approvingId === req.id ? (
                             <>
                               <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                               <span>กำลังอนุมัติ...</span>
@@ -905,7 +908,7 @@ export default function ApprovalsPage() {
                           onClick={() => handleApprove(b.id, 'PRACTICE')}
                           className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-teal-600 hover:bg-teal-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-teal-600/20 transition cursor-pointer flex items-center gap-1.5"
                         >
-                          {submitting ? (
+                          {approvingId === b.id ? (
                             <>
                               <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                               <span>กำลังอนุมัติ...</span>

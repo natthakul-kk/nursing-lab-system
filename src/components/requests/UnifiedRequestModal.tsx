@@ -100,6 +100,21 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
     return sum + (it?.unitCost || 0) * (row.quantity || 0);
   }, 0);
 
+  // Compute stock validation errors
+  const hasEquipmentStockError = borrowItems.some((it) => {
+    if (!it.itemId) return false;
+    const eq = equipmentList.find((e) => e.id === it.itemId);
+    return eq && (eq.currentStock <= 0 || it.quantity > eq.currentStock);
+  });
+
+  const hasConsumableStockError = requisitionItems.some((it) => {
+    if (!it.itemId) return false;
+    const con = consumablesList.find((c) => c.id === it.itemId);
+    return con && (con.currentStock <= 0 || it.quantity > con.currentStock);
+  });
+
+  const hasStockError = hasEquipmentStockError || hasConsumableStockError;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -606,6 +621,11 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
           </div>
 
           <div className="flex items-center justify-end gap-2">
+            {hasStockError && (
+              <span className="text-[11px] font-bold text-rose-600 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200 flex items-center gap-1">
+                <AlertCircle className="w-3.5 h-3.5" /> มีรายการที่ขอเกินสต็อกคงเหลือ
+              </span>
+            )}
             <button
               type="button"
               disabled={submitting}
@@ -616,9 +636,9 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
             </button>
             <button
               type="button"
-              disabled={submitting}
+              disabled={submitting || hasStockError}
               onClick={handleSubmit}
-              className="px-5 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 disabled:bg-teal-400 text-white text-xs font-bold shadow-lg shadow-teal-600/30 transition flex items-center gap-2 cursor-pointer"
+              className="px-5 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed text-white text-xs font-bold shadow-lg shadow-teal-600/30 transition flex items-center gap-2 cursor-pointer"
             >
               {submitting ? (
                 <>

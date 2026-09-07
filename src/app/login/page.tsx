@@ -62,7 +62,7 @@ export default function LoginPage() {
           <div className="border-b border-slate-100 pb-3">
             <h2 className="text-base font-bold text-slate-800">เข้าสู่ระบบ (Sign In)</h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              กรอกอีเมลและรหัสผ่าน หรือเลือกเข้าใช้งานด่วนตามบทบาท
+              กรอกอีเมลและรหัสผ่านเพื่อเข้าสู่ระบบ
             </p>
           </div>
 
@@ -79,7 +79,7 @@ export default function LoginPage() {
                 <input
                   type="email"
                   required
-                  placeholder="เช่น officer@lab.nurse.ac.th"
+                  placeholder="กรอกอีเมลที่ลงทะเบียนไว้"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-9 pr-4 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"

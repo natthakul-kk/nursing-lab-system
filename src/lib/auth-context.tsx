@@ -18,8 +18,7 @@ export interface User {
 interface AuthContextType {
   currentUser: User | null;
   availableUsers: User[];
-  setCurrentUser: (user: User) => void;
-  switchUserById: (userId: string) => void;
+
   login: (email: string) => Promise<boolean>;
   logout: () => void;
   updateUser: (updatedData: Partial<User>) => Promise<boolean>;
@@ -98,15 +97,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loadUsers();
   }, []);
 
-  const switchUserById = (userId: string) => {
-    const user = availableUsers.find((u) => u.id === userId);
-    if (user) {
-      setCurrentUser(user);
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('active_user_id', user.id);
-      }
-    }
-  };
+
+
 
   const login = async (email: string): Promise<boolean> => {
     const user = availableUsers.find(
@@ -180,8 +172,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         currentUser,
         availableUsers,
-        setCurrentUser,
-        switchUserById,
         login,
         logout,
         updateUser,

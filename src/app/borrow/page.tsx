@@ -756,16 +756,21 @@ export default function BorrowPage() {
 
               {/* Instructor / Advisor notification box for students */}
               {newRequest.courseId ? (
-                // Case 1: In a course -> Auto detect and notify course instructor
-                <div className="p-3 rounded-xl bg-blue-50/70 border border-blue-200 text-xs space-y-1">
-                  <div className="flex items-center gap-1.5 font-bold text-blue-900">
-                    <GraduationCap className="w-4 h-4 text-blue-600" />
-                    <span>อาจารย์ประจำรายวิชา (ผู้รับทราบการยืม):</span>
+                <div className="p-3 rounded-xl bg-teal-50/80 border border-teal-200 text-xs space-y-1">
+                  <div className="flex items-center justify-between font-bold text-teal-900">
+                    <div className="flex items-center gap-1.5">
+                      <GraduationCap className="w-4 h-4 text-teal-600" />
+                      <span>อาจารย์ประจำรายวิชา (ผู้รับทราบการยืม):</span>
+                    </div>
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-teal-700 bg-white px-2 py-0.5 rounded-md border border-teal-200 shadow-xs">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-teal-600" />
+                      <span>ขึ้นให้อัตโนมัติ</span>
+                    </span>
                   </div>
-                  <div className="text-blue-800 font-semibold pl-5">
+                  <div className="text-teal-900 font-bold pl-5 text-sm">
                     {courses.find((c) => c.id === newRequest.courseId)?.instructorName || 'อาจารย์ผู้รับผิดชอบรายวิชา'}
                   </div>
-                  <p className="text-[11px] text-blue-600 pl-5">
+                  <p className="text-[11px] text-teal-700 pl-5">
                     ✓ ระบบจะแจ้งให้อาจารย์ประจำวิชาทราบโดยอัตโนมัติสำหรับการฝึกปฏิบัติตามหลักสูตร
                   </p>
                 </div>

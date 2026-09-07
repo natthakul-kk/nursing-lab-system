@@ -17,6 +17,8 @@ import {
   RefreshCw,
   Layers,
   HelpCircle,
+  GraduationCap,
+  CheckCircle2,
 } from 'lucide-react';
 
 interface UnifiedRequestModalProps {
@@ -247,7 +249,18 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
                     setCourseId(cId);
                     const selectedCourse = courses.find((c) => c.id === cId);
                     if (selectedCourse?.instructorName) {
-                      setAdvisorName(selectedCourse.instructorName);
+                      const cleanTarget = selectedCourse.instructorName.trim();
+                      const matched = instructors.find((ins) => {
+                        const cleanIns = ins.name.trim();
+                        return (
+                          cleanIns === cleanTarget ||
+                          cleanIns.includes(cleanTarget) ||
+                          cleanTarget.includes(cleanIns)
+                        );
+                      });
+                      setAdvisorName(matched ? matched.name : selectedCourse.instructorName);
+                    } else if (!cId) {
+                      setAdvisorName('');
                     }
                   }}
                   className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-teal-500/20"
@@ -271,6 +284,11 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
                   className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-teal-500/20"
                 >
                   <option value="">-- เลือกอาจารย์ในระบบ --</option>
+                  {advisorName && !instructors.some((ins) => ins.name === advisorName) && (
+                    <option value={advisorName}>
+                      {advisorName} (อาจารย์ประจำรายวิชา)
+                    </option>
+                  )}
                   {instructors.map((ins) => (
                     <option key={ins.id} value={ins.name}>
                       {ins.name} ({ins.department || 'อาจารย์พยาบาล'})
@@ -278,6 +296,22 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
                   ))}
                 </select>
               </div>
+
+              {courseId && (
+                <div className="sm:col-span-2 p-2.5 rounded-xl bg-teal-50 border border-teal-200 text-xs flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <GraduationCap className="w-4 h-4 text-teal-700 shrink-0" />
+                    <span className="text-slate-600">อาจารย์ประจำรายวิชา:</span>
+                    <span className="font-bold text-teal-900">
+                      {courses.find((c) => c.id === courseId)?.instructorName || advisorName || 'อาจารย์ผู้รับผิดชอบ'}
+                    </span>
+                  </div>
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-teal-700 bg-white px-2 py-0.5 rounded-md border border-teal-200 shadow-xs">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-teal-600" />
+                    <span>ขึ้นให้อัตโนมัติ</span>
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

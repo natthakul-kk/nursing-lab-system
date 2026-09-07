@@ -14,7 +14,16 @@ export async function GET(req: Request) {
     }
 
     const whereCondition: any = { status: 'ACTIVE' };
-    if (role) {
+    if (role === 'APPROVER' || role === 'INSTRUCTOR') {
+      whereCondition.OR = [
+        { role: 'APPROVER' },
+        { email: { contains: 'teacher' } },
+        { name: { startsWith: 'อ.' } },
+        { name: { startsWith: 'ผศ.' } },
+        { name: { startsWith: 'รศ.' } },
+        { name: { startsWith: 'ดร.' } },
+      ];
+    } else if (role) {
       whereCondition.role = role;
     }
 

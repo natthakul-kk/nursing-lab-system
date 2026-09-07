@@ -39,7 +39,8 @@ import {
   Trash2,
   Package,
   Building,
-  DoorClosed
+  DoorClosed,
+  Boxes,
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
@@ -1676,6 +1677,22 @@ export default function PracticePage() {
                           <div className="flex items-center gap-1 text-[11px] font-semibold text-indigo-700">
                             <GraduationCap className="w-3.5 h-3.5 text-indigo-600" />
                             <span>อาจารย์ผู้ดูแล: {b.advisorName}</span>
+                          </div>
+                        )}
+                        {b.practiceKit && (
+                          <div className="flex items-center justify-between gap-1 text-[11px] font-medium text-teal-800 bg-teal-50 border border-teal-200 px-2.5 py-1.5 rounded-xl mt-1">
+                            <div className="flex items-center gap-1.5">
+                              <Boxes className="w-3.5 h-3.5 text-teal-600 flex-shrink-0" />
+                              <span>ชุดพัสดุหัตถการ: <strong className="font-bold">{b.practiceKit.name}</strong></span>
+                            </div>
+                            {canManageSlots && (
+                              <a
+                                href="/kits"
+                                className="text-[10px] font-bold text-teal-700 hover:text-teal-900 underline flex items-center gap-0.5"
+                              >
+                                จัดจ่ายชุดนี้ ➔
+                              </a>
+                            )}
                           </div>
                         )}
                         {b.additionalEquipment && (

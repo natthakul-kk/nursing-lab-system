@@ -332,6 +332,20 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
                 note: itemRet.note || (itemCond === 'DAMAGED' ? 'ชำรุดจากการยืม' : undefined),
               },
             });
+
+            // Automatically create MaintenanceLog if damaged
+            if (itemCond === 'DAMAGED') {
+              await prisma.maintenanceLog.create({
+                data: {
+                  assetId: updatedBItem.assetId,
+                  issue: itemRet.note || returnNote || `ชำรุดจากการยืมใช้งานตามคำขอ ${borrow.requestNumber}`,
+                  sentDate: new Date(),
+                  status: 'UNDER_REPAIR',
+                  handledById: userId || null,
+                  technicianNote: `ตรวจพบชำรุดขณะตรวจรับคืนครุภัณฑ์ (ผู้ยืม: ${borrow.user?.name || 'ไม่ระบุ'})`,
+                },
+              });
+            }
           }
         }
       } else {
@@ -357,6 +371,20 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
                 note: returnNote ? `ส่งคืนเมื่อ ${new Date().toLocaleDateString('th-TH')}: ${returnNote}` : undefined,
               },
             });
+
+            // Automatically create MaintenanceLog if damaged
+            if (isDamaged) {
+              await prisma.maintenanceLog.create({
+                data: {
+                  assetId: bItem.assetId,
+                  issue: returnNote || `ชำรุดจากการยืมใช้งานตามคำขอ ${borrow.requestNumber}`,
+                  sentDate: new Date(),
+                  status: 'UNDER_REPAIR',
+                  handledById: userId || null,
+                  technicianNote: `ตรวจพบชำรุดขณะตรวจรับคืนครุภัณฑ์ (ผู้ยืม: ${borrow.user?.name || 'ไม่ระบุ'})`,
+                },
+              });
+            }
           }
         }
       }

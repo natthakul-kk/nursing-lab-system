@@ -66,8 +66,18 @@ export default function QrScannerModal({ isOpen, onClose }: QrScannerModalProps)
       }
     }
 
-    // 3. Plain code check: if starts with CON-, RP-, SL-, or has -B / -P, it's a consumable
+    // 3. Practice Booking check-in QR code check (SPK-..., SPB-..., or URL containing /practice)
     const upperText = cleanText.toUpperCase();
+    if (
+      upperText.startsWith('SPK-') ||
+      upperText.startsWith('SPB-') ||
+      cleanText.includes('/practice')
+    ) {
+      stopScannerAndNavigate(`/practice?token=${encodeURIComponent(cleanText)}`);
+      return;
+    }
+
+    // 4. Plain code check: if starts with CON-, RP-, SL-, or has -B / -P, it's a consumable
     if (
       upperText.startsWith('CON-') ||
       upperText.startsWith('RP-') ||

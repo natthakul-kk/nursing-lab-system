@@ -5,13 +5,14 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   try {
     const { id } = await params;
     const body = await req.json();
-    const { action, userId, reason } = body;
+    const { action, userId, reason, itemAdjustments } = body;
 
     const requisition = await prisma.requisitionRequest.findUnique({
       where: { id },
       include: {
         items: true,
         course: true,
+        borrowRequest: true,
       },
     });
 
@@ -28,6 +29,19 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           advisorName: body.advisorName || requisition.advisorName,
         },
       });
+
+      // Synchronize with linked borrow request if unified
+      if (requisition.borrowRequest) {
+        await prisma.borrowRequest.update({
+          where: { id: requisition.borrowRequest.id },
+          data: {
+            instructorAcknowledged: true,
+            acknowledgedAt: new Date(),
+            advisorName: body.advisorName || requisition.advisorName,
+          },
+        }).catch((e) => console.error('Failed to sync linked borrow acknowledge:', e));
+      }
+
       return NextResponse.json(updated);
     }
 
@@ -40,6 +54,19 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           approvedAt: new Date(),
         },
       });
+
+      // Synchronize with linked borrow request if unified
+      if (requisition.borrowRequest) {
+        await prisma.borrowRequest.update({
+          where: { id: requisition.borrowRequest.id },
+          data: {
+            status: 'APPROVED',
+            approverId: userId,
+            approvedAt: new Date(),
+          },
+        }).catch((e) => console.error('Failed to sync linked borrow approve:', e));
+      }
+
       return NextResponse.json(updated);
     }
 
@@ -52,6 +79,19 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           rejectionReason: reason || 'ไม่อนุมัติ',
         },
       });
+
+      // Synchronize with linked borrow request if unified
+      if (requisition.borrowRequest) {
+        await prisma.borrowRequest.update({
+          where: { id: requisition.borrowRequest.id },
+          data: {
+            status: 'REJECTED',
+            approverId: userId,
+            rejectionReason: reason || 'ไม่อนุมัติ',
+          },
+        }).catch((e) => console.error('Failed to sync linked borrow reject:', e));
+      }
+
       return NextResponse.json(updated);
     }
     if (action === 'UPDATE_DATES') {
@@ -67,11 +107,33 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     }
 
     if (action === 'DISPENSE') {
-      // Officer dispenses items and deducts stock FIFO
+      // Officer dispenses items and deducts stock FIFO with adjustments
       let actualTotalCost = 0;
 
       for (const reqItem of requisition.items) {
-        let remainingToDeduct = reqItem.quantityRequested;
+        const adj = Array.isArray(itemAdjustments)
+          ? itemAdjustments.find((a: any) => a.id === reqItem.id)
+          : null;
+
+        const isAllowed = adj ? adj.allowed !== false : true;
+        if (!isAllowed) {
+          await prisma.requisitionItem.update({
+            where: { id: reqItem.id },
+            data: {
+              quantityDispensed: 0,
+              unitCost: 0,
+              totalCost: 0,
+            },
+          });
+          continue;
+        }
+
+        let remainingToDeduct =
+          adj && adj.quantity !== undefined
+            ? Math.max(0, Number(adj.quantity))
+            : reqItem.quantityRequested;
+
+        const requestedTarget = remainingToDeduct;
         let itemTotalCost = 0;
 
         // Fetch lots FIFO: sorted by expiryDate ascending
@@ -117,15 +179,14 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           remainingToDeduct -= deductFromThisLot;
         }
 
-        const effectiveUnitCost =
-          reqItem.quantityRequested > 0 ? itemTotalCost / reqItem.quantityRequested : 0;
+        const actualDispensed = requestedTarget - remainingToDeduct;
 
         // Update requisition item with dispensed quantity and actual cost
         await prisma.requisitionItem.update({
           where: { id: reqItem.id },
           data: {
-            quantityDispensed: reqItem.quantityRequested - remainingToDeduct,
-            unitCost: effectiveUnitCost,
+            quantityDispensed: actualDispensed,
+            unitCost: actualDispensed > 0 ? itemTotalCost / actualDispensed : 0,
             totalCost: itemTotalCost,
           },
         });

@@ -22,6 +22,7 @@ import {
   Sparkles,
   Boxes,
   Package,
+  X,
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import UnifiedRequestModal from '@/components/requests/UnifiedRequestModal';
@@ -60,6 +61,24 @@ export default function BorrowPage() {
   const [returnCondition, setReturnCondition] = useState<'GOOD' | 'DAMAGED'>('GOOD');
   const [returnNote, setReturnNote] = useState('');
   const [itemReturns, setItemReturns] = useState<{ id: string; condition: 'GOOD' | 'DAMAGED'; note: string }[]>([]);
+  const [checkoutBorrowItems, setCheckoutBorrowItems] = useState<{
+    id: string;
+    name: string;
+    unit: string;
+    requestedQty: number;
+    quantity: number;
+    allowed: boolean;
+    assetCode: string | null;
+  }[]>([]);
+  const [checkoutReqItems, setCheckoutReqItems] = useState<{
+    id: string;
+    name: string;
+    unit: string;
+    requestedQty: number;
+    quantity: number;
+    allowed: boolean;
+    currentStock: number;
+  }[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [acknowledgingId, setAcknowledgingId] = useState<string | null>(null);
 
@@ -111,46 +130,47 @@ export default function BorrowPage() {
 
   const handleCreateRequest = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newRequest.purpose || !newRequest.borrowDate || !newRequest.expectedReturnDate) {
-      alert('กรุณากรอกข้อมูลให้ครบถ้วน');
-      return;
-    }
-    const emptyItem = newRequest.selectedItems.find((it) => !it.itemId);
-    if (emptyItem) {
-      alert('กรุณาเลือกรายการครุภัณฑ์ให้ครบทุกแถว');
-      return;
-    }
+    if (!currentUser) return;
+    setSubmitting(true);
 
-    // Validate that none of the equipment items exceed available count
-    for (const it of newRequest.selectedItems) {
-      const eqInfo = equipmentList.find((eq) => eq.id === it.itemId);
-      if (eqInfo) {
-        if (eqInfo.currentStock <= 0) {
-          alert(`ครุภัณฑ์ "${eqInfo.name}" ไม่มีอุปกรณ์ที่พร้อมใช้งานในขณะนี้ ไม่สามารถขอยืมได้`);
-          return;
-        }
-        if (it.quantity > eqInfo.currentStock) {
-          alert(
-            `ไม่สามารถขอยืมเกินจำนวนพร้อมใช้ได้:\nครุภัณฑ์ "${eqInfo.name}" มีพร้อมให้ยืมเพียง ${eqInfo.currentStock} ${eqInfo.unit || 'ชิ้น'} (ท่านระบุ ${it.quantity} ${eqInfo.unit || 'ชิ้น'})`
-          );
-          return;
+    try {
+      const validItems = newRequest.selectedItems.filter((i) => i.itemId);
+      if (validItems.length === 0) {
+        alert('กรุณาเลือกรายการครุภัณฑ์อย่างน้อย 1 รายการ');
+        setSubmitting(false);
+        return;
+      }
+
+      // Pre-validation: ensure requested quantity does not exceed available assets
+      for (const reqItem of validItems) {
+        const eq = equipmentList.find((e) => e.id === reqItem.itemId);
+        if (eq) {
+          if (eq.currentStock <= 0) {
+            alert(`ไม่สามารถขอยืมได้: ครุภัณฑ์ "${eq.name}" ไม่มีอุปกรณ์ที่พร้อมใช้งานในขณะนี้`);
+            setSubmitting(false);
+            return;
+          }
+          if (reqItem.quantity > eq.currentStock) {
+            alert(
+              `ไม่สามารถขอยืมเกินจำนวนพร้อมใช้ได้: ครุภัณฑ์ "${eq.name}" มีพร้อมให้ยืมเพียง ${eq.currentStock} ${eq.unit || 'ชิ้น'} (ท่านระบุ ${reqItem.quantity} ${eq.unit || 'ชิ้น'})`
+            );
+            setSubmitting(false);
+            return;
+          }
         }
       }
-    }
 
-    setSubmitting(true);
-    try {
       const res = await fetch('/api/borrow', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId: currentUser?.id,
+          userId: currentUser.id,
           courseId: newRequest.courseId || null,
           advisorName: newRequest.advisorName || null,
           purpose: newRequest.purpose,
           borrowDate: newRequest.borrowDate,
           expectedReturnDate: newRequest.expectedReturnDate,
-          items: newRequest.selectedItems,
+          items: validItems,
         }),
       });
 
@@ -190,6 +210,8 @@ export default function BorrowPage() {
           returnCondition: actionType === 'RETURN' ? returnCondition : undefined,
           returnNote: actionType === 'RETURN' ? returnNote : undefined,
           itemReturns: actionType === 'RETURN' ? itemReturns : undefined,
+          borrowItemAdjustments: actionType === 'CHECKOUT' ? checkoutBorrowItems : undefined,
+          requisitionItemAdjustments: actionType === 'CHECKOUT' ? checkoutReqItems : undefined,
         }),
       });
 
@@ -198,6 +220,8 @@ export default function BorrowPage() {
         setActionType(null);
         setReturnNote('');
         setItemReturns([]);
+        setCheckoutBorrowItems([]);
+        setCheckoutReqItems([]);
         fetchBorrowData();
       } else {
         const err = await res.json();
@@ -296,28 +320,29 @@ export default function BorrowPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-            <RefreshCw className="w-6 h-6 text-teal-600" />
-            ระบบยืม-คืน ครุภัณฑ์และอุปกรณ์ห้องปฏิบัติการ
+            <Boxes className="w-6 h-6 text-teal-600" />
+            ระบบเบิก-ยืมพัสดุและครุภัณฑ์ (One-Stop Hub)
           </h2>
           <p className="text-xs text-slate-500 mt-1">
-            ยื่นคำขอยืมหุ่นจำลอง เครื่องมือตรวจวัด ติดตามการอนุมัติ และบันทึกการตรวจรับคืน
+            ศูนย์รวมยื่นคำขอเบิกวัสดุสิ้นเปลืองและยืมครุภัณฑ์ในใบเดียว อนุมัติและบันทึกจ่ายของสะดวกพร้อมกัน
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
           <button
             onClick={() => setShowUnifiedModal(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-indigo-600 hover:from-teal-500 hover:to-indigo-500 text-white text-xs font-black shadow-lg shadow-teal-600/25 transition cursor-pointer ring-2 ring-teal-400/30"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-teal-600 via-teal-700 to-indigo-600 hover:from-teal-500 hover:to-indigo-500 text-white text-xs font-black shadow-lg shadow-teal-600/25 transition cursor-pointer ring-2 ring-teal-400/30"
           >
-            <Sparkles className="w-4 h-4 text-amber-300" />
-            <span>ยื่นคำขอรวม (ยืมครุภัณฑ์ + เบิกวัสดุ)</span>
+            <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
+            <span>ยื่นคำขอเบิก-ยืมพัสดุ (One-Stop)</span>
           </button>
           <button
             onClick={() => setShowNewModal(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold shadow-md transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 text-xs font-medium transition cursor-pointer shadow-sm"
+            title="ยื่นคำขอแบบเดิมเฉพาะครุภัณฑ์"
           >
-            <Plus className="w-4 h-4" />
-            <span>ขอยืมเฉพาะครุภัณฑ์</span>
+            <Plus className="w-3.5 h-3.5 text-slate-400" />
+            <span>ยืมเฉพาะครุภัณฑ์</span>
           </button>
         </div>
       </div>
@@ -625,11 +650,33 @@ export default function BorrowPage() {
                       onClick={() => {
                         setActiveBorrowForAction(req);
                         setActionType('CHECKOUT');
+                        setCheckoutBorrowItems(
+                          (req.items || []).map((it: any) => ({
+                            id: it.id,
+                            name: it.item?.name || 'ครุภัณฑ์',
+                            unit: it.item?.unit || 'ชิ้น',
+                            requestedQty: it.quantity,
+                            quantity: it.quantity,
+                            allowed: true,
+                            assetCode: it.asset?.assetCode || null,
+                          }))
+                        );
+                        setCheckoutReqItems(
+                          (req.requisitionRequest?.items || []).map((it: any) => ({
+                            id: it.id,
+                            name: it.item?.name || 'วัสดุสิ้นเปลือง',
+                            unit: it.item?.unit || 'หน่วย',
+                            requestedQty: it.quantityRequested,
+                            quantity: it.quantityRequested,
+                            allowed: true,
+                            currentStock: it.item?.currentStock || 0,
+                          }))
+                        );
                       }}
                       className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow transition cursor-pointer"
                     >
                       <ClipboardCheck className="w-4 h-4" />
-                      <span>ส่งมอบ/ตรวจจ่ายอุปกรณ์ (Check-out)</span>
+                      <span>{req.requisitionRequest ? 'ส่งมอบครุภัณฑ์ & จ่ายวัสดุ (Check-out)' : 'ส่งมอบอุปกรณ์ (Check-out)'}</span>
                     </button>
                   )}
 
@@ -1005,12 +1052,14 @@ export default function BorrowPage() {
       {/* Modal: Checkout / Return Action */}
       {activeBorrowForAction && actionType && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+          <div className={`bg-white rounded-2xl w-full p-6 shadow-2xl space-y-4 ${actionType === 'CHECKOUT' ? 'max-w-2xl' : 'max-w-md'}`}>
             <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
               {actionType === 'CHECKOUT' ? (
                 <>
                   <ClipboardCheck className="w-5 h-5 text-teal-600" />
-                  ยืนยันการส่งมอบครุภัณฑ์ (Check-out)
+                  {activeBorrowForAction.requisitionRequest
+                    ? 'ตรวจจ่ายพัสดุและส่งมอบครุภัณฑ์ (Check-out & Dispense)'
+                    : 'ยืนยันการส่งมอบครุภัณฑ์ (Check-out)'}
                 </>
               ) : (
                 <>
@@ -1024,9 +1073,10 @@ export default function BorrowPage() {
               <div className="flex items-center justify-between">
                 <span className="font-bold text-slate-800">
                   คำขอเลขที่: {activeBorrowForAction.requestNumber}
+                  {activeBorrowForAction.requisitionRequest && ` + ${activeBorrowForAction.requisitionRequest.requestNumber}`}
                 </span>
                 <span className="font-mono text-[10px] text-teal-700 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
-                  ผู้ยืม: {activeBorrowForAction.user?.name}
+                  ผู้ยืม/เบิก: {activeBorrowForAction.user?.name}
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600 border-t border-slate-200 pt-1.5">
@@ -1037,7 +1087,7 @@ export default function BorrowPage() {
                   </span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block">กำหนดส่งคืน:</span>
+                  <span className="text-slate-400 block">กำหนดส่งคืน (เฉพาะครุภัณฑ์):</span>
                   <span className="font-semibold text-slate-800">
                     {new Date(activeBorrowForAction.expectedReturnDate).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })} น.
                   </span>
@@ -1046,35 +1096,188 @@ export default function BorrowPage() {
             </div>
 
             {actionType === 'CHECKOUT' && (
-              <div className="space-y-3">
-                <div className="p-3 rounded-xl bg-teal-50/70 border border-teal-200 text-xs space-y-2">
-                  <div className="font-bold text-teal-900 flex items-center gap-1.5">
-                    <ClipboardCheck className="w-4 h-4 text-teal-600" />
-                    <span>รายการและรหัสครุภัณฑ์ที่จะส่งมอบให้ผู้ยืม:</span>
+              <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+                {/* 1. Equipment Section */}
+                <div className="p-3.5 rounded-2xl bg-indigo-50/50 border border-indigo-200/80 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-xs text-indigo-950 flex items-center gap-1.5">
+                      <Package className="w-4 h-4 text-indigo-600" />
+                      รายการครุภัณฑ์ที่ส่งมอบ (ตรวจสอบ / ปรับจำนวนจ่ายได้):
+                    </span>
+                    <span className="text-[11px] font-medium text-indigo-700">
+                      อนุญาต {checkoutBorrowItems.filter((i) => i.allowed).length}/{checkoutBorrowItems.length} รายการ
+                    </span>
                   </div>
-                  <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-                    {activeBorrowForAction.items?.map((it: any, i: number) => (
-                      <div key={it.id || i} className="p-2 rounded-lg bg-white border border-teal-100 flex items-center justify-between text-xs">
-                        <div>
-                          <span className="font-bold text-slate-800">{it.item?.name}</span>
-                          <span className="text-slate-500 block text-[11px]">จำนวน {it.quantity} {it.item?.unit}</span>
+
+                  <div className="space-y-2">
+                    {checkoutBorrowItems.map((it, idx) => (
+                      <div
+                        key={it.id}
+                        className={`p-2.5 rounded-xl border transition text-xs ${
+                          it.allowed
+                            ? 'bg-white border-indigo-100 shadow-sm'
+                            : 'bg-rose-50/60 border-rose-200 opacity-80'
+                        }`}
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div>
+                            <div className="font-bold text-slate-800">{it.name}</div>
+                            <div className="text-[11px] text-slate-500">
+                              ขอมา: {it.requestedQty} {it.unit}
+                              {it.assetCode && (
+                                <span className="ml-1.5 font-mono text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-teal-700">
+                                  รหัส: {it.assetCode}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {it.allowed && (
+                              <div className="flex items-center gap-1">
+                                <span className="text-[11px] text-slate-500">จ่าย:</span>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  max={it.requestedQty}
+                                  value={it.quantity}
+                                  onChange={(e) => {
+                                    const val = Math.max(1, Number(e.target.value));
+                                    setCheckoutBorrowItems((prev) =>
+                                      prev.map((item, i) => (i === idx ? { ...item, quantity: val } : item))
+                                    );
+                                  }}
+                                  className="w-14 bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold text-center"
+                                />
+                                <span className="text-[11px] text-slate-500">{it.unit}</span>
+                              </div>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCheckoutBorrowItems((prev) =>
+                                  prev.map((item, i) => (i === idx ? { ...item, allowed: !item.allowed } : item))
+                                );
+                              }}
+                              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                                it.allowed
+                                  ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300'
+                                  : 'bg-rose-600 text-white hover:bg-rose-700'
+                              }`}
+                            >
+                              {it.allowed ? (
+                                <>
+                                  <Check className="w-3.5 h-3.5" />
+                                  <span>ให้ยืม</span>
+                                </>
+                              ) : (
+                                <>
+                                  <X className="w-3.5 h-3.5" />
+                                  <span>ไม่อนุญาต</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
                         </div>
-                        {it.asset ? (
-                          <span className="font-mono text-[11px] font-bold text-teal-700 bg-teal-100/70 px-2 py-0.5 rounded">
-                            {it.asset.assetCode}
-                          </span>
-                        ) : (
-                          <span className="text-[10px] text-teal-600 bg-teal-50 px-2 py-0.5 rounded">
-                            ✓ ระบบจะผูกรหัสพร้อมใช้ให้อัตโนมัติ
-                          </span>
-                        )}
                       </div>
                     ))}
                   </div>
-                  <p className="text-[10px] text-teal-700 mt-1">
-                    * เมื่อกดยืนยัน ระบบจะบันทึก <b>เวลาที่จ่ายของจริง ({new Date().toLocaleTimeString('th-TH')} น.)</b> พร้อมชื่อเจ้าหน้าที่ผู้ส่งมอบ และเปลี่ยนสถานะอุปกรณ์เป็น "กำลังถูกยืม"
-                  </p>
                 </div>
+
+                {/* 2. Consumables Section (if any linked) */}
+                {checkoutReqItems.length > 0 && (
+                  <div className="p-3.5 rounded-2xl bg-teal-50/50 border border-teal-200/80 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-xs text-teal-950 flex items-center gap-1.5">
+                        <Boxes className="w-4 h-4 text-teal-600" />
+                        รายการวัสดุสิ้นเปลืองที่ขอเบิกพร้อมกัน (ตัดสต็อก FIFO):
+                      </span>
+                      <span className="text-[11px] font-medium text-teal-700">
+                        อนุญาต {checkoutReqItems.filter((i) => i.allowed).length}/{checkoutReqItems.length} รายการ
+                      </span>
+                    </div>
+
+                    <div className="space-y-2">
+                      {checkoutReqItems.map((it, idx) => (
+                        <div
+                          key={it.id}
+                          className={`p-2.5 rounded-xl border transition text-xs ${
+                            it.allowed
+                              ? 'bg-white border-teal-100 shadow-sm'
+                              : 'bg-rose-50/60 border-rose-200 opacity-80'
+                          }`}
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div>
+                              <div className="font-bold text-slate-800">{it.name}</div>
+                              <div className="text-[11px] text-slate-500">
+                                ขอมา: {it.requestedQty} {it.unit}
+                                {it.currentStock !== undefined && (
+                                  <span className="ml-1.5 text-[10px] text-teal-700 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-200">
+                                    คงคลัง: {it.currentStock} {it.unit}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              {it.allowed && (
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[11px] text-slate-500">จ่าย:</span>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    max={it.requestedQty}
+                                    value={it.quantity}
+                                    onChange={(e) => {
+                                      const val = Math.max(1, Number(e.target.value));
+                                      setCheckoutReqItems((prev) =>
+                                        prev.map((item, i) => (i === idx ? { ...item, quantity: val } : item))
+                                      );
+                                    }}
+                                    className="w-14 bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold text-center"
+                                  />
+                                  <span className="text-[11px] text-slate-500">{it.unit}</span>
+                                </div>
+                              )}
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setCheckoutReqItems((prev) =>
+                                    prev.map((item, i) => (i === idx ? { ...item, allowed: !item.allowed } : item))
+                                  );
+                                }}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                                  it.allowed
+                                    ? 'bg-teal-100 text-teal-800 hover:bg-teal-200 border border-teal-300'
+                                    : 'bg-rose-600 text-white hover:bg-rose-700'
+                                }`}
+                              >
+                                {it.allowed ? (
+                                  <>
+                                    <Check className="w-3.5 h-3.5" />
+                                    <span>ให้เบิก</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <X className="w-3.5 h-3.5" />
+                                    <span>ไม่อนุญาต</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-[11px] text-slate-500 leading-relaxed bg-amber-50 p-2.5 rounded-xl border border-amber-200 text-amber-800">
+                  💡 เมื่อกดยืนยัน ระบบจะส่งมอบเฉพาะรายการที่ <b>"อนุญาต"</b> เท่านั้น พร้อมตัดสต็อกวัสดุสิ้นเปลืองอัตโนมัติ (FIFO) ตามจำนวนที่จ่ายจริง
+                </p>
               </div>
             )}
 

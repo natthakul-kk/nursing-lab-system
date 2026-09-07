@@ -5,7 +5,16 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   try {
     const { id } = await params;
     const body = await req.json();
-    const { action, userId, reason, assignedAssets, returnCondition, returnNote } = body;
+    const {
+      action,
+      userId,
+      reason,
+      assignedAssets,
+      returnCondition,
+      returnNote,
+      borrowItemAdjustments,
+      requisitionItemAdjustments,
+    } = body;
 
     const borrow = await prisma.borrowRequest.findUnique({
       where: { id },
@@ -104,43 +113,65 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     }
 
     if (action === 'CHECKOUT') {
-      // Officer checks out equipment.
-      // If specific assignedAssets provided: array of { borrowItemId, assetId }
-      if (assignedAssets && Array.isArray(assignedAssets)) {
-        for (const assign of assignedAssets) {
-          if (assign.assetId) {
+      // 1. Process equipment items with officer adjustments
+      for (const bItem of borrow.items) {
+        const adj = Array.isArray(borrowItemAdjustments)
+          ? borrowItemAdjustments.find((a: any) => a.id === bItem.id)
+          : null;
+
+        const isAllowed = adj ? adj.allowed !== false : true;
+        const newQty = adj && Number(adj.quantity) > 0 ? Number(adj.quantity) : bItem.quantity;
+
+        if (!isAllowed) {
+          // Officer disallowed this equipment item
+          await prisma.borrowItem.update({
+            where: { id: bItem.id },
+            data: {
+              quantity: 0,
+              returnCondition: 'DISALLOWED',
+              isReturned: true,
+            },
+          });
+          continue;
+        }
+
+        // Update quantity if adjusted
+        if (newQty !== bItem.quantity) {
+          await prisma.borrowItem.update({
+            where: { id: bItem.id },
+            data: { quantity: newQty },
+          });
+        }
+
+        // Explicit asset assignment or auto-assign available asset
+        const explicitAssign = assignedAssets?.find((a: any) => a.borrowItemId === bItem.id);
+        if (explicitAssign?.assetId) {
+          await prisma.borrowItem.update({
+            where: { id: bItem.id },
+            data: { assetId: explicitAssign.assetId },
+          });
+          await prisma.equipmentAsset.update({
+            where: { id: explicitAssign.assetId },
+            data: { status: 'BORROWED' },
+          });
+        } else if (!bItem.assetId) {
+          const availableAsset = await prisma.equipmentAsset.findFirst({
+            where: { itemId: bItem.itemId, status: 'AVAILABLE' },
+          });
+          if (availableAsset) {
             await prisma.borrowItem.update({
-              where: { id: assign.borrowItemId },
-              data: { assetId: assign.assetId },
+              where: { id: bItem.id },
+              data: { assetId: availableAsset.id },
             });
             await prisma.equipmentAsset.update({
-              where: { id: assign.assetId },
+              where: { id: availableAsset.id },
               data: { status: 'BORROWED' },
             });
           }
         }
-      } else {
-        // Auto-assign available assets for items
-        for (const bItem of borrow.items) {
-          if (!bItem.assetId) {
-            const availableAsset = await prisma.equipmentAsset.findFirst({
-              where: { itemId: bItem.itemId, status: 'AVAILABLE' },
-            });
-            if (availableAsset) {
-              await prisma.borrowItem.update({
-                where: { id: bItem.id },
-                data: { assetId: availableAsset.id },
-              });
-              await prisma.equipmentAsset.update({
-                where: { id: availableAsset.id },
-                data: { status: 'BORROWED' },
-              });
-            }
-          }
-        }
       }
 
-      // If linked with a RequisitionRequest, also dispense its consumable items via FIFO automatically
+      // 2. Process linked requisition items (FIFO dispense with officer adjustments)
       if (borrow.requisitionRequestId) {
         try {
           const linkedReq = await prisma.requisitionRequest.findUnique({
@@ -150,8 +181,32 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
           if (linkedReq && linkedReq.status !== 'DISPENSED') {
             let reqActualTotalCost = 0;
+
             for (const reqItem of linkedReq.items) {
-              let remainingToDeduct = reqItem.quantityRequested;
+              const adj = Array.isArray(requisitionItemAdjustments)
+                ? requisitionItemAdjustments.find((a: any) => a.id === reqItem.id)
+                : null;
+
+              const isAllowed = adj ? adj.allowed !== false : true;
+              if (!isAllowed) {
+                // Officer disallowed this consumable item
+                await prisma.requisitionItem.update({
+                  where: { id: reqItem.id },
+                  data: {
+                    quantityDispensed: 0,
+                    unitCost: 0,
+                    totalCost: 0,
+                  },
+                });
+                continue;
+              }
+
+              let remainingToDeduct =
+                adj && adj.quantity !== undefined
+                  ? Math.max(0, Number(adj.quantity))
+                  : reqItem.quantityRequested;
+
+              const requestedTarget = remainingToDeduct;
               let itemCost = 0;
 
               const availableLots = await prisma.stockLot.findMany({
@@ -180,7 +235,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
                     courseId: linkedReq.courseId,
                     referenceNumber: linkedReq.requestNumber,
                     createdById: userId,
-                    note: `จ่ายพร้อมส่งมอบคำขอยืม ${borrow.requestNumber} (วิชา ${linkedReq.course?.code || ''})`,
+                    note: `จ่ายตามคำขอเบิก-ยืม ${borrow.requestNumber} (วิชา ${linkedReq.course?.code || ''})`,
                   },
                 });
 
@@ -188,11 +243,12 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
                 remainingToDeduct -= deduct;
               }
 
+              const actualDispensed = requestedTarget - remainingToDeduct;
               await prisma.requisitionItem.update({
                 where: { id: reqItem.id },
                 data: {
-                  quantityDispensed: reqItem.quantityRequested - remainingToDeduct,
-                  unitCost: reqItem.quantityRequested > 0 ? itemCost / reqItem.quantityRequested : 0,
+                  quantityDispensed: actualDispensed,
+                  unitCost: actualDispensed > 0 ? itemCost / actualDispensed : 0,
                   totalCost: itemCost,
                 },
               });

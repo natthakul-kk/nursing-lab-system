@@ -84,13 +84,14 @@ export default function Sidebar() {
       badge: 'งานแล็บ',
     },
     {
-      label: 'ระบบยืม-คืน ครุภัณฑ์',
+      label: 'เบิก-ยืมพัสดุและครุภัณฑ์',
       href: '/borrow',
       icon: RefreshCw,
       roles: ['ADMIN', 'OFFICER', 'APPROVER', 'USER'],
+      badge: 'One-Stop',
     },
     {
-      label: 'เบิกจ่ายวัสดุสิ้นเปลือง',
+      label: 'ประวัติเบิกจ่ายวัสดุ',
       href: '/requisitions',
       icon: FileSpreadsheet,
       roles: ['ADMIN', 'OFFICER', 'APPROVER', 'USER'],

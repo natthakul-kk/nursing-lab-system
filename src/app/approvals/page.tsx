@@ -196,14 +196,14 @@ export default function ApprovalsPage() {
     return true;
   });
 
-  // Filter Requisitions by statusFilter
+  // Filter Requisitions by statusFilter (exclude requisitions that are already linked & shown inside a unified BorrowRequest)
   const filteredRequisitions = allRequisitions.filter((r) => {
+    if (r.borrowRequest) return false;
     if (statusFilter === 'PENDING') return r.status === 'PENDING';
     if (statusFilter === 'APPROVED') return isApproved(r.status);
     if (statusFilter === 'REJECTED') return r.status === 'REJECTED';
     return true;
   });
-
 
   // Filter Practice Bookings by statusFilter
   const filteredPracticeBookings = allPracticeBookings.filter((p) => {
@@ -213,20 +213,20 @@ export default function ApprovalsPage() {
     return true;
   });
 
-  // Total counts for main status tabs
+  // Total counts for main status tabs (unified requests counted once)
   const pendingCount =
     allBorrows.filter((b) => b.status === 'PENDING').length +
-    allRequisitions.filter((r) => r.status === 'PENDING').length +
+    allRequisitions.filter((r) => !r.borrowRequest && r.status === 'PENDING').length +
     allPracticeBookings.filter((p) => p.status === 'PENDING').length;
 
   const approvedCount =
     allBorrows.filter((b) => isApproved(b.status)).length +
-    allRequisitions.filter((r) => isApproved(r.status)).length +
+    allRequisitions.filter((r) => !r.borrowRequest && isApproved(r.status)).length +
     allPracticeBookings.filter((p) => isApproved(p.status)).length;
 
   const rejectedCount =
     allBorrows.filter((b) => b.status === 'REJECTED').length +
-    allRequisitions.filter((r) => r.status === 'REJECTED').length +
+    allRequisitions.filter((r) => !r.borrowRequest && r.status === 'REJECTED').length +
     allPracticeBookings.filter((p) => p.status === 'REJECTED').length;
 
   const currentTabTotal =
@@ -355,7 +355,7 @@ export default function ApprovalsPage() {
               : 'text-slate-500 hover:text-slate-800'
           }`}
         >
-          ยืมครุภัณฑ์ ({filteredBorrows.length})
+          คำขอเบิก-ยืมพัสดุ ({filteredBorrows.length})
         </button>
         <button
           onClick={() => setActiveTab('REQUISITION')}
@@ -365,7 +365,7 @@ export default function ApprovalsPage() {
               : 'text-slate-500 hover:text-slate-800'
           }`}
         >
-          เบิกวัสดุสิ้นเปลือง ({filteredRequisitions.length})
+          คำขอเบิกเฉพาะวัสดุ ({filteredRequisitions.length})
         </button>
         <button
           onClick={() => setActiveTab('PRACTICE')}
@@ -425,11 +425,19 @@ export default function ApprovalsPage() {
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
                     <div className="flex items-center gap-2">
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800 uppercase">
-                        ยืมครุภัณฑ์
-                      </span>
+                      {req.requisitionRequest ? (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-gradient-to-r from-teal-500 to-indigo-600 text-white shadow-sm flex items-center gap-1">
+                          <Sparkles className="w-3 h-3 text-amber-300" />
+                          คำขอรวม (เบิกวัสดุ + ยืมครุภัณฑ์)
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800 uppercase">
+                          ยืมครุภัณฑ์
+                        </span>
+                      )}
                       <span className="font-mono text-xs font-bold text-slate-800">
                         {req.requestNumber}
+                        {req.requisitionRequest && ` + ${req.requisitionRequest.requestNumber}`}
                       </span>
                       {getStageLabel(req.status, 'BORROW')}
                     </div>
@@ -576,7 +584,7 @@ export default function ApprovalsPage() {
                           ) : (
                             <>
                               <Check className="w-3.5 h-3.5" />
-                              <span>อนุมัติคำขอยืม</span>
+                              <span>{req.requisitionRequest ? 'อนุมัติคำขอรวม (ยืม+เบิก)' : 'อนุมัติคำขอยืม'}</span>
                             </>
                           )}
                         </button>

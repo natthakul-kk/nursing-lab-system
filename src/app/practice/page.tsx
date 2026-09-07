@@ -37,7 +37,9 @@ import {
   CalendarRange,
   Edit,
   Trash2,
-  Package
+  Package,
+  Building,
+  DoorClosed
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
@@ -141,6 +143,18 @@ export default function PracticePage() {
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
   const html5ScannerRef = useRef<any>(null);
+
+  // Room Modal & Management States
+  const [showAddRoomModal, setShowAddRoomModal] = useState(false);
+  const [roomToEdit, setRoomToEdit] = useState<any>(null);
+  const [roomForm, setRoomForm] = useState({
+    code: '',
+    name: '',
+    location: '',
+    capacity: 10,
+    description: '',
+  });
+  const [savingRoom, setSavingRoom] = useState(false);
 
   // Settings State
   const [settingsForm, setSettingsForm] = useState({
@@ -631,6 +645,81 @@ export default function PracticePage() {
         title: 'Network Error',
         message: err.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อ',
       });
+    }
+  };
+
+  // 5.5 Actions: Add/Edit Room
+  const handleOpenAddRoomModal = () => {
+    setRoomToEdit(null);
+    setRoomForm({
+      code: `LAB-SIM-0${rooms.length + 1}`,
+      name: '',
+      location: '',
+      capacity: 10,
+      description: '',
+    });
+    setShowAddRoomModal(true);
+  };
+
+  const handleOpenEditRoomModal = (room: any) => {
+    setRoomToEdit(room);
+    setRoomForm({
+      code: room.code,
+      name: room.name,
+      location: room.location || '',
+      capacity: room.capacity || 10,
+      description: room.description || '',
+    });
+    setShowAddRoomModal(true);
+  };
+
+  const handleSaveRoom = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!roomForm.code || !roomForm.name) {
+      alert('กรุณากรอกรหัสและชื่อห้องปฏิบัติการ');
+      return;
+    }
+    setSavingRoom(true);
+    try {
+      const url = roomToEdit ? `/api/practice/rooms/${roomToEdit.id}` : '/api/practice/rooms';
+      const method = roomToEdit ? 'PUT' : 'POST';
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(roomForm),
+      });
+
+      if (res.ok) {
+        const saved = await res.json();
+        alert(roomToEdit ? 'แก้ไขข้อมูลห้องสำเร็จ!' : 'เพิ่มห้องปฏิบัติการใหม่สำเร็จ!');
+        setShowAddRoomModal(false);
+        // If creating from slot modal, auto-select this new room
+        if (!roomToEdit) {
+          setCreateSlotForm((prev) => ({ ...prev, roomId: saved.id }));
+        }
+        fetchData();
+      } else {
+        const err = await res.json();
+        alert(err.error || 'เกิดข้อผิดพลาดในการบันทึกห้อง');
+      }
+    } catch (err) {
+      alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+    } finally {
+      setSavingRoom(false);
+    }
+  };
+
+  const handleDeleteRoom = async (roomId: string, roomName: string) => {
+    if (!confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบหรือปิดการใช้งาน "${roomName}"?`)) return;
+    try {
+      const res = await fetch(`/api/practice/rooms/${roomId}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      alert(data.message || 'ดำเนินการเรียบร้อย');
+      fetchData();
+    } catch (err) {
+      alert('เกิดข้อผิดพลาดในการลบห้อง');
     }
   };
 
@@ -1751,16 +1840,98 @@ export default function PracticePage() {
 
       {/* TAB 4: SETTINGS (Staff/Admin) */}
       {activeTab === 'SETTINGS' && canManageSlots && (
-        <div className="max-w-xl mx-auto bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-sm space-y-6">
-          <div>
-            <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
-              <Settings className="w-5 h-5 text-teal-600" />
-              กำหนดนโยบายและเงื่อนไขการขอเข้าฝึกปฏิบัติการ
-            </h3>
-            <p className="text-xs text-slate-500 mt-1">
-              ปรับปรุงจำนวนวันเปิดให้จองล่วงหน้า และกฎเกณฑ์ในการใช้ห้องปฏิบัติการพยาบาล
-            </p>
+        <div className="max-w-3xl mx-auto space-y-8">
+          {/* SECTION 1: MANAGE PRACTICE ROOMS */}
+          <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-sm space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+              <div>
+                <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                  <Building className="w-5 h-5 text-teal-600" />
+                  จัดการห้องปฏิบัติการพยาบาล (Skill Lab Rooms)
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  เพิ่ม แก้ไข หรือปิดใช้งานห้องปฏิบัติการที่เปิดให้นิสิตเข้าฝึกปฏิบัติการ
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleOpenAddRoomModal}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition cursor-pointer self-start sm:self-auto"
+              >
+                <Plus className="w-4 h-4" />
+                <span>เพิ่มห้องปฏิบัติการใหม่</span>
+              </button>
+            </div>
+
+            {/* Rooms List / Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {rooms.map((r) => (
+                <div
+                  key={r.id}
+                  className="bg-slate-50 rounded-2xl border border-slate-200/80 p-4 space-y-3 hover:border-teal-200 transition"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs font-black text-teal-800 bg-teal-100/80 px-2 py-0.5 rounded-md">
+                          {r.code}
+                        </span>
+                        <span className="text-[11px] font-bold text-slate-500">
+                          ความจุ: {r.capacity} คน
+                        </span>
+                      </div>
+                      <h4 className="text-sm font-bold text-slate-900 mt-1">
+                        {r.name}
+                      </h4>
+                      {r.location && (
+                        <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                          <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                          <span>{r.location}</span>
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditRoomModal(r)}
+                        className="p-1.5 text-slate-500 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition"
+                        title="แก้ไขข้อมูลห้อง"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteRoom(r.id, r.name)}
+                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                        title="ลบหรือปิดใช้งานห้อง"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {r.description && (
+                    <p className="text-[11px] text-slate-600 bg-white p-2.5 rounded-xl border border-slate-150 line-clamp-2">
+                      {r.description}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
+
+          {/* SECTION 2: BOOKING POLICY SETTINGS */}
+          <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-sm space-y-6">
+            <div>
+              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                <Settings className="w-5 h-5 text-teal-600" />
+                กำหนดนโยบายและเงื่อนไขการขอเข้าฝึกปฏิบัติการ
+              </h3>
+              <p className="text-xs text-slate-500 mt-1">
+                ปรับปรุงจำนวนวันเปิดให้จองล่วงหน้า และกฎเกณฑ์ในการใช้ห้องปฏิบัติการพยาบาล
+              </p>
+            </div>
 
           <form onSubmit={handleSaveSettings} className="space-y-4">
             <div>
@@ -1831,6 +2002,7 @@ export default function PracticePage() {
               </button>
             </div>
           </form>
+          </div>
         </div>
       )}
 
@@ -1860,17 +2032,30 @@ export default function PracticePage() {
             </div>
 
             <form onSubmit={handleCreateSlot} className="space-y-4">
-              {/* Room Select */}
+              {/* Room Select with Quick Add Button */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  ห้องปฏิบัติการที่เปิดให้บริการ <span className="text-rose-500">*</span>
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-slate-700">
+                    ห้องปฏิบัติการที่เปิดให้บริการ <span className="text-rose-500">*</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleOpenAddRoomModal}
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-teal-700 hover:text-teal-800 bg-teal-50 hover:bg-teal-100 px-2 py-0.5 rounded-lg border border-teal-200 transition cursor-pointer"
+                  >
+                    <Plus className="w-3 h-3" />
+                    <span>เพิ่มห้องใหม่</span>
+                  </button>
+                </div>
                 <select
                   required
                   value={createSlotForm.roomId}
                   onChange={(e) => setCreateSlotForm({ ...createSlotForm, roomId: e.target.value })}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                 >
+                  {rooms.length === 0 && (
+                    <option value="">-- ยังไม่มีห้องปฏิบัติการ กรุณากดปุ่มเพิ่มห้องใหม่ --</option>
+                  )}
                   {rooms.map((r) => (
                     <option key={r.id} value={r.id}>
                       {r.name} ({r.code}) {r.location ? `• ${r.location}` : ''}
@@ -2746,6 +2931,131 @@ export default function PracticePage() {
                 )}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: ADD / EDIT PRACTICE ROOM */}
+      {showAddRoomModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <Building className="w-5 h-5 text-teal-600" />
+                  {roomToEdit ? 'แก้ไขห้องปฏิบัติการ' : 'เพิ่มห้องปฏิบัติการใหม่'}
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  ระบุรหัส ชื่อห้อง และสถานที่ตั้ง เพื่อใช้เปิดรอบฝึกทักษะ
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddRoomModal(false)}
+                className="text-slate-400 hover:text-slate-600 text-lg font-bold p-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveRoom} className="space-y-3.5">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    รหัสห้อง *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="เช่น LAB-SIM-01"
+                    value={roomForm.code}
+                    onChange={(e) => setRoomForm({ ...roomForm, code: e.target.value.toUpperCase() })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono font-bold uppercase focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    ความจุมาตรฐาน (คน) *
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={100}
+                    required
+                    value={roomForm.capacity}
+                    onChange={(e) => setRoomForm({ ...roomForm, capacity: Number(e.target.value) })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  ชื่อห้องปฏิบัติการ *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="เช่น ห้องปฏิบัติการทักษะทางการพยาบาล 1 (Skill Lab 1)"
+                  value={roomForm.name}
+                  onChange={(e) => setRoomForm({ ...roomForm, name: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  สถานที่ตั้ง / อาคาร / ชั้น
+                </label>
+                <input
+                  type="text"
+                  placeholder="เช่น อาคารเฉลิมพระเกียรติฯ ชั้น 3 ห้อง 302"
+                  value={roomForm.location}
+                  onChange={(e) => setRoomForm({ ...roomForm, location: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  คำอธิบายหรืออุปกรณ์ประจำห้อง (ไม่บังคับ)
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="เช่น มีเตียงคนไข้ 6 เตียง, หุ่นฝึกฉีดยา, หุ่นฝึกสวนปัสสาวะ"
+                  value={roomForm.description}
+                  onChange={(e) => setRoomForm({ ...roomForm, description: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                ></textarea>
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowAddRoomModal(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 cursor-pointer"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingRoom}
+                  className="px-5 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold shadow-md shadow-teal-600/20 transition cursor-pointer flex items-center gap-1.5"
+                >
+                  {savingRoom ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>กำลังบันทึกข้อมูล...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" />
+                      <span>{roomToEdit ? 'บันทึกการแก้ไข' : 'บันทึกห้องปฏิบัติการ'}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

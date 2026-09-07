@@ -1,3 +1,4 @@
+import { generateSignedApprovalToken } from '@/lib/token';
 import { Resend } from 'resend';
 import QRCode from 'qrcode';
 
@@ -48,8 +49,10 @@ export async function sendApprovalRequestEmail(params: {
     return { success: true, mocked: true };
   }
 
-  const approveUrl = `${appUrl}/api/approvals/quick-action?id=${requestId}&type=${type}&action=APPROVE`;
-  const rejectUrl = `${appUrl}/api/approvals/quick-action?id=${requestId}&type=${type}&action=REJECT`;
+  const approveToken = generateSignedApprovalToken(requestId, type, 'APPROVE');
+  const approveUrl = `${appUrl}/api/approvals/quick-action?token=${approveToken}`;
+  const rejectToken = generateSignedApprovalToken(requestId, type, 'REJECT');
+  const rejectUrl = `${appUrl}/api/approvals/quick-action?token=${rejectToken}`;
   const viewUrl = `${appUrl}/approvals`;
 
   const detailsHtml = details

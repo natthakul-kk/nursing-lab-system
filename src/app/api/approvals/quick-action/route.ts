@@ -1,3 +1,4 @@
+import { verifySignedApprovalToken } from '@/lib/token';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendApprovalNotificationWithQrEmail } from '@/lib/email';
@@ -5,16 +6,35 @@ import { sendApprovalNotificationWithQrEmail } from '@/lib/email';
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const id = searchParams.get('id');
-    const type = searchParams.get('type'); // PRACTICE, BORROW, REQUISITION
-    const action = searchParams.get('action'); // APPROVE, REJECT
+    const token = searchParams.get('token');
+    let id = searchParams.get('id');
+    let type = searchParams.get('type');
+    let action = searchParams.get('action');
 
-    if (!id || !type || !action) {
-      return renderResponseHtml({
-        success: false,
-        title: 'ข้อมูลไม่ครบถ้วน',
-        message: 'ลิงก์การอนุมัติไม่ถูกต้อง หรือหมดอายุการใช้งานแล้ว',
-      });
+    // If token is provided, verify its HMAC cryptographic signature & expiry
+    if (token) {
+      const verification = verifySignedApprovalToken(token);
+      if (!verification.valid) {
+        return renderResponseHtml({
+          success: false,
+          title: 'ลิงก์ไม่ถูกต้องหรือหมดอายุ',
+          message: verification.error || 'ไม่สามารถยืนยันความถูกต้องของลิงก์การอนุมัตินี้ได้',
+          isDanger: true,
+        });
+      }
+      id = verification.id!;
+      type = verification.type!;
+      action = verification.action!;
+    } else {
+      // Direct parameters require id, type, action
+      if (!id || !type || !action) {
+        return renderResponseHtml({
+          success: false,
+          title: 'ข้อมูลไม่ครบถ้วน',
+          message: 'ลิงก์การอนุมัติไม่ถูกต้อง หรือไม่มีสิทธิ์เข้าถึง',
+          isDanger: true,
+        });
+      }
     }
 
     if (type === 'PRACTICE') {

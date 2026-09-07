@@ -105,17 +105,30 @@ export async function POST(req: Request) {
 
       const totalStockRemaining = itemRecord.stockLots.reduce((sum, lot) => sum + lot.quantityRemaining, 0);
 
-      if (totalStockRemaining <= 0) {
+      // Check active reservations (PENDING & APPROVED) to calculate availableStock
+      const pendingReq = await prisma.requisitionItem.aggregate({
+        where: {
+          itemId: it.itemId,
+          requisitionRequest: { status: { in: ['PENDING', 'APPROVED'] } },
+        },
+        _sum: { quantityRequested: true },
+      });
+      const reservedReq = pendingReq._sum.quantityRequested || 0;
+      const availableStock = Math.max(0, totalStockRemaining - reservedReq);
+
+      if (availableStock <= 0) {
         return NextResponse.json(
-          { error: `ไม่สามารถขอเบิกได้: วัสดุ "${itemRecord.name}" สินค้าหมดในคลัง (คงเหลือ 0 ${itemRecord.unit})` },
+          {
+            error: `ไม่สามารถขอเบิกได้: วัสดุ "${itemRecord.name}" มีในคลัง ${totalStockRemaining} ${itemRecord.unit} แต่มีคำขอรอจ่ายอยู่ ${reservedReq} ${itemRecord.unit} (คงเหลือพร้อมให้ขอได้ 0 ${itemRecord.unit})`,
+          },
           { status: 400 }
         );
       }
 
-      if (qty > totalStockRemaining) {
+      if (qty > availableStock) {
         return NextResponse.json(
           {
-            error: `ไม่สามารถขอเบิกเกินสต็อกได้: วัสดุ "${itemRecord.name}" มีคงเหลือในคลังเพียง ${totalStockRemaining} ${itemRecord.unit} (ท่านระบุ ${qty} ${itemRecord.unit})`,
+            error: `ไม่สามารถขอเบิกเกินสต็อกพร้อมใช้ได้: วัสดุ "${itemRecord.name}" มีในคลัง ${totalStockRemaining} ${itemRecord.unit} (มีคำขอรอจ่ายค้างอยู่ ${reservedReq} ${itemRecord.unit}) จึงพร้อมให้ขอได้เพียง ${availableStock} ${itemRecord.unit} (ท่านระบุ ${qty})`,
           },
           { status: 400 }
         );

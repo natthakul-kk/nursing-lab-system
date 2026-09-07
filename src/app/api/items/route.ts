@@ -19,6 +19,35 @@ export async function GET(req: Request) {
       whereCondition.type = type;
     }
 
+    // Fetch active reservations concurrently to calculate real available stock
+    const [pendingReqItems, pendingBorrowItems] = await Promise.all([
+      prisma.requisitionItem.groupBy({
+        by: ['itemId'],
+        where: {
+          requisitionRequest: {
+            status: { in: ['PENDING', 'APPROVED'] },
+          },
+        },
+        _sum: { quantityRequested: true },
+      }),
+      prisma.borrowItem.groupBy({
+        by: ['itemId'],
+        where: {
+          borrowRequest: {
+            status: { in: ['PENDING', 'APPROVED'] },
+          },
+        },
+        _sum: { quantity: true },
+      }),
+    ]);
+
+    const reservedReqMap = new Map(
+      pendingReqItems.map((r) => [r.itemId, r._sum.quantityRequested || 0])
+    );
+    const reservedBorrowMap = new Map(
+      pendingBorrowItems.map((b) => [b.itemId, b._sum.quantity || 0])
+    );
+
     if (compact) {
       // Lean payload optimized for dropdowns and selection lists
       const items = await prisma.item.findMany({
@@ -51,10 +80,17 @@ export async function GET(req: Request) {
       });
 
       const formatted = items.map((item) => {
-        const currentStock =
+        const physicalStock =
           item.type === 'EQUIPMENT'
             ? item.assets.length
             : item.stockLots.reduce((sum, lot) => sum + lot.quantityRemaining, 0);
+
+        const reservedStock =
+          item.type === 'EQUIPMENT'
+            ? (reservedBorrowMap.get(item.id) || 0)
+            : (reservedReqMap.get(item.id) || 0);
+
+        const availableStock = Math.max(0, physicalStock - reservedStock);
 
         const openPackRemainder =
           item.type === 'CONSUMABLE'
@@ -75,13 +111,16 @@ export async function GET(req: Request) {
           imageUrl: item.imageUrl,
           status: item.status,
           categoryId: item.categoryId,
-          currentStock,
+          physicalStock,
+          reservedStock,
+          availableStock,
+          currentStock: availableStock, // Guarantees all selectors and stock checks validate against available stock
           openPackRemainder,
-          isLowStock: currentStock <= item.minStockAlert,
+          isLowStock: availableStock <= item.minStockAlert,
         };
       });
 
-      setCached(cacheKey, formatted, 60 * 1000); // 60s TTL
+      setCached(cacheKey, formatted, 30 * 1000); // 30s TTL
       return NextResponse.json(formatted);
     }
 
@@ -93,8 +132,7 @@ export async function GET(req: Request) {
         assets: {
           include: {
             maintenanceLogs: {
-              orderBy: { sentDate: 'desc' },
-              include: { handledBy: { select: { name: true } } },
+              orderBy: { createdAt: 'desc' },
             },
           },
           orderBy: { sequenceNumber: 'asc' },
@@ -113,10 +151,17 @@ export async function GET(req: Request) {
     });
 
     const formatted = items.map((item) => {
-      const currentStock =
+      const physicalStock =
         item.type === 'EQUIPMENT'
           ? item.assets.filter((a) => a.status === 'AVAILABLE').length
           : item.stockLots.reduce((sum, lot) => sum + lot.quantityRemaining, 0);
+
+      const reservedStock =
+        item.type === 'EQUIPMENT'
+          ? (reservedBorrowMap.get(item.id) || 0)
+          : (reservedReqMap.get(item.id) || 0);
+
+      const availableStock = Math.max(0, physicalStock - reservedStock);
 
       const totalQuantity =
         item.type === 'EQUIPMENT'
@@ -130,10 +175,13 @@ export async function GET(req: Request) {
 
       return {
         ...item,
-        currentStock,
+        physicalStock,
+        reservedStock,
+        availableStock,
+        currentStock: availableStock,
         openPackRemainder,
         totalQuantity,
-        isLowStock: currentStock <= item.minStockAlert,
+        isLowStock: availableStock <= item.minStockAlert,
       };
     });
 

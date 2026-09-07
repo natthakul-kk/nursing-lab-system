@@ -71,17 +71,28 @@ export async function POST(req: Request) {
           return NextResponse.json({ error: 'ไม่พบข้อมูลครุภัณฑ์ในระบบ' }, { status: 400 });
         }
 
-        const availableCount = itemRecord.assets.length;
-        if (availableCount <= 0) {
+        const pendingBrw = await prisma.borrowItem.aggregate({
+          where: {
+            itemId: it.itemId,
+            borrowRequest: { status: { in: ['PENDING', 'APPROVED'] } },
+          },
+          _sum: { quantity: true },
+        });
+        const reservedCount = pendingBrw._sum.quantity || 0;
+        const availableEquipment = Math.max(0, itemRecord.assets.length - reservedCount);
+
+        if (availableEquipment <= 0) {
           return NextResponse.json(
-            { error: `ไม่สามารถขอยืมได้: ครุภัณฑ์ "${itemRecord.name}" ไม่มีอุปกรณ์ที่พร้อมใช้งานในขณะนี้` },
+            {
+              error: `ไม่สามารถขอยืมได้: ครุภัณฑ์ "${itemRecord.name}" มีในระบบ ${itemRecord.assets.length} ชิ้น แต่มีคำขอยืมรอส่งมอบอยู่แล้ว ${reservedCount} ชิ้น (คงเหลือพร้อมให้ยืมได้ 0 ชิ้น)`,
+            },
             { status: 400 }
           );
         }
-        if (qty > availableCount) {
+        if (qty > availableEquipment) {
           return NextResponse.json(
             {
-              error: `ไม่สามารถขอยืมเกินจำนวนพร้อมใช้ได้: ครุภัณฑ์ "${itemRecord.name}" มีพร้อมให้ยืมเพียง ${availableCount} ${itemRecord.unit || 'ชิ้น'} (ท่านระบุ ${qty})`,
+              error: `ไม่สามารถขอยืมเกินจำนวนพร้อมใช้ได้: ครุภัณฑ์ "${itemRecord.name}" มีในระบบ ${itemRecord.assets.length} ชิ้น (มีคำขอรอส่งมอบ ${reservedCount} ชิ้น) จึงพร้อมให้ยืมเพียง ${availableEquipment} ${itemRecord.unit || 'ชิ้น'} (ท่านระบุ ${qty})`,
             },
             { status: 400 }
           );
@@ -122,16 +133,28 @@ export async function POST(req: Request) {
         }
 
         const totalStockRemaining = itemRecord.stockLots.reduce((sum, lot) => sum + lot.quantityRemaining, 0);
-        if (totalStockRemaining <= 0) {
+        const pendingReq = await prisma.requisitionItem.aggregate({
+          where: {
+            itemId: it.itemId,
+            requisitionRequest: { status: { in: ['PENDING', 'APPROVED'] } },
+          },
+          _sum: { quantityRequested: true },
+        });
+        const reservedReq = pendingReq._sum.quantityRequested || 0;
+        const availableStock = Math.max(0, totalStockRemaining - reservedReq);
+
+        if (availableStock <= 0) {
           return NextResponse.json(
-            { error: `ไม่สามารถขอเบิกได้: วัสดุ "${itemRecord.name}" สินค้าหมดในคลัง (คงเหลือ 0 ${itemRecord.unit})` },
+            {
+              error: `ไม่สามารถขอเบิกได้: วัสดุ "${itemRecord.name}" มีคงคลัง ${totalStockRemaining} ${itemRecord.unit} แต่มีคำขอรอจ่ายอยู่ ${reservedReq} ${itemRecord.unit} (คงเหลือพร้อมให้ขอได้ 0 ${itemRecord.unit})`,
+            },
             { status: 400 }
           );
         }
-        if (qty > totalStockRemaining) {
+        if (qty > availableStock) {
           return NextResponse.json(
             {
-              error: `ไม่สามารถขอเบิกเกินสต็อกได้: วัสดุ "${itemRecord.name}" มีคงเหลือในคลังเพียง ${totalStockRemaining} ${itemRecord.unit} (ท่านระบุ ${qty})`,
+              error: `ไม่สามารถขอเบิกเกินสต็อกพร้อมใช้ได้: วัสดุ "${itemRecord.name}" มีในคลัง ${totalStockRemaining} ${itemRecord.unit} (มีคำขอรอจ่ายค้างอยู่ ${reservedReq} ${itemRecord.unit}) จึงพร้อมให้ขอได้เพียง ${availableStock} ${itemRecord.unit} (ท่านระบุ ${qty})`,
             },
             { status: 400 }
           );

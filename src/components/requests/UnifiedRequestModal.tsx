@@ -138,11 +138,11 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
       const eq = equipmentList.find((e) => e.id === it.itemId);
       if (eq) {
         if (eq.currentStock <= 0) {
-          alert(`ครุภัณฑ์ "${eq.name}" ไม่มีอุปกรณ์ที่พร้อมใช้งานในขณะนี้`);
+          alert(`ครุภัณฑ์ "${eq.name}" ไม่มีอุปกรณ์พร้อมให้ยืมในขณะนี้ (มีในคลัง ${eq.physicalStock || 0} ชิ้น แต่ถูกจองรอส่งมอบแล้ว ${eq.reservedStock || 0} ชิ้น)`);
           return;
         }
         if (it.quantity > eq.currentStock) {
-          alert(`ไม่สามารถขอยืมเกินจำนวนพร้อมใช้ได้: ครุภัณฑ์ "${eq.name}" มีพร้อมใช้เพียง ${eq.currentStock} ${eq.unit || 'ชิ้น'}`);
+          alert(`ไม่สามารถขอยืมเกินจำนวนพร้อมใช้ได้: ครุภัณฑ์ "${eq.name}" มีพร้อมให้ยืม ${eq.currentStock} ${eq.unit || 'ชิ้น'} (จากคลัง ${eq.physicalStock || eq.currentStock} แต่มีคิวรอส่งมอบ ${eq.reservedStock || 0})`);
           return;
         }
       }
@@ -153,11 +153,11 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
       const con = consumablesList.find((c) => c.id === it.itemId);
       if (con) {
         if (con.currentStock <= 0) {
-          alert(`วัสดุ "${con.name}" สินค้าหมดในคลัง ไม่สามารถเบิกได้`);
+          alert(`วัสดุ "${con.name}" หมดหรือถูกจองเต็มแล้วในขณะนี้ (มีในคลัง ${con.physicalStock || 0} ${con.unit} แต่มีคำขอรอจ่ายแล้ว ${con.reservedStock || 0} ${con.unit})`);
           return;
         }
         if (it.quantity > con.currentStock) {
-          alert(`ไม่สามารถขอเบิกเกินสต็อกได้: วัสดุ "${con.name}" มีคงเหลือ ${con.currentStock} ${con.unit}`);
+          alert(`ไม่สามารถขอเบิกเกินสต็อกพร้อมใช้ได้: วัสดุ "${con.name}" มีพร้อมให้ขอ ${con.currentStock} ${con.unit} (จากคลัง ${con.physicalStock || con.currentStock} แต่มีคำขอรอจ่ายอยู่ ${con.reservedStock || 0} ${con.unit})`);
           return;
         }
       }
@@ -434,11 +434,15 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
                           className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-medium"
                         >
                           <option value="">-- เลือกครุภัณฑ์ ({filteredList.length}) --</option>
-                          {filteredList.map((eq) => (
-                            <option key={eq.id} value={eq.id}>
-                              {eq.name} (พร้อมใช้ {eq.currentStock} {eq.unit}){eq.currentStock <= 0 ? ' [ไม่พร้อมใช้]' : ''}
-                            </option>
-                          ))}
+                          {filteredList.map((eq) => {
+                            const avail = eq.availableStock ?? eq.currentStock;
+                            const isReserved = eq.reservedStock > 0;
+                            return (
+                              <option key={eq.id} value={eq.id}>
+                                {eq.name} (พร้อมให้ยืม {avail} {eq.unit}){isReserved ? ` [รอส่งมอบ ${eq.reservedStock}]` : ''}{avail <= 0 ? ' [คิวเต็ม]' : ''}
+                              </option>
+                            );
+                          })}
                         </select>
                       </div>
 
@@ -472,18 +476,28 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
                     </div>
 
                     {chosenEq && (
-                      <div className="mt-1.5 pt-1 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                      <div className="mt-1.5 pt-1 border-t border-slate-100 flex flex-wrap items-center justify-between gap-1 text-[11px]">
                         {isOutOfStock ? (
                           <span className="text-rose-600 font-bold flex items-center gap-1">
-                            <AlertTriangle className="w-3.5 h-3.5" /> ไม่มีเครื่องพร้อมใช้งานในขณะนี้
+                            <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                            {chosenEq.physicalStock > 0 && chosenEq.reservedStock > 0
+                              ? `มีในคลัง ${chosenEq.physicalStock} ${chosenEq.unit} แต่ถูกจองรอส่งมอบแล้ว ${chosenEq.reservedStock} (ไม่เหลือพร้อมให้ยืม)`
+                              : `ไม่มีเครื่องพร้อมใช้งานในขณะนี้`}
                           </span>
                         ) : isOverStock ? (
                           <span className="text-rose-600 font-bold flex items-center gap-1">
-                            <AlertTriangle className="w-3.5 h-3.5" /> ขอยืมเกินพร้อมใช้ (มีเพียง {chosenEq.currentStock} {chosenEq.unit})
+                            <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                            ขอยืมเกินยอดพร้อมใช้ (พร้อมให้ยืม {chosenEq.currentStock} จากคลัง {chosenEq.physicalStock ?? chosenEq.currentStock} {chosenEq.unit}{chosenEq.reservedStock ? ` | รอส่งมอบ ${chosenEq.reservedStock}` : ''})
                           </span>
                         ) : (
-                          <span className="text-blue-700 font-medium">
-                            ✓ พร้อมให้ยืม: <strong className="font-bold">{chosenEq.currentStock} {chosenEq.unit}</strong>
+                          <span className="text-blue-700 font-medium flex items-center gap-1.5">
+                            <span className="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+                            พร้อมให้ยืม: <strong className="font-bold text-slate-900">{chosenEq.currentStock} {chosenEq.unit}</strong>
+                            {chosenEq.reservedStock > 0 && (
+                              <span className="text-[10px] bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.5 rounded-md font-semibold">
+                                คลัง {chosenEq.physicalStock} | รอส่งมอบ {chosenEq.reservedStock}
+                              </span>
+                            )}
                           </span>
                         )}
                       </div>
@@ -572,11 +586,15 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
                           className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-medium"
                         >
                           <option value="">-- เลือกรายการวัสดุ ({filteredList.length}) --</option>
-                          {filteredList.map((c) => (
-                            <option key={c.id} value={c.id}>
-                              {c.name} (คงเหลือ: {c.currentStock} {c.unit}){c.currentStock <= 0 ? ' [หมดในคลัง]' : ''}
-                            </option>
-                          ))}
+                          {filteredList.map((c) => {
+                            const avail = c.availableStock ?? c.currentStock;
+                            const isReserved = c.reservedStock > 0;
+                            return (
+                              <option key={c.id} value={c.id}>
+                                {c.name} (พร้อมเบิก: {avail} {c.unit}){isReserved ? ` [รอจ่าย ${c.reservedStock}]` : ''}{avail <= 0 ? ' [คิวเต็ม/หมด]' : ''}
+                              </option>
+                            );
+                          })}
                         </select>
                       </div>
 
@@ -610,21 +628,31 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
                     </div>
 
                     {chosenItem && (
-                      <div className="mt-1.5 pt-1 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                      <div className="mt-1.5 pt-1 border-t border-slate-100 flex flex-wrap items-center justify-between gap-1 text-[11px]">
                         {isOutOfStock ? (
                           <span className="text-rose-600 font-bold flex items-center gap-1">
-                            <AlertCircle className="w-3.5 h-3.5" /> วัสดุนี้หมดในคลัง ไม่สามารถเบิกได้
+                            <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                            {chosenItem.physicalStock > 0 && chosenItem.reservedStock > 0
+                              ? `มีในคลัง ${chosenItem.physicalStock} ${chosenItem.unit} แต่มีคำขอรอจ่ายแล้ว ${chosenItem.reservedStock} (ไม่เหลือพร้อมให้เบิก)`
+                              : `วัสดุนี้หมดในคลัง ไม่สามารถเบิกได้`}
                           </span>
                         ) : isOverStock ? (
                           <span className="text-rose-600 font-bold flex items-center gap-1">
-                            <AlertCircle className="w-3.5 h-3.5" /> ขอเกินสต็อกคงเหลือ (มีเพียง {chosenItem.currentStock} {chosenItem.unit})
+                            <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                            ขอเกินยอดพร้อมเบิก (พร้อมขอ {chosenItem.currentStock} จากคลัง {chosenItem.physicalStock ?? chosenItem.currentStock} {chosenItem.unit}{chosenItem.reservedStock ? ` | รอจ่าย ${chosenItem.reservedStock}` : ''})
                           </span>
                         ) : (
-                          <span className="text-teal-700 font-medium">
-                            ✓ คงเหลือพร้อมเบิก: <strong className="font-bold">{chosenItem.currentStock} {chosenItem.unit}</strong>
+                          <span className="text-teal-700 font-medium flex items-center gap-1.5">
+                            <span className="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+                            พร้อมเบิก: <strong className="font-bold text-slate-900">{chosenItem.currentStock} {chosenItem.unit}</strong>
+                            {chosenItem.reservedStock > 0 && (
+                              <span className="text-[10px] bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.5 rounded-md font-semibold">
+                                คลัง {chosenItem.physicalStock} | รอจ่าย {chosenItem.reservedStock}
+                              </span>
+                            )}
                           </span>
                         )}
-                        <span className="text-slate-500">
+                        <span className="text-slate-500 font-medium">
                           ประมาณการ: ฿{((chosenItem.unitCost || 0) * (row.quantity || 0)).toFixed(2)}
                         </span>
                       </div>

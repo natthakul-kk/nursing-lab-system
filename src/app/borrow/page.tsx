@@ -956,11 +956,15 @@ export default function BorrowPage() {
                               }`}
                             >
                               <option value="">-- กรุณาเลือกครุภัณฑ์ ({filteredEquipments.length} รายการ) --</option>
-                              {filteredEquipments.map((eq) => (
-                                <option key={eq.id} value={eq.id}>
-                                  {eq.name} (พร้อมใช้ {eq.currentStock} {eq.unit}){eq.currentStock <= 0 ? ' [ไม่พร้อมใช้]' : ''}
-                                </option>
-                              ))}
+                              {filteredEquipments.map((eq) => {
+                                const avail = eq.availableStock ?? eq.currentStock;
+                                const isReserved = eq.reservedStock > 0;
+                                return (
+                                  <option key={eq.id} value={eq.id}>
+                                    {eq.name} (พร้อมให้ยืม {avail} {eq.unit}){isReserved ? ` [รอส่งมอบ ${eq.reservedStock}]` : ''}{avail <= 0 ? ' [คิวเต็ม]' : ''}
+                                  </option>
+                                );
+                              })}
                             </select>
                           </div>
 
@@ -1010,16 +1014,24 @@ export default function BorrowPage() {
                             {isOutOfStock ? (
                               <span className="text-rose-700 font-bold flex items-center gap-1">
                                 <AlertTriangle className="w-3.5 h-3.5 text-rose-600 flex-shrink-0" />
-                                ครุภัณฑ์นี้ไม่มีเครื่องพร้อมใช้งานในขณะนี้ (0 {chosenEq.unit || 'ชิ้น'}) ไม่สามารถขอยืมได้
+                                {chosenEq.physicalStock > 0 && chosenEq.reservedStock > 0
+                                  ? `มีในคลัง ${chosenEq.physicalStock} ${chosenEq.unit || 'ชิ้น'} แต่ถูกจองรอส่งมอบแล้ว ${chosenEq.reservedStock} (ไม่เหลือพร้อมให้ยืม)`
+                                  : `ครุภัณฑ์นี้ไม่มีเครื่องพร้อมใช้งานในขณะนี้ ไม่สามารถขอยืมได้`}
                               </span>
                             ) : isOverStock ? (
                               <span className="text-rose-700 font-bold flex items-center gap-1">
                                 <AlertTriangle className="w-3.5 h-3.5 text-rose-600 flex-shrink-0" />
-                                ขอยืมเกินจำนวนพร้อมใช้! (ในแล็บมีพร้อมให้ยืมเพียง {chosenEq.currentStock} {chosenEq.unit || 'ชิ้น'})
+                                ขอยืมเกินยอดพร้อมใช้ (พร้อมให้ยืม {chosenEq.currentStock} จากคลัง {chosenEq.physicalStock ?? chosenEq.currentStock} {chosenEq.unit || 'ชิ้น'}{chosenEq.reservedStock ? ` | รอส่งมอบ ${chosenEq.reservedStock}` : ''})
                               </span>
                             ) : (
-                              <span className="text-emerald-700 font-medium flex items-center gap-1">
-                                ✓ พร้อมให้ยืมในแล็บ: <strong className="font-bold text-emerald-800">{chosenEq.currentStock} {chosenEq.unit || 'ชิ้น'}</strong>
+                              <span className="text-emerald-700 font-medium flex items-center gap-1.5">
+                                <span className="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+                                พร้อมให้ยืม: <strong className="font-bold text-slate-900">{chosenEq.currentStock} {chosenEq.unit || 'ชิ้น'}</strong>
+                                {chosenEq.reservedStock > 0 && (
+                                  <span className="text-[10px] bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.5 rounded-md font-semibold">
+                                    คลัง {chosenEq.physicalStock} | รอส่งมอบ {chosenEq.reservedStock}
+                                  </span>
+                                )}
                               </span>
                             )}
                           </div>

@@ -101,19 +101,29 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: `ไม่พบข้อมูลครุภัณฑ์ในระบบ` }, { status: 400 });
       }
 
-      const availableCount = itemRecord.assets.length;
+      const pendingBrw = await prisma.borrowItem.aggregate({
+        where: {
+          itemId: it.itemId,
+          borrowRequest: { status: { in: ['PENDING', 'APPROVED'] } },
+        },
+        _sum: { quantity: true },
+      });
+      const reservedCount = pendingBrw._sum.quantity || 0;
+      const availableEquipment = Math.max(0, itemRecord.assets.length - reservedCount);
 
-      if (availableCount <= 0) {
+      if (availableEquipment <= 0) {
         return NextResponse.json(
-          { error: `ไม่สามารถขอยืมได้: ครุภัณฑ์ "${itemRecord.name}" ไม่มีอุปกรณ์ที่พร้อมใช้งานในขณะนี้ (0 ${itemRecord.unit || 'ชิ้น'})` },
+          {
+            error: `ไม่สามารถขอยืมได้: ครุภัณฑ์ "${itemRecord.name}" มีในระบบ ${itemRecord.assets.length} ชิ้น แต่มีคำขอยืมรอส่งมอบอยู่แล้ว ${reservedCount} ชิ้น (คงเหลือพร้อมให้ยืมได้ 0 ชิ้น)`,
+          },
           { status: 400 }
         );
       }
 
-      if (qty > availableCount) {
+      if (qty > availableEquipment) {
         return NextResponse.json(
           {
-            error: `ไม่สามารถขอยืมเกินจำนวนพร้อมใช้ได้: ครุภัณฑ์ "${itemRecord.name}" มีพร้อมให้ยืมเพียง ${availableCount} ${itemRecord.unit || 'ชิ้น'} (ท่านระบุ ${qty} ${itemRecord.unit || 'ชิ้น'})`,
+            error: `ไม่สามารถขอยืมเกินจำนวนพร้อมใช้ได้: ครุภัณฑ์ "${itemRecord.name}" มีในระบบ ${itemRecord.assets.length} ชิ้น (มีคำขอรอส่งมอบ ${reservedCount} ชิ้น) จึงพร้อมให้ยืมเพียง ${availableEquipment} ${itemRecord.unit || 'ชิ้น'} (ท่านระบุ ${qty} ${itemRecord.unit || 'ชิ้น'})`,
           },
           { status: 400 }
         );

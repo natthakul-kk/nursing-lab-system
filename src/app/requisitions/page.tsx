@@ -676,11 +676,15 @@ export default function RequisitionsPage() {
                               }`}
                             >
                               <option value="">-- เลือกรายการวัสดุ ({filteredConsumables.length}) --</option>
-                              {filteredConsumables.map((c) => (
-                                <option key={c.id} value={c.id}>
-                                  {c.name} (คงเหลือ: {c.currentStock} {c.unit}){c.currentStock <= 0 ? ' [หมดในคลัง]' : ''}
-                                </option>
-                              ))}
+                              {filteredConsumables.map((c) => {
+                                const avail = c.availableStock ?? c.currentStock;
+                                const isReserved = c.reservedStock > 0;
+                                return (
+                                  <option key={c.id} value={c.id}>
+                                    {c.name} (พร้อมเบิก: {avail} {c.unit}){isReserved ? ` [รอจ่าย ${c.reservedStock}]` : ''}{avail <= 0 ? ' [คิวเต็ม/หมด]' : ''}
+                                  </option>
+                                );
+                              })}
                             </select>
                           </div>
 
@@ -725,16 +729,24 @@ export default function RequisitionsPage() {
                             {isOutOfStock ? (
                               <span className="text-rose-700 font-bold flex items-center gap-1">
                                 <AlertCircle className="w-3.5 h-3.5 text-rose-600 flex-shrink-0" />
-                                วัสดุนี้หมดในคลัง (คงเหลือ 0 {chosenItem.unit}) ไม่สามารถส่งขอเบิกได้
+                                {chosenItem.physicalStock > 0 && chosenItem.reservedStock > 0
+                                  ? `มีในคลัง ${chosenItem.physicalStock} ${chosenItem.unit} แต่มีคำขอรอจ่ายแล้ว ${chosenItem.reservedStock} (ไม่เหลือพร้อมให้เบิก)`
+                                  : `วัสดุนี้หมดในคลัง (คงเหลือ 0 ${chosenItem.unit}) ไม่สามารถส่งขอเบิกได้`}
                               </span>
                             ) : isOverStock ? (
                               <span className="text-rose-700 font-bold flex items-center gap-1">
                                 <AlertCircle className="w-3.5 h-3.5 text-rose-600 flex-shrink-0" />
-                                ขอเกินสต็อกคงเหลือ! (ในคลังมีเพียง {chosenItem.currentStock} {chosenItem.unit})
+                                ขอเกินยอดพร้อมเบิก (พร้อมขอ {chosenItem.currentStock} จากคลัง {chosenItem.physicalStock ?? chosenItem.currentStock} {chosenItem.unit}{chosenItem.reservedStock ? ` | รอจ่าย ${chosenItem.reservedStock}` : ''})
                               </span>
                             ) : (
-                              <span className="text-emerald-700 font-medium flex items-center gap-1">
-                                ✓ คงเหลือพร้อมเบิก: <strong className="font-bold text-emerald-800">{chosenItem.currentStock} {chosenItem.unit}</strong>
+                              <span className="text-emerald-700 font-medium flex items-center gap-1.5">
+                                <span className="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+                                พร้อมเบิก: <strong className="font-bold text-slate-900">{chosenItem.currentStock} {chosenItem.unit}</strong>
+                                {chosenItem.reservedStock > 0 && (
+                                  <span className="text-[10px] bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.5 rounded-md font-semibold">
+                                    คลัง {chosenItem.physicalStock} | รอจ่าย {chosenItem.reservedStock}
+                                  </span>
+                                )}
                               </span>
                             )}
                             <span className="text-slate-500">

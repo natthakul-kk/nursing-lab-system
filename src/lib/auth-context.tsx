@@ -52,7 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (found) {
               setCurrentUser(found);
             } else {
-              const defaultUser = cachedUsers.find((u) => u.role === 'OFFICER') || cachedUsers[0];
+              const defaultUser = cachedUsers.find((u) => u.role === 'ADMIN') || cachedUsers[0];
               setCurrentUser(defaultUser);
             }
             setIsLoading(false); // Render immediately without waiting for network!
@@ -80,8 +80,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (found) {
             setCurrentUser(found);
           } else if (users.length > 0) {
-            // Default to Officer if not logged in
-            const defaultUser = users.find((u) => u.role === 'OFFICER') || users[0];
+            // Default to Admin
+            const defaultUser = users.find((u) => u.role === 'ADMIN') || users[0];
             setCurrentUser(defaultUser);
             if (typeof window !== 'undefined') {
               localStorage.setItem('active_user_id', defaultUser.id);

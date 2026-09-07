@@ -9,7 +9,6 @@ import {
   UserCheck, 
   Stethoscope, 
   GraduationCap, 
-  ChevronDown,
   Building2,
   LogOut,
   LogIn,
@@ -28,7 +27,7 @@ interface NavbarProps {
 }
 
 export default function Navbar({ onToggleMobileMenu, isMobileMenuOpen }: NavbarProps = {}) {
-  const { currentUser, availableUsers, switchUserById, logout } = useAuth();
+  const { currentUser, logout } = useAuth();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
 
@@ -99,25 +98,6 @@ export default function Navbar({ onToggleMobileMenu, isMobileMenuOpen }: NavbarP
         <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-semibold">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
           <span>Supabase Cloud</span>
-        </div>
-
-        {/* Quick Switcher dropdown */}
-        <div className="hidden sm:flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl p-1 shadow-inner">
-          <span className="text-[11px] font-semibold text-slate-400 pl-2">สลับบัญชี:</span>
-          <div className="relative">
-            <select
-              value={currentUser?.id || ''}
-              onChange={(e) => switchUserById(e.target.value)}
-              className="appearance-none bg-white border border-slate-300 hover:border-teal-500 text-slate-800 text-xs font-medium rounded-lg py-1 pl-2.5 pr-7 transition cursor-pointer"
-            >
-              {availableUsers.map((u) => (
-                <option key={u.id} value={u.id}>
-                  [{u.role}] {u.name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2 top-2 pointer-events-none" />
-          </div>
         </div>
 
         {/* Quick QR Scanner Button */}

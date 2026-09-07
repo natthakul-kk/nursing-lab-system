@@ -8,12 +8,8 @@ import {
   Lock,
   Mail,
   ArrowRight,
-  ShieldCheck,
-  Activity,
-  UserCheck,
-  GraduationCap,
-  Sparkles,
-  Building2
+  Building2,
+  ShieldCheck
 } from 'lucide-react';
 
 export default function LoginPage() {
@@ -41,18 +37,6 @@ export default function LoginPage() {
       router.push('/');
     } else {
       setError('ไม่พบบัญชีผู้ใช้นี้ หรืออีเมลไม่ถูกต้อง');
-      setSubmitting(false);
-    }
-  };
-
-  const handleQuickLogin = async (userEmail: string) => {
-    setEmail(userEmail);
-    setSubmitting(true);
-    const success = await login(userEmail);
-    if (success) {
-      router.push('/');
-    } else {
-      setError('เข้าสู่ระบบไม่สำเร็จ');
       setSubmitting(false);
     }
   };
@@ -129,74 +113,13 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Quick Demo Login Buttons */}
-          <div className="pt-4 border-t border-slate-100">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2.5 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-              หรือคลิกเพื่อเข้าใช้งานด่วน (Quick Demo Login)
-            </div>
-
-            <div className="grid grid-cols-1 gap-2">
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('officer@lab.nurse.ac.th')}
-                className="w-full p-2.5 rounded-xl border border-emerald-200 bg-emerald-50/70 hover:bg-emerald-100/70 text-emerald-900 text-xs font-bold flex items-center justify-between transition"
-              >
-                <div className="flex items-center gap-2">
-                  <Activity className="w-4 h-4 text-emerald-600" />
-                  <span>เจ้าหน้าที่ห้องแล็บ (Officer)</span>
-                </div>
-                <span className="text-[10px] text-emerald-700">จัดการคลัง & จ่ายของ</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('approver@lab.nurse.ac.th')}
-                className="w-full p-2.5 rounded-xl border border-amber-200 bg-amber-50/70 hover:bg-amber-100/70 text-amber-900 text-xs font-bold flex items-center justify-between transition"
-              >
-                <div className="flex items-center gap-2">
-                  <UserCheck className="w-4 h-4 text-amber-600" />
-                  <span>ผู้อนุมัติ (Approver / หัวหน้าสาขา)</span>
-                </div>
-                <span className="text-[10px] text-amber-700">พิจารณาคำขอ</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('teacher@lab.nurse.ac.th')}
-                className="w-full p-2.5 rounded-xl border border-blue-200 bg-blue-50/70 hover:bg-blue-100/70 text-blue-900 text-xs font-bold flex items-center justify-between transition"
-              >
-                <div className="flex items-center gap-2">
-                  <GraduationCap className="w-4 h-4 text-blue-600" />
-                  <span>อาจารย์ผู้สอน (Teacher / User)</span>
-                </div>
-                <span className="text-[10px] text-blue-700">ยืมของ & เบิกวัสดุ</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('student@lab.nurse.ac.th')}
-                className="w-full p-2.5 rounded-xl border border-cyan-200 bg-cyan-50/70 hover:bg-cyan-100/70 text-cyan-900 text-xs font-bold flex items-center justify-between transition"
-              >
-                <div className="flex items-center gap-2">
-                  <GraduationCap className="w-4 h-4 text-cyan-600" />
-                  <span>นิสิตพยาบาล (Student / User)</span>
-                </div>
-                <span className="text-[10px] text-cyan-700">ขอยืมอุปกรณ์ฝึกซ้อม</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('admin@lab.nurse.ac.th')}
-                className="w-full p-2.5 rounded-xl border border-purple-200 bg-purple-50/70 hover:bg-purple-100/70 text-purple-900 text-xs font-bold flex items-center justify-between transition"
-              >
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-purple-600" />
-                  <span>ผู้ดูแลระบบ (Admin)</span>
-                </div>
-                <span className="text-[10px] text-purple-700">ทุกสิทธิ์ในระบบ</span>
-              </button>
-            </div>
+          {/* System Info / Security Note */}
+          <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+            <span className="flex items-center gap-1">
+              <ShieldCheck className="w-3.5 h-3.5 text-teal-600" />
+              ระบบงานจริง (Production Mode)
+            </span>
+            <span>ติดต่อแอดมินเพื่อขอเปิดบัญชีใช้งาน</span>
           </div>
         </div>
       </div>

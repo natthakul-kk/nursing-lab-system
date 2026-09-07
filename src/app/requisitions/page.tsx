@@ -123,6 +123,13 @@ export default function RequisitionsPage() {
       alert('กรุณากรอกข้อมูลและเลือกรายวิชาทางการพยาบาลให้ครบถ้วน');
       return;
     }
+
+    const matchedCourse = courses.find((c) => c.id === newReq.courseId);
+    if (currentUser?.role === 'USER' && !matchedCourse?.instructorName?.trim()) {
+      alert('⚠️ เนื่องจากท่านเป็นนิสิต รายวิชาที่เลือกต้องมีอาจารย์ประจำวิชาผู้รับทราบ (ไม่อนุญาตให้เว้นว่าง)');
+      return;
+    }
+
     const emptyRow = newReq.items.find((it) => !it.itemId);
     if (emptyRow) {
       alert('กรุณาเลือกรายการวัสดุสิ้นเปลืองให้ครบทุกแถว');

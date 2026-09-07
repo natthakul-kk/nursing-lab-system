@@ -34,7 +34,7 @@ interface SidebarProps {
 
 export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps = {}) {
   const pathname = usePathname();
-  const { currentUser, isOfficer, isApprover, isAdmin, availableUsers, switchUserById } = useAuth();
+  const { currentUser, isOfficer, isApprover, isAdmin } = useAuth();
   const [pendingCount, setPendingCount] = useState<number>(0);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
@@ -268,27 +268,6 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
             )}
           </div>
         </div>
-
-        {/* Quick User Switcher inside mobile drawer for easy testing on phones */}
-        {isMobile && availableUsers && availableUsers.length > 0 && (
-          <div className="mb-3 p-2 rounded-xl bg-slate-800/60 border border-slate-700/60 text-xs">
-            <span className="text-[10px] text-slate-400 block mb-1 font-semibold">สลับบัญชีใช้งาน:</span>
-            <select
-              value={currentUser?.id || ''}
-              onChange={(e) => {
-                switchUserById(e.target.value);
-                if (onMobileClose) onMobileClose();
-              }}
-              className="w-full bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg py-1 px-2 font-medium"
-            >
-              {availableUsers.map((u) => (
-                <option key={u.id} value={u.id}>
-                  [{u.role}] {u.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
 
         <nav className="space-y-2">
           {navGroups.map((group) => {

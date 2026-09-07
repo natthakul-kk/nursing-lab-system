@@ -163,6 +163,12 @@ export default function BorrowPage() {
         return;
       }
 
+      if (currentUser?.role === 'USER' && !newRequest.advisorName?.trim()) {
+        alert('⚠️ เนื่องจากท่านเป็นนิสิต กรุณาระบุหรือเลือกอาจารย์ผู้รับทราบ/อาจารย์ประจำวิชา (ไม่อนุญาตให้เว้นว่าง)');
+        setSubmitting(false);
+        return;
+      }
+
       // Pre-validation: ensure quantity is entered and >= 1
       for (const reqItem of validItems) {
         const q = Number(reqItem.quantity);

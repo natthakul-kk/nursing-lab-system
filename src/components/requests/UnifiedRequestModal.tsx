@@ -128,6 +128,11 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
       return;
     }
 
+    if (currentUser?.role === 'USER' && !advisorName?.trim()) {
+      alert('⚠️ เนื่องจากท่านเป็นนิสิต กรุณาระบุหรือเลือกอาจารย์ผู้รับทราบ/อาจารย์ประจำวิชา (ไม่อนุญาตให้เว้นว่าง)');
+      return;
+    }
+
     const validBorrow = borrowItems.filter((it) => it.itemId);
     const validReq = requisitionItems.filter((it) => it.itemId);
 
@@ -297,12 +302,15 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  อาจารย์ผู้รับทราบ / อาจารย์ที่ปรึกษา
+                  อาจารย์ผู้รับทราบ / อาจารย์ที่ปรึกษา {currentUser?.role === 'USER' && <span className="text-rose-600 font-extrabold">* (นิสิตจำเป็นต้องระบุ)</span>}
                 </label>
                 <select
+                  required={currentUser?.role === 'USER'}
                   value={advisorName}
                   onChange={(e) => setAdvisorName(e.target.value)}
-                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-teal-500/20"
+                  className={`w-full bg-white border rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-teal-500/20 ${
+                    currentUser?.role === 'USER' && !advisorName ? 'border-amber-300 ring-1 ring-amber-200' : 'border-slate-300'
+                  }`}
                 >
                   <option value="">-- เลือกอาจารย์ในระบบ --</option>
                   {advisorName && !instructors.some((ins) => ins.name === advisorName) && (

@@ -34,6 +34,15 @@ export default function ApprovalsPage() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<'PENDING' | 'APPROVED' | 'REJECTED'>('PENDING');
   const [activeTab, setActiveTab] = useState<'ALL' | 'BORROW' | 'REQUISITION' | 'PRACTICE'>('ALL');
+  const [viewScope, setViewScope] = useState<'RELEVANT' | 'ALL'>('RELEVANT');
+
+  useEffect(() => {
+    if (isAdmin) {
+      setViewScope('ALL');
+    } else {
+      setViewScope('RELEVANT');
+    }
+  }, [isAdmin]);
 
   // Reject Modal State
   const [rejectItem, setRejectItem] = useState<{ id: string; type: 'BORROW' | 'REQUISITION' | 'PRACTICE' } | null>(null);
@@ -188,8 +197,103 @@ export default function ApprovalsPage() {
   const isApproved = (status: string) =>
     ['APPROVED', 'BORROWED', 'RETURNED_COMPLETE', 'RETURNED_WITH_ISSUE', 'DISPENSED', 'CHECKED_IN', 'COMPLETED'].includes(status);
 
+  // Normalize Thai academic titles and prefixes for matching
+  const cleanThaiTitle = (name?: string | null) => {
+    if (!name) return '';
+    return name
+      .replace(/^(ศ\.ดร\.|ศ\.|รศ\.ดร\.|รศ\.|ผศ\.ดร\.|ผศ\.|ดร\.|อ\.นพ\.|อ\.พญ\.|อ\.|นพ\.|พญ\.|นายแพทย์|แพทย์หญิง|อาจารย์)\s*/i, '')
+      .trim()
+      .toLowerCase();
+  };
+
+  // Check if an item is directly relevant to the current user (as teacher, advisor, course instructor, or creator)
+  const isRelevantToTeacher = (item: any, user: any): boolean => {
+    if (!user) return false;
+    const uClean = cleanThaiTitle(user.name);
+    const uId = user.id;
+
+    // Direct creator, assigned approver, or acknowledger
+    if (item.userId === uId || item.approverId === uId || item.approvedById === uId || item.acknowledgedById === uId) {
+      return true;
+    }
+
+    // Check advisorName
+    if (item.advisorName) {
+      const advClean = cleanThaiTitle(item.advisorName);
+      if (advClean && (advClean.includes(uClean) || uClean.includes(advClean))) {
+        return true;
+      }
+    }
+
+    // Check course instructorName
+    if (item.course?.instructorName) {
+      const instClean = cleanThaiTitle(item.course.instructorName);
+      if (instClean && (instClean.includes(uClean) || uClean.includes(instClean))) {
+        return true;
+      }
+    }
+
+    // Check practice booking instructor
+    if (item.instructor) {
+      const instClean = cleanThaiTitle(item.instructor);
+      if (instClean && (instClean.includes(uClean) || uClean.includes(instClean))) {
+        return true;
+      }
+    }
+
+    // Check linked requisition request
+    if (item.requisitionRequest) {
+      if (item.requisitionRequest.advisorName) {
+        const advClean = cleanThaiTitle(item.requisitionRequest.advisorName);
+        if (advClean && (advClean.includes(uClean) || uClean.includes(advClean))) {
+          return true;
+        }
+      }
+      if (item.requisitionRequest.course?.instructorName) {
+        const instClean = cleanThaiTitle(item.requisitionRequest.course.instructorName);
+        if (instClean && (instClean.includes(uClean) || uClean.includes(instClean))) {
+          return true;
+        }
+      }
+    }
+
+    // Check linked borrow request
+    if (item.borrowRequest) {
+      if (item.borrowRequest.advisorName) {
+        const advClean = cleanThaiTitle(item.borrowRequest.advisorName);
+        if (advClean && (advClean.includes(uClean) || uClean.includes(advClean))) {
+          return true;
+        }
+      }
+      if (item.borrowRequest.course?.instructorName) {
+        const instClean = cleanThaiTitle(item.borrowRequest.course.instructorName);
+        if (instClean && (instClean.includes(uClean) || uClean.includes(instClean))) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  };
+
+  // Base datasets filtered by scope (RELEVANT: only requests involving this teacher vs ALL: all faculty requests)
+  const scopedBorrows =
+    viewScope === 'ALL'
+      ? allBorrows
+      : allBorrows.filter((b) => isRelevantToTeacher(b, currentUser));
+
+  const scopedRequisitions =
+    viewScope === 'ALL'
+      ? allRequisitions
+      : allRequisitions.filter((r) => isRelevantToTeacher(r, currentUser));
+
+  const scopedPracticeBookings =
+    viewScope === 'ALL'
+      ? allPracticeBookings
+      : allPracticeBookings.filter((p) => isRelevantToTeacher(p, currentUser));
+
   // Filter Borrows by statusFilter
-  const filteredBorrows = allBorrows.filter((b) => {
+  const filteredBorrows = scopedBorrows.filter((b) => {
     if (statusFilter === 'PENDING') return b.status === 'PENDING';
     if (statusFilter === 'APPROVED') return isApproved(b.status);
     if (statusFilter === 'REJECTED') return b.status === 'REJECTED';
@@ -197,7 +301,7 @@ export default function ApprovalsPage() {
   });
 
   // Filter Requisitions by statusFilter (exclude requisitions that are already linked & shown inside a unified BorrowRequest)
-  const filteredRequisitions = allRequisitions.filter((r) => {
+  const filteredRequisitions = scopedRequisitions.filter((r) => {
     if (r.borrowRequest) return false;
     if (statusFilter === 'PENDING') return r.status === 'PENDING';
     if (statusFilter === 'APPROVED') return isApproved(r.status);
@@ -206,7 +310,7 @@ export default function ApprovalsPage() {
   });
 
   // Filter Practice Bookings by statusFilter
-  const filteredPracticeBookings = allPracticeBookings.filter((p) => {
+  const filteredPracticeBookings = scopedPracticeBookings.filter((p) => {
     if (statusFilter === 'PENDING') return p.status === 'PENDING';
     if (statusFilter === 'APPROVED') return isApproved(p.status);
     if (statusFilter === 'REJECTED') return p.status === 'REJECTED';
@@ -215,19 +319,19 @@ export default function ApprovalsPage() {
 
   // Total counts for main status tabs (unified requests counted once)
   const pendingCount =
-    allBorrows.filter((b) => b.status === 'PENDING').length +
-    allRequisitions.filter((r) => !r.borrowRequest && r.status === 'PENDING').length +
-    allPracticeBookings.filter((p) => p.status === 'PENDING').length;
+    scopedBorrows.filter((b) => b.status === 'PENDING').length +
+    scopedRequisitions.filter((r) => !r.borrowRequest && r.status === 'PENDING').length +
+    scopedPracticeBookings.filter((p) => p.status === 'PENDING').length;
 
   const approvedCount =
-    allBorrows.filter((b) => isApproved(b.status)).length +
-    allRequisitions.filter((r) => !r.borrowRequest && isApproved(r.status)).length +
-    allPracticeBookings.filter((p) => isApproved(p.status)).length;
+    scopedBorrows.filter((b) => isApproved(b.status)).length +
+    scopedRequisitions.filter((r) => !r.borrowRequest && isApproved(r.status)).length +
+    scopedPracticeBookings.filter((p) => isApproved(p.status)).length;
 
   const rejectedCount =
-    allBorrows.filter((b) => b.status === 'REJECTED').length +
-    allRequisitions.filter((r) => !r.borrowRequest && r.status === 'REJECTED').length +
-    allPracticeBookings.filter((p) => p.status === 'REJECTED').length;
+    scopedBorrows.filter((b) => b.status === 'REJECTED').length +
+    scopedRequisitions.filter((r) => !r.borrowRequest && r.status === 'REJECTED').length +
+    scopedPracticeBookings.filter((p) => p.status === 'REJECTED').length;
 
   const currentTabTotal =
     activeTab === 'ALL'
@@ -237,6 +341,17 @@ export default function ApprovalsPage() {
       : activeTab === 'REQUISITION'
       ? filteredRequisitions.length
       : filteredPracticeBookings.length;
+
+  // Total items in system vs relevant to teacher
+  const totalSystemItems =
+    allBorrows.length +
+    allRequisitions.filter((r) => !r.borrowRequest).length +
+    allPracticeBookings.length;
+
+  const totalRelevantItems =
+    allBorrows.filter((b) => isRelevantToTeacher(b, currentUser)).length +
+    allRequisitions.filter((r) => !r.borrowRequest && isRelevantToTeacher(r, currentUser)).length +
+    allPracticeBookings.filter((p) => isRelevantToTeacher(p, currentUser)).length;
 
   const getStageLabel = (status: string, type: 'BORROW' | 'REQUISITION') => {
     if (type === 'BORROW') {
@@ -285,6 +400,55 @@ export default function ApprovalsPage() {
             </span>
           </div>
         )}
+      </div>
+
+      {/* Scope Selector: [ เฉพาะคำขอที่ฉันรับผิดชอบ | ทั้งหมดในระบบ ] */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-teal-50/70 via-slate-50 to-white p-3.5 rounded-2xl border border-teal-200/80 shadow-xs">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-teal-600 text-white flex items-center justify-center shadow-xs shrink-0">
+            <GraduationCap className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+              <span>ขอบเขตรายการที่แสดง:</span>
+              <span className="text-teal-700 font-extrabold">
+                {viewScope === 'RELEVANT' ? 'เฉพาะคำขอที่เกี่ยวข้องกับท่าน (ตามรายวิชา/อาจารย์ที่ปรึกษา)' : 'คำขอทั้งหมดในระบบ (ทุกรายวิชา)'}
+              </span>
+            </div>
+            {currentUser && (
+              <div className="text-[11px] text-slate-500">
+                อาจารย์ผู้ใช้งาน: <strong className="text-slate-700">{currentUser.name}</strong>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1 bg-slate-200/70 p-1 rounded-xl text-xs font-semibold self-start sm:self-auto">
+          <button
+            type="button"
+            onClick={() => setViewScope('RELEVANT')}
+            className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 cursor-pointer ${
+              viewScope === 'RELEVANT'
+                ? 'bg-white text-teal-800 shadow-sm font-bold'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <CheckCircle2 className="w-3.5 h-3.5 text-teal-600" />
+            <span>เฉพาะที่เกี่ยวข้องกับฉัน ({totalRelevantItems})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewScope('ALL')}
+            className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 cursor-pointer ${
+              viewScope === 'ALL'
+                ? 'bg-white text-teal-800 shadow-sm font-bold'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5 text-slate-500" />
+            <span>ทั้งหมดในระบบ ({totalSystemItems})</span>
+          </button>
+        </div>
       </div>
 
       {/* Main Status Tabs: [ รอพิจารณา | อนุมัติแล้ว | ไม่อนุมัติ ] */}
@@ -390,21 +554,46 @@ export default function ApprovalsPage() {
             />
           </div>
         ) : currentTabTotal === 0 ? (
-          <div className="bg-white p-12 text-center rounded-2xl border border-slate-200/80 text-slate-400 text-xs">
+          <div className="bg-white p-10 sm:p-12 text-center rounded-2xl border border-slate-200/80 text-slate-400 text-xs space-y-3">
             {statusFilter === 'PENDING' ? (
               <>
-                <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-2 opacity-75" />
-                ยอดเยี่ยม! ไม่มีคำขอค้างรอการอนุมัติในหมวดนี้
+                <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-1 opacity-85" />
+                <p className="font-bold text-slate-700 text-sm">ไม่มีคำขอค้างรอการอนุมัติในหมวดนี้</p>
+                {viewScope === 'RELEVANT' && totalSystemItems > 0 && (
+                  <div className="pt-2 text-slate-500 text-[11px] max-w-md mx-auto space-y-2">
+                    <p>ขณะนี้ไม่มีคำขอที่ระบุชื่อของท่านเป็นอาจารย์ผู้รับทราบหรืออาจารย์ประจำวิชาในสถานะนี้</p>
+                    <button
+                      type="button"
+                      onClick={() => setViewScope('ALL')}
+                      className="px-3 py-1.5 rounded-xl bg-teal-50 text-teal-800 border border-teal-200 hover:bg-teal-100 font-bold transition inline-flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Layers className="w-3.5 h-3.5 text-teal-600" />
+                      <span>สลับไปดูคำขอทั้งหมดในระบบ ({totalSystemItems} รายการ)</span>
+                    </button>
+                  </div>
+                )}
               </>
             ) : statusFilter === 'APPROVED' ? (
               <>
-                <CheckSquare className="w-10 h-10 text-teal-500 mx-auto mb-2 opacity-75" />
-                ยังไม่มีประวัติรายการที่อนุมัติในหมวดนี้
+                <CheckSquare className="w-10 h-10 text-teal-500 mx-auto mb-1 opacity-85" />
+                <p className="font-bold text-slate-700 text-sm">ยังไม่มีประวัติรายการที่อนุมัติในหมวดนี้</p>
+                {viewScope === 'RELEVANT' && totalSystemItems > 0 && (
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setViewScope('ALL')}
+                      className="px-3 py-1.5 rounded-xl bg-teal-50 text-teal-800 border border-teal-200 hover:bg-teal-100 font-bold transition inline-flex items-center gap-1.5 cursor-pointer text-[11px]"
+                    >
+                      <Layers className="w-3.5 h-3.5 text-teal-600" />
+                      <span>ดูประวัติการอนุมัติทั้งหมดในระบบ</span>
+                    </button>
+                  </div>
+                )}
               </>
             ) : (
               <>
-                <XCircle className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-                ไม่มีรายการที่ไม่อนุมัติในหมวดนี้
+                <XCircle className="w-10 h-10 text-slate-300 mx-auto mb-1" />
+                <p className="font-bold text-slate-700 text-sm">ไม่มีรายการที่ไม่อนุมัติในหมวดนี้</p>
               </>
             )}
           </div>

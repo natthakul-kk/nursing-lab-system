@@ -18,7 +18,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
     const borrow = await prisma.borrowRequest.findUnique({
       where: { id },
-      include: { items: true },
+      include: { items: true, user: true },
     });
 
     if (!borrow) {
@@ -238,6 +238,27 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
                     note: `จ่ายตามคำขอเบิก-ยืม ${borrow.requestNumber} (วิชา ${linkedReq.course?.code || ''})`,
                   },
                 });
+
+                // Update individual RepackPackItems in sequential order (1..N) if this lot belongs to a repack sub-lot
+                const availablePacks = await prisma.repackPackItem.findMany({
+                  where: {
+                    repackRecord: { subLotNumber: lot.lotNumber },
+                    status: 'AVAILABLE',
+                  },
+                  orderBy: { packNumber: 'asc' },
+                  take: deduct,
+                });
+
+                if (availablePacks.length > 0) {
+                  await prisma.repackPackItem.updateMany({
+                    where: { id: { in: availablePacks.map((p) => p.id) } },
+                    data: {
+                      status: 'DISPENSED',
+                      dispensedTo: borrow.user?.name ? `${borrow.user.name} (${borrow.requestNumber})` : borrow.requestNumber,
+                      dispensedAt: new Date(),
+                    },
+                  });
+                }
 
                 itemCost += cost;
                 remainingToDeduct -= deduct;

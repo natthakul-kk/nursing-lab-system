@@ -553,37 +553,62 @@ export default function RepackPage() {
 
             {/* Content: List of Packs */}
             <div className="flex-1 overflow-y-auto space-y-2 pr-1">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {selectedRecordForPacks.packItems && selectedRecordForPacks.packItems.length > 0 ? (
-                  selectedRecordForPacks.packItems.map((pack: any) => (
-                    <div
-                      key={pack.id || pack.packNumber}
-                      className="p-3 rounded-2xl border border-slate-200/80 bg-slate-50/50 hover:bg-white hover:border-teal-300 transition flex items-center justify-between"
-                    >
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-6 h-6 rounded-lg bg-teal-600 text-white font-bold text-xs flex items-center justify-center font-mono">
-                            #{pack.packNumber}
-                          </span>
-                          <span className="font-mono font-black text-slate-900 text-xs">
-                            {pack.packCode}
-                          </span>
-                        </div>
-                        <div className="text-[11px] text-slate-500 pl-7">
-                          บรรจุ: <b>{pack.unitsCount || selectedRecordForPacks.unitsPerPack}</b> {selectedRecordForPacks.sourceItem?.usageUnit || 'ชิ้น'}
-                        </div>
-                      </div>
+              {(() => {
+                const nextPackNumber = selectedRecordForPacks.packItems?.find((p: any) => p.status === 'AVAILABLE')?.packNumber;
+                return (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {selectedRecordForPacks.packItems && selectedRecordForPacks.packItems.length > 0 ? (
+                      selectedRecordForPacks.packItems.map((pack: any) => {
+                        const isNext = pack.packNumber === nextPackNumber;
+                        return (
+                          <div
+                            key={pack.id || pack.packNumber}
+                            className={`p-3 rounded-2xl border transition flex items-center justify-between ${
+                              isNext
+                                ? 'border-amber-400 bg-amber-50/40 shadow-sm'
+                                : pack.status === 'AVAILABLE'
+                                ? 'border-slate-200/80 bg-white hover:border-teal-300'
+                                : 'border-slate-200 bg-slate-50/60 opacity-80'
+                            }`}
+                          >
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1.5">
+                                <span className={`w-6 h-6 rounded-lg text-white font-bold text-xs flex items-center justify-center font-mono ${
+                                  isNext ? 'bg-amber-500' : pack.status === 'AVAILABLE' ? 'bg-teal-600' : 'bg-slate-400'
+                                }`}>
+                                  #{pack.packNumber}
+                                </span>
+                                <span className="font-mono font-black text-slate-900 text-xs">
+                                  {pack.packCode}
+                                </span>
+                                {isNext && (
+                                  <span className="text-[9px] font-extrabold bg-amber-100 text-amber-800 border border-amber-300 px-1.5 py-0.2 rounded-md">
+                                    คิวถัดไป
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[11px] text-slate-500 pl-7">
+                                บรรจุ: <b>{pack.unitsCount || selectedRecordForPacks.unitsPerPack}</b> {selectedRecordForPacks.sourceItem?.usageUnit || 'ชิ้น'}
+                              </div>
+                              {pack.status === 'DISPENSED' && pack.dispensedTo && (
+                                <div className="text-[10px] text-slate-600 pl-7">
+                                  เบิกโดย: <strong className="text-slate-800">{pack.dispensedTo}</strong>
+                                </div>
+                              )}
+                            </div>
 
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                            pack.status === 'AVAILABLE'
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                              : 'bg-slate-100 text-slate-500 border-slate-200'
-                          }`}
-                        >
-                          {pack.status === 'AVAILABLE' ? 'พร้อมใช้งาน' : 'เบิกแล้ว'}
-                        </span>
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                                  pack.status === 'AVAILABLE'
+                                    ? isNext
+                                      ? 'bg-amber-100 text-amber-800 border-amber-300'
+                                      : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                    : 'bg-slate-100 text-slate-500 border-slate-200'
+                                }`}
+                              >
+                                {pack.status === 'AVAILABLE' ? (isNext ? '👉 พร้อมจ่าย' : 'พร้อมใช้') : 'เบิกแล้ว'}
+                              </span>
                         <a
                           href={`/consumable/${encodeURIComponent(pack.packCode)}`}
                           target="_blank"
@@ -604,15 +629,18 @@ export default function RepackPage() {
                         >
                           <Printer className="w-3.5 h-3.5" />
                         </button>
-                      </div>
-                    </div>
-                  ))
+                            </div>
+                          </div>
+                        );
+                      })
                 ) : (
                   <div className="col-span-2 py-8 text-center text-slate-400">
                     ไม่มีรายการซองย่อยที่ถูกสร้างสำหรับบันทึกนี้
                   </div>
                 )}
               </div>
+            );
+          })()}
             </div>
 
             <div className="flex items-center justify-between pt-3 border-t border-slate-100">

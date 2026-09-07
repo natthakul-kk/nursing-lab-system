@@ -13,6 +13,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         items: true,
         course: true,
         borrowRequest: true,
+        user: true,
       },
     });
 
@@ -174,6 +175,27 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
               note: `จ่ายตามคำขอ ${requisition.requestNumber} (วิชา ${requisition.course?.code || ''})`,
             },
           });
+
+          // Update individual RepackPackItems in sequential order (1..N) if this lot belongs to a repack sub-lot
+          const availablePacks = await prisma.repackPackItem.findMany({
+            where: {
+              repackRecord: { subLotNumber: lot.lotNumber },
+              status: 'AVAILABLE',
+            },
+            orderBy: { packNumber: 'asc' },
+            take: deductFromThisLot,
+          });
+
+          if (availablePacks.length > 0) {
+            await prisma.repackPackItem.updateMany({
+              where: { id: { in: availablePacks.map((p) => p.id) } },
+              data: {
+                status: 'DISPENSED',
+                dispensedTo: requisition.user ? `${requisition.user.name} (${requisition.requestNumber})` : requisition.requestNumber,
+                dispensedAt: new Date(),
+              },
+            });
+          }
 
           itemTotalCost += costForThisDeduction;
           remainingToDeduct -= deductFromThisLot;

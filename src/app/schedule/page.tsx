@@ -24,7 +24,10 @@ import {
   GraduationCap,
   Sparkles,
   MapPin,
-  QrCode
+  QrCode,
+  Users,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
@@ -36,6 +39,11 @@ export default function SchedulePage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [timeFilter, setTimeFilter] = useState<'ALL' | 'TODAY' | 'UPCOMING' | 'OVERDUE'>('ALL');
+  const [expandedSlotIds, setExpandedSlotIds] = useState<Record<string, boolean>>({});
+
+  const toggleSlotExpand = (slotKey: string) => {
+    setExpandedSlotIds((prev) => ({ ...prev, [slotKey]: !prev[slotKey] }));
+  };
 
   // Edit Dates Modal State (For Admin & Officer)
   const [editingItem, setEditingItem] = useState<{
@@ -177,42 +185,84 @@ export default function SchedulePage() {
         isReturnToday: false,
       };
     }),
-    ...practiceList.map((p) => {
-      const pickupToday = isToday(p.slot?.date);
-      return {
-        id: p.id,
-        type: 'PRACTICE' as const,
-        requestNumber: p.bookingNumber,
-        status: p.status,
-        user: p.user,
-        course: p.course,
-        advisorName: p.advisorName,
-        purpose: p.skillTopic + (p.objectives ? ` - ${p.objectives}` : ''),
+  ];
+
+  // Group practiceList by Slot (Event)
+  const practiceSlotGroups: Record<string, any> = {};
+  practiceList.forEach((p) => {
+    const sId = p.slotId || (p.slot ? p.slot.id : `unknown-${p.id}`);
+    if (!practiceSlotGroups[sId]) {
+      practiceSlotGroups[sId] = {
+        id: sId,
+        type: 'PRACTICE_EVENT' as const,
+        slot: p.slot,
+        roomName: p.slot?.room?.name || 'ห้องปฏิบัติการพยาบาล',
+        roomCode: p.slot?.room?.code,
         pickupDate: p.slot?.date,
-        returnDate: undefined,
-        timeSlot: p.slot ? `${p.slot.startTime} - ${p.slot.endTime} น.` : undefined,
-        roomName: p.slot?.room?.name || 'ห้องแล็บพยาบาล',
-        practiceKit: p.practiceKit,
-        items: p.practiceKit ? [{ id: p.practiceKit.id, item: { name: p.practiceKit.name, unit: 'ชุด' }, quantity: 1 }] : [],
-        isOverdue: false,
-        isPickupToday: pickupToday,
+        timeSlot: p.slot ? `${p.slot.startTime} - ${p.slot.endTime} น.` : '-',
+        maxCapacity: p.slot?.maxCapacity || 6,
+        isPickupToday: isToday(p.slot?.date),
         isReturnToday: false,
+        isOverdue: false,
+        students: [],
+        kitsSummary: {} as Record<string, { name: string; count: number }>,
+        additionalItems: [] as string[],
       };
-    }),
+    }
+    practiceSlotGroups[sId].students.push(p);
+
+    // Aggregate Kits
+    if (p.practiceKit) {
+      const kId = p.practiceKit.id;
+      if (!practiceSlotGroups[sId].kitsSummary[kId]) {
+        practiceSlotGroups[sId].kitsSummary[kId] = {
+          name: p.practiceKit.name,
+          count: 0,
+        };
+      }
+      practiceSlotGroups[sId].kitsSummary[kId].count += 1;
+    }
+
+    // Aggregate Additional equipment
+    if (p.additionalEquipment) {
+      practiceSlotGroups[sId].additionalItems.push(
+        `${p.user?.name || 'นิสิต'}: ${p.additionalEquipment}`
+      );
+    }
+  });
+
+  const practiceEventTasks = Object.values(practiceSlotGroups);
+
+  const allDisplayTasks = [
+    ...combinedTasks,
+    ...practiceEventTasks,
   ];
 
   // Apply filters
-  const filteredTasks = combinedTasks.filter((task) => {
+  const filteredTasks = allDisplayTasks.filter((task: any) => {
     // Search query filter
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      const matchNumber = task.requestNumber?.toLowerCase().includes(q);
-      const matchUser = task.user?.name?.toLowerCase().includes(q);
-      const matchStudentId = task.user?.studentId?.toLowerCase().includes(q);
-      const matchCourse = task.course?.name?.toLowerCase().includes(q) || task.course?.code?.toLowerCase().includes(q);
-      const matchPurpose = task.purpose?.toLowerCase().includes(q);
-      if (!matchNumber && !matchUser && !matchStudentId && !matchCourse && !matchPurpose) {
-        return false;
+      if (task.type === 'PRACTICE_EVENT') {
+        const matchRoom = task.roomName?.toLowerCase().includes(q);
+        const matchStudent = task.students?.some(
+          (s: any) =>
+            s.user?.name?.toLowerCase().includes(q) ||
+            s.user?.studentId?.toLowerCase().includes(q) ||
+            s.skillTopic?.toLowerCase().includes(q) ||
+            s.advisorName?.toLowerCase().includes(q) ||
+            s.bookingNumber?.toLowerCase().includes(q)
+        );
+        if (!matchRoom && !matchStudent) return false;
+      } else {
+        const matchNumber = task.requestNumber?.toLowerCase().includes(q);
+        const matchUser = task.user?.name?.toLowerCase().includes(q);
+        const matchStudentId = task.user?.studentId?.toLowerCase().includes(q);
+        const matchCourse = task.course?.name?.toLowerCase().includes(q) || task.course?.code?.toLowerCase().includes(q);
+        const matchPurpose = task.purpose?.toLowerCase().includes(q);
+        if (!matchNumber && !matchUser && !matchStudentId && !matchCourse && !matchPurpose) {
+          return false;
+        }
       }
     }
 
@@ -224,6 +274,9 @@ export default function SchedulePage() {
       return task.isOverdue;
     }
     if (timeFilter === 'UPCOMING') {
+      if (task.type === 'PRACTICE_EVENT') {
+        return !isPast(task.pickupDate) || task.isPickupToday;
+      }
       return !task.isOverdue && (task.status === 'APPROVED' || !isPast(task.returnDate));
     }
     return true;
@@ -231,7 +284,6 @@ export default function SchedulePage() {
 
   // Open Edit Dates modal
   const handleOpenEditDates = (task: typeof combinedTasks[0]) => {
-    if (task.type === 'PRACTICE') return;
     setEditingItem({
       id: task.id,
       type: task.type,
@@ -316,7 +368,7 @@ export default function SchedulePage() {
           <div>
             <span className="text-[11px] font-bold text-slate-400 uppercase">คิวงานทั้งหมด</span>
             <div className="text-xl font-black text-slate-800 mt-1">
-              {combinedTasks.length} <span className="text-xs font-normal text-slate-500">รายการ</span>
+              {allDisplayTasks.length} <span className="text-xs font-normal text-slate-500">งาน</span>
             </div>
           </div>
           <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center">
@@ -366,8 +418,8 @@ export default function SchedulePage() {
           <div>
             <span className="text-[11px] font-bold text-indigo-600 uppercase">คิวเข้าฝึกปฏิบัติ (Lab)</span>
             <div className="text-xl font-black text-indigo-700 mt-1">
-              {combinedTasks.filter((t) => t.type === 'PRACTICE').length}{' '}
-              <span className="text-xs font-normal text-slate-500">คน</span>
+              {practiceList.length}{' '}
+              <span className="text-xs font-normal text-slate-500">คน ({practiceEventTasks.length} รอบ)</span>
             </div>
           </div>
           <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
@@ -381,10 +433,10 @@ export default function SchedulePage() {
         {/* Quick Filter Tabs */}
         <div className="flex flex-wrap items-center gap-1.5">
           {[
-            { key: 'ALL', label: `ทั้งหมด (${combinedTasks.length})` },
-            { key: 'TODAY', label: `📅 ต้องทำวันนี้ (${combinedTasks.filter((t) => t.isPickupToday || t.isReturnToday).length})` },
+            { key: 'ALL', label: `ทั้งหมด (${allDisplayTasks.length})` },
+            { key: 'TODAY', label: `📅 ต้องทำวันนี้ (${allDisplayTasks.filter((t: any) => t.isPickupToday || t.isReturnToday).length})` },
             { key: 'UPCOMING', label: '⏳ ตามกำหนดการ' },
-            { key: 'OVERDUE', label: `🚨 เกินกำหนดคืน (${combinedTasks.filter((t) => t.isOverdue).length})` },
+            { key: 'OVERDUE', label: `🚨 เกินกำหนดคืน (${allDisplayTasks.filter((t: any) => t.isOverdue).length})` },
           ].map((tab) => (
             <button
               key={tab.key}
@@ -428,7 +480,269 @@ export default function SchedulePage() {
             ไม่มีคิวงานที่ตรงกับเงื่อนไขในขณะนี้
           </div>
         ) : (
-          filteredTasks.map((task) => (
+          filteredTasks.map((task: any) => {
+            if (task.type === 'PRACTICE_EVENT') {
+              const isExpanded = expandedSlotIds[task.id] !== false; // default expanded
+              const checkedInCount = task.students.filter((s: any) => s.status === 'CHECKED_IN').length;
+              const completedCount = task.students.filter((s: any) => s.status === 'COMPLETED').length;
+              const kitKeys = Object.keys(task.kitsSummary);
+
+              return (
+                <div
+                  key={`event-${task.id}`}
+                  className="bg-white rounded-3xl border-2 border-indigo-200/90 shadow-md shadow-indigo-500/5 overflow-hidden transition"
+                >
+                  {/* Event Header Banner */}
+                  <div className="bg-gradient-to-r from-indigo-900 via-slate-900 to-teal-950 p-4 sm:p-5 text-white">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 flex items-center gap-1">
+                            <Sparkles className="w-3 h-3 text-indigo-300" />
+                            <span>รอบฝึกปฏิบัติการ (Practice Session Event)</span>
+                          </span>
+                          {task.isPickupToday && (
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-500 text-white shadow-sm animate-pulse">
+                              ⚡ เข้าฝึกวันนี้!
+                            </span>
+                          )}
+                        </div>
+
+                        <h3 className="text-base sm:text-lg font-black tracking-tight text-white flex items-center gap-2 mt-1">
+                          <MapPin className="w-5 h-5 text-teal-400 flex-shrink-0" />
+                          <span>{task.roomName}</span>
+                          {task.roomCode && (
+                            <span className="text-xs font-mono font-bold text-teal-300/80 bg-teal-900/50 px-2 py-0.5 rounded border border-teal-500/30">
+                              {task.roomCode}
+                            </span>
+                          )}
+                        </h3>
+
+                        <div className="flex flex-wrap items-center gap-4 text-xs text-slate-300 pt-0.5 font-medium">
+                          <div className="flex items-center gap-1.5 text-white font-bold">
+                            <Calendar className="w-3.5 h-3.5 text-teal-400" />
+                            <span>{formatDate(task.pickupDate)}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-white font-bold">
+                            <Clock className="w-3.5 h-3.5 text-teal-400" />
+                            <span>รอบเวลา: {task.timeSlot}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right Stats & Controls */}
+                      <div className="flex items-center gap-3">
+                        <div className="bg-white/10 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-white/10 text-right">
+                          <span className="text-[10px] text-slate-300 block uppercase font-bold">ผู้เข้าฝึกในรอบนี้</span>
+                          <div className="text-sm font-black text-white flex items-center justify-end gap-1.5">
+                            <Users className="w-4 h-4 text-teal-400" />
+                            <span>{task.students.length} / {task.maxCapacity} คน</span>
+                          </div>
+                          {checkedInCount > 0 && (
+                            <span className="text-[10px] text-emerald-400 font-bold block">
+                              กำลังฝึก {checkedInCount} คน
+                            </span>
+                          )}
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => toggleSlotExpand(task.id)}
+                          className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition cursor-pointer"
+                          title="ย่อ/ขยายรายละเอียดนิสิตในรอบนี้"
+                        >
+                          {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Summary Bar: Kits and Preparation Checklist */}
+                  <div className="bg-slate-50 border-b border-slate-200/80 p-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                    {/* Equipment & Practice Kits Required in this Slot */}
+                    <div className="space-y-1.5">
+                      <span className="text-[11px] font-bold text-slate-500 uppercase flex items-center gap-1.5">
+                        <Package className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>ชุดอุปกรณ์ที่ต้องจัดเตรียมในรอบนี้ ({kitKeys.length} ชนิด):</span>
+                      </span>
+                      {kitKeys.length === 0 ? (
+                        <span className="text-slate-400 text-xs italic block">
+                          ใช้อุปกรณ์และหุ่นประจำเตียงห้องแล็บทั่วไป (ไม่ต้องเบิกชุดฝึกเพิ่ม)
+                        </span>
+                      ) : (
+                        <div className="flex flex-wrap gap-1.5">
+                          {kitKeys.map((kId) => {
+                            const kit = task.kitsSummary[kId];
+                            return (
+                              <span
+                                key={kId}
+                                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white border border-indigo-200 text-indigo-900 font-bold text-xs shadow-sm"
+                              >
+                                <Sparkles className="w-3 h-3 text-indigo-600" />
+                                <span>{kit.name}</span>
+                                <span className="bg-indigo-600 text-white text-[10px] px-1.5 py-0.2 rounded-full font-black">
+                                  {kit.count} ชุด
+                                </span>
+                              </span>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Additional Equipment Requests */}
+                    <div className="space-y-1.5">
+                      <span className="text-[11px] font-bold text-slate-500 uppercase flex items-center gap-1.5">
+                        <Boxes className="w-3.5 h-3.5 text-teal-600" />
+                        <span>อุปกรณ์เสริมที่นิสิตขอเพิ่มเติม ({task.additionalItems.length} รายการ):</span>
+                      </span>
+                      {task.additionalItems.length === 0 ? (
+                        <span className="text-slate-400 text-xs italic block">ไม่มีอุปกรณ์เสริมเพิ่มเติม</span>
+                      ) : (
+                        <div className="space-y-1">
+                          {task.additionalItems.map((itemStr: string, idx: number) => (
+                            <div
+                              key={idx}
+                              className="text-slate-700 bg-amber-50/70 border border-amber-200 px-2.5 py-1 rounded-lg text-xs"
+                            >
+                              • {itemStr}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Collapsible Students Table */}
+                  {isExpanded && (
+                    <div className="p-4 sm:p-5 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-700">
+                          รายชื่อนิสิตที่ได้รับการอนุมัติในรอบเวลานี้ ({task.students.length} คน):
+                        </span>
+                        <Link
+                          href="/practice"
+                          className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+                        >
+                          <QrCode className="w-3.5 h-3.5" />
+                          <span>ไปจุดสแกน QR เช็คอิน</span>
+                        </Link>
+                      </div>
+
+                      <div className="divide-y divide-slate-100 border border-slate-200 rounded-2xl overflow-hidden">
+                        {task.students.map((studentBooking: any, idx: number) => {
+                          const isPending = studentBooking.status === 'PENDING';
+                          const isApproved = studentBooking.status === 'APPROVED';
+                          const isCheckedIn = studentBooking.status === 'CHECKED_IN';
+                          const isCompleted = studentBooking.status === 'COMPLETED';
+
+                          return (
+                            <div
+                              key={studentBooking.id}
+                              className="p-3.5 bg-white hover:bg-slate-50/80 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                            >
+                              <div className="flex items-start gap-3">
+                                <span className="w-6 h-6 rounded-full bg-slate-100 text-slate-600 font-bold flex items-center justify-center text-[11px] flex-shrink-0 mt-0.5">
+                                  {idx + 1}
+                                </span>
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="font-bold text-slate-900 text-sm">
+                                      {studentBooking.user?.name}
+                                    </span>
+                                    {studentBooking.user?.studentId && (
+                                      <span className="font-mono text-[10px] text-teal-700 bg-teal-50 px-1.5 py-0.2 rounded border border-teal-200">
+                                        {studentBooking.user.studentId}
+                                      </span>
+                                    )}
+                                    <span className="font-mono text-[10px] text-slate-500">
+                                      ({studentBooking.bookingNumber})
+                                    </span>
+                                  </div>
+
+                                  <div className="flex flex-wrap items-center gap-3 text-slate-600">
+                                    <div>
+                                      <span className="text-slate-400 font-semibold">หัตถการ: </span>
+                                      <strong className="text-slate-800">{studentBooking.skillTopic}</strong>
+                                    </div>
+                                    {studentBooking.course ? (
+                                      <span className="text-[11px] text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-100">
+                                        [{studentBooking.course.code}] {studentBooking.course.name}
+                                      </span>
+                                    ) : (
+                                      <span className="text-[11px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                                        ฝึกอิสระ/OSCE
+                                      </span>
+                                    )}
+                                    {studentBooking.advisorName && (
+                                      <span className="text-[11px] text-indigo-700 font-medium flex items-center gap-1">
+                                        <GraduationCap className="w-3.5 h-3.5 text-indigo-500" />
+                                        <span>อาจารย์: {studentBooking.advisorName}</span>
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {studentBooking.additionalEquipment && (
+                                    <div className="text-[11px] text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 inline-block font-medium">
+                                      ขอเพิ่ม: {studentBooking.additionalEquipment}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Status Badge per student */}
+                              <div className="flex items-center gap-2 self-end sm:self-center">
+                                {isApproved && (
+                                  <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-teal-100 text-teal-800 border border-teal-200 flex items-center gap-1">
+                                    <Clock className="w-3 h-3 text-teal-600" />
+                                    <span>อนุมัติแล้ว (รอเข้าแล็บ)</span>
+                                  </span>
+                                )}
+                                {isCheckedIn && (
+                                  <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200 flex items-center gap-1 animate-pulse">
+                                    <Sparkles className="w-3 h-3 text-indigo-600" />
+                                    <span>กำลังฝึกในห้องแล็บ</span>
+                                  </span>
+                                )}
+                                {isCompleted && (
+                                  <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+                                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                    <span>ฝึกเสร็จสิ้น</span>
+                                  </span>
+                                )}
+                                {isPending && (
+                                  <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 flex items-center gap-1">
+                                    <Clock className="w-3 h-3 text-amber-600" />
+                                    <span>รออนุมัติ</span>
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Event Card Footer */}
+                      <div className="flex items-center justify-between pt-2">
+                        <span className="text-[11px] text-slate-500">
+                          * เจ้าหน้าที่สามารถตรวจสอบการเข้าฝึกและสแกน QR Code เพื่อบันทึกเวลาได้ที่หน้าระบบฝึกปฏิบัติ
+                        </span>
+                        <Link
+                          href="/practice"
+                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-teal-600 hover:from-indigo-500 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-indigo-600/20 transition cursor-pointer"
+                        >
+                          <QrCode className="w-4 h-4" />
+                          <span>เปิดจุดสแกนรับนิสิตรอบนี้</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </Link>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            return (
             <div
               key={`${task.type}-${task.id}`}
               className={`bg-white rounded-2xl border p-5 shadow-sm space-y-4 transition hover:shadow-md ${
@@ -659,13 +973,11 @@ export default function SchedulePage() {
 
                 {/* Direct shortcut to action page */}
                 <Link
-                  href={task.type === 'BORROW' ? '/borrow' : task.type === 'REQUISITION' ? '/requisitions' : '/practice'}
+                  href={task.type === 'BORROW' ? '/borrow' : '/requisitions'}
                   className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold transition shadow-sm"
                 >
                   <span>
-                    {task.type === 'PRACTICE'
-                      ? 'ไปหน้าระบบฝึกปฏิบัติ / สแกน QR'
-                      : task.status === 'APPROVED'
+                    {task.status === 'APPROVED'
                       ? 'ไปหน้าบันทึกจ่ายของ'
                       : 'ไปหน้าตรวจรับคืน'}
                   </span>
@@ -673,8 +985,9 @@ export default function SchedulePage() {
                 </Link>
               </div>
             </div>
-          ))
-        )}
+          );
+        })
+      )}
       </div>
 
       {/* Modal: Edit Dates (Admin & Officer) */}

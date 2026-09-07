@@ -36,7 +36,8 @@ import {
   LayoutGrid,
   CalendarRange,
   Edit,
-  Trash2
+  Trash2,
+  Package
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
@@ -61,6 +62,7 @@ export default function PracticePage() {
   const [stats, setStats] = useState<any>(null);
   const [courses, setCourses] = useState<any[]>([]);
   const [practiceKits, setPracticeKits] = useState<any[]>([]);
+  const [teachers, setTeachers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
@@ -87,6 +89,7 @@ export default function PracticePage() {
     maxCapacity: 6,
     isOpen: true,
     closeReason: '',
+    availableSkills: '',
   });
 
   // Edit Slot / Event Modal State (Staff / Teacher)
@@ -99,6 +102,7 @@ export default function PracticePage() {
     maxCapacity: 6,
     isOpen: true,
     closeReason: '',
+    availableSkills: '',
   });
 
   // Slot Detail Modal (Opened directly when clicking a slot pill on calendar)
@@ -109,10 +113,13 @@ export default function PracticePage() {
   const [slotForBooking, setSlotForBooking] = useState<any>(null);
   const [bookingForm, setBookingForm] = useState({
     skillTopic: '',
+    isCustomSkill: false,
+    customSkillText: '',
     objectives: '',
     advisorName: '',
     courseId: '',
     practiceKitId: '',
+    additionalEquipment: '',
   });
 
   // Slot Management Modal State (Close/Open Slot)
@@ -163,7 +170,7 @@ export default function PracticePage() {
       const year = currentMonth.getFullYear();
       const month = currentMonth.getMonth() + 1;
 
-      const [slotsRes, roomsRes, bookingsRes, configRes, statsRes, coursesRes, kitsRes] = await Promise.all([
+      const [slotsRes, roomsRes, bookingsRes, configRes, statsRes, coursesRes, kitsRes, usersRes] = await Promise.all([
         fetch(`/api/practice/slots?year=${year}&month=${month}`),
         fetch('/api/practice/rooms'),
         fetch(`/api/practice/bookings${currentUser?.role === 'USER' && !isTeacher ? `?userId=${currentUser.id}` : ''}`),
@@ -171,6 +178,7 @@ export default function PracticePage() {
         fetch(`/api/practice/stats${currentUser?.id ? `?userId=${currentUser.id}` : ''}`),
         fetch('/api/courses'),
         fetch('/api/kits'),
+        fetch('/api/users'),
       ]);
 
       if (slotsRes.ok) setSlots(await slotsRes.json());
@@ -194,6 +202,22 @@ export default function PracticePage() {
       if (statsRes.ok) setStats(await statsRes.json());
       if (coursesRes.ok) setCourses(await coursesRes.json());
       if (kitsRes.ok) setPracticeKits(await kitsRes.json());
+      if (usersRes.ok) {
+        const uList = await usersRes.json();
+        // Filter approvers/teachers
+        const tList = Array.isArray(uList)
+          ? uList.filter(
+              (u: any) =>
+                u.role === 'APPROVER' ||
+                u.email?.includes('teacher') ||
+                u.name?.startsWith('อ.') ||
+                u.name?.startsWith('ผศ.') ||
+                u.name?.startsWith('รศ.') ||
+                u.name?.startsWith('ดร.')
+            )
+          : [];
+        setTeachers(tList);
+      }
     } catch (err) {
       console.error('Error fetching practice data:', err);
     } finally {
@@ -298,6 +322,7 @@ export default function PracticePage() {
           maxCapacity: Number(createSlotForm.maxCapacity) || 6,
           isOpen: createSlotForm.isOpen,
           closeReason: createSlotForm.closeReason || null,
+          availableSkills: createSlotForm.availableSkills || null,
         }),
       });
 
@@ -327,6 +352,7 @@ export default function PracticePage() {
       maxCapacity: slot.maxCapacity,
       isOpen: slot.isOpen,
       closeReason: slot.closeReason || '',
+      availableSkills: slot.availableSkills || '',
     });
   };
 
@@ -347,6 +373,7 @@ export default function PracticePage() {
           maxCapacity: Number(editSlotForm.maxCapacity) || 6,
           isOpen: editSlotForm.isOpen,
           closeReason: editSlotForm.isOpen ? null : editSlotForm.closeReason || 'ปิดรอบโดยเจ้าหน้าที่',
+          availableSkills: editSlotForm.availableSkills || null,
         }),
       });
 
@@ -392,12 +419,25 @@ export default function PracticePage() {
   // 2. Actions: Book Slot
   const handleOpenBookingModal = (slot: any) => {
     setSlotForBooking(slot);
+    const slotSkills = slot.availableSkills
+      ? slot.availableSkills.split(',').map((s: string) => s.trim()).filter(Boolean)
+      : [];
+    const defaultSkill = slotSkills.length > 0 ? slotSkills[0] : '';
+    
+    // Attempt to match practice kit
+    const matchedKit = practiceKits.find((k: any) =>
+      defaultSkill && (k.name.includes(defaultSkill) || defaultSkill.includes(k.name.slice(0, 5)))
+    );
+
     setBookingForm({
-      skillTopic: '',
+      skillTopic: defaultSkill,
+      isCustomSkill: slotSkills.length === 0,
+      customSkillText: '',
       objectives: '',
-      advisorName: courses.length > 0 ? courses[0].instructorName : '',
+      advisorName: courses.length > 0 ? courses[0].instructorName : (teachers.length > 0 ? teachers[0].name : ''),
       courseId: courses.length > 0 ? courses[0].id : '',
-      practiceKitId: '',
+      practiceKitId: matchedKit ? matchedKit.id : '',
+      additionalEquipment: '',
     });
     setShowBookingModal(true);
   };
@@ -408,17 +448,28 @@ export default function PracticePage() {
     setSubmitting(true);
 
     try {
+      const finalSkill = bookingForm.isCustomSkill
+        ? bookingForm.customSkillText.trim()
+        : bookingForm.skillTopic;
+
+      if (!finalSkill) {
+        alert('กรุณาระบุหัตถการทางการพยาบาลที่ต้องการฝึกปฏิบัติ');
+        setSubmitting(false);
+        return;
+      }
+
       const res = await fetch('/api/practice/bookings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: currentUser.id,
           slotId: slotForBooking.id,
-          skillTopic: bookingForm.skillTopic,
+          skillTopic: finalSkill,
           objectives: bookingForm.objectives,
           advisorName: bookingForm.advisorName,
           courseId: bookingForm.courseId || null,
           practiceKitId: bookingForm.practiceKitId || null,
+          additionalEquipment: bookingForm.additionalEquipment || null,
         }),
       });
 
@@ -888,6 +939,7 @@ export default function PracticePage() {
                         maxCapacity: 6,
                         isOpen: true,
                         closeReason: '',
+                        availableSkills: '',
                       });
                       setShowCreateSlotModal(true);
                     }}
@@ -985,6 +1037,7 @@ export default function PracticePage() {
                                   maxCapacity: 6,
                                   isOpen: true,
                                   closeReason: '',
+                                  availableSkills: '',
                                 });
                                 setShowCreateSlotModal(true);
                               }}
@@ -1094,6 +1147,7 @@ export default function PracticePage() {
                           maxCapacity: 6,
                           isOpen: true,
                           closeReason: '',
+                          availableSkills: '',
                         });
                         setShowCreateSlotModal(true);
                       }}
@@ -1524,7 +1578,13 @@ export default function PracticePage() {
                         {b.advisorName && (
                           <div className="flex items-center gap-1 text-[11px] font-semibold text-indigo-700">
                             <GraduationCap className="w-3.5 h-3.5 text-indigo-600" />
-                            <span>อาจารย์ผู้สอน: {b.advisorName}</span>
+                            <span>อาจารย์ผู้ดูแล: {b.advisorName}</span>
+                          </div>
+                        )}
+                        {b.additionalEquipment && (
+                          <div className="flex items-center gap-1 text-[11px] font-medium text-amber-800 bg-amber-50 border border-amber-200 px-2 py-1 rounded-lg">
+                            <Package className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
+                            <span>อุปกรณ์ขอเพิ่ม: <strong>{b.additionalEquipment}</strong></span>
                           </div>
                         )}
                       </div>
@@ -1886,6 +1946,23 @@ export default function PracticePage() {
                 </div>
               </div>
 
+              {/* Recommended Skills Preset Input */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  หัตถการที่เปิดให้ฝึกในรอบนี้ (คั่นด้วยเครื่องหมายจุลภาค ,)
+                </label>
+                <input
+                  type="text"
+                  placeholder="เช่น การฉีดยา IM/SC, การใส่สายสวนปัสสาวะ, การทำแผล Dressing"
+                  value={createSlotForm.availableSkills}
+                  onChange={(e) => setCreateSlotForm({ ...createSlotForm, availableSkills: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                />
+                <p className="text-[10px] text-slate-400 mt-1">
+                  💡 หากเว้นว่างไว้ นิสิตจะสามารถพิมพ์ระบุหัตถการที่ต้องการฝึกได้อย่างอิสระ
+                </p>
+              </div>
+
               {/* Status toggle */}
               <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200">
                 <input
@@ -2052,6 +2129,23 @@ export default function PracticePage() {
                     />
                   </div>
                 </div>
+              </div>
+
+              {/* Recommended Skills Preset Input */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  หัตถการที่เปิดให้ฝึกในรอบนี้ (คั่นด้วยเครื่องหมายจุลภาค ,)
+                </label>
+                <input
+                  type="text"
+                  placeholder="เช่น การฉีดยา IM/SC, การใส่สายสวนปัสสาวะ, การทำแผล Dressing"
+                  value={editSlotForm.availableSkills}
+                  onChange={(e) => setEditSlotForm({ ...editSlotForm, availableSkills: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                />
+                <p className="text-[10px] text-slate-400 mt-1">
+                  💡 หากเว้นว่างไว้ นิสิตจะสามารถพิมพ์ระบุหัตถการที่ต้องการฝึกได้อย่างอิสระ
+                </p>
               </div>
 
               {/* Status toggle & Reason */}
@@ -2295,76 +2389,207 @@ export default function PracticePage() {
             </div>
 
             <form onSubmit={handleSubmitBooking} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  หัตถการทางการพยาบาลที่ต้องการฝึกปฏิบัติ *
+              {/* 1. Skill Selection: Pick from Slot's available skills OR Custom */}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-slate-700">
+                  หัตถการทางการพยาบาลที่ต้องการฝึกปฏิบัติ <span className="text-rose-500">*</span>
                 </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="เช่น การฉีดยา IM/SC, การใส่สายสวนปัสสาวะ, การทำแผล Dressing"
-                  value={bookingForm.skillTopic}
-                  onChange={(e) => setBookingForm({ ...bookingForm, skillTopic: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
-                />
+
+                {(() => {
+                  const slotSkills = slotForBooking.availableSkills
+                    ? slotForBooking.availableSkills.split(',').map((s: string) => s.trim()).filter(Boolean)
+                    : [];
+
+                  return (
+                    <div className="space-y-2">
+                      {slotSkills.length > 0 ? (
+                        <div className="space-y-2">
+                          <span className="text-[11px] text-slate-500 block">
+                            💡 หัตถการที่เจ้าหน้าที่เปิดให้บริการในรอบนี้ (คลิกเพื่อเลือก):
+                          </span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {slotSkills.map((sk: string) => {
+                              const isSelected = !bookingForm.isCustomSkill && bookingForm.skillTopic === sk;
+                              return (
+                                <button
+                                  type="button"
+                                  key={sk}
+                                  onClick={() => {
+                                    // Auto-link to matching practice kit if found
+                                    const matched = practiceKits.find((k: any) =>
+                                      k.name.includes(sk) || sk.includes(k.name.slice(0, 5))
+                                    );
+                                    setBookingForm({
+                                      ...bookingForm,
+                                      skillTopic: sk,
+                                      isCustomSkill: false,
+                                      practiceKitId: matched ? matched.id : bookingForm.practiceKitId,
+                                    });
+                                  }}
+                                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                                    isSelected
+                                      ? 'bg-teal-600 text-white shadow-sm ring-2 ring-teal-600/30'
+                                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                  }`}
+                                >
+                                  {isSelected && <Check className="w-3 h-3" />}
+                                  <span>{sk}</span>
+                                </button>
+                              );
+                            })}
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setBookingForm({
+                                  ...bookingForm,
+                                  isCustomSkill: true,
+                                })
+                              }
+                              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 ${
+                                bookingForm.isCustomSkill
+                                  ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-600/30'
+                                  : 'bg-slate-100 text-indigo-700 hover:bg-indigo-50 border border-dashed border-indigo-300'
+                              }`}
+                            >
+                              <Plus className="w-3 h-3" />
+                              <span>+ ระบุหัตถการอื่นเพิ่มเติม</span>
+                            </button>
+                          </div>
+                        </div>
+                      ) : null}
+
+                      {(slotSkills.length === 0 || bookingForm.isCustomSkill) && (
+                        <div className="space-y-1 animate-in fade-in duration-150">
+                          <input
+                            type="text"
+                            required
+                            placeholder="ระบุชื่อหัตถการที่ต้องการฝึก เช่น เจาะเลือด (Venipuncture), สวนล้างกระเพาะอาหาร"
+                            value={bookingForm.customSkillText}
+                            onChange={(e) =>
+                              setBookingForm({
+                                ...bookingForm,
+                                customSkillText: e.target.value,
+                                skillTopic: e.target.value,
+                              })
+                            }
+                            className="w-full bg-slate-50 border border-indigo-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                          />
+                          {slotSkills.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setBookingForm({
+                                  ...bookingForm,
+                                  isCustomSkill: false,
+                                  skillTopic: slotSkills[0] || '',
+                                })
+                              }
+                              className="text-[10px] text-slate-500 hover:text-slate-800 underline"
+                            >
+                              ← กลับไปเลือกหัตถการประจำรอบ
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  รายวิชาที่เกี่ยวข้อง
-                </label>
-                <select
-                  value={bookingForm.courseId}
-                  onChange={(e) => {
-                    const cid = e.target.value;
-                    const c = courses.find((x) => x.id === cid);
-                    setBookingForm({
-                      ...bookingForm,
-                      courseId: cid,
-                      advisorName: c?.instructorName || bookingForm.advisorName,
-                    });
-                  }}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
-                >
-                  <option value="">-- ไม่ระบุรายวิชา (ฝึกทักษะทั่วไป) --</option>
-                  {courses.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      [{c.code}] {c.name} (อ.ผู้สอน: {c.instructorName})
-                    </option>
-                  ))}
-                </select>
+              {/* 2. Course & Advisor Selection */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    รายวิชาที่เกี่ยวข้อง
+                  </label>
+                  <select
+                    value={bookingForm.courseId}
+                    onChange={(e) => {
+                      const cid = e.target.value;
+                      const c = courses.find((x) => x.id === cid);
+                      setBookingForm({
+                        ...bookingForm,
+                        courseId: cid,
+                        advisorName: c?.instructorName || (teachers.length > 0 ? teachers[0].name : ''),
+                      });
+                    }}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  >
+                    <option value="">-- ไม่อยู่ในรายวิชา (ฝึกอิสระ/OSCE) --</option>
+                    {courses.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        [{c.code}] {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    {bookingForm.courseId ? 'อาจารย์ผู้สอนประจำวิชา' : 'อาจารย์ที่ปรึกษาที่ให้คำรับรอง'} <span className="text-rose-500">*</span>
+                  </label>
+                  {bookingForm.courseId ? (
+                    <div className="p-2.5 bg-slate-100 rounded-xl border border-slate-200 text-xs font-bold text-teal-800 flex items-center gap-1.5">
+                      <GraduationCap className="w-4 h-4 text-teal-600" />
+                      <span>{bookingForm.advisorName || 'อาจารย์ประจำวิชา'}</span>
+                    </div>
+                  ) : (
+                    <select
+                      required
+                      value={bookingForm.advisorName}
+                      onChange={(e) => setBookingForm({ ...bookingForm, advisorName: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                    >
+                      <option value="">-- เลือกอาจารย์ที่ปรึกษา --</option>
+                      {teachers.map((t) => (
+                        <option key={t.id} value={t.name}>
+                          {t.name} ({t.department || 'คณะพยาบาลศาสตร์'})
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  อาจารย์ผู้สอนหรืออาจารย์ที่ปรึกษาที่ให้คำรับรอง *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="เช่น อ. สมหญิง ใจดี"
-                  value={bookingForm.advisorName}
-                  onChange={(e) => setBookingForm({ ...bookingForm, advisorName: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
-                />
-              </div>
+              {/* 3. Practice Kit & Additional Equipment */}
+              <div className="space-y-3 bg-slate-50/70 p-3.5 rounded-2xl border border-slate-200">
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-700">
+                      ชุดฝึกสำเร็จรูปที่ต้องการเบิกใช้ร่วม (Practice Kit)
+                    </label>
+                    <span className="text-[10px] text-slate-500">จับคู่ตามหัตถการให้อัตโนมัติ</span>
+                  </div>
+                  <select
+                    value={bookingForm.practiceKitId}
+                    onChange={(e) => setBookingForm({ ...bookingForm, practiceKitId: e.target.value })}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  >
+                    <option value="">-- ไม่มี / ใช้อุปกรณ์และหุ่นประจำห้องแล็บ --</option>
+                    {practiceKits.map((k) => (
+                      <option key={k.id} value={k.id}>
+                        {k.code}: {k.name} ({k.category})
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  ชุดอุปกรณ์ฝึกที่ต้องการเบิกใช้ร่วม (ถ้ามี)
-                </label>
-                <select
-                  value={bookingForm.practiceKitId}
-                  onChange={(e) => setBookingForm({ ...bookingForm, practiceKitId: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
-                >
-                  <option value="">-- ไม่มี / ใช้อุปกรณ์ประจำห้องแล็บ --</option>
-                  {practiceKits.map((k) => (
-                    <option key={k.id} value={k.id}>
-                      {k.code}: {k.name} ({k.category})
-                    </option>
-                  ))}
-                </select>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    อุปกรณ์ที่ต้องการขอเพิ่มเติม (ถ้ามี)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="เช่น ขอแผ่นปิดแผล Hydrocolloid 1 แผ่น, เข็มผีเสื้อเบอร์ 24, ถุงมือเบอร์ S"
+                    value={bookingForm.additionalEquipment}
+                    onChange={(e) => setBookingForm({ ...bookingForm, additionalEquipment: e.target.value })}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  />
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">
+                    เจ้าหน้าที่จะเตรียมอุปกรณ์เสริมนี้ไว้ให้พร้อมกับชุดฝึก
+                  </span>
+                </div>
               </div>
 
               <div>

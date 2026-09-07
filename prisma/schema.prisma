@@ -369,6 +369,7 @@ model PracticeSlot {
   maxCapacity Int               @default(6) // จำนวนนิสิตสูงสุดในรอบนี้
   isOpen      Boolean           @default(true) // เปิด/ปิด ให้จองได้
   closeReason String?           // เหตุผลหากปิดรอบ เช่น "ติดสอนวิชาปฏิบัติการประจำ", "ทำความสะอาด/ฆ่าเชื้อ"
+  availableSkills String?       // หัตถการที่เปิดให้ฝึกในรอบนี้ (คั่นด้วยจุลภาค เช่น "ฉีดยา IM/SC, เจาะเลือด, ทำแผล") ถ้าว่างคือฝึกทั่วไป
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
 
@@ -393,6 +394,7 @@ model PracticeBooking {
   course          Course?        @relation(fields: [courseId], references: [id])
   practiceKitId   String?
   practiceKit     PracticeKit?   @relation(fields: [practiceKitId], references: [id])
+  additionalEquipment String?    // อุปกรณ์ที่ต้องการขอเพิ่มเติม เช่น แผ่น Hydrocolloid, เข็มเบอร์ 24
   
   status          String         @default("PENDING") // "PENDING", "APPROVED", "REJECTED", "CHECKED_IN", "COMPLETED", "CANCELLED"
   approverId      String?

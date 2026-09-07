@@ -21,7 +21,8 @@ import {
   GraduationCap,
   QrCode,
   Sparkles,
-  MapPin
+  MapPin,
+  Package
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
@@ -814,6 +815,12 @@ export default function ApprovalsPage() {
                         <div className="flex items-center gap-2 text-slate-700">
                           <Sparkles className="w-4 h-4 text-amber-600 flex-shrink-0" />
                           <span>ชุดฝึกที่ขอเบิก: <strong className="text-amber-800">{b.practiceKit.name}</strong></span>
+                        </div>
+                      )}
+                      {b.additionalEquipment && (
+                        <div className="flex items-center gap-2 text-slate-700 sm:col-span-2">
+                          <Package className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                          <span>อุปกรณ์ขอเพิ่ม: <strong className="text-amber-800">{b.additionalEquipment}</strong></span>
                         </div>
                       )}
                     </div>

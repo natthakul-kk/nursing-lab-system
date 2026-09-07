@@ -48,6 +48,7 @@ export async function POST(req: Request) {
       advisorName,
       courseId,
       practiceKitId,
+      additionalEquipment,
     } = body;
 
     if (!userId || !slotId || !skillTopic) {
@@ -166,6 +167,7 @@ export async function POST(req: Request) {
         advisorName: finalAdvisorName,
         courseId: courseId || null,
         practiceKitId: practiceKitId || null,
+        additionalEquipment: additionalEquipment || null,
         status: 'PENDING',
         qrCodeToken,
       },

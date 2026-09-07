@@ -5,7 +5,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   try {
     const { id } = await params;
     const body = await req.json();
-    const { isOpen, closeReason, maxCapacity, startTime, endTime, roomId, date } = body;
+    const { isOpen, closeReason, maxCapacity, startTime, endTime, roomId, date, availableSkills } = body;
 
     const dataToUpdate: any = {};
     if (isOpen !== undefined) {
@@ -16,6 +16,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     }
     if (closeReason !== undefined) {
       dataToUpdate.closeReason = closeReason;
+    }
+    if (availableSkills !== undefined) {
+      dataToUpdate.availableSkills = availableSkills || null;
     }
     if (maxCapacity !== undefined) {
       dataToUpdate.maxCapacity = Number(maxCapacity);

@@ -113,7 +113,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { roomId, date, startTime, endTime, maxCapacity, isOpen, closeReason } = body;
+    const { roomId, date, startTime, endTime, maxCapacity, isOpen, closeReason, availableSkills } = body;
 
     if (!roomId || !date || !startTime || !endTime) {
       return NextResponse.json({ error: 'กรุณากรอกข้อมูลห้อง, วันที่, และเวลาให้ครบถ้วน' }, { status: 400 });
@@ -131,6 +131,7 @@ export async function POST(req: Request) {
         maxCapacity: Number(maxCapacity) || 6,
         isOpen: isOpen !== undefined ? isOpen : true,
         closeReason: closeReason || null,
+        availableSkills: availableSkills || null,
       },
       include: {
         room: true,

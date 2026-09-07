@@ -107,7 +107,7 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
       groupIcon: RefreshCw,
       items: [
         {
-          label: 'เบิก-ยืมพัสดุและครุภัณฑ์',
+          label: 'ยืม-คืนครุภัณฑ์ & เบิกพัสดุ',
           href: '/borrow',
           icon: RefreshCw,
           roles: ['ADMIN', 'OFFICER', 'APPROVER', 'USER'],

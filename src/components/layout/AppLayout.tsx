@@ -79,7 +79,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
           }`}
         >
           <Boxes className="w-5 h-5" />
-          <span className="text-[10px]">เบิก-ยืม</span>
+          <span className="text-[10px]">ยืม-คืน</span>
         </Link>
 
         {/* Floating Center QR Scan Button */}

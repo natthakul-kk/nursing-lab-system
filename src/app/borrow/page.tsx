@@ -143,6 +143,11 @@ export default function BorrowPage() {
 
   useEffect(() => {
     fetchBorrowData();
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const s = params.get('status') || params.get('tab');
+      if (s) setFilterStatus(s);
+    }
   }, []);
 
   const handleCreateRequest = async (e: React.FormEvent) => {
@@ -389,22 +394,34 @@ export default function BorrowPage() {
             { key: 'ALL', label: 'ทั้งหมด' },
             { key: 'PENDING', label: 'รออนุมัติ' },
             { key: 'APPROVED', label: 'รอจ่ายของ' },
-            { key: 'BORROWED', label: 'กำลังยืมอยู่' },
-            { key: 'RETURNED_COMPLETE', label: 'คืนสมบูรณ์' },
-            { key: 'RETURNED_WITH_ISSUE', label: 'ชำรุด/มีปัญหา' },
-          ].map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setFilterStatus(tab.key)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
-                filterStatus === tab.key
-                  ? 'bg-teal-600 text-white shadow-sm'
-                  : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+            { key: 'BORROWED', label: '🔄 กำลังยืมอยู่ (รอส่งคืน/ตรวจรับคืน)' },
+            { key: 'RETURNED_COMPLETE', label: 'คืนแล้ว (สมบูรณ์)' },
+            { key: 'RETURNED_WITH_ISSUE', label: 'คืนแล้ว (พบชำรุด)' },
+          ].map((tab) => {
+            const count = tab.key === 'ALL'
+              ? requests.length
+              : requests.filter((b: any) => b.status === tab.key).length;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setFilterStatus(tab.key)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                  filterStatus === tab.key
+                    ? 'bg-teal-600 text-white shadow-sm'
+                    : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <span>{tab.label}</span>
+                {count > 0 && (
+                  <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                    filterStatus === tab.key ? 'bg-white/25 text-white' : 'bg-slate-200 text-slate-700'
+                  }`}>
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
         {/* View Scope (Toggle for Staff / Info pill for Student) */}
@@ -438,6 +455,25 @@ export default function BorrowPage() {
           </div>
         )}
       </div>
+
+      {/* Return Helper Info Banner */}
+      {filterStatus === 'BORROWED' && (
+        <div className="bg-purple-50/90 border border-purple-200 text-purple-950 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-purple-600 text-white flex items-center justify-center flex-shrink-0 shadow-md shadow-purple-600/20">
+              <RotateCcw className="w-5 h-5" />
+            </div>
+            <div>
+              <strong className="text-purple-900 text-sm font-bold block">ศูนย์ตรวจรับคืนอุปกรณ์ (Equipment Return & Check-in)</strong>
+              <p className="text-purple-700 text-xs font-medium mt-0.5">
+                {isOfficer
+                  ? 'เมื่อผู้ยืมนำอุปกรณ์มาส่งคืน ให้เจ้าหน้าที่กดปุ่มสีม่วง "ตรวจรับคืนอุปกรณ์ (Check-in & Inspect)" ในรายการด้านล่าง เพื่อตรวจสภาพรายชิ้นและนำกลับเข้าคลังพร้อมใช้'
+                  : 'รายการที่ท่านกำลังยืมอยู่ เมื่อใช้งานเสร็จเรียบร้อย กรุณานำอุปกรณ์มาส่งคืนและตรวจเช็คสภาพกับเจ้าหน้าที่ที่ห้องปฏิบัติการ'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Requests List */}
       <div className="space-y-4">

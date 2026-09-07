@@ -973,7 +973,13 @@ export default function SchedulePage() {
 
                 {/* Direct shortcut to action page */}
                 <Link
-                  href={task.type === 'BORROW' ? '/borrow' : '/requisitions'}
+                  href={
+                    task.type === 'BORROW'
+                      ? task.status === 'APPROVED'
+                        ? '/borrow?status=APPROVED'
+                        : '/borrow?status=BORROWED'
+                      : '/requisitions'
+                  }
                   className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold transition shadow-sm"
                 >
                   <span>

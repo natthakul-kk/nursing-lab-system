@@ -336,14 +336,22 @@ export default function RequisitionsPage() {
                   <p className="text-slate-800 font-medium leading-relaxed">{req.purpose}</p>
                 </div>
 
-                <div className="text-right flex flex-col justify-center">
+                <div className="text-right flex flex-col justify-center bg-slate-50 p-2.5 rounded-xl border border-slate-100">
                   <span className="text-slate-400 font-bold block mb-0.5">มูลค่าต้นทุนวัสดุ:</span>
-                  <div className="text-lg font-black text-emerald-700">
+                  <div className="text-base font-black text-emerald-700">
                     ฿{req.totalCost.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
                   </div>
-                  <span className="text-[10px] text-slate-400">
-                    วันที่ต้องการใช้: {new Date(req.dateNeeded).toLocaleDateString('th-TH')}
-                  </span>
+                  <div className="text-[11px] text-slate-600 mt-1 space-y-0.5">
+                    <div>
+                      <strong>กำหนดใช้:</strong> {new Date(req.dateNeeded).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })} น.
+                    </div>
+                    {req.dispensedAt && (
+                      <div className="text-teal-700 font-bold">
+                        ✓ <strong>จ่ายของจริง:</strong> {new Date(req.dispensedAt).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })} น.
+                        {req.officer?.name && <span className="block text-[10px] text-slate-500 font-normal">จนท. ผู้จ่าย: {req.officer.name}</span>}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -458,15 +466,16 @@ export default function RequisitionsPage() {
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    วันที่ต้องการใช้งาน *
+                    วันและเวลาที่ต้องการรับของ *
                   </label>
                   <input
-                    type="date"
+                    type="datetime-local"
                     required
                     value={newReq.dateNeeded}
                     onChange={(e) => setNewReq({ ...newReq, dateNeeded: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                   />
+                  <span className="text-[10px] text-slate-400">ระบุวันและเวลาที่จะมารับวัสดุที่ห้องแล็บ</span>
                 </div>
               </div>
 
@@ -652,8 +661,26 @@ export default function RequisitionsPage() {
               </div>
             </div>
 
-            <p className="text-xs text-slate-500 leading-relaxed">
-              เมื่อกดยืนยัน ระบบจะทำการตัดสต็อกจาก Lot ที่มีวันหมดอายุใกล้ที่สุดก่อน (FIFO) และคำนวณต้นทุนจริงเข้าสู่บัญชีรายวิชาโดยอัตโนมัติ
+            {/* Item Breakdown in Dispense Modal */}
+            <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+              <span className="text-[11px] font-bold text-slate-700 block">
+                รายการวัสดุที่กำลังจะจ่ายและตัดสต็อก:
+              </span>
+              {activeReqForDispense.items?.map((it: any, i: number) => (
+                <div key={it.id || i} className="p-2 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between text-xs">
+                  <div>
+                    <span className="font-bold text-slate-800">{it.item?.name}</span>
+                    <span className="text-slate-500 block text-[11px]">คงคลัง: {it.item?.currentStock} {it.item?.unit}</span>
+                  </div>
+                  <span className="font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
+                    จ่าย {it.quantityRequested} {it.item?.unit}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <p className="text-[11px] text-slate-500 leading-relaxed bg-amber-50 p-2.5 rounded-xl border border-amber-200 text-amber-800">
+              💡 เมื่อกดยืนยันจ่ายของ ระบบจะบันทึก <b>เวลาที่จ่ายของจริง ({new Date().toLocaleTimeString('th-TH')} น.)</b> พร้อมชื่อเจ้าหน้าที่ผู้จ่าย และตัดสต็อกจาก Lot ที่หมดอายุก่อน (FIFO) โดยอัตโนมัติ
             </p>
 
             <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">

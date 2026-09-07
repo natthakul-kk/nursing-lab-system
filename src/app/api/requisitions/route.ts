@@ -35,7 +35,23 @@ export async function GET(req: Request) {
       orderBy: { createdAt: 'desc' },
     });
 
-    return NextResponse.json(requisitions);
+    // Populate officer details for dispense logs
+    const officerIds = Array.from(new Set(requisitions.map((r: any) => r.officerId).filter(Boolean))) as string[];
+    let officerMap = new Map<string, any>();
+    if (officerIds.length > 0) {
+      const officers = await prisma.user.findMany({
+        where: { id: { in: officerIds } },
+        select: { id: true, name: true, role: true },
+      });
+      officers.forEach((o) => officerMap.set(o.id, o));
+    }
+
+    const requisitionsWithOfficer = requisitions.map((r: any) => ({
+      ...r,
+      officer: r.officerId ? officerMap.get(r.officerId) || null : null,
+    }));
+
+    return NextResponse.json(requisitionsWithOfficer);
   } catch (error) {
     console.error('Failed to get requisitions:', error);
     return NextResponse.json({ error: 'Failed to fetch requisitions' }, { status: 500 });

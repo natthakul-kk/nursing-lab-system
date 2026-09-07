@@ -405,22 +405,68 @@ export default function BorrowPage() {
                 </div>
               </div>
 
-              {/* Purpose & Schedule */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                <div className="md:col-span-2">
-                  <span className="text-slate-400 font-bold block mb-1">วัตถุประสงค์การใช้งาน:</span>
+              {/* Purpose & Detailed Timeline */}
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 text-xs">
+                <div className="md:col-span-6">
+                  <span className="text-slate-400 font-bold block mb-1">วัตถุประสงค์การใช้งาน & สถานที่:</span>
                   <p className="text-slate-800 font-medium leading-relaxed">{req.purpose}</p>
                 </div>
-                <div>
-                  <span className="text-slate-400 font-bold block mb-1">กำหนดเวลาการยืม-คืน:</span>
-                  <div className="space-y-1 text-slate-700 font-medium">
-                    <div className="flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5 text-teal-600" />
-                      <span>ยืม: {new Date(req.borrowDate).toLocaleDateString('th-TH')}</span>
+
+                {/* Scheduled Times */}
+                <div className="md:col-span-3 bg-slate-50 p-2.5 rounded-xl border border-slate-100 space-y-1.5">
+                  <span className="text-slate-500 font-bold text-[11px] block border-b border-slate-200 pb-1">
+                    📅 นัดหมายรับ-คืนของ:
+                  </span>
+                  <div className="text-[11px] space-y-1 text-slate-700 font-medium">
+                    <div className="flex items-start gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-teal-600 flex-shrink-0 mt-0.5" />
+                      <span>
+                        <strong className="text-slate-800">เวลานัดรับ:</strong>{' '}
+                        {new Date(req.borrowDate).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' })} น.
+                      </span>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5 text-rose-500" />
-                      <span>คืน: {new Date(req.expectedReturnDate).toLocaleDateString('th-TH')}</span>
+                    <div className="flex items-start gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-rose-500 flex-shrink-0 mt-0.5" />
+                      <span>
+                        <strong className="text-slate-800">กำหนดคืน:</strong>{' '}
+                        {new Date(req.expectedReturnDate).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' })} น.
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actual Operation Logs (Checked out & Returned) */}
+                <div className="md:col-span-3 bg-teal-50/40 p-2.5 rounded-xl border border-teal-100 space-y-1.5">
+                  <span className="text-teal-800 font-bold text-[11px] block border-b border-teal-200 pb-1">
+                    ⏱️ เวลาดำเนินการจริง:
+                  </span>
+                  <div className="text-[11px] space-y-1 text-slate-700 font-medium">
+                    <div className="flex items-start gap-1.5">
+                      <ClipboardCheck className="w-3.5 h-3.5 text-teal-600 flex-shrink-0 mt-0.5" />
+                      <span>
+                        <strong>เวลาจ่ายของ:</strong>{' '}
+                        {req.checkedOutAt ? (
+                          <span className="text-teal-800 font-bold">
+                            {new Date(req.checkedOutAt).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })} น.
+                            {req.officer?.name && <span className="block text-[10px] text-slate-500 font-normal">จนท. ผู้จ่าย: {req.officer.name}</span>}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">ยังไม่จ่ายอุปกรณ์</span>
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex items-start gap-1.5">
+                      <RotateCcw className="w-3.5 h-3.5 text-purple-600 flex-shrink-0 mt-0.5" />
+                      <span>
+                        <strong>เวลารับคืน:</strong>{' '}
+                        {req.actualReturnDate ? (
+                          <span className="text-purple-800 font-bold">
+                            {new Date(req.actualReturnDate).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })} น.
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">ยังไม่ส่งคืน</span>
+                        )}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -638,26 +684,27 @@ export default function BorrowPage() {
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    วันที่ต้องการยืม *
+                    วันและเวลาที่ต้องการรับของ *
                   </label>
                   <input
-                    type="date"
+                    type="datetime-local"
                     required
                     value={newRequest.borrowDate}
                     onChange={(e) => setNewRequest({ ...newRequest, borrowDate: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                   />
+                  <span className="text-[10px] text-slate-400">ระบุวันและเวลาที่จะมารับอุปกรณ์ที่ห้องแล็บ</span>
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    กำหนดวันส่งคืน *
+                    วันและเวลาที่กำหนดส่งคืน *
                   </label>
                   <input
-                    type="date"
+                    type="datetime-local"
                     required
                     value={newRequest.expectedReturnDate}
                     onChange={(e) =>
@@ -665,6 +712,7 @@ export default function BorrowPage() {
                     }
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                   />
+                  <span className="text-[10px] text-slate-400">ระบุวันและเวลาที่จะนำอุปกรณ์มาส่งคืน</span>
                 </div>
               </div>
 
@@ -858,12 +906,63 @@ export default function BorrowPage() {
               )}
             </h3>
 
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1">
-              <div className="font-bold text-slate-800">
-                คำขอ: {activeBorrowForAction.requestNumber}
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-slate-800">
+                  คำขอเลขที่: {activeBorrowForAction.requestNumber}
+                </span>
+                <span className="font-mono text-[10px] text-teal-700 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
+                  ผู้ยืม: {activeBorrowForAction.user?.name}
+                </span>
               </div>
-              <div className="text-slate-600">ผู้ยืม: {activeBorrowForAction.user?.name}</div>
+              <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600 border-t border-slate-200 pt-1.5">
+                <div>
+                  <span className="text-slate-400 block">เวลานัดรับของ:</span>
+                  <span className="font-semibold text-slate-800">
+                    {new Date(activeBorrowForAction.borrowDate).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })} น.
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block">กำหนดส่งคืน:</span>
+                  <span className="font-semibold text-slate-800">
+                    {new Date(activeBorrowForAction.expectedReturnDate).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })} น.
+                  </span>
+                </div>
+              </div>
             </div>
+
+            {actionType === 'CHECKOUT' && (
+              <div className="space-y-3">
+                <div className="p-3 rounded-xl bg-teal-50/70 border border-teal-200 text-xs space-y-2">
+                  <div className="font-bold text-teal-900 flex items-center gap-1.5">
+                    <ClipboardCheck className="w-4 h-4 text-teal-600" />
+                    <span>รายการและรหัสครุภัณฑ์ที่จะส่งมอบให้ผู้ยืม:</span>
+                  </div>
+                  <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                    {activeBorrowForAction.items?.map((it: any, i: number) => (
+                      <div key={it.id || i} className="p-2 rounded-lg bg-white border border-teal-100 flex items-center justify-between text-xs">
+                        <div>
+                          <span className="font-bold text-slate-800">{it.item?.name}</span>
+                          <span className="text-slate-500 block text-[11px]">จำนวน {it.quantity} {it.item?.unit}</span>
+                        </div>
+                        {it.asset ? (
+                          <span className="font-mono text-[11px] font-bold text-teal-700 bg-teal-100/70 px-2 py-0.5 rounded">
+                            {it.asset.assetCode}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-teal-600 bg-teal-50 px-2 py-0.5 rounded">
+                            ✓ ระบบจะผูกรหัสพร้อมใช้ให้อัตโนมัติ
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-teal-700 mt-1">
+                    * เมื่อกดยืนยัน ระบบจะบันทึก <b>เวลาที่จ่ายของจริง ({new Date().toLocaleTimeString('th-TH')} น.)</b> พร้อมชื่อเจ้าหน้าที่ผู้ส่งมอบ และเปลี่ยนสถานะอุปกรณ์เป็น "กำลังถูกยืม"
+                  </p>
+                </div>
+              </div>
+            )}
 
             {actionType === 'RETURN' && (
               <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">

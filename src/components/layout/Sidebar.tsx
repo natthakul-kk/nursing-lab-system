@@ -56,143 +56,203 @@ export default function Sidebar() {
     return null;
   }
 
-  const allNavItems = [
+  interface NavItem {
+    label: string;
+    href: string;
+    icon: any;
+    roles: string[];
+    badge?: string;
+    badgeCount?: number;
+  }
+
+  interface NavGroup {
+    groupName: string;
+    groupKey: string;
+    items: NavItem[];
+  }
+
+  const navGroups: NavGroup[] = [
     {
-      label: 'ภาพรวมห้องแล็บ',
-      href: '/',
-      icon: LayoutDashboard,
-      roles: ['ADMIN', 'OFFICER', 'APPROVER', 'USER'],
+      groupName: 'ภาพรวม & กำหนดการ',
+      groupKey: 'overview',
+      items: [
+        {
+          label: 'ภาพรวมห้องแล็บ',
+          href: '/',
+          icon: LayoutDashboard,
+          roles: ['ADMIN', 'OFFICER', 'APPROVER', 'USER'],
+        },
+        {
+          label: 'ตารางงาน & กำหนดรับ-คืน',
+          href: '/schedule',
+          icon: CalendarDays,
+          roles: ['ADMIN', 'OFFICER', 'APPROVER'],
+          badge: 'เจ้าหน้าที่',
+        },
+      ],
     },
     {
-      label: 'ทะเบียนพัสดุ-ครุภัณฑ์',
-      href: '/inventory',
-      icon: Boxes,
-      roles: ['ADMIN', 'OFFICER', 'APPROVER', 'USER'],
+      groupName: 'บริการเบิก-ยืม & ฝึกปฏิบัติ',
+      groupKey: 'services',
+      items: [
+        {
+          label: 'เบิก-ยืมพัสดุและครุภัณฑ์',
+          href: '/borrow',
+          icon: RefreshCw,
+          roles: ['ADMIN', 'OFFICER', 'APPROVER', 'USER'],
+          badge: 'One-Stop',
+        },
+        {
+          label: 'ชุดฝึกปฏิบัติการ (Kits)',
+          href: '/kits',
+          icon: BriefcaseMedical,
+          roles: ['ADMIN', 'OFFICER', 'APPROVER', 'USER'],
+          badge: 'แนะนำ',
+        },
+        {
+          label: 'ขอเข้าฝึกปฏิบัติด้วยตนเอง',
+          href: '/practice',
+          icon: QrCode,
+          roles: ['ADMIN', 'OFFICER', 'APPROVER', 'USER'],
+          badge: 'ใหม่',
+        },
+        {
+          label: 'ประวัติเบิกจ่ายวัสดุ',
+          href: '/requisitions',
+          icon: FileSpreadsheet,
+          roles: ['ADMIN', 'OFFICER', 'APPROVER', 'USER'],
+        },
+        {
+          label: 'ศูนย์อนุมัติคำขอ',
+          href: '/approvals',
+          icon: CheckSquare,
+          roles: ['ADMIN', 'OFFICER', 'APPROVER', 'USER'],
+          badgeCount: pendingCount,
+        },
+      ],
     },
     {
-      label: 'รับเข้าพัสดุ (Stock In)',
-      href: '/stock-in',
-      icon: ArrowDownToLine,
-      roles: ['ADMIN', 'OFFICER'],
-      badge: 'เจ้าหน้าที่',
+      groupName: 'จัดการคลัง & งานแล็บ',
+      groupKey: 'inventory',
+      items: [
+        {
+          label: 'ทะเบียนพัสดุ-ครุภัณฑ์',
+          href: '/inventory',
+          icon: Boxes,
+          roles: ['ADMIN', 'OFFICER', 'APPROVER', 'USER'],
+        },
+        {
+          label: 'รับเข้าพัสดุ (Stock In)',
+          href: '/stock-in',
+          icon: ArrowDownToLine,
+          roles: ['ADMIN', 'OFFICER'],
+          badge: 'เจ้าหน้าที่',
+        },
+        {
+          label: 'แบ่งบรรจุ & สเตอร์ไรด์',
+          href: '/repack',
+          icon: PackageCheck,
+          roles: ['ADMIN', 'OFFICER'],
+          badge: 'งานแล็บ',
+        },
+      ],
     },
     {
-      label: 'แบ่งบรรจุ & สเตอร์ไรด์',
-      href: '/repack',
-      icon: PackageCheck,
-      roles: ['ADMIN', 'OFFICER'],
-      badge: 'งานแล็บ',
+      groupName: 'งบประมาณ & รายงาน',
+      groupKey: 'analytics',
+      items: [
+        {
+          label: 'ต้นทุนวัสดุตามรายวิชา',
+          href: '/courses',
+          icon: BarChart3,
+          roles: ['ADMIN', 'OFFICER', 'APPROVER'],
+        },
+        {
+          label: 'รายงาน & วิเคราะห์ข้อมูล',
+          href: '/reports',
+          icon: BarChart3,
+          roles: ['ADMIN', 'OFFICER', 'APPROVER'],
+        },
+      ],
     },
     {
-      label: 'เบิก-ยืมพัสดุและครุภัณฑ์',
-      href: '/borrow',
-      icon: RefreshCw,
-      roles: ['ADMIN', 'OFFICER', 'APPROVER', 'USER'],
-      badge: 'One-Stop',
-    },
-    {
-      label: 'ประวัติเบิกจ่ายวัสดุ',
-      href: '/requisitions',
-      icon: FileSpreadsheet,
-      roles: ['ADMIN', 'OFFICER', 'APPROVER', 'USER'],
-    },
-    {
-      label: 'ชุดฝึกปฏิบัติการ (Kits)',
-      href: '/kits',
-      icon: BriefcaseMedical,
-      roles: ['ADMIN', 'OFFICER', 'APPROVER', 'USER'],
-      badge: 'แนะนำ',
-    },
-    {
-      label: 'ขอเข้าฝึกปฏิบัติด้วยตนเอง',
-      href: '/practice',
-      icon: QrCode,
-      roles: ['ADMIN', 'OFFICER', 'APPROVER', 'USER'],
-      badge: 'ใหม่',
-    },
-    {
-      label: 'ศูนย์อนุมัติคำขอ',
-      href: '/approvals',
-      icon: CheckSquare,
-      roles: ['ADMIN', 'OFFICER', 'APPROVER', 'USER'],
-      badgeCount: pendingCount,
-    },
-    {
-      label: 'ตารางงาน & กำหนดรับ-คืน',
-      href: '/schedule',
-      icon: CalendarDays,
-      roles: ['ADMIN', 'OFFICER', 'APPROVER'],
-      badge: 'เจ้าหน้าที่',
-    },
-    {
-      label: 'ต้นทุนวัสดุตามรายวิชา',
-      href: '/courses',
-      icon: BarChart3,
-      roles: ['ADMIN', 'OFFICER', 'APPROVER'],
-    },
-    {
-      label: 'รายงาน & วิเคราะห์ข้อมูล',
-      href: '/reports',
-      icon: BarChart3,
-      roles: ['ADMIN', 'OFFICER', 'APPROVER'],
-    },
-    {
-      label: 'จัดการผู้ใช้ & สิทธิ์',
-      href: '/users',
-      icon: Users,
-      roles: ['ADMIN'],
-      badge: 'แอดมิน',
+      groupName: 'ผู้ดูแลระบบ',
+      groupKey: 'admin',
+      items: [
+        {
+          label: 'จัดการผู้ใช้ & สิทธิ์',
+          href: '/users',
+          icon: Users,
+          roles: ['ADMIN'],
+          badge: 'แอดมิน',
+        },
+      ],
     },
   ];
 
-  // Filter items matching the user's role
+  // Current user's role
   const userRole = currentUser?.role || 'USER';
-  const visibleNavItems = allNavItems.filter((item) =>
-    item.roles.includes(userRole)
-  );
 
   return (
     <aside className="w-64 flex-shrink-0 bg-slate-900 text-slate-300 h-full flex flex-col justify-between p-4 shadow-xl overflow-y-auto">
       <div>
-        <div className="px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
-          <span>เมนูที่ได้รับสิทธิ์</span>
-          <span className="text-[10px] bg-slate-800 text-teal-400 px-1.5 py-0.5 rounded font-mono">
+        <div className="px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between border-b border-slate-800/80 pb-3 mb-2">
+          <span>ระบบห้องแล็บพยาบาล</span>
+          <span className="text-[10px] bg-slate-800 text-teal-400 px-1.5 py-0.5 rounded font-mono border border-slate-700">
             {userRole}
           </span>
         </div>
 
-        <nav className="space-y-1.5 mt-2">
-          {visibleNavItems.map((item) => {
-            const isActive = pathname === item.href;
+        <nav className="space-y-4">
+          {navGroups.map((group) => {
+            const visibleItems = group.items.filter((item) =>
+              item.roles.includes(userRole)
+            );
+            if (visibleItems.length === 0) return null;
+
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all group ${
-                  isActive
-                    ? 'bg-teal-600 text-white shadow-md shadow-teal-600/30 font-bold'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <item.icon
-                    className={`w-4 h-4 transition ${
-                      isActive ? 'text-white' : 'text-slate-400 group-hover:text-teal-400'
-                    }`}
-                  />
-                  <span>{item.label}</span>
+              <div key={group.groupKey} className="space-y-1">
+                <div className="px-3 pt-2 pb-1 text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                  <span>{group.groupName}</span>
+                  <span className="h-px bg-slate-800 flex-1 ml-2.5"></span>
                 </div>
 
-                {item.badgeCount && item.badgeCount > 0 ? (
-                  <span className="flex items-center justify-center px-2 py-0.5 text-[10px] font-bold text-white bg-amber-500 rounded-full animate-pulse">
-                    {item.badgeCount}
-                  </span>
-                ) : item.badge ? (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-teal-300 border border-teal-500/30">
-                    {item.badge}
-                  </span>
-                ) : null}
-              </Link>
+                <div className="space-y-1">
+                  {visibleItems.map((item) => {
+                    const isActive = pathname === item.href;
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all group ${
+                          isActive
+                            ? 'bg-teal-600 text-white shadow-md shadow-teal-600/30 font-bold'
+                            : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <item.icon
+                            className={`w-4 h-4 transition ${
+                              isActive ? 'text-white' : 'text-slate-400 group-hover:text-teal-400'
+                            }`}
+                          />
+                          <span>{item.label}</span>
+                        </div>
+
+                        {item.badgeCount && item.badgeCount > 0 ? (
+                          <span className="flex items-center justify-center px-2 py-0.5 text-[10px] font-bold text-white bg-amber-500 rounded-full animate-pulse">
+                            {item.badgeCount}
+                          </span>
+                        ) : item.badge ? (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-teal-300 border border-teal-500/30">
+                            {item.badge}
+                          </span>
+                        ) : null}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
             );
           })}
         </nav>

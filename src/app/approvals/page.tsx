@@ -18,7 +18,10 @@ import {
   Layers,
   History,
   Tag,
-  GraduationCap
+  GraduationCap,
+  QrCode,
+  Sparkles,
+  MapPin
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
@@ -26,20 +29,22 @@ export default function ApprovalsPage() {
   const { currentUser, isApprover, isAdmin } = useAuth();
   const [allBorrows, setAllBorrows] = useState<any[]>([]);
   const [allRequisitions, setAllRequisitions] = useState<any[]>([]);
+  const [allPracticeBookings, setAllPracticeBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<'PENDING' | 'APPROVED' | 'REJECTED'>('PENDING');
-  const [activeTab, setActiveTab] = useState<'ALL' | 'BORROW' | 'REQUISITION'>('ALL');
+  const [activeTab, setActiveTab] = useState<'ALL' | 'BORROW' | 'REQUISITION' | 'PRACTICE'>('ALL');
 
   // Reject Modal State
-  const [rejectItem, setRejectItem] = useState<{ id: string; type: 'BORROW' | 'REQUISITION' } | null>(null);
+  const [rejectItem, setRejectItem] = useState<{ id: string; type: 'BORROW' | 'REQUISITION' | 'PRACTICE' } | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const fetchData = async () => {
     try {
-      const [borrowRes, reqRes] = await Promise.all([
+      const [borrowRes, reqRes, practiceRes] = await Promise.all([
         fetch('/api/borrow'),
         fetch('/api/requisitions'),
+        fetch('/api/practice/bookings'),
       ]);
 
       if (borrowRes.ok) {
@@ -49,6 +54,10 @@ export default function ApprovalsPage() {
       if (reqRes.ok) {
         const rData = await reqRes.json();
         setAllRequisitions(rData);
+      }
+      if (practiceRes.ok) {
+        const pData = await practiceRes.json();
+        setAllPracticeBookings(Array.isArray(pData) ? pData : []);
       }
     } catch (err) {
       console.error(err);
@@ -61,10 +70,15 @@ export default function ApprovalsPage() {
     fetchData();
   }, []);
 
-  const handleApprove = async (id: string, type: 'BORROW' | 'REQUISITION') => {
+  const handleApprove = async (id: string, type: 'BORROW' | 'REQUISITION' | 'PRACTICE') => {
     setSubmitting(true);
     try {
-      const endpoint = type === 'BORROW' ? `/api/borrow/${id}` : `/api/requisitions/${id}`;
+      const endpoint =
+        type === 'BORROW'
+          ? `/api/borrow/${id}`
+          : type === 'REQUISITION'
+          ? `/api/requisitions/${id}`
+          : `/api/practice/bookings/${id}`;
       const res = await fetch(endpoint, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -119,7 +133,9 @@ export default function ApprovalsPage() {
       const endpoint =
         rejectItem.type === 'BORROW'
           ? `/api/borrow/${rejectItem.id}`
-          : `/api/requisitions/${rejectItem.id}`;
+          : rejectItem.type === 'REQUISITION'
+          ? `/api/requisitions/${rejectItem.id}`
+          : `/api/practice/bookings/${rejectItem.id}`;
       const res = await fetch(endpoint, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -165,7 +181,7 @@ export default function ApprovalsPage() {
 
   // Filter helper functions
   const isApproved = (status: string) =>
-    ['APPROVED', 'BORROWED', 'RETURNED_COMPLETE', 'RETURNED_WITH_ISSUE', 'DISPENSED'].includes(status);
+    ['APPROVED', 'BORROWED', 'RETURNED_COMPLETE', 'RETURNED_WITH_ISSUE', 'DISPENSED', 'CHECKED_IN', 'COMPLETED'].includes(status);
 
   // Filter Borrows by statusFilter
   const filteredBorrows = allBorrows.filter((b) => {
@@ -183,20 +199,39 @@ export default function ApprovalsPage() {
     return true;
   });
 
+
+  // Filter Practice Bookings by statusFilter
+  const filteredPracticeBookings = allPracticeBookings.filter((p) => {
+    if (statusFilter === 'PENDING') return p.status === 'PENDING';
+    if (statusFilter === 'APPROVED') return isApproved(p.status);
+    if (statusFilter === 'REJECTED') return p.status === 'REJECTED';
+    return true;
+  });
+
   // Total counts for main status tabs
   const pendingCount =
     allBorrows.filter((b) => b.status === 'PENDING').length +
-    allRequisitions.filter((r) => r.status === 'PENDING').length;
+    allRequisitions.filter((r) => r.status === 'PENDING').length +
+    allPracticeBookings.filter((p) => p.status === 'PENDING').length;
 
   const approvedCount =
     allBorrows.filter((b) => isApproved(b.status)).length +
-    allRequisitions.filter((r) => isApproved(r.status)).length;
+    allRequisitions.filter((r) => isApproved(r.status)).length +
+    allPracticeBookings.filter((p) => isApproved(p.status)).length;
 
   const rejectedCount =
     allBorrows.filter((b) => b.status === 'REJECTED').length +
-    allRequisitions.filter((r) => r.status === 'REJECTED').length;
+    allRequisitions.filter((r) => r.status === 'REJECTED').length +
+    allPracticeBookings.filter((p) => p.status === 'REJECTED').length;
 
-  const currentTabTotal = filteredBorrows.length + filteredRequisitions.length;
+  const currentTabTotal =
+    activeTab === 'ALL'
+      ? filteredBorrows.length + filteredRequisitions.length + filteredPracticeBookings.length
+      : activeTab === 'BORROW'
+      ? filteredBorrows.length
+      : activeTab === 'REQUISITION'
+      ? filteredRequisitions.length
+      : filteredPracticeBookings.length;
 
   const getStageLabel = (status: string, type: 'BORROW' | 'REQUISITION') => {
     if (type === 'BORROW') {
@@ -326,6 +361,17 @@ export default function ApprovalsPage() {
           }`}
         >
           เบิกวัสดุสิ้นเปลือง ({filteredRequisitions.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('PRACTICE')}
+          className={`px-4 py-1.5 text-xs font-bold rounded-lg transition flex items-center gap-1.5 ${
+            activeTab === 'PRACTICE'
+              ? 'bg-white text-teal-700 shadow-sm'
+              : 'text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <Sparkles className="w-3.5 h-3.5 text-teal-600" />
+          <span>ขอฝึกปฏิบัติด้วยตนเอง ({filteredPracticeBookings.length})</span>
         </button>
       </div>
 
@@ -658,6 +704,167 @@ export default function ApprovalsPage() {
                       {req.rejectionReason && (
                         <span className="text-rose-700 font-medium">
                           เหตุผล: <strong>{req.rejectionReason}</strong>
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+
+            {/* Section: Practice Bookings */}
+            {(activeTab === 'ALL' || activeTab === 'PRACTICE') &&
+              filteredPracticeBookings.map((b) => (
+                <div
+                  key={b.id}
+                  className={`bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-4 border-l-4 ${
+                    statusFilter === 'PENDING'
+                      ? 'border-l-amber-500'
+                      : statusFilter === 'APPROVED'
+                      ? 'border-l-teal-500'
+                      : 'border-l-rose-500'
+                  }`}
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 uppercase flex items-center gap-1">
+                        <Sparkles className="w-3 h-3 text-indigo-600" />
+                        <span>ขอเข้าฝึกปฏิบัติด้วยตนเอง</span>
+                      </span>
+                      <span className="font-mono text-xs font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded">
+                        {b.bookingNumber}
+                      </span>
+                      {b.status === 'PENDING' && (
+                        <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-amber-600" /> รออาจารย์อนุมัติ
+                        </span>
+                      )}
+                      {b.status === 'APPROVED' && (
+                        <span className="text-[10px] font-bold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-full border border-teal-200 flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3 text-teal-600" /> อนุมัติแล้ว (พร้อมสแกนเข้า)
+                        </span>
+                      )}
+                      {b.status === 'CHECKED_IN' && (
+                        <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200 animate-pulse">
+                          กำลังฝึกปฏิบัติในห้องแล็บ
+                        </span>
+                      )}
+                      {b.status === 'COMPLETED' && (
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                          ฝึกเสร็จสิ้นแล้ว ({b.actualMinutes || 0} นาที)
+                        </span>
+                      )}
+                      {b.status === 'REJECTED' && (
+                        <span className="text-[10px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+                          ไม่อนุมัติ
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3 text-xs">
+                      <div className="flex items-center gap-1 text-slate-600">
+                        <User className="w-3.5 h-3.5 text-slate-400" />
+                        <span className="font-bold text-slate-800">{b.user?.name}</span>
+                        {b.user?.studentId && (
+                          <span className="text-[10px] text-teal-700 bg-teal-50 px-1.5 py-0.2 rounded font-mono border border-teal-200">
+                            {b.user.studentId}
+                          </span>
+                        )}
+                      </div>
+                      {b.course && (
+                        <span className="font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded">
+                          [{b.course.code}] {b.course.name}
+                        </span>
+                      )}
+                      {b.advisorName && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full">
+                          <GraduationCap className="w-3.5 h-3.5 text-indigo-600" />
+                          <span>อาจารย์ผู้ดูแล: {b.advisorName}</span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="text-xs space-y-2">
+                    <div>
+                      <span className="text-slate-400 font-bold">หัตถการที่ขอฝึก: </span>
+                      <span className="text-slate-900 font-black text-sm">{b.skillTopic}</span>
+                    </div>
+
+                    {b.objectives && (
+                      <div>
+                        <span className="text-slate-400 font-bold">วัตถุประสงค์ / ทักษะที่มุ่งเน้น: </span>
+                        <span className="text-slate-700 font-medium">{b.objectives}</span>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs">
+                      <div className="flex items-center gap-2 text-slate-700">
+                        <Calendar className="w-4 h-4 text-teal-600 flex-shrink-0" />
+                        <span>วันที่: <strong className="text-slate-900">{b.slot?.date ? new Date(b.slot.date).toLocaleDateString('th-TH', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) : '-'}</strong></span>
+                      </div>
+                      <div className="flex items-center gap-2 text-slate-700">
+                        <Clock className="w-4 h-4 text-teal-600 flex-shrink-0" />
+                        <span>เวลา: <strong className="text-slate-900">{b.slot?.startTime} - {b.slot?.endTime} น.</strong></span>
+                      </div>
+                      <div className="flex items-center gap-2 text-slate-700">
+                        <MapPin className="w-4 h-4 text-teal-600 flex-shrink-0" />
+                        <span>ห้องปฏิบัติการ: <strong className="text-teal-800">{b.slot?.room?.name || 'ห้องแล็บพยาบาล'}</strong></span>
+                      </div>
+                      {b.practiceKit && (
+                        <div className="flex items-center gap-2 text-slate-700">
+                          <Sparkles className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                          <span>ชุดฝึกที่ขอเบิก: <strong className="text-amber-800">{b.practiceKit.name}</strong></span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Actions / Status Footer */}
+                  {statusFilter === 'PENDING' ? (
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                      <div className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-lg font-medium inline-flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5 text-amber-600" />
+                        <span>รออาจารย์หรือเจ้าหน้าที่พิจารณาอนุมัติคำขอเข้าฝึกปฏิบัติ</span>
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          disabled={submitting}
+                          onClick={() => setRejectItem({ id: b.id, type: 'PRACTICE' })}
+                          className="px-4 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 transition cursor-pointer"
+                        >
+                          ไม่อนุมัติ
+                        </button>
+                        <button
+                          disabled={submitting}
+                          onClick={() => handleApprove(b.id, 'PRACTICE')}
+                          className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-teal-600 hover:bg-teal-500 shadow-md shadow-teal-600/20 transition cursor-pointer flex items-center gap-1.5"
+                        >
+                          <Check className="w-3.5 h-3.5" /> อนุมัติการเข้าฝึกปฏิบัติ
+                        </button>
+                      </div>
+                    </div>
+                  ) : statusFilter === 'APPROVED' ? (
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        อนุมัติแล้ว {b.approvedAt ? `(${new Date(b.approvedAt).toLocaleDateString('th-TH')})` : ''}
+                      </span>
+                      {b.approver?.name && (
+                        <span className="text-slate-500 font-medium">
+                          ผู้อนุมัติ: <strong className="text-slate-700">{b.approver.name}</strong>
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                        <XCircle className="w-3.5 h-3.5 text-rose-600" />
+                        ไม่อนุมัติคำขอ
+                      </span>
+                      {b.rejectionReason && (
+                        <span className="text-rose-700 font-medium">
+                          เหตุผล: <strong>{b.rejectionReason}</strong>
                         </span>
                       )}
                     </div>

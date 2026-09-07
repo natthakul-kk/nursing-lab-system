@@ -21,7 +21,10 @@ import {
   Boxes,
   ShieldCheck,
   Check,
-  GraduationCap
+  GraduationCap,
+  Sparkles,
+  MapPin,
+  QrCode
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
@@ -29,6 +32,7 @@ export default function SchedulePage() {
   const { currentUser, isOfficer, isAdmin, isApprover } = useAuth();
   const [borrowList, setBorrowList] = useState<any[]>([]);
   const [requisitionList, setRequisitionList] = useState<any[]>([]);
+  const [practiceList, setPracticeList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [timeFilter, setTimeFilter] = useState<'ALL' | 'TODAY' | 'UPCOMING' | 'OVERDUE'>('ALL');
@@ -47,9 +51,10 @@ export default function SchedulePage() {
 
   const fetchScheduleData = async () => {
     try {
-      const [bRes, rRes] = await Promise.all([
+      const [bRes, rRes, pRes] = await Promise.all([
         fetch('/api/borrow'),
         fetch('/api/requisitions'),
+        fetch('/api/practice/bookings'),
       ]);
 
       if (bRes.ok) {
@@ -65,6 +70,14 @@ export default function SchedulePage() {
         // Show APPROVED (waiting to prepare & dispense)
         const relevantReqs = rData.filter((r: any) => r.status === 'APPROVED');
         setRequisitionList(relevantReqs);
+      }
+      if (pRes.ok) {
+        const pData = await pRes.json();
+        // Show APPROVED (waiting to practice) and CHECKED_IN (currently in lab)
+        const relevantPractices = Array.isArray(pData)
+          ? pData.filter((p: any) => ['APPROVED', 'CHECKED_IN'].includes(p.status))
+          : [];
+        setPracticeList(relevantPractices);
       }
     } catch (err) {
       console.error('Failed to load schedule data', err);
@@ -164,6 +177,28 @@ export default function SchedulePage() {
         isReturnToday: false,
       };
     }),
+    ...practiceList.map((p) => {
+      const pickupToday = isToday(p.slot?.date);
+      return {
+        id: p.id,
+        type: 'PRACTICE' as const,
+        requestNumber: p.bookingNumber,
+        status: p.status,
+        user: p.user,
+        course: p.course,
+        advisorName: p.advisorName,
+        purpose: p.skillTopic + (p.objectives ? ` - ${p.objectives}` : ''),
+        pickupDate: p.slot?.date,
+        returnDate: undefined,
+        timeSlot: p.slot ? `${p.slot.startTime} - ${p.slot.endTime} น.` : undefined,
+        roomName: p.slot?.room?.name || 'ห้องแล็บพยาบาล',
+        practiceKit: p.practiceKit,
+        items: p.practiceKit ? [{ id: p.practiceKit.id, item: { name: p.practiceKit.name, unit: 'ชุด' }, quantity: 1 }] : [],
+        isOverdue: false,
+        isPickupToday: pickupToday,
+        isReturnToday: false,
+      };
+    }),
   ];
 
   // Apply filters
@@ -196,6 +231,7 @@ export default function SchedulePage() {
 
   // Open Edit Dates modal
   const handleOpenEditDates = (task: typeof combinedTasks[0]) => {
+    if (task.type === 'PRACTICE') return;
     setEditingItem({
       id: task.id,
       type: task.type,
@@ -275,7 +311,7 @@ export default function SchedulePage() {
       </div>
 
       {/* Summary Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
           <div>
             <span className="text-[11px] font-bold text-slate-400 uppercase">คิวงานทั้งหมด</span>
@@ -324,6 +360,18 @@ export default function SchedulePage() {
           </div>
           <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
             <AlertTriangle className="w-5 h-5" />
+          </div>
+        </div>
+        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-bold text-indigo-600 uppercase">คิวเข้าฝึกปฏิบัติ (Lab)</span>
+            <div className="text-xl font-black text-indigo-700 mt-1">
+              {combinedTasks.filter((t) => t.type === 'PRACTICE').length}{' '}
+              <span className="text-xs font-normal text-slate-500">คน</span>
+            </div>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+            <Sparkles className="w-5 h-5" />
           </div>
         </div>
       </div>
@@ -397,23 +445,44 @@ export default function SchedulePage() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
                 <div className="flex flex-wrap items-center gap-2">
                   <span
-                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase flex items-center gap-1 ${
                       task.type === 'BORROW'
                         ? 'bg-purple-100 text-purple-800'
-                        : 'bg-teal-100 text-teal-800'
+                        : task.type === 'REQUISITION'
+                        ? 'bg-teal-100 text-teal-800'
+                        : 'bg-indigo-100 text-indigo-800'
                     }`}
                   >
-                    {task.type === 'BORROW' ? 'ยืมครุภัณฑ์' : 'เบิกวัสดุ'}
+                    {task.type === 'BORROW' && 'ยืมครุภัณฑ์'}
+                    {task.type === 'REQUISITION' && 'เบิกวัสดุ'}
+                    {task.type === 'PRACTICE' && (
+                      <>
+                        <Sparkles className="w-3 h-3 text-indigo-600" />
+                        <span>ฝึกปฏิบัติ (Practice)</span>
+                      </>
+                    )}
                   </span>
                   <span className="font-mono text-xs font-bold text-slate-800">
                     {task.requestNumber}
                   </span>
 
                   {/* Status Badge */}
-                  {task.status === 'APPROVED' && (
+                  {task.status === 'APPROVED' && task.type !== 'PRACTICE' && (
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
                       <Clock className="w-3 h-3 text-blue-600" />
                       อนุมัติแล้ว (รอจัดเตรียม & จ่ายของ)
+                    </span>
+                  )}
+                  {task.status === 'APPROVED' && task.type === 'PRACTICE' && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-teal-100 text-teal-800 border border-teal-200">
+                      <Clock className="w-3 h-3 text-teal-600" />
+                      อนุมัติแล้ว (รอนิสิตเข้าห้องแล็บ)
+                    </span>
+                  )}
+                  {task.status === 'CHECKED_IN' && task.type === 'PRACTICE' && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200 animate-pulse">
+                      <Sparkles className="w-3 h-3 text-indigo-600" />
+                      กำลังฝึกปฏิบัติในห้องแล็บ
                     </span>
                   )}
                   {task.status === 'BORROWED' && !task.isOverdue && (
@@ -459,7 +528,7 @@ export default function SchedulePage() {
                 {/* 1. Preparation & Pickup Date */}
                 <div className="space-y-1">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                    📦 วันที่ต้องเตรียมของ / ผู้รับมารับของ
+                    {task.type === 'PRACTICE' ? '🗓️ วันและรอบเวลาเข้าฝึก' : '📦 วันที่ต้องเตรียมของ / ผู้รับมารับของ'}
                   </span>
                   <div className="font-bold text-slate-900 flex items-center gap-1.5 text-sm">
                     <Calendar className="w-4 h-4 text-blue-600" />
@@ -471,16 +540,30 @@ export default function SchedulePage() {
                     )}
                   </div>
                   <p className="text-[11px] text-slate-500">
-                    {task.status === 'APPROVED' ? 'เจ้าหน้าที่จัดเตรียมไว้ที่ห้องแล็บ' : 'ผู้รับมารับของเรียบร้อย'}
+                    {task.type === 'PRACTICE'
+                      ? (task.timeSlot ? `รอบ ${task.timeSlot}` : 'ตามรอบเวลาที่ระบุ')
+                      : task.status === 'APPROVED'
+                      ? 'เจ้าหน้าที่จัดเตรียมไว้ที่ห้องแล็บ'
+                      : 'ผู้รับมารับของเรียบร้อย'}
                   </p>
                 </div>
 
                 {/* 2. Expected Return Date (Only for Borrow) */}
                 <div className="space-y-1">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                    🔄 กำหนดวันคืนของ
+                    {task.type === 'PRACTICE' ? '📍 ห้องปฏิบัติการที่เข้าฝึก' : '🔄 กำหนดวันคืนของ'}
                   </span>
-                  {task.type === 'BORROW' ? (
+                  {task.type === 'PRACTICE' ? (
+                    <div className="space-y-1">
+                      <div className="font-bold text-teal-800 flex items-center gap-1.5 text-sm">
+                        <MapPin className="w-4 h-4 text-teal-600" />
+                        <span>{(task as any).roomName || 'ห้องแล็บพยาบาล'}</span>
+                      </div>
+                      <p className="text-[11px] text-slate-500">
+                        {task.status === 'CHECKED_IN' ? 'นิสิตเช็คอินแล้ว' : 'เตรียมอุปกรณ์ประจำเตียง/หุ่น'}
+                      </p>
+                    </div>
+                  ) : task.type === 'BORROW' ? (
                     <>
                       <div
                         className={`font-bold flex items-center gap-1.5 text-sm ${
@@ -563,7 +646,7 @@ export default function SchedulePage() {
               <div className="flex items-center justify-between pt-2 border-t border-slate-100">
                 <div className="flex items-center gap-2">
                   {/* Button for Admin / Officer to Reschedule Dates */}
-                  {canEdit && (
+                  {canEdit && task.type !== 'PRACTICE' && (
                     <button
                       onClick={() => handleOpenEditDates(task)}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold transition cursor-pointer"
@@ -574,13 +657,17 @@ export default function SchedulePage() {
                   )}
                 </div>
 
-                {/* Direct shortcut to Borrow / Requisition page for action */}
+                {/* Direct shortcut to action page */}
                 <Link
-                  href={task.type === 'BORROW' ? '/borrow' : '/requisitions'}
+                  href={task.type === 'BORROW' ? '/borrow' : task.type === 'REQUISITION' ? '/requisitions' : '/practice'}
                   className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold transition shadow-sm"
                 >
                   <span>
-                    {task.status === 'APPROVED' ? 'ไปหน้าบันทึกจ่ายของ' : 'ไปหน้าตรวจรับคืน'}
+                    {task.type === 'PRACTICE'
+                      ? 'ไปหน้าระบบฝึกปฏิบัติ / สแกน QR'
+                      : task.status === 'APPROVED'
+                      ? 'ไปหน้าบันทึกจ่ายของ'
+                      : 'ไปหน้าตรวจรับคืน'}
                   </span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Link>

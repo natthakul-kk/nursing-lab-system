@@ -110,6 +110,23 @@ export default function RequisitionsPage() {
       return;
     }
 
+    // Validate that none of the items exceed available stock
+    for (const it of newReq.items) {
+      const itemInfo = consumables.find((c) => c.id === it.itemId);
+      if (itemInfo) {
+        if (itemInfo.currentStock <= 0) {
+          alert(`วัสดุ "${itemInfo.name}" สินค้าหมดในคลัง ไม่สามารถขอเบิกได้`);
+          return;
+        }
+        if (it.quantity > itemInfo.currentStock) {
+          alert(
+            `ไม่สามารถขอเบิกเกินสต็อกได้:\nวัสดุ "${itemInfo.name}" มีคงเหลือในคลังเพียง ${itemInfo.currentStock} ${itemInfo.unit} (ท่านระบุ ${it.quantity} ${itemInfo.unit})`
+          );
+          return;
+        }
+      }
+    }
+
     setSubmitting(true);
     try {
       const res = await fetch('/api/requisitions', {
@@ -531,8 +548,16 @@ export default function RequisitionsPage() {
                       ? consumables.filter((c: any) => (c.category?.id === selectedCat || c.category?.name === selectedCat))
                       : consumables;
 
+                    const chosenItem = consumables.find((c: any) => c.id === row.itemId);
+                    const isOutOfStock = chosenItem && chosenItem.currentStock <= 0;
+                    const isOverStock = chosenItem && chosenItem.currentStock > 0 && row.quantity > chosenItem.currentStock;
+
                     return (
-                      <div key={idx} className="p-2 bg-slate-50 border border-slate-200 rounded-xl">
+                      <div key={idx} className={`p-2.5 rounded-xl border transition ${
+                        isOutOfStock || isOverStock
+                          ? 'bg-rose-50/70 border-rose-300'
+                          : 'bg-slate-50 border-slate-200'
+                      }`}>
                         <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
                           {/* Category Filter */}
                           <div className="sm:col-span-4">
@@ -577,15 +602,23 @@ export default function RequisitionsPage() {
                                   if (it?.category?.id) {
                                     updated[idx].categoryId = it.category.id;
                                   }
+                                  // Auto-adjust quantity if exceeding new item's stock
+                                  if (it && it.currentStock > 0 && updated[idx].quantity > it.currentStock) {
+                                    updated[idx].quantity = it.currentStock;
+                                  }
                                   return { ...prev, items: updated };
                                 });
                               }}
-                              className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-medium focus:ring-2 focus:ring-teal-500/20"
+                              className={`w-full bg-white border rounded-lg px-2.5 py-1.5 text-xs font-medium focus:ring-2 ${
+                                isOutOfStock
+                                  ? 'border-rose-400 text-rose-800'
+                                  : 'border-slate-300 focus:ring-teal-500/20'
+                              }`}
                             >
                               <option value="">-- เลือกรายการวัสดุ ({filteredConsumables.length}) --</option>
                               {filteredConsumables.map((c) => (
                                 <option key={c.id} value={c.id}>
-                                  {c.name} (คงเหลือ: {c.currentStock} {c.unit})
+                                  {c.name} (คงเหลือ: {c.currentStock} {c.unit}){c.currentStock <= 0 ? ' [หมดในคลัง]' : ''}
                                 </option>
                               ))}
                             </select>
@@ -596,6 +629,7 @@ export default function RequisitionsPage() {
                             <input
                               type="number"
                               min="1"
+                              max={chosenItem ? Math.max(1, chosenItem.currentStock) : undefined}
                               value={row.quantity}
                               onChange={(e) => {
                                 const val = Number(e.target.value);
@@ -605,7 +639,11 @@ export default function RequisitionsPage() {
                                   return { ...prev, items: updated };
                                 });
                               }}
-                              className="w-full bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-xs font-bold text-center"
+                              className={`w-full bg-white border rounded-lg px-2 py-1.5 text-xs font-bold text-center ${
+                                isOverStock || isOutOfStock
+                                  ? 'border-rose-500 bg-rose-50 text-rose-700'
+                                  : 'border-slate-300'
+                              }`}
                               placeholder="จำนวน"
                             />
                             {newReq.items.length > 1 && (
@@ -620,6 +658,30 @@ export default function RequisitionsPage() {
                             )}
                           </div>
                         </div>
+
+                        {/* Real-time Stock Information / Alert */}
+                        {chosenItem && (
+                          <div className="mt-1.5 pt-1.5 border-t border-slate-200/60 flex flex-wrap items-center justify-between text-[11px] gap-1">
+                            {isOutOfStock ? (
+                              <span className="text-rose-700 font-bold flex items-center gap-1">
+                                <AlertCircle className="w-3.5 h-3.5 text-rose-600 flex-shrink-0" />
+                                วัสดุนี้หมดในคลัง (คงเหลือ 0 {chosenItem.unit}) ไม่สามารถส่งขอเบิกได้
+                              </span>
+                            ) : isOverStock ? (
+                              <span className="text-rose-700 font-bold flex items-center gap-1">
+                                <AlertCircle className="w-3.5 h-3.5 text-rose-600 flex-shrink-0" />
+                                ขอเกินสต็อกคงเหลือ! (ในคลังมีเพียง {chosenItem.currentStock} {chosenItem.unit})
+                              </span>
+                            ) : (
+                              <span className="text-emerald-700 font-medium flex items-center gap-1">
+                                ✓ คงเหลือพร้อมเบิก: <strong className="font-bold text-emerald-800">{chosenItem.currentStock} {chosenItem.unit}</strong>
+                              </span>
+                            )}
+                            <span className="text-slate-500">
+                              ประมาณการ: <strong className="text-slate-700">฿{((chosenItem.unitCost || 0) * (row.quantity || 0)).toFixed(2)}</strong>
+                            </span>
+                          </div>
+                        )}
                       </div>
                     );
                   })}

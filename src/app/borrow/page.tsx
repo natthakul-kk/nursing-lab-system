@@ -116,6 +116,23 @@ export default function BorrowPage() {
       return;
     }
 
+    // Validate that none of the equipment items exceed available count
+    for (const it of newRequest.selectedItems) {
+      const eqInfo = equipmentList.find((eq) => eq.id === it.itemId);
+      if (eqInfo) {
+        if (eqInfo.currentStock <= 0) {
+          alert(`ครุภัณฑ์ "${eqInfo.name}" ไม่มีอุปกรณ์ที่พร้อมใช้งานในขณะนี้ ไม่สามารถขอยืมได้`);
+          return;
+        }
+        if (it.quantity > eqInfo.currentStock) {
+          alert(
+            `ไม่สามารถขอยืมเกินจำนวนพร้อมใช้ได้:\nครุภัณฑ์ "${eqInfo.name}" มีพร้อมให้ยืมเพียง ${eqInfo.currentStock} ${eqInfo.unit || 'ชิ้น'} (ท่านระบุ ${it.quantity} ${eqInfo.unit || 'ชิ้น'})`
+          );
+          return;
+        }
+      }
+    }
+
     setSubmitting(true);
     try {
       const res = await fetch('/api/borrow', {
@@ -773,8 +790,16 @@ export default function BorrowPage() {
                       ? equipmentList.filter((eq: any) => (eq.category?.id === selectedCat || eq.category?.name === selectedCat))
                       : equipmentList;
 
+                    const chosenEq = equipmentList.find((eq: any) => eq.id === sItem.itemId);
+                    const isOutOfStock = chosenEq && chosenEq.currentStock <= 0;
+                    const isOverStock = chosenEq && chosenEq.currentStock > 0 && sItem.quantity > chosenEq.currentStock;
+
                     return (
-                      <div key={idx} className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                      <div key={idx} className={`p-2.5 rounded-xl border space-y-2 transition ${
+                        isOutOfStock || isOverStock
+                          ? 'bg-rose-50/70 border-rose-300'
+                          : 'bg-slate-50 border-slate-200'
+                      }`}>
                         <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
                           {/* 1. Category Filter Dropdown */}
                           <div className="sm:col-span-4">
@@ -820,15 +845,23 @@ export default function BorrowPage() {
                                   if (it?.category?.id) {
                                     updated[idx].categoryId = it.category.id;
                                   }
+                                  // Auto-adjust quantity if exceeding new item's available count
+                                  if (it && it.currentStock > 0 && updated[idx].quantity > it.currentStock) {
+                                    updated[idx].quantity = it.currentStock;
+                                  }
                                   return { ...prev, selectedItems: updated };
                                 });
                               }}
-                              className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-medium focus:ring-2 focus:ring-teal-500/20"
+                              className={`w-full bg-white border rounded-lg px-2.5 py-1.5 text-xs font-medium focus:ring-2 ${
+                                isOutOfStock
+                                  ? 'border-rose-400 text-rose-800'
+                                  : 'border-slate-300 focus:ring-teal-500/20'
+                              }`}
                             >
                               <option value="">-- กรุณาเลือกครุภัณฑ์ ({filteredEquipments.length} รายการ) --</option>
                               {filteredEquipments.map((eq) => (
                                 <option key={eq.id} value={eq.id}>
-                                  {eq.name} (พร้อมใช้ {eq.currentStock} {eq.unit})
+                                  {eq.name} (พร้อมใช้ {eq.currentStock} {eq.unit}){eq.currentStock <= 0 ? ' [ไม่พร้อมใช้]' : ''}
                                 </option>
                               ))}
                             </select>
@@ -839,6 +872,7 @@ export default function BorrowPage() {
                             <input
                               type="number"
                               min="1"
+                              max={chosenEq ? Math.max(1, chosenEq.currentStock) : undefined}
                               value={sItem.quantity}
                               onChange={(e) => {
                                 const val = Number(e.target.value);
@@ -848,7 +882,11 @@ export default function BorrowPage() {
                                   return { ...prev, selectedItems: updated };
                                 });
                               }}
-                              className="w-full bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-xs font-bold text-center"
+                              className={`w-full bg-white border rounded-lg px-2 py-1.5 text-xs font-bold text-center ${
+                                isOverStock || isOutOfStock
+                                  ? 'border-rose-500 bg-rose-50 text-rose-700'
+                                  : 'border-slate-300'
+                              }`}
                               placeholder="จำนวน"
                             />
                             {newRequest.selectedItems.length > 1 && (
@@ -868,6 +906,27 @@ export default function BorrowPage() {
                             )}
                           </div>
                         </div>
+
+                        {/* Real-time Availability Information / Alert */}
+                        {chosenEq && (
+                          <div className="mt-1 pt-1 border-t border-slate-200/60 flex flex-wrap items-center justify-between text-[11px] gap-1">
+                            {isOutOfStock ? (
+                              <span className="text-rose-700 font-bold flex items-center gap-1">
+                                <AlertTriangle className="w-3.5 h-3.5 text-rose-600 flex-shrink-0" />
+                                ครุภัณฑ์นี้ไม่มีเครื่องพร้อมใช้งานในขณะนี้ (0 {chosenEq.unit || 'ชิ้น'}) ไม่สามารถขอยืมได้
+                              </span>
+                            ) : isOverStock ? (
+                              <span className="text-rose-700 font-bold flex items-center gap-1">
+                                <AlertTriangle className="w-3.5 h-3.5 text-rose-600 flex-shrink-0" />
+                                ขอยืมเกินจำนวนพร้อมใช้! (ในแล็บมีพร้อมให้ยืมเพียง {chosenEq.currentStock} {chosenEq.unit || 'ชิ้น'})
+                              </span>
+                            ) : (
+                              <span className="text-emerald-700 font-medium flex items-center gap-1">
+                                ✓ พร้อมให้ยืมในแล็บ: <strong className="font-bold text-emerald-800">{chosenEq.currentStock} {chosenEq.unit || 'ชิ้น'}</strong>
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     );
                   })}

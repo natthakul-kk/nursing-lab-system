@@ -71,16 +71,47 @@ export async function POST(req: Request) {
     const count = await prisma.requisitionRequest.count();
     const requestNumber = `REQ-${todayStr}-${String(count + 1).padStart(3, '0')}`;
 
-    // Compute estimated cost based on lowest available lot unitCost
+    // Compute estimated cost based on lowest available lot unitCost and check stock availability
     let estimatedTotalCost = 0;
     const itemsToCreate = [];
 
     for (const it of items) {
       const qty = Number(it.quantity) || 1;
-      const latestLot = await prisma.stockLot.findFirst({
-        where: { itemId: it.itemId, quantityRemaining: { gt: 0 } },
-        orderBy: { expiryDate: 'asc' },
+
+      // Verify item existence and remaining stock across lots
+      const itemRecord = await prisma.item.findUnique({
+        where: { id: it.itemId },
+        include: {
+          stockLots: {
+            where: { quantityRemaining: { gt: 0 } },
+            orderBy: { expiryDate: 'asc' },
+          },
+        },
       });
+
+      if (!itemRecord) {
+        return NextResponse.json({ error: `ไม่พบข้อมูลวัสดุในระบบ` }, { status: 400 });
+      }
+
+      const totalStockRemaining = itemRecord.stockLots.reduce((sum, lot) => sum + lot.quantityRemaining, 0);
+
+      if (totalStockRemaining <= 0) {
+        return NextResponse.json(
+          { error: `ไม่สามารถขอเบิกได้: วัสดุ "${itemRecord.name}" สินค้าหมดในคลัง (คงเหลือ 0 ${itemRecord.unit})` },
+          { status: 400 }
+        );
+      }
+
+      if (qty > totalStockRemaining) {
+        return NextResponse.json(
+          {
+            error: `ไม่สามารถขอเบิกเกินสต็อกได้: วัสดุ "${itemRecord.name}" มีคงเหลือในคลังเพียง ${totalStockRemaining} ${itemRecord.unit} (ท่านระบุ ${qty} ${itemRecord.unit})`,
+          },
+          { status: 400 }
+        );
+      }
+
+      const latestLot = itemRecord.stockLots[0];
       const unitCost = latestLot?.unitCost || 0;
       const itemTotal = qty * unitCost;
       estimatedTotalCost += itemTotal;

@@ -76,6 +76,41 @@ export async function POST(req: Request) {
     const count = await prisma.borrowRequest.count();
     const requestNumber = `BRW-${todayStr}-${String(count + 1).padStart(3, '0')}`;
 
+    // Validate that requested equipment items have enough available assets
+    for (const it of items) {
+      const qty = Number(it.quantity) || 1;
+      const itemRecord = await prisma.item.findUnique({
+        where: { id: it.itemId },
+        include: {
+          assets: {
+            where: { status: 'AVAILABLE' },
+          },
+        },
+      });
+
+      if (!itemRecord) {
+        return NextResponse.json({ error: `ไม่พบข้อมูลครุภัณฑ์ในระบบ` }, { status: 400 });
+      }
+
+      const availableCount = itemRecord.assets.length;
+
+      if (availableCount <= 0) {
+        return NextResponse.json(
+          { error: `ไม่สามารถขอยืมได้: ครุภัณฑ์ "${itemRecord.name}" ไม่มีอุปกรณ์ที่พร้อมใช้งานในขณะนี้ (0 ${itemRecord.unit || 'ชิ้น'})` },
+          { status: 400 }
+        );
+      }
+
+      if (qty > availableCount) {
+        return NextResponse.json(
+          {
+            error: `ไม่สามารถขอยืมเกินจำนวนพร้อมใช้ได้: ครุภัณฑ์ "${itemRecord.name}" มีพร้อมให้ยืมเพียง ${availableCount} ${itemRecord.unit || 'ชิ้น'} (ท่านระบุ ${qty} ${itemRecord.unit || 'ชิ้น'})`,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     const borrow = await prisma.borrowRequest.create({
       data: {
         requestNumber,

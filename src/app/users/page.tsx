@@ -393,8 +393,8 @@ export default function UsersPage() {
 
       {/* Role Filter Tabs & Search Bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-sm">
-        {/* Role Tabs */}
-        <div className="flex flex-wrap items-center gap-1.5">
+        {/* Role Tabs (Desktop) */}
+        <div className="hidden lg:flex flex-wrap items-center gap-1.5">
           {[
             { key: 'ALL', label: 'ทั้งหมด (รวม)', icon: Users, count: tabCounts.ALL },
             { key: 'ADMIN', label: 'ผู้ดูแลระบบ', icon: ShieldCheck, count: tabCounts.ADMIN },
@@ -425,6 +425,22 @@ export default function UsersPage() {
               </button>
             );
           })}
+        </div>
+
+        {/* Role Dropdown (Compact / Mobile Mode) */}
+        <div className="flex lg:hidden items-center gap-2 w-full sm:w-auto">
+          <label className="text-xs text-slate-500 font-bold whitespace-nowrap">กลุ่มผู้ใช้:</label>
+          <select
+            value={selectedTab}
+            onChange={(e) => setSelectedTab(e.target.value)}
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-teal-500/20 cursor-pointer"
+          >
+            <option value="ALL">ทั้งหมด (รวม) ({tabCounts.ALL})</option>
+            <option value="ADMIN">ผู้ดูแลระบบ (Admin) ({tabCounts.ADMIN})</option>
+            <option value="OFFICER">เจ้าหน้าที่แล็บ (Officer) ({tabCounts.OFFICER})</option>
+            <option value="APPROVER">ผู้อนุมัติ/อาจารย์ (Approver) ({tabCounts.APPROVER})</option>
+            <option value="USER">ผู้ใช้ทั่วไป/นิสิต (User) ({tabCounts.USER})</option>
+          </select>
         </div>
 
         {/* Search Box */}

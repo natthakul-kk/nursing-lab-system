@@ -22,6 +22,7 @@ import {
   GraduationCap,
   Sparkles,
   Package,
+  X,
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import UnifiedRequestModal from '@/components/requests/UnifiedRequestModal';
@@ -52,6 +53,17 @@ export default function RequisitionsPage() {
 
   // Action Dispense Modal
   const [activeReqForDispense, setActiveReqForDispense] = useState<any | null>(null);
+  const [dispenseItems, setDispenseItems] = useState<{
+    id: string;
+    itemId?: string;
+    name: string;
+    unit: string;
+    requestedQty: number;
+    quantity: number;
+    allowed: boolean;
+    currentStock: number;
+    recommendedPacks?: any;
+  }[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [acknowledgingId, setAcknowledgingId] = useState<string | null>(null);
 
@@ -177,11 +189,13 @@ export default function RequisitionsPage() {
         body: JSON.stringify({
           action: 'DISPENSE',
           userId: currentUser?.id,
+          itemAdjustments: dispenseItems,
         }),
       });
 
       if (res.ok) {
         setActiveReqForDispense(null);
+        setDispenseItems([]);
         fetchRequisitions();
       } else {
         const err = await res.json();
@@ -484,7 +498,25 @@ export default function RequisitionsPage() {
               {isOfficer && req.status === 'APPROVED' && (
                 <div className="flex items-center justify-end pt-2 border-t border-slate-100">
                   <button
-                    onClick={() => setActiveReqForDispense(req)}
+                    onClick={() => {
+                      setActiveReqForDispense(req);
+                      setDispenseItems(
+                        (req.items || []).map((it: any) => {
+                          const matchC = consumables.find((c) => c.id === it.itemId);
+                          return {
+                            id: it.id,
+                            itemId: it.itemId,
+                            name: it.item?.name || 'วัสดุสิ้นเปลือง',
+                            unit: it.item?.unit || 'หน่วย',
+                            requestedQty: it.quantityRequested,
+                            quantity: it.quantityRequested,
+                            allowed: true,
+                            currentStock: it.item?.currentStock ?? matchC?.currentStock ?? 0,
+                            recommendedPacks: matchC?.nextRecommendedPacks || null,
+                          };
+                        })
+                      );
+                    }}
                     className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow transition cursor-pointer"
                   >
                     <PackageCheck className="w-4 h-4" />
@@ -787,44 +819,138 @@ export default function RequisitionsPage() {
       {/* Modal: Confirm Dispense & Cut Stock */}
       {activeReqForDispense && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
-            <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <PackageCheck className="w-5 h-5 text-teal-600" />
-              ยืนยันการจ่ายของและตัดสต็อก FIFO
-            </h3>
+          <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <PackageCheck className="w-5 h-5 text-teal-600" />
+                <span>ตรวจสอบและยืนยันการจ่ายพัสดุ (Dispense & Cut Stock)</span>
+              </h3>
+              <button
+                onClick={() => setActiveReqForDispense(null)}
+                className="text-slate-400 hover:text-slate-600 text-lg font-bold"
+              >
+                ✕
+              </button>
+            </div>
 
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-2">
-              <div className="font-bold text-slate-800">
-                คำขอเลขที่: {activeReqForDispense.requestNumber}
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-slate-800">
+                  คำขอเลขที่: {activeReqForDispense.requestNumber}
+                </span>
+                <span className="font-mono text-[10px] text-teal-700 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
+                  ผู้ขอเบิก: {activeReqForDispense.user?.name}
+                </span>
               </div>
               <div className="text-slate-600">
                 รายวิชา: [{activeReqForDispense.course?.code}] {activeReqForDispense.course?.name}
               </div>
-              <div className="text-emerald-700 font-bold">
-                ประมาณการมูลค่า: ฿{activeReqForDispense.totalCost.toFixed(2)} บาท
-              </div>
             </div>
 
-            {/* Item Breakdown in Dispense Modal */}
-            <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-              <span className="text-[11px] font-bold text-slate-700 block">
-                รายการวัสดุที่กำลังจะจ่ายและตัดสต็อก:
-              </span>
-              {activeReqForDispense.items?.map((it: any, i: number) => (
-                <div key={it.id || i} className="p-2 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between text-xs">
-                  <div>
-                    <span className="font-bold text-slate-800">{it.item?.name}</span>
-                    <span className="text-slate-500 block text-[11px]">คงคลัง: {it.item?.currentStock} {it.item?.unit}</span>
+            {/* Item Breakdown with Adjustment & FEFO Recommendation */}
+            <div className="space-y-2.5 max-h-[50vh] overflow-y-auto pr-1">
+              <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                <span>รายการวัสดุที่จ่าย (สามารถปรับจำนวนหรือไม่อนุญาตเฉพาะชิ้นได้):</span>
+                <span className="text-teal-700 text-[11px]">
+                  อนุญาต {dispenseItems.filter((i) => i.allowed).length}/{dispenseItems.length} รายการ
+                </span>
+              </div>
+
+              {dispenseItems.map((it, idx) => (
+                <div
+                  key={it.id || idx}
+                  className={`p-3 rounded-xl border transition text-xs ${
+                    it.allowed
+                      ? 'bg-white border-teal-100 shadow-sm'
+                      : 'bg-rose-50/60 border-rose-200 opacity-80'
+                  }`}
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <div className="font-bold text-slate-800">{it.name}</div>
+                      <div className="text-[11px] text-slate-500 mt-0.5">
+                        ขอมา: {it.requestedQty} {it.unit}
+                        <span className="ml-1.5 text-[10px] text-teal-700 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-200">
+                          คงคลัง: {it.currentStock} {it.unit}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {it.allowed && (
+                        <div className="flex items-center gap-1">
+                          <span className="text-[11px] text-slate-500">จ่าย:</span>
+                          <input
+                            type="number"
+                            min="1"
+                            max={it.requestedQty}
+                            value={it.quantity}
+                            onChange={(e) => {
+                              const val = Math.max(1, Number(e.target.value));
+                              setDispenseItems((prev) =>
+                                prev.map((item, i) => (i === idx ? { ...item, quantity: val } : item))
+                              );
+                            }}
+                            className="w-14 bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold text-center"
+                          />
+                          <span className="text-[11px] text-slate-500">{it.unit}</span>
+                        </div>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDispenseItems((prev) =>
+                            prev.map((item, i) => (i === idx ? { ...item, allowed: !item.allowed } : item))
+                          );
+                        }}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                          it.allowed
+                            ? 'bg-teal-100 text-teal-800 hover:bg-teal-200 border border-teal-300'
+                            : 'bg-rose-600 text-white hover:bg-rose-700'
+                        }`}
+                      >
+                        {it.allowed ? (
+                          <>
+                            <Check className="w-3.5 h-3.5" />
+                            <span>ให้เบิก</span>
+                          </>
+                        ) : (
+                          <>
+                            <X className="w-3.5 h-3.5" />
+                            <span>ไม่อนุญาต</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
-                  <span className="font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
-                    จ่าย {it.quantityRequested} {it.item?.unit}
-                  </span>
+
+                  {/* Sterile Repack Recommendation */}
+                  {it.recommendedPacks && it.allowed && (
+                    <div className="mt-2 pt-2 border-t border-teal-100/80 flex flex-wrap items-center justify-between gap-1 text-[11px] text-teal-900 bg-teal-50/80 px-2.5 py-1.5 rounded-lg">
+                      <span className="font-bold flex items-center gap-1.5">
+                        <Package className="w-3.5 h-3.5 text-teal-600" />
+                        📦 แนะนำหยิบซองปลอดเชื้อตามลำดับ (FEFO):
+                      </span>
+                      <span className="font-mono font-bold text-teal-800 bg-white px-2 py-0.5 rounded border border-teal-200">
+                        {it.recommendedPacks.packs
+                          .slice(0, it.quantity)
+                          .map((p: any) => `#${p.packNumber} (${p.packCode})`)
+                          .join(', ')}
+                      </span>
+                      {it.recommendedPacks.expiryDate && (
+                        <span className="text-[10px] text-teal-700">
+                          วันหมดอายุ: {new Date(it.recommendedPacks.expiryDate).toLocaleDateString('th-TH')}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
 
             <p className="text-[11px] text-slate-500 leading-relaxed bg-amber-50 p-2.5 rounded-xl border border-amber-200 text-amber-800">
-              💡 เมื่อกดยืนยันจ่ายของ ระบบจะบันทึก <b>เวลาที่จ่ายของจริง ({new Date().toLocaleTimeString('th-TH')} น.)</b> พร้อมชื่อเจ้าหน้าที่ผู้จ่าย และตัดสต็อกจาก Lot ที่หมดอายุก่อน (FIFO) โดยอัตโนมัติ
+              💡 เมื่อกดยืนยัน ระบบจะบันทึก <b>เวลาที่จ่ายของจริง ({new Date().toLocaleTimeString('th-TH')} น.)</b> พร้อมชื่อเจ้าหน้าที่ผู้จ่าย และตัดสต็อกเฉพาะรายการที่ <b>"อนุญาต"</b> ตามลำดับ Lot ที่หมดอายุก่อน (FIFO) โดยอัตโนมัติ
             </p>
 
             <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">

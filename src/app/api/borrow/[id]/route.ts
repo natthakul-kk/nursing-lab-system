@@ -144,7 +144,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         }
 
         // Explicit asset assignment or auto-assign available asset
-        const explicitAssign = assignedAssets?.find((a: any) => a.borrowItemId === bItem.id);
+        const explicitAssign =
+          assignedAssets?.find((a: any) => a.borrowItemId === bItem.id) ||
+          (adj?.assetId ? { assetId: adj.assetId } : null);
         if (explicitAssign?.assetId) {
           await prisma.borrowItem.update({
             where: { id: bItem.id },

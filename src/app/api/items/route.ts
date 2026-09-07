@@ -69,11 +69,29 @@ export async function GET(req: Request) {
           category: { select: { id: true, name: true } },
           assets: {
             where: { status: 'AVAILABLE' },
-            select: { id: true },
+            select: { id: true, assetCode: true, sequenceNumber: true, location: true },
+            orderBy: { sequenceNumber: 'asc' },
           },
           stockLots: {
             where: { quantityRemaining: { gt: 0 } },
             select: { quantityRemaining: true, openPackRemainder: true },
+          },
+          targetRepacks: {
+            where: {
+              packItems: { some: { status: 'AVAILABLE' } },
+            },
+            select: {
+              subLotNumber: true,
+              sterileExpiryDate: true,
+              packItems: {
+                where: { status: 'AVAILABLE' },
+                select: { id: true, packNumber: true, packCode: true },
+                orderBy: { packNumber: 'asc' },
+                take: 5,
+              },
+            },
+            orderBy: { sterileExpiryDate: 'asc' },
+            take: 1,
           },
         },
         orderBy: { code: 'asc' },
@@ -111,12 +129,25 @@ export async function GET(req: Request) {
           imageUrl: item.imageUrl,
           status: item.status,
           categoryId: item.categoryId,
+          category: item.category,
           physicalStock,
           reservedStock,
           availableStock,
           currentStock: availableStock, // Guarantees all selectors and stock checks validate against available stock
           openPackRemainder,
           isLowStock: availableStock <= item.minStockAlert,
+          availableAssets: item.type === 'EQUIPMENT' ? item.assets : [],
+          nextRecommendedPacks:
+            item.type === 'CONSUMABLE' && (item as any).targetRepacks?.[0]?.packItems?.length > 0
+              ? {
+                  subLotNumber: (item as any).targetRepacks[0].subLotNumber,
+                  expiryDate: (item as any).targetRepacks[0].sterileExpiryDate,
+                  packs: (item as any).targetRepacks[0].packItems.map((p: any) => ({
+                    packNumber: p.packNumber,
+                    packCode: p.packCode,
+                  })),
+                }
+              : null,
         };
       });
 

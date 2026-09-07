@@ -23,6 +23,7 @@ import {
   Boxes,
   Package,
   X,
+  QrCode,
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import UnifiedRequestModal from '@/components/requests/UnifiedRequestModal';
@@ -61,17 +62,21 @@ export default function BorrowPage() {
   const [returnCondition, setReturnCondition] = useState<'GOOD' | 'DAMAGED'>('GOOD');
   const [returnNote, setReturnNote] = useState('');
   const [itemReturns, setItemReturns] = useState<{ id: string; condition: 'GOOD' | 'DAMAGED'; note: string }[]>([]);
+  const [consumablesList, setConsumablesList] = useState<any[]>([]);
   const [checkoutBorrowItems, setCheckoutBorrowItems] = useState<{
     id: string;
+    itemId?: string;
     name: string;
     unit: string;
     requestedQty: number;
     quantity: number;
     allowed: boolean;
+    assetId?: string | null;
     assetCode: string | null;
   }[]>([]);
   const [checkoutReqItems, setCheckoutReqItems] = useState<{
     id: string;
+    itemId?: string;
     name: string;
     unit: string;
     requestedQty: number;
@@ -84,9 +89,10 @@ export default function BorrowPage() {
 
   const fetchBorrowData = async () => {
     try {
-      const [borrowRes, itemsRes, coursesRes, usersRes] = await Promise.all([
+      const [borrowRes, itemsRes, consumablesRes, coursesRes, usersRes] = await Promise.all([
         fetch('/api/borrow'),
         fetch('/api/items?type=EQUIPMENT&compact=true'),
+        fetch('/api/items?type=CONSUMABLE&compact=true'),
         fetch('/api/courses?compact=true'),
         fetch('/api/users?role=APPROVER'),
       ]);
@@ -98,6 +104,10 @@ export default function BorrowPage() {
       if (itemsRes.ok) {
         const items = await itemsRes.json();
         setEquipmentList(items);
+      }
+      if (consumablesRes.ok) {
+        const cItems = await consumablesRes.json();
+        setConsumablesList(cItems);
       }
       if (coursesRes.ok) {
         const cData = await coursesRes.json();
@@ -211,6 +221,12 @@ export default function BorrowPage() {
           returnNote: actionType === 'RETURN' ? returnNote : undefined,
           itemReturns: actionType === 'RETURN' ? itemReturns : undefined,
           borrowItemAdjustments: actionType === 'CHECKOUT' ? checkoutBorrowItems : undefined,
+          assignedAssets:
+            actionType === 'CHECKOUT'
+              ? checkoutBorrowItems
+                  .filter((i) => i.allowed && i.assetId)
+                  .map((i) => ({ borrowItemId: i.id, assetId: i.assetId }))
+              : undefined,
           requisitionItemAdjustments: actionType === 'CHECKOUT' ? checkoutReqItems : undefined,
         }),
       });
@@ -653,17 +669,20 @@ export default function BorrowPage() {
                         setCheckoutBorrowItems(
                           (req.items || []).map((it: any) => ({
                             id: it.id,
+                            itemId: it.itemId,
                             name: it.item?.name || 'ครุภัณฑ์',
                             unit: it.item?.unit || 'ชิ้น',
                             requestedQty: it.quantity,
                             quantity: it.quantity,
                             allowed: true,
+                            assetId: it.assetId || null,
                             assetCode: it.asset?.assetCode || null,
                           }))
                         );
                         setCheckoutReqItems(
                           (req.requisitionRequest?.items || []).map((it: any) => ({
                             id: it.id,
+                            itemId: it.itemId,
                             name: it.item?.name || 'วัสดุสิ้นเปลือง',
                             unit: it.item?.unit || 'หน่วย',
                             requestedQty: it.quantityRequested,
@@ -1127,78 +1146,121 @@ export default function BorrowPage() {
                   </div>
 
                   <div className="space-y-2">
-                    {checkoutBorrowItems.map((it, idx) => (
-                      <div
-                        key={it.id}
-                        className={`p-2.5 rounded-xl border transition text-xs ${
-                          it.allowed
-                            ? 'bg-white border-indigo-100 shadow-sm'
-                            : 'bg-rose-50/60 border-rose-200 opacity-80'
-                        }`}
-                      >
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                          <div>
-                            <div className="font-bold text-slate-800">{it.name}</div>
-                            <div className="text-[11px] text-slate-500">
-                              ขอมา: {it.requestedQty} {it.unit}
-                              {it.assetCode && (
-                                <span className="ml-1.5 font-mono text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-teal-700">
-                                  รหัส: {it.assetCode}
-                                </span>
+                    {checkoutBorrowItems.map((it, idx) => {
+                      const matchEq = equipmentList.find((e) => e.id === it.itemId);
+                      const availableAssets = matchEq?.availableAssets || [];
+
+                      return (
+                        <div
+                          key={it.id}
+                          className={`p-2.5 rounded-xl border transition text-xs ${
+                            it.allowed
+                              ? 'bg-white border-indigo-100 shadow-sm'
+                              : 'bg-rose-50/60 border-rose-200 opacity-80'
+                          }`}
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div>
+                              <div className="font-bold text-slate-800">{it.name}</div>
+                              <div className="text-[11px] text-slate-500">
+                                ขอมา: {it.requestedQty} {it.unit}
+                                {it.assetCode && (
+                                  <span className="ml-1.5 font-mono text-[10px] bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded text-indigo-700 font-bold">
+                                    เครื่องที่เลือก: {it.assetCode}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              {it.allowed && (
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[11px] text-slate-500">จ่าย:</span>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    max={it.requestedQty}
+                                    value={it.quantity}
+                                    onChange={(e) => {
+                                      const val = Math.max(1, Number(e.target.value));
+                                      setCheckoutBorrowItems((prev) =>
+                                        prev.map((item, i) => (i === idx ? { ...item, quantity: val } : item))
+                                      );
+                                    }}
+                                    className="w-14 bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold text-center"
+                                  />
+                                  <span className="text-[11px] text-slate-500">{it.unit}</span>
+                                </div>
                               )}
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setCheckoutBorrowItems((prev) =>
+                                    prev.map((item, i) => (i === idx ? { ...item, allowed: !item.allowed } : item))
+                                  );
+                                }}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                                  it.allowed
+                                    ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300'
+                                    : 'bg-rose-600 text-white hover:bg-rose-700'
+                                }`}
+                              >
+                                {it.allowed ? (
+                                  <>
+                                    <Check className="w-3.5 h-3.5" />
+                                    <span>ให้ยืม</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <X className="w-3.5 h-3.5" />
+                                    <span>ไม่อนุญาต</span>
+                                  </>
+                                )}
+                              </button>
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-2">
-                            {it.allowed && (
-                              <div className="flex items-center gap-1">
-                                <span className="text-[11px] text-slate-500">จ่าย:</span>
-                                <input
-                                  type="number"
-                                  min="1"
-                                  max={it.requestedQty}
-                                  value={it.quantity}
-                                  onChange={(e) => {
-                                    const val = Math.max(1, Number(e.target.value));
-                                    setCheckoutBorrowItems((prev) =>
-                                      prev.map((item, i) => (i === idx ? { ...item, quantity: val } : item))
-                                    );
-                                  }}
-                                  className="w-14 bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold text-center"
-                                />
-                                <span className="text-[11px] text-slate-500">{it.unit}</span>
-                              </div>
-                            )}
-
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setCheckoutBorrowItems((prev) =>
-                                  prev.map((item, i) => (i === idx ? { ...item, allowed: !item.allowed } : item))
-                                );
-                              }}
-                              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
-                                it.allowed
-                                  ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300'
-                                  : 'bg-rose-600 text-white hover:bg-rose-700'
-                              }`}
-                            >
-                              {it.allowed ? (
-                                <>
-                                  <Check className="w-3.5 h-3.5" />
-                                  <span>ให้ยืม</span>
-                                </>
-                              ) : (
-                                <>
-                                  <X className="w-3.5 h-3.5" />
-                                  <span>ไม่อนุญาต</span>
-                                </>
-                              )}
-                            </button>
-                          </div>
+                          {/* Specific Asset Selection for Handover */}
+                          {it.allowed && availableAssets.length > 0 && (
+                            <div className="mt-2.5 pt-2 border-t border-indigo-100/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                              <span className="text-[11px] font-semibold text-indigo-900 flex items-center gap-1.5">
+                                <QrCode className="w-3.5 h-3.5 text-indigo-600" />
+                                ระบุหมายเลขเครื่องที่ส่งมอบจริง (Serial No.):
+                              </span>
+                              <select
+                                value={it.assetId || ''}
+                                onChange={(e) => {
+                                  const selId = e.target.value;
+                                  const foundA = availableAssets.find((a: any) => a.id === selId);
+                                  setCheckoutBorrowItems((prev) =>
+                                    prev.map((item, i) =>
+                                      i === idx
+                                        ? {
+                                            ...item,
+                                            assetId: selId || null,
+                                            assetCode: foundA ? foundA.assetCode : null,
+                                          }
+                                        : item
+                                    )
+                                  );
+                                }}
+                                className="bg-indigo-50 border border-indigo-200 rounded-lg px-2.5 py-1 text-xs font-mono font-bold text-indigo-950 focus:ring-1 focus:ring-indigo-500 max-w-xs"
+                              >
+                                <option value="">
+                                  -- เลือกระบบอัตโนมัติ ({availableAssets.length} เครื่องว่าง) --
+                                </option>
+                                {availableAssets.map((a: any) => (
+                                  <option key={a.id} value={a.id}>
+                                    🏷️ {a.assetCode} (เครื่องที่ {a.sequenceNumber || 1}){a.location ? ` • ${a.location}` : ''}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -1216,78 +1278,101 @@ export default function BorrowPage() {
                     </div>
 
                     <div className="space-y-2">
-                      {checkoutReqItems.map((it, idx) => (
-                        <div
-                          key={it.id}
-                          className={`p-2.5 rounded-xl border transition text-xs ${
-                            it.allowed
-                              ? 'bg-white border-teal-100 shadow-sm'
-                              : 'bg-rose-50/60 border-rose-200 opacity-80'
-                          }`}
-                        >
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                            <div>
-                              <div className="font-bold text-slate-800">{it.name}</div>
-                              <div className="text-[11px] text-slate-500">
-                                ขอมา: {it.requestedQty} {it.unit}
-                                {it.currentStock !== undefined && (
-                                  <span className="ml-1.5 text-[10px] text-teal-700 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-200">
-                                    คงคลัง: {it.currentStock} {it.unit}
-                                  </span>
+                      {checkoutReqItems.map((it, idx) => {
+                        const matchCons = consumablesList.find((c) => c.id === it.itemId);
+                        const recPacks = matchCons?.nextRecommendedPacks;
+
+                        return (
+                          <div
+                            key={it.id}
+                            className={`p-2.5 rounded-xl border transition text-xs ${
+                              it.allowed
+                                ? 'bg-white border-teal-100 shadow-sm'
+                                : 'bg-rose-50/60 border-rose-200 opacity-80'
+                            }`}
+                          >
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                              <div>
+                                <div className="font-bold text-slate-800">{it.name}</div>
+                                <div className="text-[11px] text-slate-500">
+                                  ขอมา: {it.requestedQty} {it.unit}
+                                  {it.currentStock !== undefined && (
+                                    <span className="ml-1.5 text-[10px] text-teal-700 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-200">
+                                      คงคลัง: {it.currentStock} {it.unit}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                {it.allowed && (
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-[11px] text-slate-500">จ่าย:</span>
+                                    <input
+                                      type="number"
+                                      min="1"
+                                      max={it.requestedQty}
+                                      value={it.quantity}
+                                      onChange={(e) => {
+                                        const val = Math.max(1, Number(e.target.value));
+                                        setCheckoutReqItems((prev) =>
+                                          prev.map((item, i) => (i === idx ? { ...item, quantity: val } : item))
+                                        );
+                                      }}
+                                      className="w-14 bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold text-center"
+                                    />
+                                    <span className="text-[11px] text-slate-500">{it.unit}</span>
+                                  </div>
                                 )}
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setCheckoutReqItems((prev) =>
+                                      prev.map((item, i) => (i === idx ? { ...item, allowed: !item.allowed } : item))
+                                    );
+                                  }}
+                                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                                    it.allowed
+                                      ? 'bg-teal-100 text-teal-800 hover:bg-teal-200 border border-teal-300'
+                                      : 'bg-rose-600 text-white hover:bg-rose-700'
+                                  }`}
+                                >
+                                  {it.allowed ? (
+                                    <>
+                                      <Check className="w-3.5 h-3.5" />
+                                      <span>ให้เบิก</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <X className="w-3.5 h-3.5" />
+                                      <span>ไม่อนุญาต</span>
+                                    </>
+                                  )}
+                                </button>
                               </div>
                             </div>
 
-                            <div className="flex items-center gap-2">
-                              {it.allowed && (
-                                <div className="flex items-center gap-1">
-                                  <span className="text-[11px] text-slate-500">จ่าย:</span>
-                                  <input
-                                    type="number"
-                                    min="1"
-                                    max={it.requestedQty}
-                                    value={it.quantity}
-                                    onChange={(e) => {
-                                      const val = Math.max(1, Number(e.target.value));
-                                      setCheckoutReqItems((prev) =>
-                                        prev.map((item, i) => (i === idx ? { ...item, quantity: val } : item))
-                                      );
-                                    }}
-                                    className="w-14 bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold text-center"
-                                  />
-                                  <span className="text-[11px] text-slate-500">{it.unit}</span>
-                                </div>
-                              )}
-
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setCheckoutReqItems((prev) =>
-                                    prev.map((item, i) => (i === idx ? { ...item, allowed: !item.allowed } : item))
-                                  );
-                                }}
-                                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
-                                  it.allowed
-                                    ? 'bg-teal-100 text-teal-800 hover:bg-teal-200 border border-teal-300'
-                                    : 'bg-rose-600 text-white hover:bg-rose-700'
-                                }`}
-                              >
-                                {it.allowed ? (
-                                  <>
-                                    <Check className="w-3.5 h-3.5" />
-                                    <span>ให้เบิก</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <X className="w-3.5 h-3.5" />
-                                    <span>ไม่อนุญาต</span>
-                                  </>
+                            {/* Sterile Repack Recommendation */}
+                            {recPacks && it.allowed && (
+                              <div className="mt-2 pt-2 border-t border-teal-100/80 flex flex-wrap items-center justify-between gap-1 text-[11px] text-teal-900 bg-teal-50/80 px-2.5 py-1.5 rounded-lg">
+                                <span className="font-bold flex items-center gap-1.5">
+                                  <Package className="w-3.5 h-3.5 text-teal-600" />
+                                  📦 แนะนำหยิบซองปลอดเชื้อตามลำดับ (FEFO):
+                                </span>
+                                <span className="font-mono font-bold text-teal-800 bg-white px-2 py-0.5 rounded border border-teal-200">
+                                  {recPacks.packs.slice(0, it.quantity).map((p: any) => `#${p.packNumber} (${p.packCode})`).join(', ')}
+                                </span>
+                                {recPacks.expiryDate && (
+                                  <span className="text-[10px] text-teal-700">
+                                    วันหมดอายุ: {new Date(recPacks.expiryDate).toLocaleDateString('th-TH')}
+                                  </span>
                                 )}
-                              </button>
-                            </div>
+                              </div>
+                            )}
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}

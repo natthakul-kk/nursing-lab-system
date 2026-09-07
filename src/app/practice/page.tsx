@@ -101,6 +101,9 @@ export default function PracticePage() {
     closeReason: '',
   });
 
+  // Slot Detail Modal (Opened directly when clicking a slot pill on calendar)
+  const [slotDetailModal, setSlotDetailModal] = useState<any>(null);
+
   // Booking Modal State
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [slotForBooking, setSlotForBooking] = useState<any>(null);
@@ -1000,37 +1003,49 @@ export default function PracticePage() {
                             const isFull = slot.isFull;
 
                             return (
-                              <div
+                              <button
                                 key={slot.id}
+                                type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setSelectedDate(cell.dateStr);
+                                  setSlotDetailModal(slot);
                                 }}
-                                className={`px-1.5 py-0.5 rounded text-[10px] font-bold truncate flex items-center justify-between border transition ${
+                                className={`w-full px-1.5 py-1 rounded-lg text-[10px] font-bold truncate flex items-center justify-between border transition cursor-pointer text-left shadow-xs hover:scale-[1.02] ${
                                   !isOpen
-                                    ? 'bg-rose-50 text-rose-700 border-rose-200 line-through opacity-70'
+                                    ? 'bg-rose-50 text-rose-700 border-rose-200 line-through opacity-75 hover:bg-rose-100'
                                     : isFull
-                                    ? 'bg-amber-50 text-amber-800 border-amber-200'
-                                    : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
+                                    ? 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
+                                    : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300 hover:shadow-sm'
                                 }`}
-                                title={`${slot.room?.name || 'Lab'} (${slot.startTime}-${slot.endTime}) ${
+                                title={`คลิกเพื่อดูรายละเอียด/จอง/แก้ไข: ${slot.room?.name || 'Lab'} (${slot.startTime}-${slot.endTime}) ${
                                   !isOpen ? 'ปิดรอบ' : isFull ? 'เต็ม' : `ว่าง ${slot.availableSeats}/${slot.maxCapacity}`
                                 }`}
                               >
-                                <span className="truncate">
-                                  {slot.startTime}-{slot.endTime} {slot.room?.code?.replace('LAB-', '') || ''}
+                                <span className="truncate flex items-center gap-1">
+                                  <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                                    !isOpen ? 'bg-rose-500' : isFull ? 'bg-amber-500' : 'bg-emerald-500'
+                                  }`}></span>
+                                  <span>{slot.startTime}-{slot.endTime}</span>
                                 </span>
                                 <span className="text-[9px] font-mono ml-1 flex-shrink-0">
                                   {isOpen ? `${slot.availableSeats}ที่` : 'ปิด'}
                                 </span>
-                              </div>
+                              </button>
                             );
                           })}
 
                           {cellSlots.length > 3 && (
-                            <div className="text-[9px] font-bold text-teal-700 text-center pt-0.5">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedDate(cell.dateStr);
+                              }}
+                              className="w-full text-[9px] font-bold text-teal-700 hover:text-teal-900 bg-teal-50 hover:bg-teal-100 py-0.5 rounded text-center transition cursor-pointer"
+                            >
                               +{cellSlots.length - 3} รอบเพิ่มเติม
-                            </div>
+                            </button>
                           )}
                         </div>
 
@@ -2101,6 +2116,158 @@ export default function PracticePage() {
                 </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: DIRECT SLOT DETAILS & ACTION (OPENED WHEN CLICKING A SLOT ON CALENDAR) */}
+      {slotDetailModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150 relative">
+            <div className="flex items-start justify-between pb-3 border-b border-slate-100">
+              <div>
+                <span className="font-mono text-[10px] font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-100">
+                  {slotDetailModal.room?.code}
+                </span>
+                <h3 className="text-lg font-black text-slate-900 mt-1">
+                  {slotDetailModal.room?.name}
+                </h3>
+                {slotDetailModal.room?.location && (
+                  <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                    <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                    {slotDetailModal.room.location}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={() => setSlotDetailModal(null)}
+                className="text-slate-400 hover:text-slate-600 text-lg font-bold p-1 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Time, Date, and Status Info */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
+                  <Calendar className="w-4 h-4 text-teal-600" />
+                  <span>
+                    {new Date(slotDetailModal.date).toLocaleDateString('th-TH', {
+                      weekday: 'short',
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                    })}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs font-bold text-teal-700 bg-teal-50 px-2.5 py-1 rounded-xl border border-teal-100">
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>{slotDetailModal.startTime} - {slotDetailModal.endTime} น.</span>
+                </div>
+              </div>
+
+              {/* Status and Capacity */}
+              <div className="flex items-center justify-between text-xs p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                <div>
+                  <span className="text-[11px] text-slate-500 block">สถานะรอบ:</span>
+                  {!slotDetailModal.isOpen ? (
+                    <span className="inline-flex items-center gap-1 font-bold text-rose-700 mt-0.5">
+                      <Lock className="w-3.5 h-3.5 text-rose-600" /> ปิดรอบ (ระงับการจอง)
+                    </span>
+                  ) : slotDetailModal.isFull ? (
+                    <span className="inline-flex items-center gap-1 font-bold text-amber-700 mt-0.5">
+                      <Users className="w-3.5 h-3.5 text-amber-600" /> เต็มแล้ว
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 font-bold text-emerald-700 mt-0.5">
+                      <Unlock className="w-3.5 h-3.5 text-emerald-600" /> เปิดรับจอง (ว่าง {slotDetailModal.availableSeats} ที่)
+                    </span>
+                  )}
+                </div>
+
+                <div className="text-right">
+                  <span className="text-[11px] text-slate-500 block">ความจุห้อง:</span>
+                  <span className="font-bold text-slate-800 mt-0.5 block">
+                    {slotDetailModal.bookedCount} / {slotDetailModal.maxCapacity} คน
+                  </span>
+                </div>
+              </div>
+
+              {!slotDetailModal.isOpen && slotDetailModal.closeReason && (
+                <div className="bg-rose-50 border border-rose-100 p-3 rounded-2xl text-rose-700 text-xs flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold block">เหตุผลที่ปิดรอบ:</span>
+                    <span>{slotDetailModal.closeReason}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Actions */}
+            <div className="pt-2 border-t border-slate-100 space-y-2">
+              {/* Student Booking Button */}
+              {slotDetailModal.isOpen && !slotDetailModal.isFull && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const slot = slotDetailModal;
+                    setSlotDetailModal(null);
+                    handleOpenBookingModal(slot);
+                  }}
+                  className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white font-bold text-xs shadow-md shadow-teal-600/20 transition cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>ขอยื่นจองรอบเวลานี้</span>
+                </button>
+              )}
+
+              {/* Staff / Teacher Controls */}
+              {canManageSlots && (
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const slot = slotDetailModal;
+                      setSlotDetailModal(null);
+                      handleOpenEditSlotModal(slot);
+                    }}
+                    className="flex-1 py-2 px-3 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <Edit className="w-3.5 h-3.5 text-slate-600" />
+                    <span>แก้ไขรอบ</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const slot = slotDetailModal;
+                      setSlotDetailModal(null);
+                      setSlotToToggle(slot);
+                      setCloseReasonInput(slot.closeReason || '');
+                    }}
+                    className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold border transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                      slotDetailModal.isOpen
+                        ? 'text-rose-700 bg-rose-50 hover:bg-rose-100 border-rose-200'
+                        : 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border-emerald-200'
+                    }`}
+                  >
+                    {slotDetailModal.isOpen ? (
+                      <>
+                        <Lock className="w-3.5 h-3.5 text-rose-600" />
+                        <span>ปิดรับจอง</span>
+                      </>
+                    ) : (
+                      <>
+                        <Unlock className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>เปิดรับจอง</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

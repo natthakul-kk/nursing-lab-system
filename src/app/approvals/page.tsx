@@ -512,7 +512,7 @@ export default function ApprovalsPage() {
                           <button
                             disabled={submitting}
                             onClick={() => handleAcknowledge(req.id, 'BORROW')}
-                            className="px-3.5 py-2 rounded-xl text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 shadow-sm transition cursor-pointer flex items-center gap-1.5"
+                            className="px-3.5 py-2 rounded-xl text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed border border-indigo-200 shadow-sm transition cursor-pointer flex items-center gap-1.5"
                             title="อาจารย์ประจำวิชากดรับทราบก่อนส่งต่อการอนุมัติขั้นสุดท้าย"
                           >
                             <GraduationCap className="w-3.5 h-3.5 text-indigo-600" />
@@ -522,16 +522,26 @@ export default function ApprovalsPage() {
                         <button
                           disabled={submitting}
                           onClick={() => setRejectItem({ id: req.id, type: 'BORROW' })}
-                          className="px-4 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 transition cursor-pointer"
+                          className="px-4 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 disabled:opacity-50 disabled:cursor-not-allowed border border-rose-200 transition cursor-pointer"
                         >
                           ไม่อนุมัติ
                         </button>
                         <button
                           disabled={submitting}
                           onClick={() => handleApprove(req.id, 'BORROW')}
-                          className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-teal-600 hover:bg-teal-500 shadow-md shadow-teal-600/20 transition cursor-pointer flex items-center gap-1.5"
+                          className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-teal-600 hover:bg-teal-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-teal-600/20 transition cursor-pointer flex items-center gap-1.5"
                         >
-                          <Check className="w-3.5 h-3.5" /> อนุมัติคำขอยืม
+                          {submitting ? (
+                            <>
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                              <span>กำลังอนุมัติ...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Check className="w-3.5 h-3.5" />
+                              <span>อนุมัติคำขอยืม</span>
+                            </>
+                          )}
                         </button>
                       </div>
                     </div>
@@ -661,7 +671,7 @@ export default function ApprovalsPage() {
                           <button
                             disabled={submitting}
                             onClick={() => handleAcknowledge(req.id, 'REQUISITION')}
-                            className="px-3.5 py-2 rounded-xl text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 shadow-sm transition cursor-pointer flex items-center gap-1.5"
+                            className="px-3.5 py-2 rounded-xl text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed border border-indigo-200 shadow-sm transition cursor-pointer flex items-center gap-1.5"
                             title="อาจารย์ประจำวิชากดรับทราบก่อนส่งต่อการอนุมัติขั้นสุดท้าย"
                           >
                             <GraduationCap className="w-3.5 h-3.5 text-indigo-600" />
@@ -671,16 +681,26 @@ export default function ApprovalsPage() {
                         <button
                           disabled={submitting}
                           onClick={() => setRejectItem({ id: req.id, type: 'REQUISITION' })}
-                          className="px-4 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 transition cursor-pointer"
+                          className="px-4 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 disabled:opacity-50 disabled:cursor-not-allowed border border-rose-200 transition cursor-pointer"
                         >
                           ไม่อนุมัติ
                         </button>
                         <button
                           disabled={submitting}
                           onClick={() => handleApprove(req.id, 'REQUISITION')}
-                          className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-teal-600 hover:bg-teal-500 shadow-md shadow-teal-600/20 transition cursor-pointer flex items-center gap-1.5"
+                          className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-teal-600 hover:bg-teal-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-teal-600/20 transition cursor-pointer flex items-center gap-1.5"
                         >
-                          <Check className="w-3.5 h-3.5" /> อนุมัติการเบิกจ่าย
+                          {submitting ? (
+                            <>
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                              <span>กำลังอนุมัติ...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Check className="w-3.5 h-3.5" />
+                              <span>อนุมัติการเบิกจ่าย</span>
+                            </>
+                          )}
                         </button>
                       </div>
                     </div>
@@ -838,16 +858,26 @@ export default function ApprovalsPage() {
                         <button
                           disabled={submitting}
                           onClick={() => setRejectItem({ id: b.id, type: 'PRACTICE' })}
-                          className="px-4 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 transition cursor-pointer"
+                          className="px-4 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 disabled:opacity-50 disabled:cursor-not-allowed border border-rose-200 transition cursor-pointer"
                         >
                           ไม่อนุมัติ
                         </button>
                         <button
                           disabled={submitting}
                           onClick={() => handleApprove(b.id, 'PRACTICE')}
-                          className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-teal-600 hover:bg-teal-500 shadow-md shadow-teal-600/20 transition cursor-pointer flex items-center gap-1.5"
+                          className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-teal-600 hover:bg-teal-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-teal-600/20 transition cursor-pointer flex items-center gap-1.5"
                         >
-                          <Check className="w-3.5 h-3.5" /> อนุมัติการเข้าฝึกปฏิบัติ
+                          {submitting ? (
+                            <>
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                              <span>กำลังอนุมัติ...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Check className="w-3.5 h-3.5" />
+                              <span>อนุมัติการเข้าฝึกปฏิบัติ</span>
+                            </>
+                          )}
                         </button>
                       </div>
                     </div>

@@ -24,6 +24,15 @@ export async function GET(req: Request) {
             asset: true,
           },
         },
+        requisitionRequest: {
+          include: {
+            items: {
+              include: {
+                item: true,
+              },
+            },
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });

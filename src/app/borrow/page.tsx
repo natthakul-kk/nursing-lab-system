@@ -18,9 +18,13 @@ import {
   Check,
   ShieldCheck,
   Search,
-  GraduationCap
+  GraduationCap,
+  Sparkles,
+  Boxes,
+  Package,
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import UnifiedRequestModal from '@/components/requests/UnifiedRequestModal';
 
 export default function BorrowPage() {
   const { currentUser, isOfficer, isApprover, isAdmin } = useAuth();
@@ -39,6 +43,7 @@ export default function BorrowPage() {
 
   // New Request Modal
   const [showNewModal, setShowNewModal] = useState(false);
+  const [showUnifiedModal, setShowUnifiedModal] = useState(false);
   const [instructors, setInstructors] = useState<any[]>([]);
   const [newRequest, setNewRequest] = useState({
     courseId: '',
@@ -299,13 +304,22 @@ export default function BorrowPage() {
           </p>
         </div>
 
-        <button
-          onClick={() => setShowNewModal(true)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>ยื่นคำขอยืมครุภัณฑ์</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            onClick={() => setShowUnifiedModal(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-indigo-600 hover:from-teal-500 hover:to-indigo-500 text-white text-xs font-black shadow-lg shadow-teal-600/25 transition cursor-pointer ring-2 ring-teal-400/30"
+          >
+            <Sparkles className="w-4 h-4 text-amber-300" />
+            <span>ยื่นคำขอรวม (ยืมครุภัณฑ์ + เบิกวัสดุ)</span>
+          </button>
+          <button
+            onClick={() => setShowNewModal(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold shadow-md transition cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>ขอยืมเฉพาะครุภัณฑ์</span>
+          </button>
+        </div>
       </div>
 
       {/* Filter Tabs & Scope */}
@@ -391,6 +405,11 @@ export default function BorrowPage() {
                     {req.requestNumber}
                   </span>
                   <div>{getStatusBadge(req.status)}</div>
+                  {req.requisitionRequest && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-teal-50 to-indigo-50 text-indigo-800 border border-indigo-200">
+                      <Sparkles className="w-3 h-3 text-indigo-600" /> คำขอรวม One-Stop
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
@@ -537,6 +556,32 @@ export default function BorrowPage() {
                     </div>
                   ))}
                 </div>
+
+                {/* Linked Requisition Items for Unified Requests */}
+                {req.requisitionRequest && (
+                  <div className="mt-3 p-3.5 bg-teal-50/70 border border-teal-200/80 rounded-xl space-y-2">
+                    <div className="flex items-center justify-between text-xs font-bold text-teal-950">
+                      <span className="flex items-center gap-1.5">
+                        <Boxes className="w-4 h-4 text-teal-600" />
+                        🧪 วัสดุสิ้นเปลืองที่ขอเบิกพร้อมกัน ({req.requisitionRequest.requestNumber}):
+                      </span>
+                      <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-teal-100 text-teal-800 font-extrabold border border-teal-200">
+                        {req.requisitionRequest.status === 'DISPENSED' ? '✓ ตัดจ่ายแล้ว (ไม่ต้องคืน)' : 'รอจ่ายพร้อมกัน'}
+                      </span>
+                    </div>
+                    <div className="space-y-1 pl-5 text-[11px] text-teal-900 divide-y divide-teal-100/80">
+                      {req.requisitionRequest.items?.map((rItem: any, rIdx: number) => (
+                        <div key={rIdx} className="flex items-center justify-between pt-1">
+                          <span>• {rItem.item?.name}</span>
+                          <span className="font-bold text-teal-700">
+                            จำนวน {rItem.quantityRequested} {rItem.item?.unit}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {req.returnNote && (
                   <div className="mt-2 pt-2 border-t border-slate-200 text-xs text-rose-700 font-medium flex items-start gap-1.5">
                     <AlertTriangle className="w-3.5 h-3.5 text-rose-600 flex-shrink-0 mt-0.5" />
@@ -1172,6 +1217,13 @@ export default function BorrowPage() {
           </div>
         </div>
       )}
+
+      {/* Unified Request Modal (All-in-One: Borrow & Requisition) */}
+      <UnifiedRequestModal
+        isOpen={showUnifiedModal}
+        onClose={() => setShowUnifiedModal(false)}
+        onSuccess={fetchBorrowData}
+      />
     </div>
   );
 }

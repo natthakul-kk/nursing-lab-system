@@ -144,10 +144,23 @@ export async function GET(req: Request) {
           },
         });
 
+        // If unified request, also approve the linked requisition
+        if (borrow.requisitionRequestId) {
+          await prisma.requisitionRequest.update({
+            where: { id: borrow.requisitionRequestId },
+            data: {
+              status: 'APPROVED',
+              instructorAcknowledged: true,
+              acknowledgedAt: new Date(),
+              approvedAt: new Date(),
+            },
+          }).catch((err) => console.error('Failed to sync linked requisition in email quick action:', err));
+        }
+
         return renderResponseHtml({
           success: true,
-          title: 'อนุมัติคำขอยืมครุภัณฑ์สำเร็จ',
-          message: `คำขอยืม ${borrow.requestNumber} ของ ${borrow.user.name} ได้รับการอนุมัติแล้ว เจ้าหน้าที่ห้องแล็บจะเตรียมส่งมอบอุปกรณ์ตามวันเวลาที่นัดหมาย`,
+          title: 'อนุมัติคำขอเบิก-ยืมพัสดุสำเร็จ',
+          message: `คำขอ ${borrow.requestNumber} ของ ${borrow.user.name} ได้รับการอนุมัติแล้ว เจ้าหน้าที่ห้องแล็บจะเตรียมส่งมอบอุปกรณ์และจัดเตรียมพัสดุตามวันเวลาที่นัดหมาย`,
           badge: 'อนุมัติแล้ว',
         });
       } else {
@@ -159,10 +172,21 @@ export async function GET(req: Request) {
           },
         });
 
+        // If unified request, also reject the linked requisition
+        if (borrow.requisitionRequestId) {
+          await prisma.requisitionRequest.update({
+            where: { id: borrow.requisitionRequestId },
+            data: {
+              status: 'REJECTED',
+              rejectionReason: 'ไม่อนุมัติผ่านอีเมล',
+            },
+          }).catch((err) => console.error('Failed to sync linked requisition in email quick action:', err));
+        }
+
         return renderResponseHtml({
           success: true,
-          title: 'บันทึกการไม่อนุมัติคำขอยืมแล้ว',
-          message: `คำขอยืม ${borrow.requestNumber} ได้รับการบันทึกสถานะเป็นไม่อนุมัติเรียบร้อยแล้ว`,
+          title: 'บันทึกการไม่อนุมัติคำขอแล้ว',
+          message: `คำขอ ${borrow.requestNumber} ได้รับการบันทึกสถานะเป็นไม่อนุมัติเรียบร้อยแล้ว`,
           badge: 'ไม่อนุมัติ',
           isDanger: true,
         });

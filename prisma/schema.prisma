@@ -203,6 +203,10 @@ model BorrowRequest {
   checkedInAt        DateTime?
   returnNote         String?
 
+  // Optional 1-to-1 linkage with RequisitionRequest for unified one-stop requests
+  requisitionRequestId String?              @unique
+  requisitionRequest   RequisitionRequest?  @relation(fields: [requisitionRequestId], references: [id], onDelete: SetNull)
+
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
@@ -227,8 +231,8 @@ model RequisitionRequest {
   requestNumber   String    @unique
   userId          String
   user            User      @relation("UserRequisitions", fields: [userId], references: [id])
-  courseId        String
-  course          Course    @relation(fields: [courseId], references: [id])
+  courseId        String?
+  course          Course?   @relation(fields: [courseId], references: [id])
   purpose         String
   dateNeeded      DateTime
   status          String    @default("PENDING") // "PENDING", "APPROVED", "REJECTED", "DISPENSED", "CANCELLED"
@@ -246,6 +250,9 @@ model RequisitionRequest {
   officerId       String?
   dispensedAt     DateTime?
   totalCost       Float     @default(0)
+
+  // Back-relation to unified BorrowRequest (if created together)
+  borrowRequest   BorrowRequest?
 
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt

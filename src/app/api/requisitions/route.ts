@@ -19,6 +19,16 @@ export async function GET(req: Request) {
         user: true,
         course: true,
         approver: true,
+        borrowRequest: {
+          include: {
+            items: {
+              include: {
+                item: true,
+                asset: true,
+              },
+            },
+          },
+        },
         items: {
           include: {
             item: {

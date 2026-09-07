@@ -446,6 +446,11 @@ export default function ApprovalsPage() {
                           {req.course.code}
                         </div>
                       )}
+                      {req.requisitionRequest && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-teal-50 to-indigo-50 text-indigo-800 border border-indigo-200">
+                          <Sparkles className="w-3 h-3 text-indigo-600" /> คำขอรวม One-Stop
+                        </span>
+                      )}
                       {req.instructorAcknowledged ? (
                         <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
@@ -466,7 +471,8 @@ export default function ApprovalsPage() {
                       <span className="text-slate-800 font-medium">{req.purpose}</span>
                     </div>
 
-                    <div className="flex items-center gap-4 text-slate-600">
+                    <div className="text-xs text-slate-500 flex items-center gap-2">
+                      <Calendar className="w-3.5 h-3.5" />
                       <span>ยืม: {new Date(req.borrowDate).toLocaleDateString('th-TH')}</span>
                       <span>•</span>
                       <span>กำหนดคืน: {new Date(req.expectedReturnDate).toLocaleDateString('th-TH')}</span>
@@ -489,6 +495,29 @@ export default function ApprovalsPage() {
                         ))}
                       </div>
                     </div>
+
+                    {/* Linked Consumables in Unified Request */}
+                    {req.requisitionRequest && (
+                      <div className="bg-teal-50/70 p-3 rounded-xl border border-teal-200">
+                        <div className="text-[11px] font-bold text-teal-900 mb-1.5 flex items-center justify-between">
+                          <span className="flex items-center gap-1">
+                            <Sparkles className="w-3.5 h-3.5 text-teal-600" />
+                            วัสดุสิ้นเปลืองที่ขอเบิกพร้อมกัน ({req.requisitionRequest.requestNumber}):
+                          </span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-teal-100 text-teal-800 font-extrabold">
+                            คำขอรวม One-Stop
+                          </span>
+                        </div>
+                        <div className="space-y-1">
+                          {req.requisitionRequest.items?.map((rIt: any) => (
+                            <div key={rIt.id} className="text-xs font-semibold text-teal-900 flex items-center justify-between">
+                              <span>• {rIt.item?.name}</span>
+                              <span className="font-bold text-teal-700">{rIt.quantityRequested} {rIt.item?.unit}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Actions / Status Footer */}

@@ -25,6 +25,19 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           advisorName: body.advisorName || borrow.advisorName,
         },
       });
+
+      // Synchronize with linked requisition request if unified
+      if (borrow.requisitionRequestId) {
+        await prisma.requisitionRequest.update({
+          where: { id: borrow.requisitionRequestId },
+          data: {
+            instructorAcknowledged: true,
+            acknowledgedAt: new Date(),
+            advisorName: body.advisorName || borrow.advisorName,
+          },
+        }).catch((e) => console.error('Failed to sync linked requisition acknowledge:', e));
+      }
+
       return NextResponse.json(updated);
     }
 
@@ -37,6 +50,19 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           approvedAt: new Date(),
         },
       });
+
+      // Synchronize with linked requisition request if unified
+      if (borrow.requisitionRequestId) {
+        await prisma.requisitionRequest.update({
+          where: { id: borrow.requisitionRequestId },
+          data: {
+            status: 'APPROVED',
+            approverId: userId,
+            approvedAt: new Date(),
+          },
+        }).catch((e) => console.error('Failed to sync linked requisition approve:', e));
+      }
+
       return NextResponse.json(updated);
     }
 
@@ -49,6 +75,19 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           rejectionReason: reason || 'ไม่อนุมัติ',
         },
       });
+
+      // Synchronize with linked requisition request if unified
+      if (borrow.requisitionRequestId) {
+        await prisma.requisitionRequest.update({
+          where: { id: borrow.requisitionRequestId },
+          data: {
+            status: 'REJECTED',
+            approverId: userId,
+            rejectionReason: reason || 'ไม่อนุมัติ',
+          },
+        }).catch((e) => console.error('Failed to sync linked requisition reject:', e));
+      }
+
       return NextResponse.json(updated);
     }
     if (action === 'UPDATE_DATES') {
@@ -98,6 +137,80 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
               });
             }
           }
+        }
+      }
+
+      // If linked with a RequisitionRequest, also dispense its consumable items via FIFO automatically
+      if (borrow.requisitionRequestId) {
+        try {
+          const linkedReq = await prisma.requisitionRequest.findUnique({
+            where: { id: borrow.requisitionRequestId },
+            include: { items: true, course: true },
+          });
+
+          if (linkedReq && linkedReq.status !== 'DISPENSED') {
+            let reqActualTotalCost = 0;
+            for (const reqItem of linkedReq.items) {
+              let remainingToDeduct = reqItem.quantityRequested;
+              let itemCost = 0;
+
+              const availableLots = await prisma.stockLot.findMany({
+                where: { itemId: reqItem.itemId, quantityRemaining: { gt: 0 } },
+                orderBy: [{ expiryDate: 'asc' }, { receivedDate: 'asc' }],
+              });
+
+              for (const lot of availableLots) {
+                if (remainingToDeduct <= 0) break;
+                const deduct = Math.min(lot.quantityRemaining, remainingToDeduct);
+                const cost = deduct * lot.unitCost;
+
+                await prisma.stockLot.update({
+                  where: { id: lot.id },
+                  data: { quantityRemaining: lot.quantityRemaining - deduct },
+                });
+
+                await prisma.stockTransaction.create({
+                  data: {
+                    itemId: reqItem.itemId,
+                    lotId: lot.id,
+                    type: 'OUT_REQUISITION',
+                    quantity: -deduct,
+                    unitCost: lot.unitCost,
+                    totalCost: cost,
+                    courseId: linkedReq.courseId,
+                    referenceNumber: linkedReq.requestNumber,
+                    createdById: userId,
+                    note: `จ่ายพร้อมส่งมอบคำขอยืม ${borrow.requestNumber} (วิชา ${linkedReq.course?.code || ''})`,
+                  },
+                });
+
+                itemCost += cost;
+                remainingToDeduct -= deduct;
+              }
+
+              await prisma.requisitionItem.update({
+                where: { id: reqItem.id },
+                data: {
+                  quantityDispensed: reqItem.quantityRequested - remainingToDeduct,
+                  unitCost: reqItem.quantityRequested > 0 ? itemCost / reqItem.quantityRequested : 0,
+                  totalCost: itemCost,
+                },
+              });
+              reqActualTotalCost += itemCost;
+            }
+
+            await prisma.requisitionRequest.update({
+              where: { id: linkedReq.id },
+              data: {
+                status: 'DISPENSED',
+                officerId: userId,
+                dispensedAt: new Date(),
+                totalCost: reqActualTotalCost,
+              },
+            });
+          }
+        } catch (err) {
+          console.error('Failed to auto-dispense linked requisition:', err);
         }
       }
 

@@ -15,12 +15,19 @@ import {
   LogIn,
   UserCog,
   Camera,
-  QrCode
+  QrCode,
+  Menu,
+  X,
 } from 'lucide-react';
 import ProfileModal from '@/components/profile/ProfileModal';
 import QrScannerModal from '@/components/qrcode/QrScannerModal';
 
-export default function Navbar() {
+interface NavbarProps {
+  onToggleMobileMenu?: () => void;
+  isMobileMenuOpen?: boolean;
+}
+
+export default function Navbar({ onToggleMobileMenu, isMobileMenuOpen }: NavbarProps = {}) {
   const { currentUser, availableUsers, switchUserById, logout } = useAuth();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
@@ -56,20 +63,36 @@ export default function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between h-16 px-4 md:px-6 bg-white border-b border-slate-200 shadow-sm">
-      <Link href="/" className="flex items-center gap-3">
-        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-600 to-cyan-500 text-white shadow-md shadow-teal-500/20">
-          <Stethoscope className="w-5 h-5" />
-        </div>
-        <div>
-          <h1 className="text-sm md:text-base font-bold text-slate-900 leading-tight">
-            ระบบบริหารพัสดุ-ครุภัณฑ์ & ต้นทุนรายวิชา
-          </h1>
-          <p className="text-[11px] text-slate-500 font-medium flex items-center gap-1">
-            <Building2 className="w-3 h-3 text-slate-400" /> ห้องปฏิบัติการพยาบาลศาสตร์
-          </p>
-        </div>
-      </Link>
+    <header className="sticky top-0 z-30 flex items-center justify-between h-16 px-3 sm:px-4 md:px-6 bg-white border-b border-slate-200 shadow-sm">
+      <div className="flex items-center gap-2 sm:gap-3">
+        {/* Mobile Hamburger Menu Button */}
+        {onToggleMobileMenu && (
+          <button
+            type="button"
+            onClick={onToggleMobileMenu}
+            className="p-2 -ml-1 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 md:hidden transition cursor-pointer"
+            aria-label="Toggle Navigation Menu"
+          >
+            {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5 text-slate-700" />}
+          </button>
+        )}
+
+        <Link href="/" className="flex items-center gap-2.5 sm:gap-3">
+          <div className="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-teal-600 to-cyan-500 text-white shadow-md shadow-teal-500/20 flex-shrink-0">
+            <Stethoscope className="w-5 h-5" />
+          </div>
+          <div>
+            <h1 className="text-xs sm:text-sm md:text-base font-bold text-slate-900 leading-tight">
+              <span className="hidden sm:inline">ระบบบริหารพัสดุ-ครุภัณฑ์ & ต้นทุนรายวิชา</span>
+              <span className="sm:hidden font-extrabold text-teal-950">ห้องแล็บพยาบาล</span>
+            </h1>
+            <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium flex items-center gap-1">
+              <Building2 className="w-3 h-3 text-slate-400" />
+              <span>ห้องปฏิบัติการพยาบาลศาสตร์</span>
+            </p>
+          </div>
+        </Link>
+      </div>
 
       <div className="flex items-center gap-3">
         {/* Cloud Status Badge */}

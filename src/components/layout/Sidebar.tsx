@@ -23,12 +23,18 @@ import {
   QrCode,
   ChevronDown,
   ChevronsUpDown,
+  X,
 } from 'lucide-react';
 import ProfileModal from '@/components/profile/ProfileModal';
 
-export default function Sidebar() {
+interface SidebarProps {
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
+}
+
+export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps = {}) {
   const pathname = usePathname();
-  const { currentUser, isOfficer, isApprover, isAdmin } = useAuth();
+  const { currentUser, isOfficer, isApprover, isAdmin, availableUsers, switchUserById } = useAuth();
   const [pendingCount, setPendingCount] = useState<number>(0);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
@@ -232,11 +238,16 @@ export default function Sidebar() {
   // Current user's role
   const userRole = currentUser?.role || 'USER';
 
-  return (
-    <aside className="w-64 flex-shrink-0 bg-slate-900 text-slate-300 h-full flex flex-col justify-between p-4 shadow-xl overflow-y-auto">
+  const renderSidebarContent = (isMobile = false) => (
+    <>
       <div>
         <div className="px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between border-b border-slate-800/80 pb-3 mb-2">
-          <span>ระบบห้องแล็บพยาบาล</span>
+          <div className="flex items-center gap-2">
+            <span>ระบบห้องแล็บพยาบาล</span>
+            <span className="text-[10px] bg-slate-800 text-teal-400 px-1.5 py-0.5 rounded font-mono border border-slate-700">
+              {userRole}
+            </span>
+          </div>
           <div className="flex items-center gap-1.5">
             <button
               onClick={toggleAllGroups}
@@ -245,11 +256,39 @@ export default function Sidebar() {
             >
               <ChevronsUpDown className="w-3.5 h-3.5" />
             </button>
-            <span className="text-[10px] bg-slate-800 text-teal-400 px-1.5 py-0.5 rounded font-mono border border-slate-700">
-              {userRole}
-            </span>
+            {isMobile && onMobileClose && (
+              <button
+                type="button"
+                onClick={onMobileClose}
+                className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition cursor-pointer"
+                title="ปิดเมนู"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
+
+        {/* Quick User Switcher inside mobile drawer for easy testing on phones */}
+        {isMobile && availableUsers && availableUsers.length > 0 && (
+          <div className="mb-3 p-2 rounded-xl bg-slate-800/60 border border-slate-700/60 text-xs">
+            <span className="text-[10px] text-slate-400 block mb-1 font-semibold">สลับบัญชีใช้งาน:</span>
+            <select
+              value={currentUser?.id || ''}
+              onChange={(e) => {
+                switchUserById(e.target.value);
+                if (onMobileClose) onMobileClose();
+              }}
+              className="w-full bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg py-1 px-2 font-medium"
+            >
+              {availableUsers.map((u) => (
+                <option key={u.id} value={u.id}>
+                  [{u.role}] {u.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <nav className="space-y-2">
           {navGroups.map((group) => {
@@ -302,6 +341,9 @@ export default function Sidebar() {
                         <Link
                           key={item.href}
                           href={item.href}
+                          onClick={() => {
+                            if (isMobile && onMobileClose) onMobileClose();
+                          }}
                           className={`flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-medium transition-all group ${
                             isActive
                               ? 'bg-teal-600 text-white shadow-md shadow-teal-600/30 font-bold'
@@ -359,6 +401,7 @@ export default function Sidebar() {
         {currentUser && (
           <button
             onClick={() => {
+              if (isMobile && onMobileClose) onMobileClose();
               const navbarEditBtn = document.querySelector<HTMLButtonElement>('[title="แก้ไขข้อมูลส่วนตัว"]');
               if (navbarEditBtn) {
                 navbarEditBtn.click();
@@ -378,6 +421,31 @@ export default function Sidebar() {
       {isProfileOpen && (
         <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
       )}
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Desktop Sidebar (hidden on mobile) */}
+      <aside className="w-64 flex-shrink-0 bg-slate-900 text-slate-300 h-full hidden md:flex flex-col justify-between p-4 shadow-xl overflow-y-auto">
+        {renderSidebarContent(false)}
+      </aside>
+
+      {/* Mobile Slide-over Drawer (visible when mobileOpen is true) */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-50 md:hidden flex animate-fadeIn">
+          {/* Backdrop overlay */}
+          <div
+            onClick={onMobileClose}
+            className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm transition-opacity"
+          />
+
+          {/* Drawer Slide-in Panel */}
+          <aside className="relative z-10 w-72 max-w-[85vw] bg-slate-900 text-slate-300 h-full flex flex-col justify-between p-4 shadow-2xl overflow-y-auto">
+            {renderSidebarContent(true)}
+          </aside>
+        </div>
+      )}
+    </>
   );
 }

@@ -1,15 +1,27 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { AuthProvider, useAuth } from '@/lib/auth-context';
 import Navbar from './Navbar';
 import Sidebar from './Sidebar';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import QrScannerModal from '@/components/qrcode/QrScannerModal';
+import {
+  LayoutDashboard,
+  Boxes,
+  QrCode,
+  Stethoscope,
+  Menu,
+} from 'lucide-react';
 
 function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { isLoading } = useAuth();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+
   const isLoginPage = pathname === '/login';
   const isPublicAssetPage = pathname?.startsWith('/asset/');
   const isPublicConsumablePage = pathname?.startsWith('/consumable/');
@@ -32,13 +44,84 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="h-screen bg-slate-50 flex flex-col font-sans overflow-hidden">
-      <Navbar />
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar />
-        <main className="flex-1 overflow-y-auto p-6 md:p-8">
-          <div className="max-w-7xl mx-auto space-y-6">{children}</div>
+      <Navbar
+        onToggleMobileMenu={() => setIsMobileMenuOpen((prev) => !prev)}
+        isMobileMenuOpen={isMobileMenuOpen}
+      />
+      <div className="flex flex-1 overflow-hidden relative">
+        <Sidebar
+          mobileOpen={isMobileMenuOpen}
+          onMobileClose={() => setIsMobileMenuOpen(false)}
+        />
+        <main className="flex-1 overflow-y-auto p-3 sm:p-5 md:p-8 pb-24 md:pb-8">
+          <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">{children}</div>
         </main>
       </div>
+
+      {/* Mobile Bottom Navigation Bar (Thumb-friendly for Smartphones & Small Tablets) */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 px-3 py-1.5 flex items-center justify-around shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
+        <Link
+          href="/"
+          onClick={() => setIsMobileMenuOpen(false)}
+          className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition ${
+            pathname === '/' ? 'text-teal-600 font-bold' : 'text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <LayoutDashboard className="w-5 h-5" />
+          <span className="text-[10px]">ภาพรวม</span>
+        </Link>
+
+        <Link
+          href="/borrow"
+          onClick={() => setIsMobileMenuOpen(false)}
+          className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition ${
+            pathname?.startsWith('/borrow') ? 'text-teal-600 font-bold' : 'text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <Boxes className="w-5 h-5" />
+          <span className="text-[10px]">เบิก-ยืม</span>
+        </Link>
+
+        {/* Floating Center QR Scan Button */}
+        <button
+          type="button"
+          onClick={() => {
+            setIsMobileMenuOpen(false);
+            setIsScannerOpen(true);
+          }}
+          className="flex flex-col items-center -mt-5 bg-gradient-to-tr from-teal-600 to-indigo-600 text-white p-3 rounded-full shadow-lg shadow-teal-600/30 border-2 border-white transition active:scale-95 cursor-pointer"
+          title="สแกน QR Code"
+        >
+          <QrCode className="w-5 h-5" />
+        </button>
+
+        <Link
+          href="/practice"
+          onClick={() => setIsMobileMenuOpen(false)}
+          className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition ${
+            pathname?.startsWith('/practice') ? 'text-teal-600 font-bold' : 'text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <Stethoscope className="w-5 h-5" />
+          <span className="text-[10px]">ฝึกซ้อม</span>
+        </Link>
+
+        <button
+          type="button"
+          onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+          className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition cursor-pointer ${
+            isMobileMenuOpen ? 'text-teal-600 font-bold' : 'text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <Menu className="w-5 h-5" />
+          <span className="text-[10px]">เมนู</span>
+        </button>
+      </nav>
+
+      {/* Global QR Scanner Modal */}
+      {isScannerOpen && (
+        <QrScannerModal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} />
+      )}
     </div>
   );
 }

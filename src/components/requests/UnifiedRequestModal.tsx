@@ -197,24 +197,24 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
-      <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-3xl w-full max-h-[92vh] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+      <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200 max-w-3xl w-full max-h-[96vh] sm:max-h-[92vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-teal-50 via-indigo-50/50 to-white">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-teal-600 flex items-center justify-center text-white shadow-md shadow-teal-600/30">
-              <Sparkles className="w-5 h-5" />
+        <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 border-b border-slate-100 bg-gradient-to-r from-teal-50 via-indigo-50/50 to-white">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-teal-600 flex items-center justify-center text-white shadow-md shadow-teal-600/30 flex-shrink-0">
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-base font-black text-slate-900">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <h2 className="text-sm sm:text-base font-black text-slate-900">
                   ยื่นคำขอเบิก-ยืมพัสดุแล็บแบบครบวงจร
                 </h2>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-teal-100 text-teal-800 border border-teal-200">
+                <span className="hidden sm:inline-block px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-teal-100 text-teal-800 border border-teal-200">
                   One-Stop Lab Request
                 </span>
               </div>
-              <p className="text-xs text-slate-500">
+              <p className="text-[11px] sm:text-xs text-slate-500">
                 กรอกข้อมูลครั้งเดียว เลือกได้ทั้งครุภัณฑ์ที่ต้องส่งคืน และวัสดุสิ้นเปลืองที่ใช้แล้วหมดไป
               </p>
             </div>
@@ -222,14 +222,14 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+            className="p-1.5 sm:p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Body Form */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-3.5 sm:p-6 space-y-4 sm:space-y-6">
           {/* Section 1: Course & Purpose */}
           <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-4">
             <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
@@ -665,7 +665,7 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
         </form>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="px-4 py-3 sm:px-6 sm:py-4 border-t border-slate-200 bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="text-xs text-slate-600">
             <span>สรุปคำขอ: </span>
             <strong className="text-blue-700">
@@ -676,23 +676,23 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
               {requisitionItems.filter((i) => i.itemId).length} รายการวัสดุ
             </strong>
             {totalEstimatedCost > 0 && (
-              <span className="ml-2 text-slate-500">
-                (ยอดวัสดุประมาณการ: ฿{totalEstimatedCost.toFixed(2)})
+              <span className="block sm:inline sm:ml-2 text-slate-500">
+                (ยอดประมาณการ: ฿{totalEstimatedCost.toFixed(2)})
               </span>
             )}
           </div>
 
-          <div className="flex items-center justify-end gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
             {hasStockError && (
-              <span className="text-[11px] font-bold text-rose-600 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200 flex items-center gap-1">
-                <AlertCircle className="w-3.5 h-3.5" /> มีรายการที่ขอเกินสต็อกคงเหลือ
+              <span className="w-full sm:w-auto text-[11px] font-bold text-rose-600 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200 flex items-center gap-1">
+                <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" /> มีรายการที่ขอเกินสต็อกคงเหลือ
               </span>
             )}
             <button
               type="button"
               disabled={submitting}
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200 transition cursor-pointer"
+              className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200 transition cursor-pointer text-center"
             >
               ยกเลิก
             </button>
@@ -700,17 +700,17 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
               type="button"
               disabled={submitting || hasStockError}
               onClick={handleSubmit}
-              className="px-5 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed text-white text-xs font-bold shadow-lg shadow-teal-600/30 transition flex items-center gap-2 cursor-pointer"
+              className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed text-white text-xs font-bold shadow-lg shadow-teal-600/30 transition flex items-center justify-center gap-2 cursor-pointer text-center"
             >
               {submitting ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>กำลังบันทึกคำขอรวม...</span>
+                  <span>กำลังบันทึก...</span>
                 </>
               ) : (
                 <>
                   <Sparkles className="w-4 h-4" />
-                  <span>บันทึกและส่งคำขอแบบรวม</span>
+                  <span>ส่งคำขอเบิก-ยืม</span>
                 </>
               )}
             </button>

@@ -1087,8 +1087,8 @@ export default function BorrowPage() {
 
       {/* Modal: Checkout / Return Action */}
       {activeBorrowForAction && actionType && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className={`bg-white rounded-2xl w-full p-6 shadow-2xl space-y-4 ${actionType === 'CHECKOUT' ? 'max-w-2xl' : 'max-w-md'}`}>
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-2.5 sm:p-4 animate-fadeIn">
+          <div className={`bg-white rounded-2xl w-full p-4 sm:p-6 shadow-2xl space-y-4 max-h-[94vh] flex flex-col overflow-hidden ${actionType === 'CHECKOUT' ? 'max-w-2xl' : 'max-w-md'}`}>
             <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
               {actionType === 'CHECKOUT' ? (
                 <>

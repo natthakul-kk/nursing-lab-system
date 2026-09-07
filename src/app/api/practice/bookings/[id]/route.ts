@@ -119,6 +119,30 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         );
       }
 
+      // Check early check-in window constraint
+      const config = await prisma.practiceConfig.findUnique({ where: { id: 'default' } });
+      const checkInEarlyMinutes = config?.checkInEarlyMinutes ?? 30;
+
+      if (booking.slot?.date && booking.slot?.startTime) {
+        const slotDate = new Date(booking.slot.date);
+        const [hours, minutes] = booking.slot.startTime.split(':').map(Number);
+        const slotStartDateTime = new Date(slotDate);
+        slotStartDateTime.setHours(hours, minutes, 0, 0);
+
+        const now = new Date();
+        const earliestCheckIn = new Date(slotStartDateTime.getTime() - checkInEarlyMinutes * 60 * 1000);
+
+        if (now < earliestCheckIn) {
+          const diffMinutes = Math.ceil((earliestCheckIn.getTime() - now.getTime()) / 60000);
+          return NextResponse.json(
+            {
+              error: `ยังไม่ถึงช่วงเวลาที่อนุญาตให้เช็คอิน (อนุญาตให้เช็คอินได้ล่วงหน้าไม่เกิน ${checkInEarlyMinutes} นาที ก่อนเริ่มเวลา ${booking.slot.startTime} น. - กรุณารออีกประมาณ ${diffMinutes} นาที)`,
+            },
+            { status: 400 }
+          );
+        }
+      }
+
       const checkInTime = new Date();
       const updated = await prisma.practiceBooking.update({
         where: { id: booking.id },
@@ -143,6 +167,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         );
       }
 
+      // Optional check on early checkout if needed (or warning, but allow completion if student finishes practice)
       const checkOutTime = new Date();
       const checkInTime = booking.checkInTime || new Date();
       const actualMinutes = Math.max(1, Math.round((checkOutTime.getTime() - checkInTime.getTime()) / 60000));

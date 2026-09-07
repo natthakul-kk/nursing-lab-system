@@ -419,6 +419,8 @@ model PracticeConfig {
   id              String   @id @default("default")
   maxAdvanceDays  Int      @default(7)  // สามารถขอล่วงหน้าได้กี่วัน (ค่าเริ่มต้น 7 วัน)
   minAdvanceHours Int      @default(12) // ต้องขอล่วงหน้าอย่างน้อยกี่ชั่วโมง
+  checkInEarlyMinutes  Int @default(30) // อนุญาตให้สแกนเช็คอินก่อนเวลาเริ่มได้กี่นาที (เช่น 30 นาที)
+  checkOutEarlyMinutes Int @default(15) // อนุญาตให้สแกนเช็คเอาท์ก่อนเวลาสิ้นสุดได้กี่นาที (เช่น 15 นาที)
   rulesNotice     String?  // ระเบียบและข้อตกลงการเข้าใช้ห้องแล็บ
   updatedAt       DateTime @updatedAt
 }

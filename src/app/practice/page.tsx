@@ -60,7 +60,7 @@ export default function PracticePage() {
   const [slots, setSlots] = useState<any[]>([]);
   const [rooms, setRooms] = useState<any[]>([]);
   const [bookings, setBookings] = useState<any[]>([]);
-  const [config, setConfig] = useState<any>({ maxAdvanceDays: 7, minAdvanceHours: 12, rulesNotice: '' });
+  const [config, setConfig] = useState<any>({ maxAdvanceDays: 7, minAdvanceHours: 12, checkInEarlyMinutes: 30, checkOutEarlyMinutes: 15, rulesNotice: '' });
   const [stats, setStats] = useState<any>(null);
   const [courses, setCourses] = useState<any[]>([]);
   const [practiceKits, setPracticeKits] = useState<any[]>([]);
@@ -134,6 +134,7 @@ export default function PracticePage() {
 
   // Scanner Station State
   const [manualCodeInput, setManualCodeInput] = useState('');
+  const [processingManualCode, setProcessingManualCode] = useState(false);
   const [scannerStatus, setScannerStatus] = useState<{
     type: 'SUCCESS' | 'ERROR' | 'INFO' | null;
     title: string;
@@ -160,6 +161,8 @@ export default function PracticePage() {
   const [settingsForm, setSettingsForm] = useState({
     maxAdvanceDays: 7,
     minAdvanceHours: 12,
+    checkInEarlyMinutes: 30,
+    checkOutEarlyMinutes: 15,
     rulesNotice: '',
   });
 
@@ -210,6 +213,8 @@ export default function PracticePage() {
         setSettingsForm({
           maxAdvanceDays: c.maxAdvanceDays || 7,
           minAdvanceHours: c.minAdvanceHours || 12,
+          checkInEarlyMinutes: c.checkInEarlyMinutes !== undefined ? c.checkInEarlyMinutes : 30,
+          checkOutEarlyMinutes: c.checkOutEarlyMinutes !== undefined ? c.checkOutEarlyMinutes : 15,
           rulesNotice: c.rulesNotice || '',
         });
       }
@@ -587,6 +592,7 @@ export default function PracticePage() {
   const handleProcessScannedCode = async (rawCode: string) => {
     if (!rawCode) return;
     const cleanToken = rawCode.trim();
+    setProcessingManualCode(true);
 
     try {
       // First fetch booking details
@@ -645,6 +651,8 @@ export default function PracticePage() {
         title: 'Network Error',
         message: err.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อ',
       });
+    } finally {
+      setProcessingManualCode(false);
     }
   };
 
@@ -1798,16 +1806,25 @@ export default function PracticePage() {
               >
                 <input
                   type="text"
+                  disabled={processingManualCode}
                   placeholder="เช่น SPK-E58C4F... หรือ SPB-2569..."
                   value={manualCodeInput}
                   onChange={(e) => setManualCodeInput(e.target.value.toUpperCase())}
-                  className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-mono font-bold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 uppercase"
+                  className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-mono font-bold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 uppercase disabled:opacity-60"
                 />
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md shadow-indigo-600/20 transition cursor-pointer"
+                  disabled={processingManualCode || !manualCodeInput.trim()}
+                  className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold shadow-md shadow-indigo-600/20 transition cursor-pointer flex items-center gap-1.5 min-w-[90px] justify-center"
                 >
-                  บันทึก
+                  {processingManualCode ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>กำลังบันทึก...</span>
+                    </>
+                  ) : (
+                    <span>บันทึก</span>
+                  )}
                 </button>
               </form>
             </div>
@@ -1968,6 +1985,48 @@ export default function PracticePage() {
                 }
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
               />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-200">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  อนุญาตให้สแกนเช็คอินล่วงหน้า (นาที) *
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="180"
+                  required
+                  value={settingsForm.checkInEarlyMinutes}
+                  onChange={(e) =>
+                    setSettingsForm({ ...settingsForm, checkInEarlyMinutes: Number(e.target.value) })
+                  }
+                  className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                />
+                <span className="text-[10px] text-slate-400 mt-1 block">
+                  เช่น 30 นาที (เริ่ม 13:00 น. จะสแกนเข้าได้ตั้งแต่ 12:30 น.)
+                </span>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  อนุญาตให้สแกนเช็คเอาท์ล่วงหน้า (นาที) *
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="180"
+                  required
+                  value={settingsForm.checkOutEarlyMinutes}
+                  onChange={(e) =>
+                    setSettingsForm({ ...settingsForm, checkOutEarlyMinutes: Number(e.target.value) })
+                  }
+                  className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                />
+                <span className="text-[10px] text-slate-400 mt-1 block">
+                  เช่น 15 นาที (สิ้นสุด 16:00 น. จะสแกนออกได้ตั้งแต่ 15:45 น.)
+                </span>
+              </div>
             </div>
 
             <div>

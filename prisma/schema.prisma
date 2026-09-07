@@ -31,6 +31,8 @@ model User {
   repackRecords       RepackRecord[]
   practiceBookings    PracticeBooking[]    @relation("UserPracticeBookings")
   approvedBookings    PracticeBooking[]    @relation("ApproverPracticeBookings")
+
+  @@index([role, status])
 }
 
 model Course {
@@ -49,6 +51,8 @@ model Course {
   borrowRequests      BorrowRequest[]
   stockTransactions   StockTransaction[]
   practiceBookings    PracticeBooking[]
+
+  @@index([semester, academicYear])
 }
 
 model Category {
@@ -85,6 +89,9 @@ model Item {
   practiceKitItems  PracticeKitItem[]
   sourceRepacks     RepackRecord[]     @relation("SourceItemRepacks")
   targetRepacks     RepackRecord[]     @relation("TargetItemRepacks")
+
+  @@index([type, status])
+  @@index([categoryId])
 }
 
 model EquipmentAsset {
@@ -107,6 +114,9 @@ model EquipmentAsset {
 
   borrowItems     BorrowItem[]
   maintenanceLogs MaintenanceLog[]
+
+  @@index([itemId, status])
+  @@index([status])
 }
 
 model MaintenanceLog {
@@ -357,6 +367,8 @@ model PracticeRoom {
   updatedAt   DateTime       @updatedAt
 
   slots       PracticeSlot[]
+
+  @@index([isActive])
 }
 
 model PracticeSlot {

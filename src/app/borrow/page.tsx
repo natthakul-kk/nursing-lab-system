@@ -61,9 +61,9 @@ export default function BorrowPage() {
     try {
       const [borrowRes, itemsRes, coursesRes, usersRes] = await Promise.all([
         fetch('/api/borrow'),
-        fetch('/api/items?type=EQUIPMENT'),
-        fetch('/api/courses'),
-        fetch('/api/users'),
+        fetch('/api/items?type=EQUIPMENT&compact=true'),
+        fetch('/api/courses?compact=true'),
+        fetch('/api/users?role=APPROVER'),
       ]);
 
       if (borrowRes.ok) {

@@ -193,9 +193,9 @@ export default function PracticePage() {
         fetch(`/api/practice/bookings${currentUser?.role === 'USER' && !isTeacher ? `?userId=${currentUser.id}` : ''}`),
         fetch('/api/practice/config'),
         fetch(`/api/practice/stats${currentUser?.id ? `?userId=${currentUser.id}` : ''}`),
-        fetch('/api/courses'),
+        fetch('/api/courses?compact=true'),
         fetch('/api/kits'),
-        fetch('/api/users'),
+        fetch('/api/users?role=APPROVER'),
       ]);
 
       if (slotsRes.ok) setSlots(await slotsRes.json());

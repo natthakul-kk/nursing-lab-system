@@ -1,22 +1,54 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getCached, setCached, invalidateCache } from '@/lib/cache';
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    const compact = searchParams.get('compact') === 'true';
+
+    const cacheKey = compact ? 'courses_compact' : 'courses_detailed';
+    const cached = getCached<any[]>(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached);
+    }
+
+    if (compact) {
+      // Fast path: Only fetch fields needed for dropdowns and selectors
+      const courses = await prisma.course.findMany({
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          instructorName: true,
+          allocatedBudget: true,
+        },
+        orderBy: { code: 'asc' },
+      });
+      setCached(cacheKey, courses, 60); // 60s cache
+      return NextResponse.json(courses);
+    }
+
+    // Detailed analytics path
     const courses = await prisma.course.findMany({
       include: {
         requisitionRequests: {
           include: {
-            user: true,
+            user: { select: { id: true, name: true } },
             items: {
-              include: { item: true },
+              include: { item: { select: { id: true, code: true, name: true, unit: true } } },
             },
           },
           orderBy: { createdAt: 'desc' },
         },
         stockTransactions: {
           where: { type: 'OUT_REQUISITION' },
-          include: { item: true },
+          select: {
+            itemId: true,
+            quantity: true,
+            totalCost: true,
+            item: { select: { code: true, name: true, unit: true } },
+          },
         },
       },
       orderBy: { code: 'asc' },
@@ -78,6 +110,7 @@ export async function GET() {
       };
     });
 
+    setCached(cacheKey, detailedCourses, 30); // 30s cache
     return NextResponse.json(detailedCourses);
   } catch (error) {
     console.error('Failed to get courses analytics:', error);
@@ -99,6 +132,8 @@ export async function POST(req: Request) {
         allocatedBudget: Number(body.allocatedBudget) || 0,
       },
     });
+
+    invalidateCache('courses_');
     return NextResponse.json(course, { status: 201 });
   } catch (error) {
     console.error('Failed to create course:', error);

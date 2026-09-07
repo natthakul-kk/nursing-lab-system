@@ -102,8 +102,8 @@ export default function PracticeKitsPage() {
     try {
       const [kitsRes, itemsRes, coursesRes] = await Promise.all([
         fetch('/api/kits'),
-        fetch('/api/items'),
-        fetch('/api/courses'),
+        fetch('/api/items?compact=true'),
+        fetch('/api/courses?compact=true'),
       ]);
 
       if (kitsRes.ok) {

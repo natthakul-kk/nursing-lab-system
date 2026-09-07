@@ -1,8 +1,15 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getCached, setCached, invalidateCache } from '@/lib/cache';
 
 export async function GET() {
   try {
+    const cacheKey = 'practice:rooms:list';
+    const cached = getCached(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached);
+    }
+
     const rooms = await prisma.practiceRoom.findMany({
       where: { isActive: true },
       include: {
@@ -12,6 +19,8 @@ export async function GET() {
       },
       orderBy: { code: 'asc' },
     });
+
+    setCached(cacheKey, rooms, 60 * 1000); // 60s TTL
     return NextResponse.json(rooms);
   } catch (error: any) {
     console.error('Error fetching practice rooms:', error);
@@ -38,6 +47,7 @@ export async function POST(req: Request) {
       },
     });
 
+    invalidateCache('practice:rooms:');
     return NextResponse.json(room);
   } catch (error: any) {
     console.error('Error creating practice room:', error);

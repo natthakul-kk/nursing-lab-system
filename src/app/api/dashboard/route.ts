@@ -1,8 +1,15 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getCached, setCached } from '@/lib/cache';
 
 export async function GET() {
   try {
+    const cacheKey = 'dashboard:stats';
+    const cached = getCached(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached);
+    }
+
     const now = new Date();
     const ninetyDaysLater = new Date();
     ninetyDaysLater.setDate(now.getDate() + 90);
@@ -114,7 +121,7 @@ export async function GET() {
     const totalPracticeMinutes = completedPracticeSessions.reduce((sum, b) => sum + (b.actualMinutes || 0), 0);
     const totalPracticeHours = (totalPracticeMinutes / 60).toFixed(1);
 
-    return NextResponse.json({
+    const payload = {
       totalEquipmentItems,
       totalConsumableItems,
       totalAssets,
@@ -132,7 +139,10 @@ export async function GET() {
       pendingPracticeCount,
       totalPracticeMinutes,
       totalPracticeHours,
-    });
+    };
+
+    setCached(cacheKey, payload, 30 * 1000); // 30s TTL
+    return NextResponse.json(payload);
   } catch (error) {
     console.error('Failed to get dashboard stats:', error);
     return NextResponse.json({ error: 'Failed to fetch dashboard data' }, { status: 500 });

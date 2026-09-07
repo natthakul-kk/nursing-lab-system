@@ -1,9 +1,15 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getCached, setCached, invalidateCache } from '@/lib/cache';
 
 // GET: Fetch all Practice Kits with their items and stock availability
 export async function GET(req: Request) {
   try {
+    const cacheKey = 'kits:list';
+    const cached = getCached(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached);
+    }
     const kits = await prisma.practiceKit.findMany({
       where: { isActive: true },
       include: {
@@ -80,6 +86,7 @@ export async function GET(req: Request) {
       };
     });
 
+    setCached(cacheKey, kitsWithAvailability, 30 * 1000); // 30s TTL
     return NextResponse.json(kitsWithAvailability);
   } catch (error: any) {
     console.error('Fetch Kits Error:', error);
@@ -133,6 +140,7 @@ export async function POST(req: Request) {
       },
     });
 
+    invalidateCache('kits:');
     return NextResponse.json(newKit, { status: 201 });
   } catch (error: any) {
     console.error('Create Kit Error:', error);

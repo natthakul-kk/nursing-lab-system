@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { invalidateCache } from '@/lib/cache';
 
 export async function PUT(
   req: Request,
@@ -22,6 +23,7 @@ export async function PUT(
       },
     });
 
+    invalidateCache('practice:rooms:');
     return NextResponse.json(room);
   } catch (error: any) {
     console.error('Error updating practice room:', error);
@@ -45,6 +47,7 @@ export async function DELETE(
         where: { id },
         data: { isActive: false },
       });
+      invalidateCache('practice:rooms:');
       return NextResponse.json({ message: 'ปิดการใช้งานห้องปฏิบัติการเรียบร้อยแล้ว เนื่องจากมีรอบเวลาที่เคยเปิดไว้' });
     }
 
@@ -52,6 +55,7 @@ export async function DELETE(
       where: { id },
     });
 
+    invalidateCache('practice:rooms:');
     return NextResponse.json({ message: 'ลบห้องปฏิบัติการเรียบร้อยแล้ว' });
   } catch (error: any) {
     console.error('Error deleting practice room:', error);

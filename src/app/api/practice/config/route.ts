@@ -1,8 +1,15 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getCached, setCached, invalidateCache } from '@/lib/cache';
 
 export async function GET() {
   try {
+    const cacheKey = 'practice:config';
+    const cached = getCached(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached);
+    }
+
     let config = await prisma.practiceConfig.findUnique({
       where: { id: 'default' },
     });
@@ -20,6 +27,7 @@ export async function GET() {
       });
     }
 
+    setCached(cacheKey, config, 120 * 1000); // 2 min TTL
     return NextResponse.json(config);
   } catch (error: any) {
     console.error('Error fetching practice config:', error);
@@ -52,6 +60,7 @@ export async function PUT(req: Request) {
       },
     });
 
+    invalidateCache('practice:config');
     return NextResponse.json(updated);
   } catch (error: any) {
     console.error('Error updating practice config:', error);

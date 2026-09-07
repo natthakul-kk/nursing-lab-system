@@ -1,9 +1,16 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getCached, setCached, invalidateCache } from '@/lib/cache';
 
 // GET: List all categories with item counts
 export async function GET() {
   try {
+    const cacheKey = 'categories:list';
+    const cached = getCached(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached);
+    }
+
     const categories = await prisma.category.findMany({
       include: {
         _count: {
@@ -12,6 +19,8 @@ export async function GET() {
       },
       orderBy: { name: 'asc' },
     });
+
+    setCached(cacheKey, categories, 60 * 1000); // 60s TTL
     return NextResponse.json(categories);
   } catch (error: any) {
     console.error('Failed to get categories:', error);
@@ -53,6 +62,7 @@ export async function POST(req: Request) {
       },
     });
 
+    invalidateCache('categories:');
     return NextResponse.json({ success: true, category: created });
   } catch (error: any) {
     console.error('Create category error:', error);

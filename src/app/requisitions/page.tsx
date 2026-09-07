@@ -52,8 +52,8 @@ export default function RequisitionsPage() {
     try {
       const [reqRes, itemsRes, coursesRes] = await Promise.all([
         fetch('/api/requisitions'),
-        fetch('/api/items?type=CONSUMABLE'),
-        fetch('/api/courses'),
+        fetch('/api/items?type=CONSUMABLE&compact=true'),
+        fetch('/api/courses?compact=true'),
       ]);
 
       if (reqRes.ok) {

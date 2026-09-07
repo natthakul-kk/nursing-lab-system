@@ -1,10 +1,17 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getCached, setCached } from '@/lib/cache';
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const userId = searchParams.get('userId');
+
+    const cacheKey = `practice:stats:${userId || 'ALL'}`;
+    const cached = getCached(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached);
+    }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -98,7 +105,7 @@ export async function GET(req: Request) {
       };
     }
 
-    return NextResponse.json({
+    const responseData = {
       activeNow: activeNowCount,
       activeNowList,
       pendingApprovals: pendingCount,
@@ -108,7 +115,20 @@ export async function GET(req: Request) {
       popularSkills,
       recentBookings,
       userStats,
-    });
+    };
+    setCached(cacheKey, responseData, 15 * 1000); // 15s TTL
+    return NextResponse.json(responseData);
+    /*
+      activeNow: activeNowCount,
+      activeNowList,
+      pendingApprovals: pendingCount,
+      totalCompletedSessions: completedBookings.length,
+      totalPracticeMinutes: totalMinutes,
+      totalPracticeHours: (totalMinutes / 60).toFixed(1),
+      popularSkills,
+      recentBookings,
+      userStats,
+    }); */
   } catch (error: any) {
     console.error('Error fetching practice stats:', error);
     return NextResponse.json({ error: error.message || 'Failed to fetch stats' }, { status: 500 });

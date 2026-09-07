@@ -23,8 +23,11 @@ export async function POST(req: Request) {
       );
     }
 
-    const hasBorrow = Array.isArray(borrowItems) && borrowItems.length > 0 && borrowItems.some((it) => it.itemId);
-    const hasRequisition = Array.isArray(requisitionItems) && requisitionItems.length > 0 && requisitionItems.some((it) => it.itemId);
+    const validBorrowItems = (borrowItems || []).filter((it: any) => it.itemId);
+    const validRequisitionItems = (requisitionItems || []).filter((it: any) => it.itemId);
+
+    const hasBorrow = validBorrowItems.length > 0;
+    const hasRequisition = validRequisitionItems.length > 0;
 
     if (!hasBorrow && !hasRequisition) {
       return NextResponse.json(
@@ -48,47 +51,59 @@ export async function POST(req: Request) {
 
     const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
 
-    // 1. Validate equipment stock/available count
-    const validBorrowItems = (borrowItems || []).filter((it: any) => it.itemId);
-    for (const it of validBorrowItems) {
-      const qty = Number(it.quantity) || 1;
-      const itemRecord = await prisma.item.findUnique({
-        where: { id: it.itemId },
+    // 1. Batch validate equipment stock/available count (single roundtrip)
+    const borrowSummaryList: { name: string; quantity: number; unit: string }[] = [];
+    if (hasBorrow) {
+      const borrowItemIds = validBorrowItems.map((it: any) => it.itemId);
+      const equipmentRecords = await prisma.item.findMany({
+        where: { id: { in: borrowItemIds } },
         include: {
           assets: { where: { status: 'AVAILABLE' } },
         },
       });
+      const eqMap = new Map(equipmentRecords.map((r) => [r.id, r]));
 
-      if (!itemRecord) {
-        return NextResponse.json({ error: `ไม่พบข้อมูลครุภัณฑ์ในระบบ` }, { status: 400 });
-      }
+      for (const it of validBorrowItems) {
+        const qty = Number(it.quantity) || 1;
+        const itemRecord = eqMap.get(it.itemId);
 
-      const availableCount = itemRecord.assets.length;
-      if (availableCount <= 0) {
-        return NextResponse.json(
-          { error: `ไม่สามารถขอยืมได้: ครุภัณฑ์ "${itemRecord.name}" ไม่มีอุปกรณ์ที่พร้อมใช้งานในขณะนี้` },
-          { status: 400 }
-        );
-      }
-      if (qty > availableCount) {
-        return NextResponse.json(
-          {
-            error: `ไม่สามารถขอยืมเกินจำนวนพร้อมใช้ได้: ครุภัณฑ์ "${itemRecord.name}" มีพร้อมให้ยืมเพียง ${availableCount} ${itemRecord.unit || 'ชิ้น'} (ท่านระบุ ${qty})`,
-          },
-          { status: 400 }
-        );
+        if (!itemRecord) {
+          return NextResponse.json({ error: 'ไม่พบข้อมูลครุภัณฑ์ในระบบ' }, { status: 400 });
+        }
+
+        const availableCount = itemRecord.assets.length;
+        if (availableCount <= 0) {
+          return NextResponse.json(
+            { error: `ไม่สามารถขอยืมได้: ครุภัณฑ์ "${itemRecord.name}" ไม่มีอุปกรณ์ที่พร้อมใช้งานในขณะนี้` },
+            { status: 400 }
+          );
+        }
+        if (qty > availableCount) {
+          return NextResponse.json(
+            {
+              error: `ไม่สามารถขอยืมเกินจำนวนพร้อมใช้ได้: ครุภัณฑ์ "${itemRecord.name}" มีพร้อมให้ยืมเพียง ${availableCount} ${itemRecord.unit || 'ชิ้น'} (ท่านระบุ ${qty})`,
+            },
+            { status: 400 }
+          );
+        }
+
+        borrowSummaryList.push({
+          name: itemRecord.name,
+          quantity: qty,
+          unit: itemRecord.unit || 'ชิ้น',
+        });
       }
     }
 
-    // 2. Validate consumable stock remaining
-    const validRequisitionItems = (requisitionItems || []).filter((it: any) => it.itemId);
+    // 2. Batch validate consumable stock remaining (single roundtrip)
     let estimatedReqTotalCost = 0;
     const reqItemsToCreate: any[] = [];
+    const reqSummaryList: { name: string; quantity: number; unit: string }[] = [];
 
-    for (const it of validRequisitionItems) {
-      const qty = Number(it.quantity) || 1;
-      const itemRecord = await prisma.item.findUnique({
-        where: { id: it.itemId },
+    if (hasRequisition) {
+      const reqItemIds = validRequisitionItems.map((it: any) => it.itemId);
+      const reqRecords = await prisma.item.findMany({
+        where: { id: { in: reqItemIds } },
         include: {
           stockLots: {
             where: { quantityRemaining: { gt: 0 } },
@@ -96,110 +111,135 @@ export async function POST(req: Request) {
           },
         },
       });
+      const reqMap = new Map(reqRecords.map((r) => [r.id, r]));
 
-      if (!itemRecord) {
-        return NextResponse.json({ error: `ไม่พบข้อมูลวัสดุในระบบ` }, { status: 400 });
+      for (const it of validRequisitionItems) {
+        const qty = Number(it.quantity) || 1;
+        const itemRecord = reqMap.get(it.itemId);
+
+        if (!itemRecord) {
+          return NextResponse.json({ error: 'ไม่พบข้อมูลวัสดุในระบบ' }, { status: 400 });
+        }
+
+        const totalStockRemaining = itemRecord.stockLots.reduce((sum, lot) => sum + lot.quantityRemaining, 0);
+        if (totalStockRemaining <= 0) {
+          return NextResponse.json(
+            { error: `ไม่สามารถขอเบิกได้: วัสดุ "${itemRecord.name}" สินค้าหมดในคลัง (คงเหลือ 0 ${itemRecord.unit})` },
+            { status: 400 }
+          );
+        }
+        if (qty > totalStockRemaining) {
+          return NextResponse.json(
+            {
+              error: `ไม่สามารถขอเบิกเกินสต็อกได้: วัสดุ "${itemRecord.name}" มีคงเหลือในคลังเพียง ${totalStockRemaining} ${itemRecord.unit} (ท่านระบุ ${qty})`,
+            },
+            { status: 400 }
+          );
+        }
+
+        const latestLot = itemRecord.stockLots[0];
+        const unitCost = latestLot?.unitCost || 0;
+        const itemTotal = qty * unitCost;
+        estimatedReqTotalCost += itemTotal;
+
+        reqItemsToCreate.push({
+          itemId: it.itemId,
+          quantityRequested: qty,
+          unitCost,
+          totalCost: itemTotal,
+        });
+
+        reqSummaryList.push({
+          name: itemRecord.name,
+          quantity: qty,
+          unit: itemRecord.unit || 'หน่วย',
+        });
       }
-
-      const totalStockRemaining = itemRecord.stockLots.reduce((sum, lot) => sum + lot.quantityRemaining, 0);
-      if (totalStockRemaining <= 0) {
-        return NextResponse.json(
-          { error: `ไม่สามารถขอเบิกได้: วัสดุ "${itemRecord.name}" สินค้าหมดในคลัง (คงเหลือ 0 ${itemRecord.unit})` },
-          { status: 400 }
-        );
-      }
-      if (qty > totalStockRemaining) {
-        return NextResponse.json(
-          {
-            error: `ไม่สามารถขอเบิกเกินสต็อกได้: วัสดุ "${itemRecord.name}" มีคงเหลือในคลังเพียง ${totalStockRemaining} ${itemRecord.unit} (ท่านระบุ ${qty})`,
-          },
-          { status: 400 }
-        );
-      }
-
-      const latestLot = itemRecord.stockLots[0];
-      const unitCost = latestLot?.unitCost || 0;
-      const itemTotal = qty * unitCost;
-      estimatedReqTotalCost += itemTotal;
-
-      reqItemsToCreate.push({
-        itemId: it.itemId,
-        quantityRequested: qty,
-        unitCost,
-        totalCost: itemTotal,
-      });
     }
 
-    // 3. Database transaction: create requisition (if any) and borrow (if any) linked together
-    const result = await prisma.$transaction(async (tx) => {
-      let createdRequisition: any = null;
-      let createdBorrow: any = null;
+    // 3. Pre-fetch request counts concurrently OUTSIDE the transaction
+    const [reqCount, brwCount] = await Promise.all([
+      hasRequisition ? prisma.requisitionRequest.count() : Promise.resolve(0),
+      hasBorrow ? prisma.borrowRequest.count() : Promise.resolve(0),
+    ]);
 
-      if (hasRequisition) {
-        const reqCount = await tx.requisitionRequest.count();
-        const reqNumber = `REQ-${todayStr}-${String(reqCount + 1).padStart(3, '0')}`;
-        const dateNeededVal = borrowDate ? new Date(borrowDate) : new Date();
+    const reqNumber = `REQ-${todayStr}-${String(reqCount + 1).padStart(3, '0')}`;
+    const brwNumber = `BRW-${todayStr}-${String(brwCount + 1).padStart(3, '0')}`;
+    const dateNeededVal = borrowDate ? new Date(borrowDate) : new Date();
+    const bDateVal = borrowDate ? new Date(borrowDate) : new Date();
+    const retDateVal = expectedReturnDate
+      ? new Date(expectedReturnDate)
+      : new Date(Date.now() + 8 * 3600 * 1000); // default 8 hrs later
 
-        createdRequisition = await tx.requisitionRequest.create({
-          data: {
-            requestNumber: reqNumber,
-            userId,
-            courseId: courseId || null,
-            advisorName: finalAdvisorName,
-            purpose,
-            dateNeeded: dateNeededVal,
-            status: 'PENDING',
-            totalCost: estimatedReqTotalCost,
-            items: {
-              create: reqItemsToCreate,
+    // 4. Ultra-fast database transaction with extended timeout (30s) and minimal insert payload
+    const result = await prisma.$transaction(
+      async (tx) => {
+        let createdRequisition: any = null;
+        let createdBorrow: any = null;
+
+        if (hasRequisition) {
+          createdRequisition = await tx.requisitionRequest.create({
+            data: {
+              requestNumber: reqNumber,
+              userId,
+              courseId: courseId || null,
+              advisorName: finalAdvisorName,
+              purpose,
+              dateNeeded: dateNeededVal,
+              status: 'PENDING',
+              totalCost: estimatedReqTotalCost,
+              items: {
+                create: reqItemsToCreate,
+              },
             },
-          },
-          include: {
-            items: { include: { item: true } },
-            course: true,
-            user: true,
-          },
-        });
-      }
-
-      if (hasBorrow) {
-        const brwCount = await tx.borrowRequest.count();
-        const brwNumber = `BRW-${todayStr}-${String(brwCount + 1).padStart(3, '0')}`;
-        const bDateVal = borrowDate ? new Date(borrowDate) : new Date();
-        const retDateVal = expectedReturnDate
-          ? new Date(expectedReturnDate)
-          : new Date(Date.now() + 8 * 3600 * 1000); // default 8 hrs later
-
-        createdBorrow = await tx.borrowRequest.create({
-          data: {
-            requestNumber: brwNumber,
-            userId,
-            courseId: courseId || null,
-            advisorName: finalAdvisorName,
-            purpose,
-            borrowDate: bDateVal,
-            expectedReturnDate: retDateVal,
-            status: 'PENDING',
-            requisitionRequestId: createdRequisition?.id || null,
-            items: {
-              create: validBorrowItems.map((it: any) => ({
-                itemId: it.itemId,
-                quantity: Number(it.quantity) || 1,
-              })),
+            select: {
+              id: true,
+              requestNumber: true,
+              status: true,
+              totalCost: true,
             },
-          },
-          include: {
-            items: { include: { item: true } },
-            course: true,
-            user: true,
-          },
-        });
+          });
+        }
+
+        if (hasBorrow) {
+          createdBorrow = await tx.borrowRequest.create({
+            data: {
+              requestNumber: brwNumber,
+              userId,
+              courseId: courseId || null,
+              advisorName: finalAdvisorName,
+              purpose,
+              borrowDate: bDateVal,
+              expectedReturnDate: retDateVal,
+              status: 'PENDING',
+              requisitionRequestId: createdRequisition?.id || null,
+              items: {
+                create: validBorrowItems.map((it: any) => ({
+                  itemId: it.itemId,
+                  quantity: Number(it.quantity) || 1,
+                })),
+              },
+            },
+            select: {
+              id: true,
+              requestNumber: true,
+              status: true,
+              borrowDate: true,
+              expectedReturnDate: true,
+              requisitionRequestId: true,
+            },
+          });
+        }
+
+        return { createdBorrow, createdRequisition };
+      },
+      {
+        maxWait: 15000, // 15 seconds to acquire connection
+        timeout: 30000, // 30 seconds transaction execution limit
       }
+    );
 
-      return { createdBorrow, createdRequisition };
-    });
-
-    // 4. Send combined approval request email to instructor/approver
+    // 5. Send combined approval request email to instructor/approver (asynchronous, outside transaction)
     try {
       let approverEmail = '';
       let approverName = finalAdvisorName || 'อาจารย์ผู้ดูแล';
@@ -236,26 +276,18 @@ export async function POST(req: Request) {
           select: { name: true },
         });
 
-        // Collect item names from both borrow and requisition
-        const allItemsList: { name: string; quantity: number; unit?: string; type?: string }[] = [];
-        if (result.createdBorrow?.items) {
-          result.createdBorrow.items.forEach((it: any) => {
-            allItemsList.push({
-              name: `[📦 ครุภัณฑ์] ${it.item?.name || 'ครุภัณฑ์'}`,
-              quantity: it.quantity,
-              unit: it.item?.unit || 'ชิ้น',
-            });
-          });
-        }
-        if (result.createdRequisition?.items) {
-          result.createdRequisition.items.forEach((it: any) => {
-            allItemsList.push({
-              name: `[🧪 วัสดุสิ้นเปลือง] ${it.item?.name || 'วัสดุ'}`,
-              quantity: it.quantityRequested,
-              unit: it.item?.unit || 'หน่วย',
-            });
-          });
-        }
+        const allItemsList: { name: string; quantity: number; unit?: string }[] = [
+          ...borrowSummaryList.map((it) => ({
+            name: `[📦 ครุภัณฑ์] ${it.name}`,
+            quantity: it.quantity,
+            unit: it.unit,
+          })),
+          ...reqSummaryList.map((it) => ({
+            name: `[🧪 วัสดุสิ้นเปลือง] ${it.name}`,
+            quantity: it.quantity,
+            unit: it.unit,
+          })),
+        ];
 
         const dateStr = borrowDate
           ? new Date(borrowDate).toLocaleDateString('th-TH', {

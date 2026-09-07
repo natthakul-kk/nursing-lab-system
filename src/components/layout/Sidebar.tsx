@@ -36,7 +36,11 @@ export default function Sidebar() {
         const res = await fetch('/api/dashboard');
         if (res.ok) {
           const data = await res.json();
-          setPendingCount((data.pendingBorrows || 0) + (data.pendingRequisitions || 0));
+          setPendingCount(
+            (data.pendingBorrows || 0) +
+            (data.pendingRequisitions || 0) +
+            (data.pendingPracticeCount || 0)
+          );
         }
       } catch (err) {
         // silent fail

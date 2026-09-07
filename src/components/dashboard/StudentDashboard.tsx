@@ -15,13 +15,16 @@ import {
   ArrowRight,
   Info,
   Check,
-  GraduationCap
+  GraduationCap,
+  Sparkles,
+  QrCode
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 export default function StudentDashboard() {
   const { currentUser } = useAuth();
   const [borrowRequests, setBorrowRequests] = useState<any[]>([]);
+  const [practiceStats, setPracticeStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
 
@@ -59,23 +62,31 @@ export default function StudentDashboard() {
     } catch {}
 
     // 2. Fetch fresh in background
-    async function fetchMyBorrows() {
+    async function fetchMyData() {
       try {
-        const res = await fetch(`/api/borrow?userId=${currentUser?.id}`);
-        if (res.ok) {
-          const data = await res.json();
+        const [borrowRes, practiceRes] = await Promise.all([
+          fetch(`/api/borrow?userId=${currentUser?.id}`),
+          fetch(`/api/practice/stats?userId=${currentUser?.id}`),
+        ]);
+
+        if (borrowRes.ok) {
+          const data = await borrowRes.json();
           setBorrowRequests(data);
           if (currentUser?.id) {
             sessionStorage.setItem(`cached_borrows_${currentUser.id}`, JSON.stringify(data));
           }
         }
+        if (practiceRes.ok) {
+          const pData = await practiceRes.json();
+          setPracticeStats(pData);
+        }
       } catch (err) {
-        console.error('Failed to fetch student borrow records', err);
+        console.error('Failed to fetch student records', err);
       } finally {
         setLoading(false);
       }
     }
-    fetchMyBorrows();
+    fetchMyData();
   }, [currentUser]);
 
   // Calculate return date status
@@ -211,7 +222,7 @@ export default function StudentDashboard() {
       )}
 
       {/* Quick Summary Cards for Student */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Currently Holding */}
         <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
           <div>
@@ -253,6 +264,25 @@ export default function StudentDashboard() {
           </div>
           <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
             <CheckCircle2 className="w-6 h-6" />
+          </div>
+        </div>
+
+        {/* Card 4: Self-Practice Lab Hours */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+          <div>
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">ชั่วโมงฝึกด้วยตนเอง</span>
+            <div className="text-2xl font-black text-indigo-700 mt-1.5">
+              {practiceStats?.userStats?.totalHours || '0.0'} <span className="text-xs font-normal text-slate-500">ชม.</span>
+            </div>
+            <Link
+              href="/practice"
+              className="text-[11px] text-indigo-600 hover:text-indigo-800 font-bold mt-1 flex items-center gap-0.5 hover:underline"
+            >
+              จองรอบเข้าฝึก <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
+          <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+            <Sparkles className="w-6 h-6" />
           </div>
         </div>
       </div>

@@ -20,6 +20,9 @@ export async function GET() {
       expiringLots,
       courses,
       recentTransactions,
+      activePracticeCount,
+      pendingPracticeCount,
+      completedPracticeSessions,
     ] = await Promise.all([
       prisma.item.count({ where: { type: 'EQUIPMENT' } }),
       prisma.item.count({ where: { type: 'CONSUMABLE' } }),
@@ -66,6 +69,12 @@ export async function GET() {
           createdBy: true,
         },
       }),
+      prisma.practiceBooking.count({ where: { status: 'CHECKED_IN' } }),
+      prisma.practiceBooking.count({ where: { status: 'PENDING' } }),
+      prisma.practiceBooking.findMany({
+        where: { status: 'COMPLETED' },
+        select: { actualMinutes: true },
+      }),
     ]);
 
     const lowStockItems = consumables
@@ -102,6 +111,9 @@ export async function GET() {
 
     const totalSystemExpense = courseCosts.reduce((sum, c) => sum + c.totalExpense, 0);
 
+    const totalPracticeMinutes = completedPracticeSessions.reduce((sum, b) => sum + (b.actualMinutes || 0), 0);
+    const totalPracticeHours = (totalPracticeMinutes / 60).toFixed(1);
+
     return NextResponse.json({
       totalEquipmentItems,
       totalConsumableItems,
@@ -116,6 +128,10 @@ export async function GET() {
       courseCosts,
       totalSystemExpense,
       recentTransactions,
+      activePracticeCount,
+      pendingPracticeCount,
+      totalPracticeMinutes,
+      totalPracticeHours,
     });
   } catch (error) {
     console.error('Failed to get dashboard stats:', error);

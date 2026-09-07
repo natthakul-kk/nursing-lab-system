@@ -18,7 +18,9 @@ import {
   Layers,
   Coins,
   ShieldCheck,
-  ChevronRight
+  ChevronRight,
+  Sparkles,
+  QrCode
 } from 'lucide-react';
 
 import StudentDashboard from '@/components/dashboard/StudentDashboard';
@@ -97,6 +99,13 @@ export default function DashboardPage() {
             <PlusCircle className="w-4 h-4" />
             <span>ขอเบิกวัสดุรายวิชา</span>
           </Link>
+          <Link
+            href="/practice"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-lg shadow-indigo-600/30"
+          >
+            <Sparkles className="w-4 h-4 text-indigo-200" />
+            <span>ขอเข้าฝึกปฏิบัติ (Self-Practice)</span>
+          </Link>
           {isOfficer && (
             <Link
               href="/stock-in"
@@ -106,6 +115,45 @@ export default function DashboardPage() {
               <span>รับเข้าสต็อก/Lot</span>
             </Link>
           )}
+        </div>
+      </div>
+
+      {/* Self-Practice Highlight Banner */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center flex-shrink-0">
+            <Sparkles className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              การขอเข้าฝึกปฏิบัติการด้วยตนเองของนิสิต (Self-Practice Skill Lab)
+              <span className="text-[10px] bg-indigo-100 text-indigo-800 font-bold px-2 py-0.5 rounded-full">
+                Real-time
+              </span>
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              เปิดให้จองล่วงหน้า พร้อมระบบสแกน QR Code ตรวจสอบชั่วโมงการฝึกปฏิบัติจริง
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-4 text-xs font-semibold">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+            <span>กำลังฝึกอยู่ในแล็บ: <strong className="text-sm font-black">{data?.activePracticeCount || 0}</strong> คน</span>
+          </div>
+
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-800 border border-indigo-200">
+            <Clock className="w-4 h-4 text-indigo-600" />
+            <span>ชั่วโมงฝึกสะสมรวม: <strong className="text-sm font-black">{data?.totalPracticeHours || '0.0'}</strong> ชม.</span>
+          </div>
+
+          <Link
+            href="/practice"
+            className="inline-flex items-center gap-1 text-xs font-bold text-teal-700 hover:text-teal-800 hover:underline"
+          >
+            ไปที่ตารางฝึกปฏิบัติ <ArrowUpRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
       </div>
 

@@ -19,7 +19,8 @@ import {
   UserCog,
   CalendarDays,
   BriefcaseMedical,
-  PackageCheck
+  PackageCheck,
+  QrCode
 } from 'lucide-react';
 import ProfileModal from '@/components/profile/ProfileModal';
 
@@ -96,6 +97,13 @@ export default function Sidebar() {
       icon: BriefcaseMedical,
       roles: ['ADMIN', 'OFFICER', 'APPROVER', 'USER'],
       badge: 'แนะนำ',
+    },
+    {
+      label: 'ขอเข้าฝึกปฏิบัติด้วยตนเอง',
+      href: '/practice',
+      icon: QrCode,
+      roles: ['ADMIN', 'OFFICER', 'APPROVER', 'USER'],
+      badge: 'ใหม่',
     },
     {
       label: 'ศูนย์อนุมัติคำขอ',

@@ -29,6 +29,8 @@ model User {
   stockTransactions   StockTransaction[]
   maintenanceLogs     MaintenanceLog[]
   repackRecords       RepackRecord[]
+  practiceBookings    PracticeBooking[]    @relation("UserPracticeBookings")
+  approvedBookings    PracticeBooking[]    @relation("ApproverPracticeBookings")
 }
 
 model Course {
@@ -46,6 +48,7 @@ model Course {
   requisitionRequests RequisitionRequest[]
   borrowRequests      BorrowRequest[]
   stockTransactions   StockTransaction[]
+  practiceBookings    PracticeBooking[]
 }
 
 model Category {
@@ -265,6 +268,7 @@ model PracticeKit {
   updatedAt    DateTime          @updatedAt
 
   items        PracticeKitItem[]
+  practiceBookings PracticeBooking[]
 }
 
 model PracticeKitItem {
@@ -340,3 +344,80 @@ model StockLotBox {
   @@index([itemId, year])
   @@index([lotId])
 }
+
+model PracticeRoom {
+  id          String         @id @default(cuid())
+  code        String         @unique // เช่น "LAB-SIM-01"
+  name        String         // เช่น "ห้องฝึกปฏิบัติการพยาบาลพื้นฐาน 1 (Skill Lab 1)"
+  location    String?        // เช่น "อาคาร 2 ชั้น 3 ห้อง 2301"
+  capacity    Int            @default(10)
+  description String?
+  isActive    Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  slots       PracticeSlot[]
+}
+
+model PracticeSlot {
+  id          String            @id @default(cuid())
+  roomId      String
+  room        PracticeRoom      @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  date        DateTime          // วันที่เปิดรอบ (เวลา 00:00:00 UTC)
+  startTime   String            // เช่น "09:00"
+  endTime     String            // เช่น "12:00"
+  maxCapacity Int               @default(6) // จำนวนนิสิตสูงสุดในรอบนี้
+  isOpen      Boolean           @default(true) // เปิด/ปิด ให้จองได้
+  closeReason String?           // เหตุผลหากปิดรอบ เช่น "ติดสอนวิชาปฏิบัติการประจำ", "ทำความสะอาด/ฆ่าเชื้อ"
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  bookings    PracticeBooking[]
+
+  @@index([date, roomId])
+}
+
+model PracticeBooking {
+  id              String         @id @default(cuid())
+  bookingNumber   String         @unique // เช่น "SPB-25690907-001"
+  userId          String
+  user            User           @relation("UserPracticeBookings", fields: [userId], references: [id])
+  slotId          String
+  slot            PracticeSlot   @relation(fields: [slotId], references: [id], onDelete: Cascade)
+  
+  skillTopic      String         // หัตถการที่ต้องการฝึก เช่น "การฉีดยาและการให้สารน้ำ", "การใส่สายสวนปัสสาวะ"
+  objectives      String?        // วัตถุประสงค์เพิ่มเติม
+  advisorName     String?        // ชื่ออาจารย์ผู้สอนหรือที่ปรึกษาที่ให้คำรับรอง
+  
+  courseId        String?
+  course          Course?        @relation(fields: [courseId], references: [id])
+  practiceKitId   String?
+  practiceKit     PracticeKit?   @relation(fields: [practiceKitId], references: [id])
+  
+  status          String         @default("PENDING") // "PENDING", "APPROVED", "REJECTED", "CHECKED_IN", "COMPLETED", "CANCELLED"
+  approverId      String?
+  approver        User?          @relation("ApproverPracticeBookings", fields: [approverId], references: [id])
+  approvedAt      DateTime?
+  rejectionReason String?
+
+  qrCodeToken     String         @unique @default(cuid()) // Unique token for Dynamic QR Code
+  checkInTime     DateTime?      // เวลาที่สแกน Check-in จริง
+  checkOutTime    DateTime?      // เวลาที่สแกน Check-out จริง
+  actualMinutes   Int?           // จำนวนนาทีที่ฝึกปฏิบัติจริง
+  
+  notes           String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([userId, status])
+  @@index([slotId])
+}
+
+model PracticeConfig {
+  id              String   @id @default("default")
+  maxAdvanceDays  Int      @default(7)  // สามารถขอล่วงหน้าได้กี่วัน (ค่าเริ่มต้น 7 วัน)
+  minAdvanceHours Int      @default(12) // ต้องขอล่วงหน้าอย่างน้อยกี่ชั่วโมง
+  rulesNotice     String?  // ระเบียบและข้อตกลงการเข้าใช้ห้องแล็บ
+  updatedAt       DateTime @updatedAt
+}
+

@@ -330,10 +330,15 @@ export default function StudentDashboard() {
                           วิชา {req.course.code} - {req.course.name}
                         </span>
                       )}
-                      {(req.advisorName || req.course?.instructorName) && (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full">
-                          <GraduationCap className="w-3.5 h-3.5 text-indigo-600" />
-                          <span>อ.ผู้รับทราบ: {req.advisorName || req.course?.instructorName}</span>
+                      {req.instructorAcknowledged ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>อาจารย์รับทราบแล้ว ({req.advisorName || req.course?.instructorName || 'อาจารย์'})</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
+                          <GraduationCap className="w-3.5 h-3.5 text-amber-600" />
+                          <span>รออาจารย์รับทราบ ({req.advisorName || req.course?.instructorName || 'อาจารย์ประจำวิชา'})</span>
                         </span>
                       )}
                       <span

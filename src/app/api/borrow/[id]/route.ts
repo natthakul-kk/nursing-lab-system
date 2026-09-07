@@ -16,6 +16,18 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       return NextResponse.json({ error: 'ไม่พบคำขอยืม' }, { status: 404 });
     }
 
+    if (action === 'ACKNOWLEDGE') {
+      const updated = await prisma.borrowRequest.update({
+        where: { id },
+        data: {
+          instructorAcknowledged: true,
+          acknowledgedAt: new Date(),
+          advisorName: body.advisorName || borrow.advisorName,
+        },
+      });
+      return NextResponse.json(updated);
+    }
+
     if (action === 'APPROVE') {
       const updated = await prisma.borrowRequest.update({
         where: { id },

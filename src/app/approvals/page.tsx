@@ -86,6 +86,32 @@ export default function ApprovalsPage() {
     }
   };
 
+  const handleAcknowledge = async (id: string, type: 'BORROW' | 'REQUISITION') => {
+    setSubmitting(true);
+    try {
+      const endpoint = type === 'BORROW' ? `/api/borrow/${id}` : `/api/requisitions/${id}`;
+      const res = await fetch(endpoint, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'ACKNOWLEDGE',
+          userId: currentUser?.id,
+          advisorName: currentUser?.name,
+        }),
+      });
+
+      if (res.ok) {
+        fetchData();
+      } else {
+        alert('เกิดข้อผิดพลาดในการบันทึกการรับทราบ');
+      }
+    } catch (err) {
+      alert('Network error');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleRejectSubmit = async () => {
     if (!rejectItem) return;
     setSubmitting(true);
@@ -372,10 +398,15 @@ export default function ApprovalsPage() {
                           {req.course.code}
                         </div>
                       )}
-                      {(req.advisorName || req.course?.instructorName) && (
-                        <div className="flex items-center gap-1 text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-full">
-                          <GraduationCap className="w-3.5 h-3.5 text-indigo-600" />
-                          <span>อ.ผู้รับทราบ: {req.advisorName || req.course?.instructorName}</span>
+                      {req.instructorAcknowledged ? (
+                        <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>อาจารย์รับทราบแล้ว ({req.advisorName || req.course?.instructorName || 'อาจารย์'}{req.acknowledgedAt ? ` • ${new Date(req.acknowledgedAt).toLocaleDateString('th-TH')}` : ''})</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full animate-pulse">
+                          <Clock className="w-3.5 h-3.5 text-amber-600" />
+                          <span>รออาจารย์รับทราบ ({req.advisorName || req.course?.instructorName || 'อาจารย์ผู้สอน'})</span>
                         </div>
                       )}
                     </div>
@@ -414,21 +445,48 @@ export default function ApprovalsPage() {
 
                   {/* Actions / Status Footer */}
                   {statusFilter === 'PENDING' ? (
-                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                      <button
-                        disabled={submitting}
-                        onClick={() => setRejectItem({ id: req.id, type: 'BORROW' })}
-                        className="px-4 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 transition cursor-pointer"
-                      >
-                        ไม่อนุมัติ
-                      </button>
-                      <button
-                        disabled={submitting}
-                        onClick={() => handleApprove(req.id, 'BORROW')}
-                        className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-teal-600 hover:bg-teal-500 shadow-md shadow-teal-600/20 transition cursor-pointer flex items-center gap-1.5"
-                      >
-                        <Check className="w-3.5 h-3.5" /> อนุมัติคำขอยืม
-                      </button>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                      <div>
+                        {!req.instructorAcknowledged ? (
+                          <span className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-lg font-medium inline-flex items-center gap-1">
+                            <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
+                            คำขอนี้ยังไม่ได้รับการกดรับทราบจากอาจารย์ประจำวิชา
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg font-medium inline-flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            อาจารย์ {req.advisorName || 'ผู้สอน'} รับทราบเรียบร้อยแล้ว
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2">
+                        {!req.instructorAcknowledged && (isTeacher || isAdmin || isApprover) && (
+                          <button
+                            disabled={submitting}
+                            onClick={() => handleAcknowledge(req.id, 'BORROW')}
+                            className="px-3.5 py-2 rounded-xl text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 shadow-sm transition cursor-pointer flex items-center gap-1.5"
+                            title="อาจารย์ประจำวิชากดรับทราบก่อนส่งต่อการอนุมัติขั้นสุดท้าย"
+                          >
+                            <GraduationCap className="w-3.5 h-3.5 text-indigo-600" />
+                            <span>อาจารย์กดรับทราบคำขอ</span>
+                          </button>
+                        )}
+                        <button
+                          disabled={submitting}
+                          onClick={() => setRejectItem({ id: req.id, type: 'BORROW' })}
+                          className="px-4 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 transition cursor-pointer"
+                        >
+                          ไม่อนุมัติ
+                        </button>
+                        <button
+                          disabled={submitting}
+                          onClick={() => handleApprove(req.id, 'BORROW')}
+                          className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-teal-600 hover:bg-teal-500 shadow-md shadow-teal-600/20 transition cursor-pointer flex items-center gap-1.5"
+                        >
+                          <Check className="w-3.5 h-3.5" /> อนุมัติคำขอยืม
+                        </button>
+                      </div>
                     </div>
                   ) : statusFilter === 'APPROVED' ? (
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
@@ -487,10 +545,15 @@ export default function ApprovalsPage() {
                         [{req.course?.code}] {req.course?.name}
                       </span>
                       <span className="text-slate-500 font-medium">โดย {req.user?.name}</span>
-                      {(req.advisorName || req.course?.instructorName) && (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-full">
-                          <GraduationCap className="w-3.5 h-3.5 text-indigo-600" />
-                          <span>อ.ผู้รับผิดชอบ: {req.advisorName || req.course?.instructorName}</span>
+                      {req.instructorAcknowledged ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>อาจารย์รับทราบแล้ว ({req.advisorName || req.course?.instructorName || 'อาจารย์'}{req.acknowledgedAt ? ` • ${new Date(req.acknowledgedAt).toLocaleDateString('th-TH')}` : ''})</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full animate-pulse">
+                          <Clock className="w-3.5 h-3.5 text-amber-600" />
+                          <span>รออาจารย์รับทราบ ({req.advisorName || req.course?.instructorName || 'อาจารย์ผู้รับผิดชอบ'})</span>
                         </span>
                       )}
                     </div>
@@ -531,21 +594,48 @@ export default function ApprovalsPage() {
 
                   {/* Actions / Status Footer */}
                   {statusFilter === 'PENDING' ? (
-                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                      <button
-                        disabled={submitting}
-                        onClick={() => setRejectItem({ id: req.id, type: 'REQUISITION' })}
-                        className="px-4 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 transition cursor-pointer"
-                      >
-                        ไม่อนุมัติ
-                      </button>
-                      <button
-                        disabled={submitting}
-                        onClick={() => handleApprove(req.id, 'REQUISITION')}
-                        className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-teal-600 hover:bg-teal-500 shadow-md shadow-teal-600/20 transition cursor-pointer flex items-center gap-1.5"
-                      >
-                        <Check className="w-3.5 h-3.5" /> อนุมัติการเบิกจ่าย
-                      </button>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                      <div>
+                        {!req.instructorAcknowledged ? (
+                          <span className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-lg font-medium inline-flex items-center gap-1">
+                            <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
+                            คำขอนี้ยังไม่ได้รับการกดรับทราบจากอาจารย์ประจำวิชา
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg font-medium inline-flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            อาจารย์ {req.advisorName || 'ผู้รับผิดชอบ'} รับทราบเรียบร้อยแล้ว
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2">
+                        {!req.instructorAcknowledged && (isTeacher || isAdmin || isApprover) && (
+                          <button
+                            disabled={submitting}
+                            onClick={() => handleAcknowledge(req.id, 'REQUISITION')}
+                            className="px-3.5 py-2 rounded-xl text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 shadow-sm transition cursor-pointer flex items-center gap-1.5"
+                            title="อาจารย์ประจำวิชากดรับทราบก่อนส่งต่อการอนุมัติขั้นสุดท้าย"
+                          >
+                            <GraduationCap className="w-3.5 h-3.5 text-indigo-600" />
+                            <span>อาจารย์กดรับทราบคำขอ</span>
+                          </button>
+                        )}
+                        <button
+                          disabled={submitting}
+                          onClick={() => setRejectItem({ id: req.id, type: 'REQUISITION' })}
+                          className="px-4 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 transition cursor-pointer"
+                        >
+                          ไม่อนุมัติ
+                        </button>
+                        <button
+                          disabled={submitting}
+                          onClick={() => handleApprove(req.id, 'REQUISITION')}
+                          className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-teal-600 hover:bg-teal-500 shadow-md shadow-teal-600/20 transition cursor-pointer flex items-center gap-1.5"
+                        >
+                          <Check className="w-3.5 h-3.5" /> อนุมัติการเบิกจ่าย
+                        </button>
+                      </div>
                     </div>
                   ) : statusFilter === 'APPROVED' ? (
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">

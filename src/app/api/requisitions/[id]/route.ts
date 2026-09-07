@@ -19,6 +19,18 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       return NextResponse.json({ error: 'ไม่พบรายการคำขอเบิก' }, { status: 404 });
     }
 
+    if (action === 'ACKNOWLEDGE') {
+      const updated = await prisma.requisitionRequest.update({
+        where: { id },
+        data: {
+          instructorAcknowledged: true,
+          acknowledgedAt: new Date(),
+          advisorName: body.advisorName || requisition.advisorName,
+        },
+      });
+      return NextResponse.json(updated);
+    }
+
     if (action === 'APPROVE') {
       const updated = await prisma.requisitionRequest.update({
         where: { id },

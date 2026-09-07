@@ -16,12 +16,19 @@ import {
   Trash2,
   PackageCheck,
   Check,
-  AlertCircle
+  AlertCircle,
+  GraduationCap
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 export default function RequisitionsPage() {
-  const { currentUser, isOfficer, isApprover } = useAuth();
+  const { currentUser, isOfficer, isApprover, isAdmin } = useAuth();
+  const isTeacher =
+    currentUser?.role === 'APPROVER' ||
+    currentUser?.email?.includes('teacher') ||
+    currentUser?.name?.startsWith('อ.') ||
+    currentUser?.name?.startsWith('ผศ.') ||
+    currentUser?.name?.startsWith('รศ.');
   const [requisitions, setRequisitions] = useState<any[]>([]);
   const [consumables, setConsumables] = useState<any[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
@@ -166,6 +173,32 @@ export default function RequisitionsPage() {
     }
   };
 
+  const handleAcknowledge = async (reqId: string) => {
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/requisitions/${reqId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'ACKNOWLEDGE',
+          userId: currentUser?.id,
+          advisorName: currentUser?.name,
+        }),
+      });
+
+      if (res.ok) {
+        fetchRequisitions();
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Failed to acknowledge');
+      }
+    } catch (err) {
+      alert('Error updating requisition');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'PENDING':
@@ -274,7 +307,7 @@ export default function RequisitionsPage() {
                   <div>{getStatusBadge(req.status)}</div>
                 </div>
 
-                <div className="flex items-center gap-3 text-xs">
+                <div className="flex flex-wrap items-center gap-3 text-xs">
                   <span className="font-bold text-teal-800 bg-teal-50 px-2.5 py-1 rounded-lg">
                     [{req.course?.code}] {req.course?.name}
                   </span>
@@ -282,6 +315,17 @@ export default function RequisitionsPage() {
                     <User className="w-3.5 h-3.5" />
                     <span>{req.user?.name}</span>
                   </div>
+                  {req.instructorAcknowledged ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>อ.รับทราบแล้ว ({req.advisorName || req.course?.instructorName || 'อาจารย์'}{req.acknowledgedAt ? ` • ${new Date(req.acknowledgedAt).toLocaleDateString('th-TH')}` : ''})</span>
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
+                      <Clock className="w-3.5 h-3.5 text-amber-600" />
+                      <span>รออาจารย์รับทราบ ({req.advisorName || req.course?.instructorName || 'อาจารย์ผู้รับผิดชอบ'})</span>
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -340,6 +384,24 @@ export default function RequisitionsPage() {
                   </tbody>
                 </table>
               </div>
+
+              {/* Instructor Acknowledgment Button for Pending Requests */}
+              {req.status === 'PENDING' && !req.instructorAcknowledged && (isTeacher || isApprover || isAdmin) && (
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-3 border-t border-slate-100 bg-indigo-50/40 -mx-5 -mb-5 p-3.5 rounded-b-2xl">
+                  <span className="text-xs text-indigo-900 font-medium flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-indigo-600" />
+                    คำขอนี้ยังรอยืนยันการรับทราบจากอาจารย์ประจำวิชา
+                  </span>
+                  <button
+                    disabled={submitting}
+                    onClick={() => handleAcknowledge(req.id)}
+                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md shadow-indigo-600/20 transition cursor-pointer"
+                  >
+                    <GraduationCap className="w-4 h-4" />
+                    <span>อาจารย์กดรับทราบคำขอ (Acknowledge)</span>
+                  </button>
+                </div>
+              )}
 
               {/* Action Button for Lab Officer */}
               {isOfficer && req.status === 'APPROVED' && (

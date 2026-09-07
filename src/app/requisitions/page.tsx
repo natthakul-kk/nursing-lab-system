@@ -44,11 +44,16 @@ export default function RequisitionsPage() {
   // New Requisition Modal State
   const [showNewModal, setShowNewModal] = useState(false);
   const [showUnifiedModal, setShowUnifiedModal] = useState(false);
-  const [newReq, setNewReq] = useState({
+  const [newReq, setNewReq] = useState<{
+    courseId: string;
+    purpose: string;
+    dateNeeded: string;
+    items: { itemId: string; quantity: number | string; categoryId?: string }[];
+  }>({
     courseId: '',
     purpose: '',
     dateNeeded: '',
-    items: [{ itemId: '', quantity: 10 }],
+    items: [{ itemId: '', quantity: '' }],
   });
 
   // Action Dispense Modal
@@ -99,12 +104,10 @@ export default function RequisitionsPage() {
   }, []);
 
   const handleAddItemRow = () => {
-    if (consumables.length > 0) {
-      setNewReq((prev) => ({
-        ...prev,
-        items: [...prev.items, { itemId: consumables[0].id, quantity: 5 }],
-      }));
-    }
+    setNewReq((prev) => ({
+      ...prev,
+      items: [...prev.items, { itemId: '', quantity: '' }],
+    }));
   };
 
   const handleRemoveItemRow = (idx: number) => {
@@ -126,17 +129,27 @@ export default function RequisitionsPage() {
       return;
     }
 
+    // Validate that quantity is entered and >= 1
+    for (const it of newReq.items) {
+      const q = Number(it.quantity);
+      if (!q || q < 1) {
+        alert('กรุณาระบุจำนวนวัสดุสิ้นเปลืองที่ต้องการเบิกให้ถูกต้อง (อย่างน้อย 1)');
+        return;
+      }
+    }
+
     // Validate that none of the items exceed available stock
     for (const it of newReq.items) {
       const itemInfo = consumables.find((c) => c.id === it.itemId);
+      const q = Number(it.quantity);
       if (itemInfo) {
         if (itemInfo.currentStock <= 0) {
           alert(`วัสดุ "${itemInfo.name}" สินค้าหมดในคลัง ไม่สามารถขอเบิกได้`);
           return;
         }
-        if (it.quantity > itemInfo.currentStock) {
+        if (q > itemInfo.currentStock) {
           alert(
-            `ไม่สามารถขอเบิกเกินสต็อกได้:\nวัสดุ "${itemInfo.name}" มีคงเหลือในคลังเพียง ${itemInfo.currentStock} ${itemInfo.unit} (ท่านระบุ ${it.quantity} ${itemInfo.unit})`
+            `ไม่สามารถขอเบิกเกินสต็อกได้:\nวัสดุ "${itemInfo.name}" มีคงเหลือในคลังเพียง ${itemInfo.currentStock} ${itemInfo.unit} (ท่านระบุ ${q} ${itemInfo.unit})`
           );
           return;
         }
@@ -154,7 +167,7 @@ export default function RequisitionsPage() {
           advisorName: courses.find((c) => c.id === newReq.courseId)?.instructorName || null,
           purpose: newReq.purpose,
           dateNeeded: newReq.dateNeeded,
-          items: newReq.items,
+          items: newReq.items.map((it) => ({ ...it, quantity: Number(it.quantity) })),
         }),
       });
 
@@ -164,7 +177,7 @@ export default function RequisitionsPage() {
           courseId: '',
           purpose: '',
           dateNeeded: '',
-          items: [{ itemId: '', quantity: 10 }],
+          items: [{ itemId: '', quantity: '' }],
         });
         fetchRequisitions();
       } else {
@@ -642,7 +655,7 @@ export default function RequisitionsPage() {
 
                     const chosenItem = consumables.find((c: any) => c.id === row.itemId);
                     const isOutOfStock = chosenItem && chosenItem.currentStock <= 0;
-                    const isOverStock = chosenItem && chosenItem.currentStock > 0 && row.quantity > chosenItem.currentStock;
+                    const isOverStock = chosenItem && chosenItem.currentStock > 0 && row.quantity !== '' && Number(row.quantity) > chosenItem.currentStock;
 
                     return (
                       <div key={idx} className={`p-2.5 rounded-xl border transition ${
@@ -695,7 +708,7 @@ export default function RequisitionsPage() {
                                     updated[idx].categoryId = it.category.id;
                                   }
                                   // Auto-adjust quantity if exceeding new item's stock
-                                  if (it && it.currentStock > 0 && updated[idx].quantity > it.currentStock) {
+                                  if (it && it.currentStock > 0 && updated[idx].quantity !== '' && Number(updated[idx].quantity) > it.currentStock) {
                                     updated[idx].quantity = it.currentStock;
                                   }
                                   return { ...prev, items: updated };
@@ -728,7 +741,8 @@ export default function RequisitionsPage() {
                               max={chosenItem ? Math.max(1, chosenItem.currentStock) : undefined}
                               value={row.quantity}
                               onChange={(e) => {
-                                const val = Number(e.target.value);
+                                const raw = e.target.value;
+                                const val = raw === '' ? '' : Math.max(1, parseInt(raw, 10));
                                 setNewReq((prev: any) => {
                                   const updated = [...prev.items];
                                   updated[idx].quantity = val;
@@ -740,7 +754,7 @@ export default function RequisitionsPage() {
                                   ? 'border-rose-500 bg-rose-50 text-rose-700'
                                   : 'border-slate-300'
                               }`}
-                              placeholder="จำนวน"
+                              placeholder="ระบุจำนวน"
                             />
                             {newReq.items.length > 1 && (
                               <button
@@ -782,7 +796,7 @@ export default function RequisitionsPage() {
                               </span>
                             )}
                             <span className="text-slate-500">
-                              ประมาณการ: <strong className="text-slate-700">฿{((chosenItem.unitCost || 0) * (row.quantity || 0)).toFixed(2)}</strong>
+                              ประมาณการ: <strong className="text-slate-700">฿{((chosenItem.unitCost || 0) * (Number(row.quantity) || 0)).toFixed(2)}</strong>
                             </span>
                           </div>
                         )}

@@ -46,11 +46,11 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
   const [expectedReturnDate, setExpectedReturnDate] = useState('');
 
   // Items State
-  const [borrowItems, setBorrowItems] = useState<{ itemId: string; quantity: number; categoryId?: string }[]>([
-    { itemId: '', quantity: 1 },
+  const [borrowItems, setBorrowItems] = useState<{ itemId: string; quantity: number | string; categoryId?: string }[]>([
+    { itemId: '', quantity: '' },
   ]);
-  const [requisitionItems, setRequisitionItems] = useState<{ itemId: string; quantity: number; categoryId?: string }[]>([
-    { itemId: '', quantity: 5 },
+  const [requisitionItems, setRequisitionItems] = useState<{ itemId: string; quantity: number | string; categoryId?: string }[]>([
+    { itemId: '', quantity: '' },
   ]);
 
   // Load dropdown resources on mount
@@ -99,20 +99,23 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
   const totalEstimatedCost = requisitionItems.reduce((sum, row) => {
     if (!row.itemId) return sum;
     const it = consumablesList.find((c) => c.id === row.itemId);
-    return sum + (it?.unitCost || 0) * (row.quantity || 0);
+    const q = Number(row.quantity) || 0;
+    return sum + (it?.unitCost || 0) * q;
   }, 0);
 
   // Compute stock validation errors
   const hasEquipmentStockError = borrowItems.some((it) => {
     if (!it.itemId) return false;
     const eq = equipmentList.find((e) => e.id === it.itemId);
-    return eq && (eq.currentStock <= 0 || it.quantity > eq.currentStock);
+    const q = Number(it.quantity) || 0;
+    return eq && (eq.currentStock <= 0 || (q > 0 && q > eq.currentStock));
   });
 
   const hasConsumableStockError = requisitionItems.some((it) => {
     if (!it.itemId) return false;
     const con = consumablesList.find((c) => c.id === it.itemId);
-    return con && (con.currentStock <= 0 || it.quantity > con.currentStock);
+    const q = Number(it.quantity) || 0;
+    return con && (con.currentStock <= 0 || (q > 0 && q > con.currentStock));
   });
 
   const hasStockError = hasEquipmentStockError || hasConsumableStockError;
@@ -133,15 +136,32 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
       return;
     }
 
+    // Validate quantities are entered and >= 1
+    for (const it of validBorrow) {
+      const q = Number(it.quantity);
+      if (!q || q < 1) {
+        alert('กรุณาระบุจำนวนครุภัณฑ์ที่ต้องการยืมให้ถูกต้อง (อย่างน้อย 1)');
+        return;
+      }
+    }
+    for (const it of validReq) {
+      const q = Number(it.quantity);
+      if (!q || q < 1) {
+        alert('กรุณาระบุจำนวนวัสดุสิ้นเปลืองที่ต้องการเบิกให้ถูกต้อง (อย่างน้อย 1)');
+        return;
+      }
+    }
+
     // Validate Equipment limits
     for (const it of validBorrow) {
       const eq = equipmentList.find((e) => e.id === it.itemId);
+      const q = Number(it.quantity);
       if (eq) {
         if (eq.currentStock <= 0) {
           alert(`ครุภัณฑ์ "${eq.name}" ไม่มีอุปกรณ์พร้อมให้ยืมในขณะนี้ (มีในคลัง ${eq.physicalStock || 0} ชิ้น แต่ถูกจองรอส่งมอบแล้ว ${eq.reservedStock || 0} ชิ้น)`);
           return;
         }
-        if (it.quantity > eq.currentStock) {
+        if (q > eq.currentStock) {
           alert(`ไม่สามารถขอยืมเกินจำนวนพร้อมใช้ได้: ครุภัณฑ์ "${eq.name}" มีพร้อมให้ยืม ${eq.currentStock} ${eq.unit || 'ชิ้น'} (จากคลัง ${eq.physicalStock || eq.currentStock} แต่มีคิวรอส่งมอบ ${eq.reservedStock || 0})`);
           return;
         }
@@ -151,12 +171,13 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
     // Validate Consumable limits
     for (const it of validReq) {
       const con = consumablesList.find((c) => c.id === it.itemId);
+      const q = Number(it.quantity);
       if (con) {
         if (con.currentStock <= 0) {
           alert(`วัสดุ "${con.name}" หมดหรือถูกจองเต็มแล้วในขณะนี้ (มีในคลัง ${con.physicalStock || 0} ${con.unit} แต่มีคำขอรอจ่ายแล้ว ${con.reservedStock || 0} ${con.unit})`);
           return;
         }
-        if (it.quantity > con.currentStock) {
+        if (q > con.currentStock) {
           alert(`ไม่สามารถขอเบิกเกินสต็อกพร้อมใช้ได้: วัสดุ "${con.name}" มีพร้อมให้ขอ ${con.currentStock} ${con.unit} (จากคลัง ${con.physicalStock || con.currentStock} แต่มีคำขอรอจ่ายอยู่ ${con.reservedStock || 0} ${con.unit})`);
           return;
         }
@@ -175,8 +196,8 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
           purpose,
           borrowDate,
           expectedReturnDate,
-          borrowItems: validBorrow,
-          requisitionItems: validReq,
+          borrowItems: validBorrow.map((b) => ({ ...b, quantity: Number(b.quantity) })),
+          requisitionItems: validReq.map((r) => ({ ...r, quantity: Number(r.quantity) })),
         }),
       });
 
@@ -370,7 +391,7 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
               </div>
               <button
                 type="button"
-                onClick={() => setBorrowItems([...borrowItems, { itemId: '', quantity: 1 }])}
+                onClick={() => setBorrowItems([...borrowItems, { itemId: '', quantity: '' }])}
                 className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition flex items-center gap-1 cursor-pointer shadow-sm shadow-blue-600/20"
               >
                 <Plus className="w-3.5 h-3.5" /> เพิ่มครุภัณฑ์
@@ -390,7 +411,7 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
 
                 const chosenEq = equipmentList.find((e) => e.id === row.itemId);
                 const isOutOfStock = chosenEq && chosenEq.currentStock <= 0;
-                const isOverStock = chosenEq && chosenEq.currentStock > 0 && row.quantity > chosenEq.currentStock;
+                const isOverStock = chosenEq && chosenEq.currentStock > 0 && row.quantity !== '' && Number(row.quantity) > chosenEq.currentStock;
 
                 return (
                   <div
@@ -426,7 +447,7 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
                             const eq = equipmentList.find((x) => x.id === val);
                             const updated = [...borrowItems];
                             updated[idx].itemId = val;
-                            if (eq && eq.currentStock > 0 && updated[idx].quantity > eq.currentStock) {
+                            if (eq && eq.currentStock > 0 && row.quantity !== '' && Number(updated[idx].quantity) > eq.currentStock) {
                               updated[idx].quantity = eq.currentStock;
                             }
                             setBorrowItems(updated);
@@ -453,7 +474,8 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
                           max={chosenEq ? Math.max(1, chosenEq.currentStock) : undefined}
                           value={row.quantity}
                           onChange={(e) => {
-                            const val = Number(e.target.value);
+                            const raw = e.target.value;
+                            const val = raw === '' ? '' : Math.max(1, parseInt(raw, 10));
                             const updated = [...borrowItems];
                             updated[idx].quantity = val;
                             setBorrowItems(updated);
@@ -461,7 +483,7 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
                           className={`w-full bg-white border rounded-lg px-2 py-1.5 text-xs font-bold text-center ${
                             isOverStock || isOutOfStock ? 'border-rose-500 bg-rose-50 text-rose-700' : 'border-slate-300'
                           }`}
-                          placeholder="จำนวน"
+                          placeholder="ระบุจำนวน"
                         />
                         {borrowItems.length > 1 && (
                           <button
@@ -522,7 +544,7 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
               </div>
               <button
                 type="button"
-                onClick={() => setRequisitionItems([...requisitionItems, { itemId: '', quantity: 5 }])}
+                onClick={() => setRequisitionItems([...requisitionItems, { itemId: '', quantity: '' }])}
                 className="px-3 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold transition flex items-center gap-1 cursor-pointer shadow-sm shadow-teal-600/20"
               >
                 <Plus className="w-3.5 h-3.5" /> เพิ่มวัสดุสิ้นเปลือง
@@ -542,7 +564,7 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
 
                 const chosenItem = consumablesList.find((c) => c.id === row.itemId);
                 const isOutOfStock = chosenItem && chosenItem.currentStock <= 0;
-                const isOverStock = chosenItem && chosenItem.currentStock > 0 && row.quantity > chosenItem.currentStock;
+                const isOverStock = chosenItem && chosenItem.currentStock > 0 && row.quantity !== '' && Number(row.quantity) > chosenItem.currentStock;
 
                 return (
                   <div
@@ -578,7 +600,7 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
                             const it = consumablesList.find((x) => x.id === val);
                             const updated = [...requisitionItems];
                             updated[idx].itemId = val;
-                            if (it && it.currentStock > 0 && updated[idx].quantity > it.currentStock) {
+                            if (it && it.currentStock > 0 && row.quantity !== '' && Number(updated[idx].quantity) > it.currentStock) {
                               updated[idx].quantity = it.currentStock;
                             }
                             setRequisitionItems(updated);
@@ -605,7 +627,8 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
                           max={chosenItem ? Math.max(1, chosenItem.currentStock) : undefined}
                           value={row.quantity}
                           onChange={(e) => {
-                            const val = Number(e.target.value);
+                            const raw = e.target.value;
+                            const val = raw === '' ? '' : Math.max(1, parseInt(raw, 10));
                             const updated = [...requisitionItems];
                             updated[idx].quantity = val;
                             setRequisitionItems(updated);
@@ -613,7 +636,7 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
                           className={`w-full bg-white border rounded-lg px-2 py-1.5 text-xs font-bold text-center ${
                             isOverStock || isOutOfStock ? 'border-rose-500 bg-rose-50 text-rose-700' : 'border-slate-300'
                           }`}
-                          placeholder="จำนวน"
+                          placeholder="ระบุจำนวน"
                         />
                         {requisitionItems.length > 1 && (
                           <button
@@ -653,7 +676,7 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
                           </span>
                         )}
                         <span className="text-slate-500 font-medium">
-                          ประมาณการ: ฿{((chosenItem.unitCost || 0) * (row.quantity || 0)).toFixed(2)}
+                          ประมาณการ: ฿{((chosenItem.unitCost || 0) * (Number(row.quantity) || 0)).toFixed(2)}
                         </span>
                       </div>
                     )}

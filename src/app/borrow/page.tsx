@@ -47,13 +47,20 @@ export default function BorrowPage() {
   const [showNewModal, setShowNewModal] = useState(false);
   const [showUnifiedModal, setShowUnifiedModal] = useState(false);
   const [instructors, setInstructors] = useState<any[]>([]);
-  const [newRequest, setNewRequest] = useState({
+  const [newRequest, setNewRequest] = useState<{
+    courseId: string;
+    advisorName: string;
+    purpose: string;
+    borrowDate: string;
+    expectedReturnDate: string;
+    selectedItems: { itemId: string; quantity: number | string; categoryId?: string }[];
+  }>({
     courseId: '',
     advisorName: '',
     purpose: '',
     borrowDate: '',
     expectedReturnDate: '',
-    selectedItems: [{ itemId: '', quantity: 1 }],
+    selectedItems: [{ itemId: '', quantity: '' }],
   });
 
   // Action Modals (Checkout & Return)
@@ -151,18 +158,29 @@ export default function BorrowPage() {
         return;
       }
 
+      // Pre-validation: ensure quantity is entered and >= 1
+      for (const reqItem of validItems) {
+        const q = Number(reqItem.quantity);
+        if (!q || q < 1) {
+          alert('กรุณาระบุจำนวนครุภัณฑ์ที่ต้องการยืมให้ถูกต้อง (อย่างน้อย 1)');
+          setSubmitting(false);
+          return;
+        }
+      }
+
       // Pre-validation: ensure requested quantity does not exceed available assets
       for (const reqItem of validItems) {
         const eq = equipmentList.find((e) => e.id === reqItem.itemId);
+        const q = Number(reqItem.quantity);
         if (eq) {
           if (eq.currentStock <= 0) {
             alert(`ไม่สามารถขอยืมได้: ครุภัณฑ์ "${eq.name}" ไม่มีอุปกรณ์ที่พร้อมใช้งานในขณะนี้`);
             setSubmitting(false);
             return;
           }
-          if (reqItem.quantity > eq.currentStock) {
+          if (q > eq.currentStock) {
             alert(
-              `ไม่สามารถขอยืมเกินจำนวนพร้อมใช้ได้: ครุภัณฑ์ "${eq.name}" มีพร้อมให้ยืมเพียง ${eq.currentStock} ${eq.unit || 'ชิ้น'} (ท่านระบุ ${reqItem.quantity} ${eq.unit || 'ชิ้น'})`
+              `ไม่สามารถขอยืมเกินจำนวนพร้อมใช้ได้: ครุภัณฑ์ "${eq.name}" มีพร้อมให้ยืมเพียง ${eq.currentStock} ${eq.unit || 'ชิ้น'} (ท่านระบุ ${q} ${eq.unit || 'ชิ้น'})`
             );
             setSubmitting(false);
             return;
@@ -180,7 +198,7 @@ export default function BorrowPage() {
           purpose: newRequest.purpose,
           borrowDate: newRequest.borrowDate,
           expectedReturnDate: newRequest.expectedReturnDate,
-          items: validItems,
+          items: validItems.map((i: any) => ({ ...i, quantity: Number(i.quantity) })),
         }),
       });
 
@@ -192,7 +210,7 @@ export default function BorrowPage() {
           purpose: '',
           borrowDate: '',
           expectedReturnDate: '',
-          selectedItems: [{ itemId: '', quantity: 1 }],
+          selectedItems: [{ itemId: '', quantity: '' }],
         });
         fetchBorrowData();
       } else {
@@ -884,7 +902,7 @@ export default function BorrowPage() {
                     onClick={() => {
                       setNewRequest((prev) => ({
                         ...prev,
-                        selectedItems: [...prev.selectedItems, { itemId: '', quantity: 1, categoryId: '' } as any],
+                        selectedItems: [...prev.selectedItems, { itemId: '', quantity: '', categoryId: '' } as any],
                       }));
                     }}
                     className="text-xs font-bold text-teal-600 hover:text-teal-700 flex items-center gap-1 cursor-pointer"
@@ -908,7 +926,7 @@ export default function BorrowPage() {
 
                     const chosenEq = equipmentList.find((eq: any) => eq.id === sItem.itemId);
                     const isOutOfStock = chosenEq && chosenEq.currentStock <= 0;
-                    const isOverStock = chosenEq && chosenEq.currentStock > 0 && sItem.quantity > chosenEq.currentStock;
+                    const isOverStock = chosenEq && chosenEq.currentStock > 0 && sItem.quantity !== '' && Number(sItem.quantity) > chosenEq.currentStock;
 
                     return (
                       <div key={idx} className={`p-2.5 rounded-xl border space-y-2 transition ${
@@ -962,7 +980,7 @@ export default function BorrowPage() {
                                     updated[idx].categoryId = it.category.id;
                                   }
                                   // Auto-adjust quantity if exceeding new item's available count
-                                  if (it && it.currentStock > 0 && updated[idx].quantity > it.currentStock) {
+                                  if (it && it.currentStock > 0 && updated[idx].quantity !== '' && Number(updated[idx].quantity) > it.currentStock) {
                                     updated[idx].quantity = it.currentStock;
                                   }
                                   return { ...prev, selectedItems: updated };
@@ -995,7 +1013,8 @@ export default function BorrowPage() {
                               max={chosenEq ? Math.max(1, chosenEq.currentStock) : undefined}
                               value={sItem.quantity}
                               onChange={(e) => {
-                                const val = Number(e.target.value);
+                                const raw = e.target.value;
+                                const val = raw === '' ? '' : Math.max(1, parseInt(raw, 10));
                                 setNewRequest((prev: any) => {
                                   const updated = [...prev.selectedItems];
                                   updated[idx].quantity = val;
@@ -1007,7 +1026,7 @@ export default function BorrowPage() {
                                   ? 'border-rose-500 bg-rose-50 text-rose-700'
                                   : 'border-slate-300'
                               }`}
-                              placeholder="จำนวน"
+                              placeholder="ระบุจำนวน"
                             />
                             {newRequest.selectedItems.length > 1 && (
                               <button

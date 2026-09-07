@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { sendApprovalNotificationWithQrEmail } from '@/lib/email';
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -79,6 +80,26 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           approver: true,
         },
       });
+      // Trigger email with QR Code to student in background
+      if (updated.user?.email) {
+        const slotDateFormatted = updated.slot?.date ? new Date(updated.slot.date).toLocaleDateString('th-TH', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        }) : '';
+        const dateTimeStr = `${slotDateFormatted} เวลา ${updated.slot?.startTime} - ${updated.slot?.endTime} น.`;
+
+        sendApprovalNotificationWithQrEmail({
+          studentEmail: updated.user.email,
+          studentName: updated.user.name,
+          bookingNumber: updated.bookingNumber,
+          skillTopic: updated.skillTopic,
+          roomName: updated.slot?.room?.name || 'ห้องปฏิบัติการพยาบาล',
+          dateTimeStr,
+          qrCodeToken: updated.qrCodeToken,
+        }).catch((err) => console.error('Background student QR email failed:', err));
+      }
+
       return NextResponse.json(updated);
     }
 

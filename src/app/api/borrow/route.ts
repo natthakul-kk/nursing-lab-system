@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { sendApprovalRequestEmail } from '@/lib/email';
 
 export async function GET(req: Request) {
   try {
@@ -100,6 +101,60 @@ export async function POST(req: Request) {
         user: true,
       },
     });
+
+    // Background notification: Send email to advisor/approver
+    try {
+      let approverEmail = '';
+      let approverName = finalAdvisorName || 'อาจารย์ผู้ดูแล';
+
+      if (finalAdvisorName) {
+        const advisorUser = await prisma.user.findFirst({
+          where: {
+            OR: [
+              { name: { contains: finalAdvisorName } },
+              { email: { contains: 'teacher' } },
+              { role: 'APPROVER' },
+            ],
+          },
+        });
+        if (advisorUser?.email) {
+          approverEmail = advisorUser.email;
+          approverName = advisorUser.name;
+        }
+      }
+
+      if (!approverEmail) {
+        const fallbackApprover = await prisma.user.findFirst({
+          where: { role: 'APPROVER', status: 'ACTIVE' },
+        });
+        if (fallbackApprover?.email) {
+          approverEmail = fallbackApprover.email;
+          approverName = fallbackApprover.name;
+        }
+      }
+
+      if (approverEmail) {
+        sendApprovalRequestEmail({
+          approverEmail,
+          approverName,
+          studentName: borrow.user?.name || 'นิสิต',
+          studentId: borrow.user?.studentId || undefined,
+          type: 'BORROW',
+          title: `คำขอยืมครุภัณฑ์ (${requestNumber})`,
+          requestId: borrow.id,
+          details: [
+            { label: 'รหัสคำขอ', value: requestNumber },
+            { label: 'วัตถุประสงค์', value: purpose },
+            { label: 'เวลานัดรับอุปกรณ์', value: new Date(borrowDate).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' }) + ' น.' },
+            { label: 'กำหนดส่งคืน', value: new Date(expectedReturnDate).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' }) + ' น.' },
+            { label: 'รายวิชา', value: borrow.course ? `[${borrow.course.code}] ${borrow.course.name}` : 'ฝึกอิสระนอกหลักสูตร' },
+            { label: 'จำนวนรายการที่ยืม', value: `${items.length} รายการ` },
+          ],
+        }).catch((err) => console.error('Background borrow approval email failed:', err));
+      }
+    } catch (emailErr) {
+      console.error('Failed to trigger borrow email:', emailErr);
+    }
 
     return NextResponse.json(borrow, { status: 201 });
   } catch (error: any) {

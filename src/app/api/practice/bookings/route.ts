@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
+import { sendApprovalRequestEmail } from '@/lib/email';
 
 export async function GET(req: Request) {
   try {
@@ -182,6 +183,68 @@ export async function POST(req: Request) {
         practiceKit: true,
       },
     });
+
+    // Background notification: Send email to advisor/approver
+    try {
+      let approverEmail = '';
+      let approverName = finalAdvisorName || 'อาจารย์ผู้ดูแล';
+
+      // Find user matching advisorName
+      if (finalAdvisorName) {
+        const advisorUser = await prisma.user.findFirst({
+          where: {
+            OR: [
+              { name: { contains: finalAdvisorName } },
+              { email: { contains: 'teacher' } },
+              { role: 'APPROVER' },
+            ],
+          },
+        });
+        if (advisorUser?.email) {
+          approverEmail = advisorUser.email;
+          approverName = advisorUser.name;
+        }
+      }
+
+      if (!approverEmail) {
+        // Fallback to first active approver
+        const fallbackApprover = await prisma.user.findFirst({
+          where: { role: 'APPROVER', status: 'ACTIVE' },
+        });
+        if (fallbackApprover?.email) {
+          approverEmail = fallbackApprover.email;
+          approverName = fallbackApprover.name;
+        }
+      }
+
+      if (approverEmail) {
+        const slotDateFormatted = new Date(slot.date).toLocaleDateString('th-TH', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        });
+
+        sendApprovalRequestEmail({
+          approverEmail,
+          approverName,
+          studentName: booking.user?.name || 'นิสิต',
+          studentId: booking.user?.studentId || undefined,
+          type: 'PRACTICE',
+          title: `คำขอจองห้องฝึกปฏิบัติการ (${bookingNumber})`,
+          requestId: booking.id,
+          details: [
+            { label: 'รหัสคำขอ', value: bookingNumber },
+            { label: 'หัตถการที่ขอฝึก', value: skillTopic },
+            { label: 'ห้องปฏิบัติการ', value: slot.room?.name || 'ห้องแล็บ' },
+            { label: 'วันและเวลานัดหมาย', value: `${slotDateFormatted} เวลา ${slot.startTime} - ${slot.endTime} น.` },
+            { label: 'รายวิชา', value: booking.course ? `[${booking.course.code}] ${booking.course.name}` : 'ฝึกอิสระนอกหลักสูตร' },
+            { label: 'ชุดฝึก Practice Kit', value: booking.practiceKit?.name || 'ใช้อุปกรณ์ประจำห้องแล็บ' },
+          ],
+        }).catch((err) => console.error('Error sending background approval email:', err));
+      }
+    } catch (emailErr) {
+      console.error('Failed to trigger approval email:', emailErr);
+    }
 
     return NextResponse.json(booking);
   } catch (error: any) {

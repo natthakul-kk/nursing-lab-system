@@ -43,7 +43,7 @@ export default function UsersPage() {
   const [bulkFile, setBulkFile] = useState<File | null>(null);
   const [previewData, setPreviewData] = useState<any[]>([]);
   const [bulkSubmitting, setBulkSubmitting] = useState(false);
-  const [bulkResult, setBulkResult] = useState<{ created: number; updated: number; errors?: string[] } | null>(null);
+  const [bulkResult, setBulkResult] = useState<{ created?: number; createdCount?: number; updated?: number; updatedCount?: number; errors?: string[] } | null>(null);
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
@@ -1165,7 +1165,7 @@ export default function UsersPage() {
                     <CheckCircle2 className="w-4 h-4 text-emerald-600" /> นำเข้าข้อมูลเรียบร้อยแล้ว
                   </div>
                   <p className="text-xs">
-                    สร้างผู้ใช้ใหม่: <b>{bulkResult.created}</b> บัญชี | อัปเดตข้อมูลเดิม: <b>{bulkResult.updated}</b> บัญชี
+                    สร้างผู้ใช้ใหม่: <b>{bulkResult.created ?? bulkResult.createdCount ?? 0}</b> บัญชี | อัปเดตข้อมูลเดิม: <b>{bulkResult.updated ?? bulkResult.updatedCount ?? 0}</b> บัญชี
                   </p>
                   {bulkResult.errors && bulkResult.errors.length > 0 && (
                     <div className="mt-2 text-[11px] text-rose-700 bg-rose-50 p-2 rounded-lg border border-rose-200">

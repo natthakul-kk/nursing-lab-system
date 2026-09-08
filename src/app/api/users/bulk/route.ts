@@ -12,6 +12,118 @@ function normalizeRole(roleInput?: string): string {
   return 'USER';
 }
 
+// Robust extractor for Thai & English headers from Excel/CSV
+function extractUserFromRow(row: Record<string, any>) {
+  const map: Record<string, any> = {};
+  for (const [k, v] of Object.entries(row)) {
+    if (v === undefined || v === null) continue;
+    const cleanKey = k.toString().trim().toLowerCase().replace(/[\s\-_/]/g, '');
+    map[cleanKey] = typeof v === 'string' ? v.trim() : v;
+    map[k.trim()] = typeof v === 'string' ? v.trim() : v;
+  }
+
+  // 1. Name
+  const name =
+    map['ชื่อนามสกุล'] ||
+    map['ชื่อสกุล'] ||
+    map['ชื่อ'] ||
+    map['ชื่อจริง'] ||
+    map['name'] ||
+    map['fullname'] ||
+    map['studentname'] ||
+    row['ชื่อ-นามสกุล'] ||
+    row['ชื่อ - สกุล'] ||
+    row['ชื่อ นามสกุล'] ||
+    row['ชื่อ'] ||
+    row['name'] ||
+    row['Name'] ||
+    '';
+
+  // 2. Email
+  const email =
+    map['อีเมล'] ||
+    map['อีเมล์'] ||
+    map['email'] ||
+    map['mail'] ||
+    map['emailaddress'] ||
+    row['อีเมล'] ||
+    row['อีเมล์'] ||
+    row['email'] ||
+    row['Email'] ||
+    '';
+
+  // 3. Student ID / ID
+  const studentId =
+    map['รหัสนิสิตบุคลากร'] ||
+    map['รหัสนิสิต'] ||
+    map['รหัสประจำตัว'] ||
+    map['รหัสบุคลากร'] ||
+    map['รหัสนักศึกษา'] ||
+    map['รหัส'] ||
+    map['studentid'] ||
+    map['studentcode'] ||
+    map['id'] ||
+    row['รหัสนิสิต/บุคลากร'] ||
+    row['รหัสนิสิต'] ||
+    row['รหัสประจำตัว'] ||
+    row['รหัส'] ||
+    row['studentId'] ||
+    row['StudentID'] ||
+    row['ID'] ||
+    '';
+
+  // 4. Role
+  const role =
+    map['บทบาท'] ||
+    map['ตำแหน่ง'] ||
+    map['สิทธิ์'] ||
+    map['สถานะ'] ||
+    map['role'] ||
+    row['บทบาท'] ||
+    row['role'] ||
+    row['Role'] ||
+    '';
+
+  // 5. Department
+  const department =
+    map['ภาควิชาคณะ'] ||
+    map['ภาควิชา'] ||
+    map['สาขาวิชา'] ||
+    map['สาขา'] ||
+    map['คณะ'] ||
+    map['department'] ||
+    row['ภาควิชา/คณะ'] ||
+    row['ภาควิชา'] ||
+    row['department'] ||
+    row['Department'] ||
+    '';
+
+  // 6. Phone
+  const phone =
+    map['เบอร์โทร'] ||
+    map['เบอร์โทรศัพท์'] ||
+    map['โทรศัพท์'] ||
+    map['เบอร์'] ||
+    map['phone'] ||
+    map['tel'] ||
+    map['telephone'] ||
+    map['mobile'] ||
+    row['เบอร์โทร'] ||
+    row['เบอร์โทรศัพท์'] ||
+    row['phone'] ||
+    row['Phone'] ||
+    '';
+
+  return {
+    name: String(name || '').trim(),
+    email: String(email || '').trim().toLowerCase(),
+    studentId: String(studentId || '').trim(),
+    role: String(role || '').trim(),
+    department: String(department || '').trim(),
+    phone: String(phone || '').trim(),
+  };
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -27,19 +139,28 @@ export async function POST(req: Request) {
     const defaultPassword = await hashPassword('123456');
 
     for (let i = 0; i < users.length; i++) {
-      const u = users[i];
+      const raw = users[i];
       const rowNum = i + 1;
 
-      if (!u.name || !u.name.trim()) {
+      if (!raw || typeof raw !== 'object') continue;
+
+      const u = extractUserFromRow(raw);
+
+      // Skip completely blank rows in Excel
+      if (!u.name && !u.email && !u.studentId && !u.phone && !u.department) {
+        continue;
+      }
+
+      if (!u.name) {
         errors.push(`แถวที่ ${rowNum}: กรุณาระบุชื่อ-นามสกุล`);
         continue;
       }
 
       // Generate or sanitize email
-      let email = u.email ? String(u.email).trim().toLowerCase() : '';
+      let email = u.email;
       if (!email) {
         if (u.studentId) {
-          email = `${String(u.studentId).trim()}@nu.ac.th`;
+          email = `${u.studentId}@nu.ac.th`;
         } else {
           errors.push(`แถวที่ ${rowNum}: ไม่มีอีเมลหรือรหัสนิสิตสำหรับ [${u.name}]`);
           continue;
@@ -47,31 +168,38 @@ export async function POST(req: Request) {
       }
 
       const role = normalizeRole(u.role);
-      const studentId = u.studentId ? String(u.studentId).trim() : null;
-      const department = u.department ? String(u.department).trim() : 'คณะพยาบาลศาสตร์';
-      const phone = u.phone ? String(u.phone).trim() : null;
+      const studentId = u.studentId || null;
+      const department = u.department || 'คณะพยาบาลศาสตร์';
+      const phone = u.phone || null;
 
       try {
-        const existing = await prisma.user.findUnique({
-          where: { email },
+        // Find existing user by email or studentId
+        const existing = await prisma.user.findFirst({
+          where: {
+            OR: [
+              { email: { equals: email, mode: 'insensitive' as const } },
+              ...(studentId ? [{ studentId: { equals: studentId, mode: 'insensitive' as const } }] : []),
+            ],
+          },
         });
 
         if (existing) {
           await prisma.user.update({
-            where: { email },
+            where: { id: existing.id },
             data: {
-              name: u.name.trim(),
+              name: u.name,
               role,
               studentId: studentId || existing.studentId,
               department: department || existing.department,
               phone: phone || existing.phone,
+              ...(email && email !== existing.email ? { email } : {}),
             },
           });
           updatedCount++;
         } else {
           await prisma.user.create({
             data: {
-              name: u.name.trim(),
+              name: u.name,
               email,
               password: defaultPassword,
               role,
@@ -90,7 +218,9 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       total: users.length,
+      created: createdCount,
       createdCount,
+      updated: updatedCount,
       updatedCount,
       errors,
       message: `นำเข้าผู้ใช้งานเรียบร้อยแล้ว: เพิ่มใหม่ ${createdCount} คน, อัปเดตข้อมูล ${updatedCount} คน`,

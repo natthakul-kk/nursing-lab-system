@@ -15,12 +15,19 @@ export interface User {
   phone?: string | null;
 }
 
+// Session timeout constants
+export const IDLE_TIMEOUT_MS = 2 * 60 * 60 * 1000; // 2 hours (120 minutes)
+export const WARNING_BEFORE_MS = 2 * 60 * 1000; // 2 minutes warning countdown
+export const SESSION_LIFETIME_NORMAL_MS = 8 * 60 * 60 * 1000; // 8 hours
+export const SESSION_LIFETIME_REMEMBER_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
 interface AuthContextType {
   currentUser: User | null;
   availableUsers: User[];
 
-  login: (email: string, password?: string) => Promise<{ success: boolean; error?: string }>;
-  logout: () => void;
+  login: (email: string, password?: string, rememberMe?: boolean) => Promise<{ success: boolean; error?: string }>;
+  logout: (reason?: string | React.MouseEvent | unknown) => void;
+  extendSession: () => void;
   updateUser: (updatedData: Partial<User>) => Promise<boolean>;
   refreshUsers: () => Promise<void>;
   isLoading: boolean;
@@ -31,33 +38,95 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function checkSessionActive(): boolean {
+  if (typeof window === 'undefined') return true;
+  const expiresAtStr = localStorage.getItem('session_expires_at');
+  const lastActiveStr = localStorage.getItem('session_last_active');
+
+  const now = Date.now();
+
+  // 1. Check absolute session expiration
+  if (expiresAtStr) {
+    const expiresAt = parseInt(expiresAtStr, 10);
+    if (!isNaN(expiresAt) && now > expiresAt) {
+      return false;
+    }
+  }
+
+  // 2. Check idle inactivity expiration (2 hours)
+  if (lastActiveStr) {
+    const lastActive = parseInt(lastActiveStr, 10);
+    if (!isNaN(lastActive) && now - lastActive > IDLE_TIMEOUT_MS) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
+  const clearSessionStorage = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('active_user_id');
+      localStorage.removeItem('cached_current_user');
+      localStorage.removeItem('session_expires_at');
+      localStorage.removeItem('session_last_active');
+      localStorage.removeItem('session_remember_me');
+    }
+  };
+
+  const logout = (reason?: string | React.MouseEvent | unknown) => {
+    setCurrentUser(null);
+    clearSessionStorage();
+    if (typeof reason === 'string' && reason === 'timeout') {
+      router.push('/login?reason=timeout');
+    } else {
+      router.push('/login');
+    }
+  };
+
+  const extendSession = () => {
+    if (typeof window !== 'undefined' && currentUser) {
+      localStorage.setItem('session_last_active', Date.now().toString());
+    }
+  };
+
   useEffect(() => {
-    // 1. Instant local cache hydration for authenticated session
+    // 1. Instant local cache hydration for authenticated session with expiration check
     if (typeof window !== 'undefined') {
       try {
         const cachedStr = localStorage.getItem('cached_users');
         const savedUserId = localStorage.getItem('active_user_id');
         const cachedCurrentUserStr = localStorage.getItem('cached_current_user');
 
-        if (cachedCurrentUserStr) {
-          try {
-            setCurrentUser(JSON.parse(cachedCurrentUserStr));
-          } catch (e) {}
-        }
+        const sessionValid = checkSessionActive();
 
-        if (cachedStr) {
-          const cachedUsers: User[] = JSON.parse(cachedStr);
-          if (Array.isArray(cachedUsers) && cachedUsers.length > 0) {
-            setAvailableUsers(cachedUsers);
-            if (savedUserId) {
-              const found = cachedUsers.find((u) => u.id === savedUserId);
-              if (found) setCurrentUser(found);
+        if (!sessionValid) {
+          console.log('[AUTH SESSION] Session expired, clearing credentials.');
+          clearSessionStorage();
+          setCurrentUser(null);
+        } else {
+          if (cachedCurrentUserStr) {
+            try {
+              setCurrentUser(JSON.parse(cachedCurrentUserStr));
+              // Touch last active on hydration
+              localStorage.setItem('session_last_active', Date.now().toString());
+            } catch (e) {}
+          }
+
+          if (cachedStr) {
+            const cachedUsers: User[] = JSON.parse(cachedStr);
+            if (Array.isArray(cachedUsers) && cachedUsers.length > 0) {
+              setAvailableUsers(cachedUsers);
+              if (savedUserId && !cachedCurrentUserStr) {
+                const found = cachedUsers.find((u) => u.id === savedUserId);
+                if (found) setCurrentUser(found);
+              }
             }
           }
         }
@@ -80,7 +149,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
 
           const savedUserId = typeof window !== 'undefined' ? localStorage.getItem('active_user_id') : null;
-          if (savedUserId) {
+          const sessionValid = checkSessionActive();
+
+          if (savedUserId && sessionValid) {
             const found = users.find((u) => u.id === savedUserId);
             if (found) {
               setCurrentUser(found);
@@ -90,11 +161,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             } else {
               // Saved user was deleted or invalid
               setCurrentUser(null);
-              if (typeof window !== 'undefined') {
-                localStorage.removeItem('active_user_id');
-                localStorage.removeItem('cached_current_user');
-              }
+              clearSessionStorage();
             }
+          } else if (!sessionValid) {
+            setCurrentUser(null);
+            clearSessionStorage();
           } else {
             setCurrentUser(null);
           }
@@ -109,7 +180,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loadUsers();
   }, []);
 
-  const login = async (email: string, password?: string): Promise<{ success: boolean; error?: string }> => {
+  const login = async (
+    email: string,
+    password?: string,
+    rememberMe: boolean = true
+  ): Promise<{ success: boolean; error?: string }> => {
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
@@ -125,10 +200,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const user: User = data.user;
       setCurrentUser(user);
+
       if (typeof window !== 'undefined') {
+        const now = Date.now();
+        const lifetime = rememberMe ? SESSION_LIFETIME_REMEMBER_MS : SESSION_LIFETIME_NORMAL_MS;
+        const expiresAt = now + lifetime;
+
         localStorage.setItem('active_user_id', user.id);
         localStorage.setItem('cached_current_user', JSON.stringify(user));
+        localStorage.setItem('session_expires_at', expiresAt.toString());
+        localStorage.setItem('session_last_active', now.toString());
+        localStorage.setItem('session_remember_me', rememberMe ? 'true' : 'false');
       }
+
       return { success: true };
     } catch (err: any) {
       console.error('Login request failed', err);
@@ -177,15 +261,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const logout = () => {
-    setCurrentUser(null);
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('active_user_id');
-      localStorage.removeItem('cached_current_user');
-    }
-    router.push('/login');
-  };
-
   const isAdmin = currentUser?.role === 'ADMIN';
   const isOfficer = currentUser?.role === 'OFFICER' || isAdmin;
   const isApprover = currentUser?.role === 'APPROVER' || isAdmin;
@@ -197,6 +272,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         availableUsers,
         login,
         logout,
+        extendSession,
         updateUser,
         refreshUsers,
         isLoading,

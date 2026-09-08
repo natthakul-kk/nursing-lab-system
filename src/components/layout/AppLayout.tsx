@@ -8,6 +8,7 @@ import Navbar from './Navbar';
 import Sidebar from './Sidebar';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import QrScannerModal from '@/components/qrcode/QrScannerModal';
+import SessionActivityWatcher from '@/components/auth/SessionActivityWatcher';
 import {
   LayoutDashboard,
   Boxes,
@@ -142,6 +143,9 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       {isScannerOpen && (
         <QrScannerModal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} />
       )}
+
+      {/* Global Session Activity & Idle Timeout Watcher */}
+      <SessionActivityWatcher />
     </div>
   );
 }

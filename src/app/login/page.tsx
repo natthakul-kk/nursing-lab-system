@@ -17,6 +17,7 @@ import {
   AlertCircle,
   X,
   HelpCircle,
+  Clock,
 } from 'lucide-react';
 
 export default function LoginPage() {
@@ -25,8 +26,20 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
+  const [timeoutNotice, setTimeoutNotice] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Check if redirected due to session timeout
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('reason') === 'timeout') {
+        setTimeoutNotice(true);
+      }
+    }
+  }, []);
 
   // Forgot password modal state
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
@@ -50,9 +63,10 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setTimeoutNotice(false);
     setSubmitting(true);
 
-    const res = await login(email, password);
+    const res = await login(email, password, rememberMe);
     if (res.success) {
       router.push('/');
     } else {
@@ -177,6 +191,18 @@ export default function LoginPage() {
             </p>
           </div>
 
+          {timeoutNotice && (
+            <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-semibold flex items-start gap-2.5">
+              <Clock className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <div className="font-bold">เซสชันหมดอายุ</div>
+                <div className="text-[11px] text-amber-800 font-normal mt-0.5">
+                  ไม่มีการใช้งานเป็นเวลานานเกินกำหนด ระบบออกจากระบบอัตโนมัติเพื่อความปลอดภัย กรุณาเข้าสู่ระบบใหม่อีกครั้ง
+                </div>
+              </div>
+            </div>
+          )}
+
           {error && (
             <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
@@ -236,6 +262,22 @@ export default function LoginPage() {
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+            </div>
+
+            {/* Remember Me Checkbox */}
+            <div className="flex items-center justify-between px-0.5">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 rounded text-teal-600 focus:ring-teal-500 border-slate-300 accent-teal-600"
+                />
+                <span className="text-xs font-medium text-slate-700">จดจำฉันไว้ในระบบ</span>
+              </label>
+              <span className="text-[10px] text-slate-400">
+                {rememberMe ? 'ค้างไว้ 30 วัน (มือถือ)' : 'ค้างไว้ 8 ชม. (คอมแล็บ)'}
+              </span>
             </div>
 
             <button

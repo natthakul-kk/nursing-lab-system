@@ -132,7 +132,7 @@ export default function Navbar({ onToggleMobileMenu, isMobileMenuOpen }: NavbarP
             </button>
 
             <button
-              onClick={logout}
+              onClick={() => logout()}
               title="ออกจากระบบ"
               className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-200 text-rose-600 hover:bg-rose-50 hover:border-rose-200 text-xs font-bold transition cursor-pointer"
             >

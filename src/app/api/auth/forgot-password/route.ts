@@ -6,18 +6,23 @@ import { sendPasswordResetEmail } from '@/lib/email';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { email } = body;
+    const rawInput = body.identifier || body.email;
 
-    if (!email || !email.trim()) {
+    if (!rawInput || !rawInput.trim()) {
       return NextResponse.json(
-        { error: 'กรุณากรอกอีเมลที่ลงทะเบียนไว้' },
+        { error: 'กรุณากรอกรหัสประจำตัว (ID) หรืออีเมลที่ลงทะเบียนไว้' },
         { status: 400 }
       );
     }
 
-    const trimmedEmail = email.trim().toLowerCase();
-    const user = await prisma.user.findUnique({
-      where: { email: trimmedEmail },
+    const trimmedInput = rawInput.trim();
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: { equals: trimmedInput, mode: 'insensitive' } },
+          { studentId: { equals: trimmedInput, mode: 'insensitive' } },
+        ],
+      },
     });
 
     if (!user) {

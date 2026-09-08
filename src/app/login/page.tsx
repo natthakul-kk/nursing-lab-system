@@ -18,6 +18,7 @@ import {
   X,
   HelpCircle,
   Clock,
+  User,
 } from 'lucide-react';
 
 export default function LoginPage() {
@@ -212,17 +213,19 @@ export default function LoginPage() {
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">อีเมลผู้ใช้งาน</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                รหัสประจำตัว (ID) หรือ อีเมล
+              </label>
               <div className="relative">
                 <input
-                  type="email"
+                  type="text"
                   required
-                  placeholder="กรอกอีเมลที่ลงทะเบียนไว้"
+                  placeholder="เช่น admin, 6610210099 หรืออีเมล"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-9 pr-4 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
                 />
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                <User className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
               </div>
             </div>
 
@@ -359,20 +362,22 @@ export default function LoginPage() {
                 /* Step 1: Request OTP Form */
                 <form onSubmit={handleRequestOtp} className="space-y-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">อีเมลบัญชีผู้ใช้</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      รหัสประจำตัว (ID) หรือ อีเมล
+                    </label>
                     <div className="relative">
                       <input
-                        type="email"
+                        type="text"
                         required
-                        placeholder="กรอกอีเมลที่ต้องการรีเซ็ตรหัสผ่าน"
+                        placeholder="เช่น admin, 6610210099 หรืออีเมล"
                         value={forgotEmail}
                         onChange={(e) => setForgotEmail(e.target.value)}
                         className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-9 pr-4 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
                       />
-                      <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                      <User className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                     </div>
                     <p className="text-[11px] text-slate-500 mt-1">
-                      ระบบจะส่งรหัสยืนยัน 6 หลัก (OTP) ไปยังอีเมลของท่าน
+                      ระบบจะส่งรหัสยืนยัน 6 หลัก (OTP) ไปยังอีเมลที่ผูกไว้กับบัญชีของท่าน
                     </p>
                   </div>
 

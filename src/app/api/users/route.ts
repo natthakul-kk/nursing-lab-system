@@ -57,6 +57,20 @@ export async function POST(req: Request) {
     const body = await req.json();
     const rawPassword = body.password || '123456';
     const hashedPassword = await hashPassword(rawPassword);
+
+    const trimmedStudentId = body.studentId ? String(body.studentId).trim() : null;
+    if (trimmedStudentId) {
+      const duplicate = await prisma.user.findFirst({
+        where: { studentId: { equals: trimmedStudentId, mode: 'insensitive' } },
+      });
+      if (duplicate) {
+        return NextResponse.json(
+          { error: `รหัสประจำตัว (ID) "${trimmedStudentId}" นี้มีผู้ใช้งานอื่นใช้อยู่แล้ว` },
+          { status: 400 }
+        );
+      }
+    }
+
     const user = await prisma.user.create({
       data: {
         name: body.name,
@@ -64,7 +78,7 @@ export async function POST(req: Request) {
         password: hashedPassword,
         role: body.role || 'USER',
         department: body.department,
-        studentId: body.studentId,
+        studentId: trimmedStudentId,
         phone: body.phone,
       },
     });

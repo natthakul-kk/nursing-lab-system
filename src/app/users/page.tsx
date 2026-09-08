@@ -719,11 +719,11 @@ export default function UsersPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    รหัสนิสิต (ถ้ามี)
+                    รหัสประจำตัว (ID) / รหัสนิสิต
                   </label>
                   <input
                     type="text"
-                    placeholder="เช่น 6610210099"
+                    placeholder="เช่น 6610210099, T0042 หรือ admin"
                     value={newUser.studentId}
                     onChange={(e) => setNewUser({ ...newUser, studentId: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono"
@@ -840,11 +840,11 @@ export default function UsersPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    รหัสนิสิต (ถ้ามี)
+                    รหัสประจำตัว (ID) / รหัสนิสิต
                   </label>
                   <input
                     type="text"
-                    placeholder="เช่น 6610210099"
+                    placeholder="เช่น 6610210099, T0042 หรือ admin"
                     value={editingUser.studentId || ''}
                     onChange={(e) => setEditingUser({ ...editingUser, studentId: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono"

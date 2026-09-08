@@ -83,7 +83,6 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
       email: formData.email,
       phone: formData.phone,
       department: formData.department,
-      studentId: formData.studentId,
     });
 
     setSubmitting(false);
@@ -275,16 +274,18 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                   </div>
                 </div>
 
-                {/* Student ID */}
+                {/* Student / User ID (Admin-only editable) */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">รหัสนิสิต (ถ้ามี)</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-700">รหัสประจำตัว (ID)</label>
+                    <span className="text-[10px] text-slate-400 font-normal">กำหนดโดยผู้ดูแลระบบ</span>
+                  </div>
                   <div className="relative">
                     <input
                       type="text"
-                      placeholder="เช่น 6610210099"
-                      value={formData.studentId}
-                      onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-9 pr-3 text-xs font-mono focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
+                      disabled
+                      value={formData.studentId || 'ยังไม่ได้กำหนด'}
+                      className="w-full bg-slate-100 border border-slate-200 rounded-xl py-2 pl-9 pr-3 text-xs font-mono font-bold text-slate-600 cursor-not-allowed select-none"
                     />
                     <GraduationCap className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                   </div>

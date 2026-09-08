@@ -5,23 +5,31 @@ import { verifyPassword, hashPassword } from '@/lib/auth-security';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { email, password } = body;
+    const rawIdentifier = body.identifier || body.email;
+    const { password } = body;
 
-    if (!email || !password) {
+    if (!rawIdentifier || !password) {
       return NextResponse.json(
-        { error: 'กรุณากรอกอีเมลและรหัสผ่าน' },
+        { error: 'กรุณากรอกรหัสประจำตัว (ID) หรืออีเมล และรหัสผ่าน' },
         { status: 400 }
       );
     }
 
-    const trimmedEmail = email.trim().toLowerCase();
-    const user = await prisma.user.findUnique({
-      where: { email: trimmedEmail },
+    const trimmedInput = String(rawIdentifier).trim();
+
+    // Match by email OR studentId (case-insensitive)
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: { equals: trimmedInput, mode: 'insensitive' } },
+          { studentId: { equals: trimmedInput, mode: 'insensitive' } },
+        ],
+      },
     });
 
     if (!user) {
       return NextResponse.json(
-        { error: 'ไม่พบบัญชีผู้ใช้นี้ หรืออีเมลไม่ถูกต้อง' },
+        { error: 'ไม่พบบัญชีผู้ใช้นี้ หรือรหัสประจำตัว/อีเมลไม่ถูกต้อง' },
         { status: 401 }
       );
     }

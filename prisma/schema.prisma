@@ -35,6 +35,7 @@ model User {
   approvedBookings    PracticeBooking[]    @relation("ApproverPracticeBookings")
 
   @@index([role, status])
+  @@index([studentId])
 }
 
 model Course {

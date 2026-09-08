@@ -26,6 +26,7 @@ import {
   X,
 } from 'lucide-react';
 import ProfileModal from '@/components/profile/ProfileModal';
+import ThemeToggle from '@/components/common/ThemeToggle';
 
 interface SidebarProps {
   mobileOpen?: boolean;
@@ -395,6 +396,11 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
             <span>แก้ไขบัญชีส่วนตัว</span>
           </button>
         )}
+
+        {/* Theme Toggle Button */}
+        <div className="pt-2">
+          <ThemeToggle className="w-full justify-center py-2" showLabel />
+        </div>
       </div>
 
       {/* Fallback Profile Modal if not in Navbar */}

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { AuthProvider, useAuth } from '@/lib/auth-context';
+import { ThemeProvider } from '@/lib/theme-context';
 import Navbar from './Navbar';
 import Sidebar from './Sidebar';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
@@ -64,7 +65,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="h-screen bg-slate-50 flex flex-col font-sans overflow-hidden">
+    <div className="h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans overflow-hidden transition-colors duration-200">
       <Navbar
         onToggleMobileMenu={() => setIsMobileMenuOpen((prev) => !prev)}
         isMobileMenuOpen={isMobileMenuOpen}
@@ -80,12 +81,12 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Mobile Bottom Navigation Bar (Thumb-friendly for Smartphones & Small Tablets) */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 px-3 py-1.5 flex items-center justify-around shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-3 py-1.5 flex items-center justify-around shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
         <Link
           href="/"
           onClick={() => setIsMobileMenuOpen(false)}
           className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition ${
-            pathname === '/' ? 'text-teal-600 font-bold' : 'text-slate-500 hover:text-slate-800'
+            pathname === '/' ? 'text-teal-600 dark:text-teal-400 font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
         >
           <LayoutDashboard className="w-5 h-5" />
@@ -96,7 +97,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
           href="/borrow"
           onClick={() => setIsMobileMenuOpen(false)}
           className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition ${
-            pathname?.startsWith('/borrow') ? 'text-teal-600 font-bold' : 'text-slate-500 hover:text-slate-800'
+            pathname?.startsWith('/borrow') ? 'text-teal-600 dark:text-teal-400 font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
         >
           <Boxes className="w-5 h-5" />
@@ -152,8 +153,10 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <AuthProvider>
-      <AppLayoutContent>{children}</AppLayoutContent>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <AppLayoutContent>{children}</AppLayoutContent>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

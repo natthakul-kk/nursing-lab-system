@@ -21,6 +21,13 @@ import {
   AlertCircle,
   X,
   Search,
+  KeyRound,
+  Copy,
+  Check,
+  Eye,
+  EyeOff,
+  Sparkles,
+  Lock,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { TableLoadingRow } from '@/components/common/LoadingSpinner';
@@ -40,12 +47,20 @@ export default function UsersPage() {
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
+    password: '123456',
     role: 'USER',
     department: '',
     studentId: '',
     phone: '',
   });
   const [editingUser, setEditingUser] = useState<any | null>(null);
+  const [resettingUser, setResettingUser] = useState<any | null>(null);
+  const [newResetPassword, setNewResetPassword] = useState<string>('');
+  const [resetShowPassword, setResetShowPassword] = useState<boolean>(false);
+  const [resetSubmitting, setResetSubmitting] = useState<boolean>(false);
+  const [resetSuccessMessage, setResetSuccessMessage] = useState<string | null>(null);
+  const [resetCopied, setResetCopied] = useState<boolean>(false);
+  const [resetError, setResetError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const fetchUsers = async () => {
@@ -84,6 +99,7 @@ export default function UsersPage() {
         setNewUser({
           name: '',
           email: '',
+          password: '123456',
           role: 'USER',
           department: '',
           studentId: '',
@@ -97,6 +113,50 @@ export default function UsersPage() {
       alert('Network error');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const generateRandomPassword = () => {
+    const prefixes = ['Lab', 'Nurse', 'Med', 'Care'];
+    const randomPrefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+    const randomNum = Math.floor(1000 + Math.random() * 9000);
+    const pass = `${randomPrefix}@${randomNum}`;
+    setNewResetPassword(pass);
+    setResetError(null);
+    setResetCopied(false);
+  };
+
+  const handleAdminResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resettingUser) return;
+
+    if (!newResetPassword || newResetPassword.length < 6) {
+      setResetError('รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร');
+      return;
+    }
+
+    setResetSubmitting(true);
+    setResetError(null);
+    setResetSuccessMessage(null);
+
+    try {
+      const res = await fetch(`/api/users/${resettingUser.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: newResetPassword }),
+      });
+
+      if (res.ok) {
+        setResetSuccessMessage(`เปลี่ยนรหัสผ่านสำหรับคุณ ${resettingUser.name} สำเร็จแล้ว`);
+        fetchUsers();
+      } else {
+        const err = await res.json();
+        setResetError(err.error || 'เกิดข้อผิดพลาดในการเปลี่ยนรหัสผ่าน');
+      }
+    } catch (err) {
+      setResetError('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
+    } finally {
+      setResetSubmitting(false);
     }
   };
 
@@ -530,13 +590,30 @@ export default function UsersPage() {
                   </td>
                   <td className="py-3.5 px-4">{getRoleBadge(u.role)}</td>
                   <td className="py-3.5 px-4 text-right">
-                    <button
-                      onClick={() => setEditingUser({ ...u, password: '' })}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100 font-bold text-xs transition cursor-pointer"
-                    >
-                      <Edit3 className="w-3 h-3 text-teal-600" />
-                      <span>แก้ไข</span>
-                    </button>
+                    <div className="flex items-center justify-end gap-1.5">
+                      <button
+                        onClick={() => {
+                          setResettingUser(u);
+                          setNewResetPassword('123456');
+                          setResetSuccessMessage(null);
+                          setResetCopied(false);
+                          setResetError(null);
+                        }}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100 font-bold text-xs transition cursor-pointer"
+                        title="รีเซ็ตรหัสผ่านให้ผู้ใช้นี้"
+                      >
+                        <KeyRound className="w-3 h-3 text-amber-600" />
+                        <span>รีเซ็ตรหัส</span>
+                      </button>
+                      <button
+                        onClick={() => setEditingUser({ ...u, password: '' })}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100 font-bold text-xs transition cursor-pointer"
+                        title="แก้ไขข้อมูลผู้ใช้"
+                      >
+                        <Edit3 className="w-3 h-3 text-teal-600" />
+                        <span>แก้ไข</span>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               )))}
@@ -589,6 +666,25 @@ export default function UsersPage() {
                   onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs"
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  รหัสผ่านเริ่มต้น (Default Password)
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    required
+                    placeholder="เช่น 123456"
+                    value={newUser.password}
+                    onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono"
+                  />
+                </div>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  ค่าเริ่มต้นคือ 123456 (ระบบจะเข้ารหัส Bcrypt เมื่อบันทึก)
+                </p>
               </div>
 
               <div>
@@ -798,6 +894,160 @@ export default function UsersPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Admin Reset Password Modal */}
+      {resettingUser && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-amber-600 to-slate-900 p-5 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-amber-300">
+                  <KeyRound className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold">รีเซ็ตรหัสผ่านโดยผู้ดูแลระบบ</h3>
+                  <p className="text-[11px] text-amber-200">
+                    กำหนดรหัสผ่านใหม่ให้แก่ผู้ใช้งาน
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setResettingUser(null)}
+                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-4">
+              {/* User Info Box */}
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
+                <div className="text-xs font-bold text-slate-800">{resettingUser.name}</div>
+                <div className="text-[11px] text-slate-500 flex items-center gap-1">
+                  <Mail className="w-3 h-3" />
+                  <span>{resettingUser.email}</span>
+                </div>
+                {resettingUser.studentId && (
+                  <div className="text-[11px] text-teal-700 font-mono">
+                    รหัสนิสิต: {resettingUser.studentId}
+                  </div>
+                )}
+              </div>
+
+              {resetError && (
+                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+                  <span>{resetError}</span>
+                </div>
+              )}
+
+              {resetSuccessMessage ? (
+                <div className="space-y-4">
+                  <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 space-y-2">
+                    <div className="flex items-center gap-2 text-xs font-bold">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <span>{resetSuccessMessage}</span>
+                    </div>
+                    <div className="p-2.5 bg-white rounded-xl border border-emerald-200 flex items-center justify-between">
+                      <div>
+                        <div className="text-[10px] text-slate-400">รหัสผ่านใหม่ที่ตั้งไว้:</div>
+                        <div className="font-mono text-sm font-bold text-slate-900">{newResetPassword}</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(newResetPassword);
+                          setResetCopied(true);
+                          setTimeout(() => setResetCopied(false), 2000);
+                        }}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-700 text-xs font-bold border border-teal-200 transition cursor-pointer"
+                      >
+                        {resetCopied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{resetCopied ? 'คัดลอกแล้ว!' : 'คัดลอกรหัส'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setResettingUser(null)}
+                      className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition cursor-pointer"
+                    >
+                      เสร็จสิ้น
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <form onSubmit={handleAdminResetPassword} className="space-y-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-bold text-slate-700">
+                        รหัสผ่านใหม่ *
+                      </label>
+                      <button
+                        type="button"
+                        onClick={generateRandomPassword}
+                        className="text-[11px] text-teal-600 hover:text-teal-700 font-bold inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        <Sparkles className="w-3 h-3" />
+                        <span>สุ่มรหัสผ่านปลอดภัย</span>
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type={resetShowPassword ? 'text' : 'password'}
+                        required
+                        placeholder="อย่างน้อย 6 ตัวอักษร"
+                        value={newResetPassword}
+                        onChange={(e) => setNewResetPassword(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-9 pr-10 text-xs font-mono font-medium focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition"
+                      />
+                      <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                      <button
+                        type="button"
+                        onClick={() => setResetShowPassword(!resetShowPassword)}
+                        className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+                      >
+                        {resetShowPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      เช่น 123456 หรือคลิก "สุ่มรหัสผ่านปลอดภัย" ด้านบน
+                    </p>
+                  </div>
+
+                  <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-[11px] text-amber-800 flex items-start gap-2">
+                    <ShieldCheck className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                    <span>รหัสผ่านใหม่จะถูกเข้ารหัส Bcrypt โดยอัตโนมัติ ผู้ใช้สามารถเข้าสู่ระบบด้วยรหัสนี้ได้ทันที</span>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => setResettingUser(null)}
+                      className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                    >
+                      ยกเลิก
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={resetSubmitting}
+                      className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold shadow-md shadow-amber-600/20 transition cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5"
+                    >
+                      <KeyRound className="w-3.5 h-3.5" />
+                      <span>{resetSubmitting ? 'กำลังบันทึก...' : 'ยืนยันตั้งรหัสผ่านใหม่'}</span>
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
           </div>
         </div>
       )}

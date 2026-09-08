@@ -27,7 +27,7 @@ import {
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 export default function ApprovalsPage() {
-  const { currentUser, isApprover, isAdmin } = useAuth();
+  const { currentUser, isApprover, isAdmin, isTeacher } = useAuth();
   const [allBorrows, setAllBorrows] = useState<any[]>([]);
   const [allRequisitions, setAllRequisitions] = useState<any[]>([]);
   const [allPracticeBookings, setAllPracticeBookings] = useState<any[]>([]);
@@ -173,13 +173,6 @@ export default function ApprovalsPage() {
       setSubmitting(false);
     }
   };
-
-  const isTeacher =
-    currentUser?.role === 'APPROVER' ||
-    currentUser?.email?.includes('teacher') ||
-    currentUser?.name?.startsWith('อ.') ||
-    currentUser?.name?.startsWith('ผศ.') ||
-    currentUser?.name?.startsWith('รศ.');
 
   if (!isApprover && !isAdmin && !isTeacher) {
     return (

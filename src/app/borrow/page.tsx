@@ -29,13 +29,7 @@ import LoadingSpinner from '@/components/common/LoadingSpinner';
 import UnifiedRequestModal from '@/components/requests/UnifiedRequestModal';
 
 export default function BorrowPage() {
-  const { currentUser, isOfficer, isApprover, isAdmin } = useAuth();
-  const isTeacher =
-    currentUser?.role === 'APPROVER' ||
-    currentUser?.email?.includes('teacher') ||
-    currentUser?.name?.startsWith('อ.') ||
-    currentUser?.name?.startsWith('ผศ.') ||
-    currentUser?.name?.startsWith('รศ.');
+  const { currentUser, isOfficer, isApprover, isAdmin, isTeacher } = useAuth();
   const [requests, setRequests] = useState<any[]>([]);
   const [equipmentList, setEquipmentList] = useState<any[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
@@ -163,7 +157,7 @@ export default function BorrowPage() {
         return;
       }
 
-      if (currentUser?.role === 'USER' && !newRequest.advisorName?.trim()) {
+      if (currentUser?.role === 'USER' && !isTeacher && !newRequest.advisorName?.trim()) {
         alert('⚠️ เนื่องจากท่านเป็นนิสิต กรุณาระบุหรือเลือกอาจารย์ผู้รับทราบ/อาจารย์ประจำวิชา (ไม่อนุญาตให้เว้นว่าง)');
         setSubmitting(false);
         return;

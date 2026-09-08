@@ -23,6 +23,8 @@ export async function GET(req: Request) {
         { name: { startsWith: 'ผศ.' } },
         { name: { startsWith: 'รศ.' } },
         { name: { startsWith: 'ดร.' } },
+        { name: { startsWith: 'ศ.' } },
+        { department: { contains: 'อาจารย์' } },
       ];
     } else if (role) {
       whereCondition.role = role;

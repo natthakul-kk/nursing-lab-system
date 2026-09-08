@@ -45,13 +45,7 @@ import {
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 export default function PracticePage() {
-  const { currentUser, isOfficer, isApprover, isAdmin } = useAuth();
-  const isTeacher =
-    currentUser?.role === 'APPROVER' ||
-    currentUser?.email?.includes('teacher') ||
-    currentUser?.name?.startsWith('อ.') ||
-    currentUser?.name?.startsWith('ผศ.') ||
-    currentUser?.name?.startsWith('รศ.');
+  const { currentUser, isOfficer, isApprover, isAdmin, isTeacher } = useAuth();
   const canManageSlots = isOfficer || isAdmin || isTeacher;
 
   // Navigation Tabs

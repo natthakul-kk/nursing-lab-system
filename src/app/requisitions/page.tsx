@@ -28,13 +28,7 @@ import LoadingSpinner from '@/components/common/LoadingSpinner';
 import UnifiedRequestModal from '@/components/requests/UnifiedRequestModal';
 
 export default function RequisitionsPage() {
-  const { currentUser, isOfficer, isApprover, isAdmin } = useAuth();
-  const isTeacher =
-    currentUser?.role === 'APPROVER' ||
-    currentUser?.email?.includes('teacher') ||
-    currentUser?.name?.startsWith('อ.') ||
-    currentUser?.name?.startsWith('ผศ.') ||
-    currentUser?.name?.startsWith('รศ.');
+  const { currentUser, isOfficer, isApprover, isAdmin, isTeacher } = useAuth();
   const [requisitions, setRequisitions] = useState<any[]>([]);
   const [consumables, setConsumables] = useState<any[]>([]);
   const [courses, setCourses] = useState<any[]>([]);

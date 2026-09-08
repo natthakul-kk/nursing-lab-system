@@ -35,6 +35,7 @@ interface AuthContextType {
   isAdmin: boolean;
   isOfficer: boolean;
   isApprover: boolean;
+  isTeacher: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -271,6 +272,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isAdmin = currentUser?.role === 'ADMIN';
   const isOfficer = currentUser?.role === 'OFFICER' || isAdmin;
   const isApprover = currentUser?.role === 'APPROVER' || isAdmin;
+  const isTeacher =
+    currentUser?.role === 'APPROVER' ||
+    isAdmin ||
+    Boolean(currentUser?.email?.includes('teacher')) ||
+    Boolean(currentUser?.name?.startsWith('อ.')) ||
+    Boolean(currentUser?.name?.startsWith('ผศ.')) ||
+    Boolean(currentUser?.name?.startsWith('รศ.')) ||
+    Boolean(currentUser?.name?.startsWith('ดร.')) ||
+    Boolean(currentUser?.name?.startsWith('ศ.')) ||
+    Boolean(currentUser?.department?.includes('อาจารย์'));
 
   return (
     <AuthContext.Provider
@@ -287,6 +298,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAdmin,
         isOfficer,
         isApprover,
+        isTeacher,
       }}
     >
       {children}

@@ -184,9 +184,9 @@ export default function LoginPage() {
         </div>
 
         {/* Login Card */}
-        <div className="bg-white/95 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/20 space-y-6">
-          <div className="border-b border-slate-100 pb-3">
-            <h2 className="text-base font-bold text-slate-800">เข้าสู่ระบบ (Sign In)</h2>
+        <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/20 dark:border-slate-800 space-y-6">
+          <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
+            <h2 className="text-base font-bold text-slate-800 dark:text-slate-100">เข้าสู่ระบบ (Sign In)</h2>
             <p className="text-xs text-slate-500 mt-0.5">
               กรอกอีเมลและรหัสผ่านเพื่อเข้าสู่ระบบงานจริง
             </p>
@@ -213,7 +213,7 @@ export default function LoginPage() {
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                 รหัสประจำตัว (ID) หรือ อีเมล
               </label>
               <div className="relative">
@@ -223,7 +223,7 @@ export default function LoginPage() {
                   placeholder="เช่น admin, 6610210099 หรืออีเมล"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-9 pr-4 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl py-2.5 pl-9 pr-4 text-xs font-medium text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
                 />
                 <User className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
               </div>
@@ -253,7 +253,7 @@ export default function LoginPage() {
                   placeholder="กรอกรหัสผ่าน"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-9 pr-10 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl py-2.5 pl-9 pr-10 text-xs font-medium text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
                 />
                 <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                 <button
@@ -276,7 +276,7 @@ export default function LoginPage() {
                   onChange={(e) => setRememberMe(e.target.checked)}
                   className="w-4 h-4 rounded text-teal-600 focus:ring-teal-500 border-slate-300 accent-teal-600"
                 />
-                <span className="text-xs font-medium text-slate-700">จดจำฉันไว้ในระบบ</span>
+                <span className="text-xs font-medium text-slate-700 dark:text-slate-300">จดจำฉันไว้ในระบบ</span>
               </label>
               <span className="text-[10px] text-slate-400">
                 {rememberMe ? 'ค้างไว้ 30 วัน (มือถือ)' : 'ค้างไว้ 8 ชม. (คอมแล็บ)'}
@@ -307,7 +307,7 @@ export default function LoginPage() {
       {/* Forgot Password / Reset Modal */}
       {isForgotModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full shadow-2xl border border-slate-100 dark:border-slate-800 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             {/* Modal Header */}
             <div className="bg-gradient-to-r from-teal-700 to-slate-900 p-5 text-white flex items-center justify-between">
               <div className="flex items-center gap-2.5">

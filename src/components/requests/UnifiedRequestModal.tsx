@@ -328,16 +328,16 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
               </div>
 
               {courseId && (
-                <div className="sm:col-span-2 p-2.5 rounded-xl bg-teal-50 border border-teal-200 text-xs flex items-center justify-between">
+                <div className="sm:col-span-2 p-2.5 rounded-xl bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 text-xs flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <GraduationCap className="w-4 h-4 text-teal-700 shrink-0" />
-                    <span className="text-slate-600">อาจารย์ประจำรายวิชา:</span>
-                    <span className="font-bold text-teal-900">
+                    <GraduationCap className="w-4 h-4 text-teal-700 dark:text-teal-400 shrink-0" />
+                    <span className="text-slate-600 dark:text-slate-400">อาจารย์ประจำรายวิชา:</span>
+                    <span className="font-bold text-teal-900 dark:text-teal-200">
                       {courses.find((c) => c.id === courseId)?.instructorName || advisorName || 'อาจารย์ผู้รับผิดชอบ'}
                     </span>
                   </div>
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-teal-700 bg-white px-2 py-0.5 rounded-md border border-teal-200 shadow-xs">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-teal-600" />
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-teal-700 dark:text-teal-300 bg-white dark:bg-slate-900 px-2 py-0.5 rounded-md border border-teal-200 dark:border-teal-800 shadow-xs">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
                     <span>ขึ้นให้อัตโนมัติ</span>
                   </span>
                 </div>
@@ -346,7 +346,7 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   วันและเวลาที่ต้องการรับของ *
                 </label>
                 <input
@@ -354,25 +354,25 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
                   required
                   value={borrowDate}
                   onChange={(e) => setBorrowDate(e.target.value)}
-                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-teal-500/20"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   วันและเวลากำหนดส่งคืนครุภัณฑ์
                 </label>
                 <input
                   type="datetime-local"
                   value={expectedReturnDate}
                   onChange={(e) => setExpectedReturnDate(e.target.value)}
-                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-teal-500/20"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                 วัตถุประสงค์และสถานที่ใช้งาน *
               </label>
               <textarea
@@ -381,39 +381,40 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
                 placeholder="เช่น ฝึกทักษะการทำแผลปลอดเชื้อและตรวจสัญญาณชีพ ห้อง Lab Skill 1"
                 value={purpose}
                 onChange={(e) => setPurpose(e.target.value)}
-                className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-teal-500/20"
+                className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20"
               />
             </div>
           </div>
 
           {/* Section 2: Equipment to Borrow */}
-          <div className="border border-blue-200 bg-blue-50/30 rounded-2xl p-4 space-y-3">
+          <div className="border border-blue-200 dark:border-blue-900/60 bg-blue-50/30 dark:bg-blue-950/20 rounded-2xl p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-xs font-black text-blue-900 uppercase tracking-wider flex items-center gap-2">
-                  <Package className="w-4 h-4 text-blue-600" />
-                  2. รายการครุภัณฑ์ที่ต้องการยืม (Equipment)
+                <h3 className="text-xs font-black text-blue-900 dark:text-blue-300 uppercase tracking-wider flex items-center gap-2">
+                  <Package className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  2. รายการครุภัณฑ์/อุปกรณ์ที่ต้องการยืม (Equipment)
                 </h3>
-                <p className="text-[11px] text-blue-700 font-medium">
-                  ⚠️ เป็นอุปกรณ์ชิ้นใหญ่หรือเครื่องมือทางการแพทย์ <strong className="underline">ต้องส่งคืนห้องแล็บเมื่อใช้งานเสร็จ</strong>
+                <p className="text-[11px] text-blue-700 dark:text-blue-400 font-medium">
+                  ✓ เป็นของใช้แล้วต้องนำมาส่งคืนห้องแล็บ เช่น หุ่นฝึก, ชุดตรวจ, เครื่องวัดความดัน
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setBorrowItems([...borrowItems, { itemId: '', quantity: '' }])}
-                className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition flex items-center gap-1 cursor-pointer shadow-sm shadow-blue-600/20"
+                className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-blue-200 dark:border-blue-800 shadow-xs cursor-pointer"
               >
-                <Plus className="w-3.5 h-3.5" /> เพิ่มครุภัณฑ์
+                <Plus className="w-3.5 h-3.5" />
+                <span>เพิ่มรายการยืม</span>
               </button>
             </div>
 
-            <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+            <div className="space-y-2">
               {borrowItems.map((row, idx) => {
                 const categoryMap = new Map<string, string>();
                 equipmentList.forEach((eq) => {
                   if (eq.category?.name) categoryMap.set(eq.category.id || eq.category.name, eq.category.name);
                 });
-                const selectedCat = row.categoryId || '';
+                const selectedCat = (row as any).categoryId || '';
                 const filteredList = selectedCat
                   ? equipmentList.filter((eq) => eq.category?.id === selectedCat || eq.category?.name === selectedCat)
                   : equipmentList;
@@ -426,7 +427,7 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
                   <div
                     key={idx}
                     className={`p-2.5 rounded-xl border transition ${
-                      isOutOfStock || isOverStock ? 'bg-rose-50/80 border-rose-300' : 'bg-white border-slate-200'
+                      isOutOfStock || isOverStock ? 'bg-rose-50/80 dark:bg-rose-950/30 border-rose-300 dark:border-rose-800' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700'
                     }`}
                   >
                     <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
@@ -436,10 +437,10 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
                           onChange={(e) => {
                             const catVal = e.target.value;
                             const updated = [...borrowItems];
-                            updated[idx].categoryId = catVal;
+                            (updated[idx] as any).categoryId = catVal;
                             setBorrowItems(updated);
                           }}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700"
+                          className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-300"
                         >
                           <option value="">-- ทุกหมวดครุภัณฑ์ --</option>
                           {Array.from(categoryMap.entries()).map(([id, name]) => (
@@ -461,7 +462,7 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
                             }
                             setBorrowItems(updated);
                           }}
-                          className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-medium"
+                          className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-800 dark:text-slate-100"
                         >
                           <option value="">-- เลือกครุภัณฑ์ ({filteredList.length}) --</option>
                           {filteredList.map((eq) => {
@@ -489,8 +490,8 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
                             updated[idx].quantity = val;
                             setBorrowItems(updated);
                           }}
-                          className={`w-full bg-white border rounded-lg px-2 py-1.5 text-xs font-bold text-center ${
-                            isOverStock || isOutOfStock ? 'border-rose-500 bg-rose-50 text-rose-700' : 'border-slate-300'
+                          className={`w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-lg px-2 py-1.5 text-xs font-bold text-center ${
+                            isOverStock || isOutOfStock ? 'border-rose-500 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300' : ''
                           }`}
                           placeholder="ระบุจำนวน"
                         />
@@ -540,14 +541,14 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
           </div>
 
           {/* Section 3: Consumables to Requisition */}
-          <div className="border border-teal-200 bg-teal-50/30 rounded-2xl p-4 space-y-3">
+          <div className="border border-teal-200 dark:border-teal-900/60 bg-teal-50/30 dark:bg-teal-950/20 rounded-2xl p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-xs font-black text-teal-900 uppercase tracking-wider flex items-center gap-2">
-                  <Boxes className="w-4 h-4 text-teal-600" />
+                <h3 className="text-xs font-black text-teal-900 dark:text-teal-300 uppercase tracking-wider flex items-center gap-2">
+                  <Boxes className="w-4 h-4 text-teal-600 dark:text-teal-400" />
                   3. รายการวัสดุสิ้นเปลืองที่ต้องการเบิก (Consumables)
                 </h3>
-                <p className="text-[11px] text-teal-700 font-medium">
+                <p className="text-[11px] text-teal-700 dark:text-teal-400 font-medium">
                   ✓ เป็นพัสดุใช้หมดไป เช่น ถุงมือ, สำลี, แอลกอฮอล์, เข็ม, Syringe <strong className="underline">ไม่ต้องส่งคืน</strong>
                 </p>
               </div>
@@ -566,7 +567,7 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
                 consumablesList.forEach((c) => {
                   if (c.category?.name) categoryMap.set(c.category.id || c.category.name, c.category.name);
                 });
-                const selectedCat = row.categoryId || '';
+                const selectedCat = (row as any).categoryId || '';
                 const filteredList = selectedCat
                   ? consumablesList.filter((c) => c.category?.id === selectedCat || c.category?.name === selectedCat)
                   : consumablesList;
@@ -579,7 +580,7 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
                   <div
                     key={idx}
                     className={`p-2.5 rounded-xl border transition ${
-                      isOutOfStock || isOverStock ? 'bg-rose-50/80 border-rose-300' : 'bg-white border-slate-200'
+                      isOutOfStock || isOverStock ? 'bg-rose-50/80 dark:bg-rose-950/30 border-rose-300 dark:border-rose-800' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700'
                     }`}
                   >
                     <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
@@ -589,10 +590,10 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
                           onChange={(e) => {
                             const catVal = e.target.value;
                             const updated = [...requisitionItems];
-                            updated[idx].categoryId = catVal;
+                            (updated[idx] as any).categoryId = catVal;
                             setRequisitionItems(updated);
                           }}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700"
+                          className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-300"
                         >
                           <option value="">-- ทุกหมวดวัสดุ --</option>
                           {Array.from(categoryMap.entries()).map(([id, name]) => (
@@ -614,7 +615,7 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
                             }
                             setRequisitionItems(updated);
                           }}
-                          className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-medium"
+                          className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-800 dark:text-slate-100"
                         >
                           <option value="">-- เลือกรายการวัสดุ ({filteredList.length}) --</option>
                           {filteredList.map((c) => {
@@ -642,8 +643,8 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
                             updated[idx].quantity = val;
                             setRequisitionItems(updated);
                           }}
-                          className={`w-full bg-white border rounded-lg px-2 py-1.5 text-xs font-bold text-center ${
-                            isOverStock || isOutOfStock ? 'border-rose-500 bg-rose-50 text-rose-700' : 'border-slate-300'
+                          className={`w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-lg px-2 py-1.5 text-xs font-bold text-center ${
+                            isOverStock || isOutOfStock ? 'border-rose-500 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300' : ''
                           }`}
                           placeholder="ระบุจำนวน"
                         />

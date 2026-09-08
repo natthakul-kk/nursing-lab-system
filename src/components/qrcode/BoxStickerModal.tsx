@@ -327,35 +327,35 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl max-w-2xl w-full p-5 shadow-2xl border border-slate-100 space-y-4 max-h-[92vh] flex flex-col">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-2xl w-full p-5 shadow-2xl border border-slate-100 dark:border-slate-800 space-y-4 max-h-[92vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-2xl bg-teal-50 dark:bg-teal-950/40 text-teal-600 dark:text-teal-400 flex items-center justify-center">
               <Box className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-slate-900">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
                 สติกเกอร์ประจำกล่อง (Box-Level Labels)
               </h3>
-              <p className="text-[11px] text-slate-500">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
                 ระบุลำดับกล่องในล็อตและลำดับกล่องประจำปี สำหรับแปะหน้ากล่องก่อนนำเข้าชั้น
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+            className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Item & Lot Summary Bar */}
-        <div className="p-3 bg-teal-50/50 rounded-2xl border border-teal-100 flex flex-wrap items-center justify-between gap-2 text-xs">
+        <div className="p-3 bg-teal-50/50 dark:bg-teal-950/30 rounded-2xl border border-teal-100 dark:border-teal-900/60 flex flex-wrap items-center justify-between gap-2 text-xs">
           <div>
-            <div className="font-extrabold text-slate-900">{item.name}</div>
-            <div className="text-[11px] text-teal-800 font-medium">
+            <div className="font-extrabold text-slate-900 dark:text-slate-100">{item.name}</div>
+            <div className="text-[11px] text-teal-800 dark:text-teal-300 font-medium">
               Lot: <b className="font-mono">{lot.lotNumber}</b> | ทั้งหมด {boxes.length} {item.unit} | รับเข้า: {formattedReceived} | หมดอายุ: {formattedExpiry}
             </div>
           </div>
@@ -366,7 +366,7 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
               className={`px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
                 labelSize === 'compact'
                   ? 'bg-teal-600 text-white shadow-sm'
-                  : 'bg-white text-slate-600 border border-slate-200'
+                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
               }`}
             >
               ขนาดกะทัดรัด (~48x28 มม.)
@@ -377,7 +377,7 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
               className={`px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
                 labelSize === 'mini'
                   ? 'bg-teal-600 text-white shadow-sm'
-                  : 'bg-white text-slate-600 border border-slate-200'
+                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
               }`}
             >
               ขนาดแถบจิ๋ว (~36x18 มม.)
@@ -386,14 +386,14 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
         </div>
 
         {/* Multi-Select Toolbar */}
-        <div className="flex items-center justify-between text-xs text-slate-600 px-1">
+        <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300 px-1">
           <button
             type="button"
             onClick={toggleSelectAll}
-            className="inline-flex items-center gap-1.5 font-bold text-teal-700 hover:text-teal-800 cursor-pointer"
+            className="inline-flex items-center gap-1.5 font-bold text-teal-700 dark:text-teal-400 hover:text-teal-800 dark:hover:text-teal-300 cursor-pointer"
           >
             {selectedBoxIds.length === boxes.length ? (
-              <CheckSquare className="w-4 h-4 text-teal-600" />
+              <CheckSquare className="w-4 h-4 text-teal-600 dark:text-teal-400" />
             ) : (
               <Square className="w-4 h-4 text-slate-400" />
             )}
@@ -421,13 +421,13 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
                   onClick={() => toggleBox(box.id)}
                   className={`border-2 p-2.5 rounded-2xl flex items-center gap-2.5 cursor-pointer transition select-none ${
                     isChecked
-                      ? 'border-teal-500 bg-teal-50/30'
-                      : 'border-slate-200 bg-slate-50 opacity-60 hover:opacity-100'
+                      ? 'border-teal-500 bg-teal-50/30 dark:bg-teal-950/30'
+                      : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 opacity-60 hover:opacity-100'
                   }`}
                 >
                   <div className="flex-shrink-0">
                     {isChecked ? (
-                      <CheckSquare className="w-4 h-4 text-teal-600" />
+                      <CheckSquare className="w-4 h-4 text-teal-600 dark:text-teal-400" />
                     ) : (
                       <Square className="w-4 h-4 text-slate-400" />
                     )}
@@ -437,28 +437,28 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
                     <img
                       src={qrUrl}
                       alt={box.boxCode}
-                      className="w-12 h-12 rounded border border-slate-200 bg-white p-0.5 flex-shrink-0"
+                      className="w-12 h-12 rounded border border-slate-200 dark:border-slate-700 bg-white p-0.5 flex-shrink-0"
                     />
                   ) : (
-                    <div className="w-12 h-12 rounded bg-slate-100 flex items-center justify-center text-[9px] text-slate-400 flex-shrink-0">
+                    <div className="w-12 h-12 rounded bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[9px] text-slate-400 flex-shrink-0">
                       QR...
                     </div>
                   )}
 
                   <div className="overflow-hidden flex-1 leading-tight space-y-0.5">
-                    <div className="font-mono font-black text-xs text-teal-900 flex items-center justify-between">
+                    <div className="font-mono font-black text-xs text-teal-900 dark:text-teal-300 flex items-center justify-between">
                       <span>กล่องที่ {box.boxNumberInLot}/{totalLotBoxes}</span>
-                      <span className="text-[10px] text-slate-500 font-medium">กล่อง {box.boxNumberInYear}/{box.year}</span>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">กล่อง {box.boxNumberInYear}/{box.year}</span>
                     </div>
-                    <div className="font-bold text-slate-800 text-[11px] truncate">
+                    <div className="font-bold text-slate-800 dark:text-slate-200 text-[11px] truncate">
                       {item.name}
                     </div>
-                    <div className="font-mono text-[10px] text-slate-500 truncate">
+                    <div className="font-mono text-[10px] text-slate-500 dark:text-slate-400 truncate">
                       {box.boxCode}
                     </div>
                     <div className="text-[9.5px] text-slate-400 flex items-center justify-between pt-0.5">
                       <span>รับ: {formattedReceived}</span>
-                      <span className="text-rose-600 font-semibold">EXP: {formattedExpiry}</span>
+                      <span className="text-rose-600 dark:text-rose-400 font-semibold">EXP: {formattedExpiry}</span>
                     </div>
                   </div>
                 </div>
@@ -468,15 +468,15 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
         </div>
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-          <span className="text-xs text-slate-500">
-            พร้อมพิมพ์ <b className="text-teal-700">{selectedBoxIds.length}</b> กล่อง จากทั้งหมด {boxes.length} กล่อง
+        <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+          <span className="text-xs text-slate-500 dark:text-slate-400">
+            พร้อมพิมพ์ <b className="text-teal-700 dark:text-teal-400">{selectedBoxIds.length}</b> กล่อง จากทั้งหมด {boxes.length} กล่อง
           </span>
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 transition cursor-pointer"
+              className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
             >
               ปิด
             </button>

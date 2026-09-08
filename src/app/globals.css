@@ -83,3 +83,94 @@ body {
     @apply dark:bg-slate-900 dark:border-slate-800 dark:text-slate-100;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   GLOBAL SYSTEM-WIDE DARK THEME HARMONY (Executive Medical Dark)
+   Seamlessly transforms any standard card, table, or modal into dark mode
+   ══════════════════════════════════════════════════════════════════ */
+.dark .bg-white:not(.keep-white),
+.dark [class*="bg-white\/"]:not(.keep-white):not([class*="bg-white\/10"]):not([class*="bg-white\/20"]):not([class*="bg-white\/5"]):not([class*="bg-white\/15"]) {
+  background-color: #0f172a;
+}
+
+.dark .bg-slate-50:not(.keep-white),
+.dark [class*="bg-slate-50\/"]:not(.keep-white),
+.dark .bg-slate-100:not(.keep-white),
+.dark [class*="bg-slate-100\/"]:not(.keep-white) {
+  background-color: #1e293b;
+}
+
+.dark .border-slate-100:not(.keep-border),
+.dark .border-slate-150:not(.keep-border),
+.dark .border-slate-200:not(.keep-border),
+.dark [class*="border-slate-200\/"]:not(.keep-border),
+.dark .border-slate-300:not(.keep-border) {
+  border-color: #1e293b;
+}
+
+.dark .text-slate-900:not(.keep-color),
+.dark .text-slate-800:not(.keep-color) {
+  color: #f8fafc;
+}
+
+.dark .text-slate-700:not(.keep-color) {
+  color: #e2e8f0;
+}
+
+.dark .text-slate-600:not(.keep-color) {
+  color: #cbd5e1;
+}
+
+.dark .text-slate-500:not(.keep-color),
+.dark .text-slate-400:not(.keep-color) {
+  color: #94a3b8;
+}
+
+.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+.dark .divide-slate-150 > :not([hidden]) ~ :not([hidden]),
+.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #1e293b;
+}
+
+/* Hover fallbacks */
+.dark [class*="hover:bg-slate-50"]:hover:not(.keep-white) {
+  background-color: rgba(30, 41, 59, 0.7);
+}
+.dark [class*="hover:bg-slate-100"]:hover:not(.keep-white) {
+  background-color: rgba(51, 65, 85, 0.7);
+}
+.dark .hover\:bg-white:hover:not(.keep-white) {
+  background-color: #1e293b;
+}
+
+/* Form Controls Dark Fallback */
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not(.keep-white),
+.dark select:not(.keep-white),
+.dark textarea:not(.keep-white) {
+  background-color: #1e293b;
+  color: #f8fafc;
+  border-color: #334155;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #64748b;
+}
+
+/* Protect Print Views from Dark Mode inversion */
+@media print {
+  .dark {
+    color-scheme: light !important;
+  }
+  .dark .bg-white,
+  .dark [class*="bg-white"] {
+    background-color: #ffffff !important;
+  }
+  .dark .text-slate-900,
+  .dark .text-slate-800,
+  .dark .text-slate-700,
+  .dark .text-slate-600 {
+    color: #000000 !important;
+  }
+}
+

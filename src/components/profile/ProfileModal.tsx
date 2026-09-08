@@ -460,7 +460,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">กรอกรหัสยืนยัน OTP 6 หลัก</label>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">กรอกรหัสยืนยัน OTP 6 หลัก</label>
                     <input
                       type="text"
                       maxLength={6}
@@ -468,7 +468,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                       placeholder="••••••"
                       value={emailOtp}
                       onChange={(e) => setEmailOtp(e.target.value.replace(/\D/g, ''))}
-                      className="w-full bg-white border border-teal-300 rounded-xl py-2.5 px-4 text-center font-mono font-bold text-lg tracking-widest text-teal-900 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
+                      className="w-full bg-white dark:bg-slate-950 border border-teal-300 dark:border-teal-700 rounded-xl py-2.5 px-4 text-center font-mono font-bold text-lg tracking-widest text-teal-900 dark:text-teal-100 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
                     />
                   </div>
 
@@ -477,7 +477,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                       type="button"
                       disabled={emailSendingOtp}
                       onClick={() => handleRequestEmailOtp(emailOtpSentTo)}
-                      className="text-xs font-bold text-teal-700 hover:text-teal-900 underline transition cursor-pointer disabled:opacity-50 flex items-center gap-1"
+                      className="text-xs font-bold text-teal-700 dark:text-teal-400 hover:text-teal-900 dark:hover:text-teal-200 underline transition cursor-pointer disabled:opacity-50 flex items-center gap-1"
                     >
                       <RotateCcw className="w-3 h-3" />
                       <span>{emailSendingOtp ? 'กำลังส่งใหม่...' : 'ส่งรหัส OTP อีกครั้ง'}</span>
@@ -490,7 +490,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                           setEmailOtp('');
                           setFormData({ ...formData, email: currentUser.email });
                         }}
-                        className="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-200/60 transition cursor-pointer"
+                        className="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition cursor-pointer"
                       >
                         ยกเลิก (ใช้อีเมลเดิม)
                       </button>
@@ -509,23 +509,23 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
               )}
 
               {/* Current Role Notice */}
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between text-xs">
-                <span className="text-slate-500 font-semibold flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4 text-teal-600" />
+              <div className="p-3 bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
+                <span className="text-slate-500 dark:text-slate-400 font-semibold flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-teal-600 dark:text-teal-400" />
                   บทบาทในระบบ:
                 </span>
-                <span className="font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200 font-mono">
+                <span className="font-bold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 font-mono">
                   {currentUser.role}
                 </span>
               </div>
 
               {/* Buttons */}
               {!isVerifyingEmail && (
-                <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100">
+                <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100 dark:border-slate-800">
                   <button
                     type="button"
                     onClick={onClose}
-                    className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                    className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
                   >
                     ยกเลิก
                   </button>

@@ -193,11 +193,11 @@ export default function ReportsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-            <BarChart3 className="w-6 h-6 text-teal-600" />
+          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+            <BarChart3 className="w-6 h-6 text-teal-600 dark:text-teal-400" />
             รายงานสรุปพัสดุและสถานะครุภัณฑ์ห้องปฏิบัติการพยาบาล
           </h2>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             รายงานวิเคราะห์ยอดคงเหลือ ตรวจสอบวันหมดอายุ สถานะครุภัณฑ์รายชิ้น และส่งออกข้อมูลเป็น Excel (.xlsx)
           </p>
         </div>
@@ -205,7 +205,7 @@ export default function ReportsPage() {
         <div className="flex items-center gap-2.5">
           <button
             onClick={fetchReports}
-            className="p-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 transition cursor-pointer"
+            className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition cursor-pointer"
             title="รีเฟรชข้อมูล"
           >
             <RefreshCw className="w-4 h-4" />
@@ -213,9 +213,9 @@ export default function ReportsPage() {
 
           <button
             onClick={handlePrint}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-bold shadow-sm transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold shadow-sm transition cursor-pointer"
           >
-            <Printer className="w-4 h-4 text-slate-600" />
+            <Printer className="w-4 h-4 text-slate-600 dark:text-slate-300" />
             <span>พิมพ์รายงาน (Print / PDF)</span>
           </button>
 
@@ -253,13 +253,13 @@ export default function ReportsPage() {
       </div>
 
       {/* Tab Switcher */}
-      <div className="flex border-b border-slate-200 print:hidden">
+      <div className="flex border-b border-slate-200 dark:border-slate-800 print:hidden">
         <button
           onClick={() => setActiveTab('CONSUMABLES')}
           className={`px-5 py-3 text-xs font-bold flex items-center gap-2 border-b-2 transition cursor-pointer ${
             activeTab === 'CONSUMABLES'
-              ? 'border-teal-600 text-teal-700'
-              : 'border-transparent text-slate-500 hover:text-slate-900'
+              ? 'border-teal-600 text-teal-700 dark:text-teal-400'
+              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
           }`}
         >
           <Boxes className="w-4 h-4" />
@@ -270,8 +270,8 @@ export default function ReportsPage() {
           onClick={() => setActiveTab('EQUIPMENT')}
           className={`px-5 py-3 text-xs font-bold flex items-center gap-2 border-b-2 transition cursor-pointer ${
             activeTab === 'EQUIPMENT'
-              ? 'border-teal-600 text-teal-700'
-              : 'border-transparent text-slate-500 hover:text-slate-900'
+              ? 'border-teal-600 text-teal-700 dark:text-teal-400'
+              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
           }`}
         >
           <Package className="w-4 h-4" />
@@ -283,69 +283,69 @@ export default function ReportsPage() {
       {activeTab === 'CONSUMABLES' && (
         <div className="space-y-6">
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5 print:grid-cols-5">
-            <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm print:border-slate-300">
-              <div className="text-[11px] font-semibold text-slate-500 flex items-center justify-between">
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm print:border-slate-300">
+              <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 flex items-center justify-between">
                 <span>รายการพัสดุ</span>
-                <Boxes className="w-4 h-4 text-slate-400" />
+                <Boxes className="w-4 h-4 text-slate-400 dark:text-slate-500" />
               </div>
-              <div className="text-xl font-black text-slate-900 mt-1">
+              <div className="text-xl font-black text-slate-900 dark:text-slate-100 mt-1">
                 {reportData?.consumables?.totalItems || 0}{' '}
-                <span className="text-xs font-normal text-slate-500">รายการ</span>
+                <span className="text-xs font-normal text-slate-500 dark:text-slate-400">รายการ</span>
               </div>
             </div>
 
-            <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm print:border-slate-300">
-              <div className="text-[11px] font-semibold text-slate-500 flex items-center justify-between">
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm print:border-slate-300">
+              <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 flex items-center justify-between">
                 <span>ยอดสต็อกรวมทั้งหมด</span>
                 <Layers className="w-4 h-4 text-teal-500" />
               </div>
-              <div className="text-xl font-black text-teal-700 mt-1">
+              <div className="text-xl font-black text-teal-700 dark:text-teal-400 mt-1">
                 {reportData?.consumables?.totalStock?.toLocaleString() || 0}{' '}
-                <span className="text-xs font-normal text-slate-500">ชิ้น</span>
+                <span className="text-xs font-normal text-slate-500 dark:text-slate-400">ชิ้น</span>
               </div>
             </div>
 
-            <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm print:border-slate-300">
-              <div className="text-[11px] font-semibold text-slate-500 flex items-center justify-between">
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm print:border-slate-300">
+              <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 flex items-center justify-between">
                 <span>มูลค่าสต็อกรวม</span>
                 <DollarSign className="w-4 h-4 text-emerald-500" />
               </div>
-              <div className="text-xl font-black text-emerald-700 mt-1">
+              <div className="text-xl font-black text-emerald-700 dark:text-emerald-400 mt-1">
                 ฿{reportData?.consumables?.totalValuation?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
               </div>
             </div>
 
-            <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm print:border-slate-300">
-              <div className="text-[11px] font-semibold text-rose-600 flex items-center justify-between">
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm print:border-slate-300">
+              <div className="text-[11px] font-semibold text-rose-600 dark:text-rose-400 flex items-center justify-between">
                 <span>ต่ำกว่าเกณฑ์แจ้งเตือน</span>
                 <AlertTriangle className="w-4 h-4 text-rose-500" />
               </div>
-              <div className="text-xl font-black text-rose-600 mt-1">
+              <div className="text-xl font-black text-rose-600 dark:text-rose-400 mt-1">
                 {reportData?.consumables?.lowStockCount || 0}{' '}
-                <span className="text-xs font-normal text-rose-500">รายการ</span>
+                <span className="text-xs font-normal text-rose-500 dark:text-rose-400">รายการ</span>
               </div>
             </div>
 
-            <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm print:border-slate-300">
-              <div className="text-[11px] font-semibold text-amber-600 flex items-center justify-between">
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm print:border-slate-300">
+              <div className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 flex items-center justify-between">
                 <span>ล็อตใกล้หมดอายุ (&lt;90 วัน)</span>
                 <Clock className="w-4 h-4 text-amber-500" />
               </div>
-              <div className="text-xl font-black text-amber-600 mt-1">
+              <div className="text-xl font-black text-amber-600 dark:text-amber-400 mt-1">
                 {reportData?.consumables?.expiringSoonCount || 0}{' '}
-                <span className="text-xs font-normal text-amber-500">ล็อต</span>
+                <span className="text-xs font-normal text-amber-500 dark:text-amber-400">ล็อต</span>
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3.5 print:hidden">
-            <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl w-full md:w-auto">
+          <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3.5 print:hidden">
+            <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl w-full md:w-auto">
               <button
                 onClick={() => setConsumableFilter('ALL')}
                 className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition cursor-pointer ${
                   consumableFilter === 'ALL'
-                    ? 'bg-white text-slate-900 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-900'
+                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
                 }`}
               >
                 ทั้งหมด ({reportData?.consumables?.rows?.length || 0})
@@ -354,8 +354,8 @@ export default function ReportsPage() {
                 onClick={() => setConsumableFilter('LOW_STOCK')}
                 className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition cursor-pointer ${
                   consumableFilter === 'LOW_STOCK'
-                    ? 'bg-white text-rose-600 shadow-sm'
-                    : 'text-slate-500 hover:text-rose-600'
+                    ? 'bg-white dark:bg-slate-700 text-rose-600 dark:text-rose-400 shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400'
                 }`}
               >
                 ต่ำกว่าเกณฑ์ ({reportData?.consumables?.lowStockCount || 0})
@@ -364,8 +364,8 @@ export default function ReportsPage() {
                 onClick={() => setConsumableFilter('EXPIRING')}
                 className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition cursor-pointer ${
                   consumableFilter === 'EXPIRING'
-                    ? 'bg-white text-amber-600 shadow-sm'
-                    : 'text-slate-500 hover:text-amber-600'
+                    ? 'bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400 shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-400'
                 }`}
               >
                 ใกล้หมดอายุ ({reportData?.consumables?.expiringSoonCount || 0})
@@ -379,15 +379,15 @@ export default function ReportsPage() {
                 placeholder="ค้นหาชื่อวัสดุ, รหัสพัสดุ, หมวดหมู่..."
                 value={consumableSearch}
                 onChange={(e) => setConsumableSearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
               />
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden print:border-slate-300">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden print:border-slate-300">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-slate-600">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold uppercase text-[10px] tracking-wider print:bg-slate-100">
+              <table className="w-full text-left text-xs text-slate-600 dark:text-slate-300">
+                <thead className="bg-slate-50 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-bold uppercase text-[10px] tracking-wider print:bg-slate-100">
                   <tr>
                     <th className="py-3 px-4">รหัส / รายการวัสดุสิ้นเปลือง</th>
                     <th className="py-3 px-4">หมวดหมู่ / สถานที่เก็บ</th>
@@ -397,49 +397,49 @@ export default function ReportsPage() {
                     <th className="py-3 px-4">รายละเอียดล็อต & วันหมดอายุ</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
                   {loading ? (
                     <TableLoadingRow colSpan={6} message="กำลังรวบรวมและวิเคราะห์ข้อมูลสต็อกวัสดุ..." />
                   ) : filteredConsumables.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="py-8 text-center text-slate-400">
+                      <td colSpan={6} className="py-8 text-center text-slate-400 dark:text-slate-500">
                         ไม่พบรายการวัสดุที่ตรงกับเงื่อนไขการค้นหา
                       </td>
                     </tr>
                   ) : (
                     filteredConsumables.map((item: any) => (
-                      <tr key={item.id} className="hover:bg-slate-50/60 transition">
+                      <tr key={item.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition">
                         <td className="py-3 px-4">
-                          <div className="font-bold text-slate-900 text-xs">{item.name}</div>
-                          <span className="font-mono text-[10px] text-teal-700 bg-teal-50 px-1.5 py-0.5 rounded font-semibold">
+                          <div className="font-bold text-slate-900 dark:text-slate-100 text-xs">{item.name}</div>
+                          <span className="font-mono text-[10px] text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800/60 px-1.5 py-0.5 rounded font-semibold">
                             {item.code}
                           </span>
                         </td>
 
                         <td className="py-3 px-4">
-                          <div className="text-slate-800 font-medium text-xs">{item.category}</div>
-                          <div className="text-[11px] text-slate-400">{item.location}</div>
+                          <div className="text-slate-800 dark:text-slate-200 font-medium text-xs">{item.category}</div>
+                          <div className="text-[11px] text-slate-400 dark:text-slate-500">{item.location}</div>
                         </td>
 
                         <td className="py-3 px-4 text-center">
                           <span
                             className={`font-black text-sm ${
-                              item.isLowStock ? 'text-rose-600' : 'text-slate-900'
+                              item.isLowStock ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-slate-100'
                             }`}
                           >
                             {item.currentStock.toLocaleString()}
                           </span>{' '}
-                          <span className="text-slate-400 text-xs">{item.unit}</span>
+                          <span className="text-slate-400 dark:text-slate-500 text-xs">{item.unit}</span>
                           {item.isLowStock && (
-                            <div className="text-[10px] text-rose-600 font-bold">สต็อกต่ำกว่าเกณฑ์</div>
+                            <div className="text-[10px] text-rose-600 dark:text-rose-400 font-bold">สต็อกต่ำกว่าเกณฑ์</div>
                           )}
                         </td>
 
-                        <td className="py-3 px-4 text-center font-mono text-slate-500">
+                        <td className="py-3 px-4 text-center font-mono text-slate-500 dark:text-slate-400">
                           {item.minStockAlert} {item.unit}
                         </td>
 
-                        <td className="py-3 px-4 text-right font-medium text-slate-900">
+                        <td className="py-3 px-4 text-right font-medium text-slate-900 dark:text-slate-100">
                           ฿{item.totalValuation.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
 
@@ -449,20 +449,20 @@ export default function ReportsPage() {
                               {item.lots.map((lot: any) => (
                                 <div
                                   key={lot.id}
-                                  className="flex items-center gap-2 text-[11px] bg-slate-50 px-2 py-1 rounded border border-slate-100"
+                                  className="flex items-center gap-2 text-[11px] bg-slate-50 dark:bg-slate-800/80 px-2 py-1 rounded border border-slate-100 dark:border-slate-700/80"
                                 >
-                                  <span className="font-mono font-bold text-slate-700">{lot.lotNumber}</span>
+                                  <span className="font-mono font-bold text-slate-700 dark:text-slate-300">{lot.lotNumber}</span>
                                   <span className="text-slate-400">|</span>
-                                  <span>เหลือ {lot.quantityRemaining} {item.unit}</span>
+                                  <span className="text-slate-600 dark:text-slate-300">เหลือ {lot.quantityRemaining} {item.unit}</span>
                                   <span className="text-slate-400">|</span>
                                   {lot.expiryDate ? (
                                     <span
                                       className={`font-semibold ${
                                         lot.isExpired
-                                          ? 'text-rose-600 font-bold'
+                                          ? 'text-rose-600 dark:text-rose-400'
                                           : lot.isExpiringSoon
-                                          ? 'text-amber-600 font-bold'
-                                          : 'text-slate-600'
+                                          ? 'text-amber-600 dark:text-amber-400'
+                                          : 'text-slate-500 dark:text-slate-400'
                                       }`}
                                     >
                                       หมดอายุ: {new Date(lot.expiryDate).toLocaleDateString('th-TH')}
@@ -476,7 +476,7 @@ export default function ReportsPage() {
                               ))}
                             </div>
                           ) : (
-                            <span className="text-slate-400 text-[11px] italic">ไม่มีล็อตคงเหลือในสต็อก</span>
+                            <span className="text-slate-400 text-[11px]">-</span>
                           )}
                         </td>
                       </tr>
@@ -493,80 +493,80 @@ export default function ReportsPage() {
       {activeTab === 'EQUIPMENT' && (
         <div className="space-y-6">
           <div className="grid grid-cols-2 lg:grid-cols-6 gap-3.5 print:grid-cols-6">
-            <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm print:border-slate-300">
-              <div className="text-[11px] font-semibold text-slate-500 flex items-center justify-between">
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm print:border-slate-300">
+              <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 flex items-center justify-between">
                 <span>ครุภัณฑ์ทั้งหมด</span>
-                <Package className="w-4 h-4 text-slate-400" />
+                <Package className="w-4 h-4 text-slate-400 dark:text-slate-500" />
               </div>
-              <div className="text-xl font-black text-slate-900 mt-1">
+              <div className="text-xl font-black text-slate-900 dark:text-slate-100 mt-1">
                 {reportData?.equipment?.totalAssets || 0}{' '}
-                <span className="text-xs font-normal text-slate-500">ชิ้น</span>
+                <span className="text-xs font-normal text-slate-500 dark:text-slate-400">ชิ้น</span>
               </div>
             </div>
 
-            <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm print:border-slate-300">
-              <div className="text-[11px] font-semibold text-slate-500 flex items-center justify-between">
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm print:border-slate-300">
+              <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 flex items-center justify-between">
                 <span>มูลค่ารวมประเมิน</span>
                 <DollarSign className="w-4 h-4 text-emerald-500" />
               </div>
-              <div className="text-xl font-black text-emerald-700 mt-1">
+              <div className="text-xl font-black text-emerald-700 dark:text-emerald-400 mt-1">
                 ฿{reportData?.equipment?.totalValuation?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
               </div>
             </div>
 
-            <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm print:border-slate-300">
-              <div className="text-[11px] font-semibold text-emerald-600 flex items-center justify-between">
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm print:border-slate-300">
+              <div className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center justify-between">
                 <span>พร้อมใช้งาน</span>
                 <CheckCircle2 className="w-4 h-4 text-emerald-500" />
               </div>
-              <div className="text-xl font-black text-emerald-600 mt-1">
+              <div className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-1">
                 {reportData?.equipment?.availableCount || 0}{' '}
-                <span className="text-xs font-normal text-emerald-500">ชิ้น</span>
+                <span className="text-xs font-normal text-emerald-500 dark:text-emerald-400">ชิ้น</span>
               </div>
             </div>
 
-            <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm print:border-slate-300">
-              <div className="text-[11px] font-semibold text-blue-600 flex items-center justify-between">
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm print:border-slate-300">
+              <div className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 flex items-center justify-between">
                 <span>กำลังถูกยืมอยู่</span>
                 <RefreshCw className="w-4 h-4 text-blue-500" />
               </div>
-              <div className="text-xl font-black text-blue-600 mt-1">
+              <div className="text-xl font-black text-blue-600 dark:text-blue-400 mt-1">
                 {reportData?.equipment?.borrowedCount || 0}{' '}
-                <span className="text-xs font-normal text-blue-500">ชิ้น</span>
+                <span className="text-xs font-normal text-blue-500 dark:text-blue-400">ชิ้น</span>
               </div>
             </div>
 
-            <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm print:border-slate-300">
-              <div className="text-[11px] font-semibold text-amber-600 flex items-center justify-between">
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm print:border-slate-300">
+              <div className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 flex items-center justify-between">
                 <span>ส่งซ่อมบำรุง</span>
                 <Wrench className="w-4 h-4 text-amber-500" />
               </div>
-              <div className="text-xl font-black text-amber-600 mt-1">
+              <div className="text-xl font-black text-amber-600 dark:text-amber-400 mt-1">
                 {reportData?.equipment?.maintenanceCount || 0}{' '}
-                <span className="text-xs font-normal text-amber-500">ชิ้น</span>
+                <span className="text-xs font-normal text-amber-500 dark:text-amber-400">ชิ้น</span>
               </div>
             </div>
 
-            <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm print:border-slate-300">
-              <div className="text-[11px] font-semibold text-rose-600 flex items-center justify-between">
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm print:border-slate-300">
+              <div className="text-[11px] font-semibold text-rose-600 dark:text-rose-400 flex items-center justify-between">
                 <span>จำหน่ายออก/ตัดจำหน่าย</span>
                 <AlertTriangle className="w-4 h-4 text-rose-500" />
               </div>
-              <div className="text-xl font-black text-rose-600 mt-1">
+              <div className="text-xl font-black text-rose-600 dark:text-rose-400 mt-1">
                 {reportData?.equipment?.retiredCount || 0}{' '}
-                <span className="text-xs font-normal text-rose-500">ชิ้น</span>
+                <span className="text-xs font-normal text-rose-500 dark:text-rose-400">ชิ้น</span>
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3.5 print:hidden">
-            <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl w-full md:w-auto overflow-x-auto">
+          <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3.5 print:hidden">
+            <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl w-full md:w-auto overflow-x-auto">
               <button
                 onClick={() => setEquipmentStatusFilter('ALL')}
                 className={`px-3 py-1.5 text-xs font-bold rounded-lg transition whitespace-nowrap cursor-pointer ${
                   equipmentStatusFilter === 'ALL'
-                    ? 'bg-white text-slate-900 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-900'
+                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
                 }`}
               >
                 ทั้งหมด ({reportData?.equipment?.rows?.length || 0})
@@ -575,8 +575,8 @@ export default function ReportsPage() {
                 onClick={() => setEquipmentStatusFilter('AVAILABLE')}
                 className={`px-3 py-1.5 text-xs font-bold rounded-lg transition whitespace-nowrap cursor-pointer ${
                   equipmentStatusFilter === 'AVAILABLE'
-                    ? 'bg-white text-emerald-700 shadow-sm'
-                    : 'text-slate-500 hover:text-emerald-700'
+                    ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-400 shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-emerald-700 dark:hover:text-emerald-400'
                 }`}
               >
                 พร้อมใช้ ({reportData?.equipment?.availableCount || 0})
@@ -585,8 +585,8 @@ export default function ReportsPage() {
                 onClick={() => setEquipmentStatusFilter('BORROWED')}
                 className={`px-3 py-1.5 text-xs font-bold rounded-lg transition whitespace-nowrap cursor-pointer ${
                   equipmentStatusFilter === 'BORROWED'
-                    ? 'bg-white text-blue-700 shadow-sm'
-                    : 'text-slate-500 hover:text-blue-700'
+                    ? 'bg-white dark:bg-slate-700 text-blue-700 dark:text-blue-400 shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-blue-700 dark:hover:text-blue-400'
                 }`}
               >
                 ถูกยืม ({reportData?.equipment?.borrowedCount || 0})
@@ -595,8 +595,8 @@ export default function ReportsPage() {
                 onClick={() => setEquipmentStatusFilter('MAINTENANCE')}
                 className={`px-3 py-1.5 text-xs font-bold rounded-lg transition whitespace-nowrap cursor-pointer ${
                   equipmentStatusFilter === 'MAINTENANCE'
-                    ? 'bg-white text-amber-700 shadow-sm'
-                    : 'text-slate-500 hover:text-amber-700'
+                    ? 'bg-white dark:bg-slate-700 text-amber-700 dark:text-amber-400 shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-amber-700 dark:hover:text-amber-400'
                 }`}
               >
                 ซ่อมบำรุง ({reportData?.equipment?.maintenanceCount || 0})
@@ -605,8 +605,8 @@ export default function ReportsPage() {
                 onClick={() => setEquipmentStatusFilter('RETIRED')}
                 className={`px-3 py-1.5 text-xs font-bold rounded-lg transition whitespace-nowrap cursor-pointer ${
                   equipmentStatusFilter === 'RETIRED'
-                    ? 'bg-white text-rose-700 shadow-sm'
-                    : 'text-slate-500 hover:text-rose-700'
+                    ? 'bg-white dark:bg-slate-700 text-rose-700 dark:text-rose-400 shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-rose-700 dark:hover:text-rose-400'
                 }`}
               >
                 จำหน่ายออก ({reportData?.equipment?.retiredCount || 0})
@@ -620,15 +620,15 @@ export default function ReportsPage() {
                 placeholder="ค้นหารหัสแล็บ, เลขครุภัณฑ์, ชื่ออุปกรณ์..."
                 value={equipmentSearch}
                 onChange={(e) => setEquipmentSearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
               />
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden print:border-slate-300">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden print:border-slate-300">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-slate-600">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold uppercase text-[10px] tracking-wider print:bg-slate-100">
+              <table className="w-full text-left text-xs text-slate-600 dark:text-slate-300">
+                <thead className="bg-slate-50 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-bold uppercase text-[10px] tracking-wider print:bg-slate-100">
                   <tr>
                     <th className="py-3 px-4">รหัสประจำชิ้น (Lab Code)</th>
                     <th className="py-3 px-4">เลขครุภัณฑ์ราชการ</th>
@@ -639,61 +639,61 @@ export default function ReportsPage() {
                     <th className="py-3 px-4 text-center">ประวัติการซ่อม</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
                   {loading ? (
                     <TableLoadingRow colSpan={7} message="กำลังรวบรวมสถานะครุภัณฑ์คงทน..." />
                   ) : filteredEquipment.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="py-8 text-center text-slate-400">
+                      <td colSpan={7} className="py-8 text-center text-slate-400 dark:text-slate-500">
                         ไม่พบครุภัณฑ์ที่ตรงกับเงื่อนไขการค้นหา
                       </td>
                     </tr>
                   ) : (
                     filteredEquipment.map((asset: any) => {
                       let statusBadge = (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50">
                           <CheckCircle2 className="w-3 h-3" /> พร้อมใช้
                         </span>
                       );
 
                       if (asset.status === 'BORROWED') {
                         statusBadge = (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800/50">
                             <RefreshCw className="w-3 h-3" /> กำลังถูกยืม
                           </span>
                         );
                       } else if (asset.status === 'MAINTENANCE') {
                         statusBadge = (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50">
                             <Wrench className="w-3 h-3" /> ส่งซ่อมบำรุง
                           </span>
                         );
                       } else if (asset.status === 'RETIRED') {
                         statusBadge = (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/50">
                             จำหน่ายออก
                           </span>
                         );
                       }
 
                       return (
-                        <tr key={asset.id} className="hover:bg-slate-50/60 transition">
+                        <tr key={asset.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition">
                           <td className="py-3 px-4">
-                            <span className="font-mono text-xs font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
+                            <span className="font-mono text-xs font-bold text-teal-800 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800/60 px-2 py-0.5 rounded">
                               {asset.assetCode || '-'}
                             </span>
                           </td>
 
-                          <td className="py-3 px-4 font-mono text-[11px] text-slate-600">
+                          <td className="py-3 px-4 font-mono text-[11px] text-slate-600 dark:text-slate-400">
                             {asset.govAssetCode || '-'}
                           </td>
 
                           <td className="py-3 px-4">
-                            <div className="font-bold text-slate-900 text-xs">{asset.itemName}</div>
-                            <div className="text-[11px] text-slate-400">{asset.category}</div>
+                            <div className="font-bold text-slate-900 dark:text-slate-100 text-xs">{asset.itemName}</div>
+                            <div className="text-[11px] text-slate-400 dark:text-slate-500">{asset.category}</div>
                           </td>
 
-                          <td className="py-3 px-4 text-slate-600">
+                          <td className="py-3 px-4 text-slate-600 dark:text-slate-300">
                             {asset.location}
                           </td>
 
@@ -701,17 +701,17 @@ export default function ReportsPage() {
                             {statusBadge}
                           </td>
 
-                          <td className="py-3 px-4 text-right font-medium text-slate-800">
+                          <td className="py-3 px-4 text-right font-medium text-slate-800 dark:text-slate-200">
                             {asset.cost ? ('฿' + Number(asset.cost).toLocaleString()) : '-'}
                           </td>
 
                           <td className="py-3 px-4 text-center">
                             {asset.maintenanceCount > 0 ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-50 text-amber-700 text-[10px] font-bold">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50 text-[10px] font-bold">
                                 เคยซ่อม {asset.maintenanceCount} ครั้ง
                               </span>
                             ) : (
-                              <span className="text-slate-400 text-[11px]">ไม่เคยซ่อม</span>
+                              <span className="text-slate-400 dark:text-slate-500 text-[11px]">ไม่เคยซ่อม</span>
                             )}
                           </td>
                         </tr>

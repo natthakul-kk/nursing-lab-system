@@ -232,15 +232,15 @@ export default function StockInPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Form Column (2 Cols) */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+        <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
           {/* Tabs */}
-          <div className="flex items-center p-1 bg-slate-100 rounded-xl mb-6">
+          <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-800 rounded-xl mb-6">
             <button
               onClick={() => handleTabChange('CONSUMABLE')}
               className={`flex-1 py-2 text-xs font-bold rounded-lg transition ${
                 activeTab === 'CONSUMABLE'
-                  ? 'bg-white text-teal-700 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-800'
+                  ? 'bg-white dark:bg-slate-900 text-teal-700 dark:text-teal-400 shadow-sm'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
               1. รับเข้าเวชภัณฑ์สิ้นเปลือง (บันทึก Lot & ต้นทุน)
@@ -249,8 +249,8 @@ export default function StockInPage() {
               onClick={() => handleTabChange('EQUIPMENT')}
               className={`flex-1 py-2 text-xs font-bold rounded-lg transition ${
                 activeTab === 'EQUIPMENT'
-                  ? 'bg-white text-teal-700 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-800'
+                  ? 'bg-white dark:bg-slate-900 text-teal-700 dark:text-teal-400 shadow-sm'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
               2. ลงทะเบียนครุภัณฑ์คงทน (บันทึกรหัส Asset)
@@ -259,7 +259,7 @@ export default function StockInPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <label className="block text-xs font-bold text-slate-700">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
                 เลือกรายการพัสดุ / ครุภัณฑ์ <span className="text-rose-500">*</span>
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
@@ -277,7 +277,7 @@ export default function StockInPage() {
                         }
                       }
                     }}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-700 font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-700 dark:text-slate-300 font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                   >
                     <option value="">-- ทุกหมวดหมู่ (กรองตามหมวด) --</option>
                     {(() => {
@@ -309,7 +309,7 @@ export default function StockInPage() {
                         setSelectedCategory(it.category.id);
                       }
                     }}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl px-3 py-2.5 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                   >
                     {(() => {
                       const filtered = selectedCategory
@@ -335,7 +335,7 @@ export default function StockInPage() {
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                       หมายเลข Lot (Lot Number) *
                     </label>
                     <input
@@ -344,26 +344,26 @@ export default function StockInPage() {
                       placeholder="เช่น LOT-256909-01"
                       value={form.lotNumber}
                       onChange={(e) => setForm({ ...form, lotNumber: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                       วันหมดอายุ (Expiry Date)
                     </label>
                     <input
                       type="date"
                       value={form.expiryDate}
                       onChange={(e) => setForm({ ...form, expiryDate: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                       จำนวนรับเข้า ({selectedItem?.unit || 'หน่วย'}) *
                     </label>
                     <input
@@ -373,12 +373,12 @@ export default function StockInPage() {
                       value={form.quantity}
                       placeholder="กรอกจำนวนที่รับเข้า..."
                       onChange={(e) => setForm({ ...form, quantity: e.target.value === '' ? '' : Number(e.target.value) })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                       ราคาต้นทุนต่อหน่วย (บาท / {selectedItem?.unit || 'หน่วย'}) *
                     </label>
                     <div className="relative">
@@ -390,7 +390,7 @@ export default function StockInPage() {
                         value={form.unitCost}
                         placeholder="0.00"
                         onChange={(e) => setForm({ ...form, unitCost: e.target.value === '' ? '' : Number(e.target.value) })}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 pl-7 text-xs font-bold text-emerald-700 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 pl-7 text-xs font-bold text-emerald-700 dark:text-emerald-400 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                       />
                       <span className="absolute left-2.5 top-2 text-slate-400 text-xs font-bold">฿</span>
                     </div>
@@ -398,11 +398,11 @@ export default function StockInPage() {
                 </div>
 
                 {/* Total Computed Value */}
-                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-between">
-                  <span className="text-xs font-bold text-emerald-800">
+                <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-800 flex items-center justify-between">
+                  <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300">
                     มูลค่ารับเข้ารวมในครั้งนี้:
                   </span>
-                  <span className="text-base font-black text-emerald-700">
+                  <span className="text-base font-black text-emerald-700 dark:text-emerald-400">
                     {form.quantity && form.unitCost ? (
                       '฿' + (Number(form.quantity) * Number(form.unitCost)).toLocaleString('th-TH', {
                         minimumFractionDigits: 2,
@@ -414,7 +414,7 @@ export default function StockInPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     บริษัทคู่ค้า / แหล่งงบประมาณ
                   </label>
                   <input
@@ -422,7 +422,7 @@ export default function StockInPage() {
                     placeholder="เช่น บริษัท สหเวชกิจการ จำกัด, งบประมาณแผ่นดิน 2569"
                     value={form.supplier}
                     onChange={(e) => setForm({ ...form, supplier: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                   />
                 </div>
               </>
@@ -432,27 +432,27 @@ export default function StockInPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs font-bold text-slate-700">
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
                         รหัสประจำชิ้นในแล็บ (Lab Asset Code) *
                       </label>
                       {isCustomCode ? (
                         <button
                           type="button"
                           onClick={() => resetToAutoCode()}
-                          className="inline-flex items-center gap-1 text-[10px] font-bold text-teal-700 hover:text-teal-800 bg-teal-50 hover:bg-teal-100 px-2 py-0.5 rounded-lg border border-teal-200 transition cursor-pointer"
+                          className="inline-flex items-center gap-1 text-[10px] font-bold text-teal-700 dark:text-teal-300 hover:text-teal-800 dark:hover:text-teal-200 bg-teal-50 dark:bg-teal-950/50 hover:bg-teal-100 dark:hover:bg-teal-900/50 px-2 py-0.5 rounded-lg border border-teal-200 dark:border-teal-800 transition cursor-pointer"
                           title="คืนค่ากลับเป็นรหัสอัตโนมัติตามลำดับสต็อก"
                         >
-                          <RefreshCw className="w-3 h-3 text-teal-600" />
+                          <RefreshCw className="w-3 h-3 text-teal-600 dark:text-teal-400" />
                           <span>คืนค่ารหัสอัตโนมัติ</span>
                         </button>
                       ) : (
                         <button
                           type="button"
                           onClick={() => setIsCustomCode(true)}
-                          className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 px-2 py-0.5 rounded-lg border border-amber-200 transition cursor-pointer"
+                          className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 dark:text-amber-300 hover:text-amber-800 dark:hover:text-amber-200 bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 dark:hover:bg-amber-900/50 px-2 py-0.5 rounded-lg border border-amber-200 dark:border-amber-800 transition cursor-pointer"
                           title="คลิกเพื่อปลดล็อคและกำหนดรหัสเอง"
                         >
-                          <Edit3 className="w-3 h-3 text-amber-600" />
+                          <Edit3 className="w-3 h-3 text-amber-600 dark:text-amber-400" />
                           <span>กำหนดรหัสเอง</span>
                         </button>
                       )}
@@ -468,17 +468,17 @@ export default function StockInPage() {
                         onChange={(e) => setForm({ ...form, assetCode: e.target.value })}
                         className={`w-full rounded-xl px-3 py-2 text-xs font-mono font-bold transition ${
                           !isCustomCode
-                            ? 'bg-teal-50/70 border border-teal-300 text-teal-900 cursor-not-allowed pr-14'
-                            : 'bg-white border-2 border-amber-400 text-slate-900 focus:ring-2 focus:ring-amber-500/20 pr-14'
+                            ? 'bg-teal-50/70 dark:bg-teal-950/40 border border-teal-300 dark:border-teal-800 text-teal-900 dark:text-teal-200 cursor-not-allowed pr-14'
+                            : 'bg-white dark:bg-slate-800 border-2 border-amber-400 dark:border-amber-500 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500/20 pr-14'
                         }`}
                       />
                       <div className="absolute right-2.5 top-2 pointer-events-none">
                         {!isCustomCode ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-teal-700 bg-teal-100/80 px-1.5 py-0.5 rounded">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-teal-700 dark:text-teal-300 bg-teal-100/80 dark:bg-teal-900/60 px-1.5 py-0.5 rounded">
                             <Lock className="w-2.5 h-2.5" /> Auto
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/60 px-1.5 py-0.5 rounded">
                             <Unlock className="w-2.5 h-2.5" /> กำหนดเอง
                           </span>
                         )}
@@ -486,20 +486,20 @@ export default function StockInPage() {
                     </div>
 
                     {!isCustomCode ? (
-                      <p className="text-[10px] text-teal-700 font-medium mt-1 flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3 flex-shrink-0 text-teal-600" />
+                      <p className="text-[10px] text-teal-700 dark:text-teal-400 font-medium mt-1 flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3 flex-shrink-0 text-teal-600 dark:text-teal-400" />
                         <span>ระบบสร้างรหัสอัตโนมัติให้อย่างถูกต้องตามลำดับสต็อก (ป้องกันข้อผิดพลาด)</span>
                       </p>
                     ) : (
-                      <p className="text-[10px] text-amber-700 font-medium mt-1 flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3 flex-shrink-0 text-amber-600" />
+                      <p className="text-[10px] text-amber-700 dark:text-amber-400 font-medium mt-1 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3 flex-shrink-0 text-amber-600 dark:text-amber-400" />
                         <span>กำลังกำหนดรหัสเอง กรุณาตรวจสอบไม่ให้ซ้ำกับอุปกรณ์ชิ้นอื่น</span>
                       </p>
                     )}
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                       เลขครุภัณฑ์ทางราชการ (Gov Asset Code) <span className="text-slate-400 font-normal">(ถ้ามี)</span>
                     </label>
                     <input
@@ -507,9 +507,9 @@ export default function StockInPage() {
                       placeholder="เช่น 7440-001-0001/2569 (ปล่อยว่างได้สำหรับวัสดุคงทน)"
                       value={form.govAssetCode}
                       onChange={(e) => setForm({ ...form, govAssetCode: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                     />
-                    <p className="text-[10px] text-slate-400 mt-1">
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
                       * หากเป็นวัสดุคงทน (เช่น ถาด, ชามรูปไต) ที่ไม่มีเลขครุภัณฑ์ราชการ สามารถเว้นว่างไว้ได้
                     </p>
                   </div>
@@ -518,7 +518,7 @@ export default function StockInPage() {
                 {/* 2. Sequence & Serial Number */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                       ลำดับของครุภัณฑ์/ชิ้น (เช่น เครื่องที่ 1, ใบที่ 2) *
                     </label>
                     <input
@@ -527,12 +527,12 @@ export default function StockInPage() {
                       required
                       value={form.sequenceNumber}
                       onChange={(e) => setForm({ ...form, sequenceNumber: Number(e.target.value) })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-teal-800 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-teal-800 dark:text-teal-300 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                       Serial Number (จากผู้ผลิต ถ้ามี)
                     </label>
                     <input
@@ -540,7 +540,7 @@ export default function StockInPage() {
                       placeholder="เช่น SN-ZOLL-8801"
                       value={form.serialNumber}
                       onChange={(e) => setForm({ ...form, serialNumber: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                     />
                   </div>
                 </div>
@@ -548,7 +548,7 @@ export default function StockInPage() {
                 {/* 3. Location & Received Date */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                       สถานที่จัดเก็บเฉพาะชิ้น (เก็บไว้ที่ไหน) *
                     </label>
                     <input
@@ -557,26 +557,26 @@ export default function StockInPage() {
                       placeholder="เช่น ตู้ฉุกเฉิน เสา C ห้อง Simulation Lab 1"
                       value={form.location}
                       onChange={(e) => setForm({ ...form, location: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                       วันที่รับเข้า (Received Date)
                     </label>
                     <input
                       type="date"
                       value={form.receivedDate}
                       onChange={(e) => setForm({ ...form, receivedDate: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                     />
                   </div>
                 </div>
 
                 {/* 4. Cost */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     ราคาจัดซื้อ / มูลค่าต่อเครื่อง (บาท)
                   </label>
                   <div className="relative">
@@ -586,7 +586,7 @@ export default function StockInPage() {
                       placeholder="เช่น 65000"
                       value={form.cost}
                       onChange={(e) => setForm({ ...form, cost: Number(e.target.value) })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 pl-7 text-xs font-bold text-emerald-700 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 pl-7 text-xs font-bold text-emerald-700 dark:text-emerald-400 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                     />
                     <span className="absolute left-2.5 top-2 text-slate-400 text-xs font-bold">฿</span>
                   </div>
@@ -594,7 +594,7 @@ export default function StockInPage() {
 
                 {/* 5. Image URL */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     ลิงก์รูปภาพครุภัณฑ์ (รองรับ Google Drive Share Link)
                   </label>
                   <input
@@ -602,9 +602,9 @@ export default function StockInPage() {
                     placeholder="แปะลิงก์รูปภาพ เช่น https://drive.google.com/file/d/... หรือ URL รูปภาพ"
                     value={form.imageUrl}
                     onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                   />
-                  <p className="text-[10px] text-slate-400 mt-1">
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
                     * สามารถคัดลอกลิงก์แชร์จาก Google Drive มาวางได้ทันที ระบบจะแปลงและแสดงรูปภาพให้อัตโนมัติ
                   </p>
                 </div>
@@ -612,7 +612,7 @@ export default function StockInPage() {
             )}
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                 หมายเหตุการรับเข้า
               </label>
               <textarea
@@ -620,7 +620,7 @@ export default function StockInPage() {
                 placeholder="เลขที่ใบส่งของ หรือรายละเอียดการตรวจรับ"
                 value={form.note}
                 onChange={(e) => setForm({ ...form, note: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
               />
             </div>
 
@@ -648,39 +648,39 @@ export default function StockInPage() {
 
         {/* Info Column (1 Col) */}
         <div className="space-y-6">
-          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-1.5">
-              <Clock className="w-4 h-4 text-teal-600" />
+          <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3 flex items-center gap-1.5">
+              <Clock className="w-4 h-4 text-teal-600 dark:text-teal-400" />
               ประวัติรับเข้าล่าสุด (Recent Stock-ins)
             </h4>
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-slate-100 dark:divide-slate-800">
               {recentTransactions.map((tx: any) => (
                 <div key={tx.id} className="py-2.5">
-                  <div className="text-xs font-bold text-slate-900">{tx.item?.name}</div>
-                  <div className="flex items-center justify-between mt-1 text-[11px] text-slate-500">
+                  <div className="text-xs font-bold text-slate-900 dark:text-slate-100">{tx.item?.name}</div>
+                  <div className="flex items-center justify-between mt-1 text-[11px] text-slate-500 dark:text-slate-400">
                     <span>
                       +{tx.quantity} {tx.item?.unit}
                     </span>
-                    <span className="font-bold text-emerald-600">
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400">
                       ฿{tx.totalCost.toFixed(2)} บาท
                     </span>
                   </div>
-                  <div className="text-[10px] text-slate-400 mt-0.5">
+                  <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
                     {new Date(tx.createdAt).toLocaleDateString('th-TH')} | {tx.note}
                   </div>
                 </div>
               ))}
               {recentTransactions.length === 0 && (
-                <div className="py-4 text-center text-xs text-slate-400">
+                <div className="py-4 text-center text-xs text-slate-400 dark:text-slate-500">
                   ยังไม่มีประวัติการรับเข้า
                 </div>
               )}
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-teal-50 border border-teal-100 text-xs text-teal-900 space-y-2">
+          <div className="p-4 rounded-2xl bg-teal-50 dark:bg-teal-950/40 border border-teal-100 dark:border-teal-800 text-xs text-teal-900 dark:text-teal-200 space-y-2">
             <h5 className="font-bold">หลักการ FIFO ในการเบิกจ่าย</h5>
-            <p className="text-[11px] leading-relaxed text-teal-800">
+            <p className="text-[11px] leading-relaxed text-teal-800 dark:text-teal-300">
               เมื่อมีการขอเบิกวัสดุสิ้นเปลืองสำหรับรายวิชา ระบบจะเลือกตัดสต็อกและคำนวณต้นทุนจาก <strong>Lot ที่มีวันหมดอายุเร็วที่สุดก่อนโดยอัตโนมัติ (First-In, First-Out)</strong> เพื่อให้การคิดต้นทุนรายวิชาแม่นยำตรงกับของที่ใช้จริง
             </p>
           </div>

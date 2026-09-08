@@ -660,24 +660,24 @@ export default function PracticeKitsPage() {
       {/* ========================================================================= */}
       {prepareTargetKit && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
-          <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-800 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600">
+                <div className="w-10 h-10 rounded-2xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 flex items-center justify-center text-amber-600 dark:text-amber-400">
                   <Zap className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-900 text-base">
+                  <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">
                     จัดเตรียมชุดสำหรับคาบเรียน (Prepare for Class)
                   </h3>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     ตัดสต็อกวัสดุสิ้นเปลือง/Repack อัตโนมัติ (FIFO) พร้อมออกใบตรวจรับอุปกรณ์
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setPrepareTargetKit(null)}
-                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -685,12 +685,12 @@ export default function PracticeKitsPage() {
 
             <form onSubmit={handleSubmitPrepare} className="space-y-4">
               {/* Kit Info */}
-              <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl flex items-center justify-between">
+              <div className="p-3.5 bg-slate-50 dark:bg-slate-850 border border-slate-200/80 dark:border-slate-750 rounded-2xl flex items-center justify-between">
                 <div>
-                  <span className="text-[10px] font-mono font-bold text-teal-700 bg-teal-50 px-2 py-0.5 rounded border border-teal-200/60">
+                  <span className="text-[10px] font-mono font-bold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/50 px-2 py-0.5 rounded border border-teal-200/60 dark:border-teal-800">
                     {prepareTargetKit.code}
                   </span>
-                  <div className="font-bold text-slate-900 text-xs mt-1">
+                  <div className="font-bold text-slate-900 dark:text-slate-100 text-xs mt-1">
                     {prepareTargetKit.name}
                   </div>
                 </div>
@@ -924,24 +924,24 @@ export default function PracticeKitsPage() {
       {/* ========================================================================= */}
       {showEditModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] overflow-y-auto flex flex-col">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-800 space-y-4 max-h-[90vh] overflow-y-auto flex flex-col">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600">
+                <div className="w-10 h-10 rounded-2xl bg-teal-50 dark:bg-teal-950/50 border border-teal-100 dark:border-teal-800 flex items-center justify-center text-teal-600 dark:text-teal-400">
                   <Edit3 className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-900 text-base">
+                  <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">
                     แก้ไขชุดฝึกปฏิบัติการ (Edit Practice Kit)
                   </h3>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     ปรับปรุงชื่อ รายวิชา และส่วนประกอบวัสดุย่อยในชุดฝึก
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setShowEditModal(false)}
-                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -950,90 +950,84 @@ export default function PracticeKitsPage() {
             <form onSubmit={handleUpdateKit} className="space-y-4 flex-1">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     ชื่อชุดฝึกปฏิบัติการ *
                   </label>
                   <input
                     type="text"
                     value={editForm.name}
                     onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500"
                     required
                   />
                 </div>
-
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">รหัสชุด</label>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    รหัสชุด *
+                  </label>
                   <input
                     type="text"
                     value={editForm.code}
-                    disabled
-                    className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono text-slate-500"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    หมวดหมู่หัตถการ
-                  </label>
-                  <input
-                    type="text"
-                    value={editForm.category}
-                    onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs"
+                    onChange={(e) => setEditForm({ ...editForm, code: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500"
                     required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    รายวิชาที่ใช้บ่อย
-                  </label>
-                  <input
-                    type="text"
-                    value={editForm.targetCourse}
-                    onChange={(e) => setEditForm({ ...editForm, targetCourse: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  รายละเอียด / หัตถการที่ใช้
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  รายวิชาที่เกี่ยวข้อง
+                </label>
+                <select
+                  value={editForm.targetCourse}
+                  onChange={(e) => setEditForm({ ...editForm, targetCourse: e.target.value })}
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500"
+                >
+                  <option value="">-- ไม่ระบุรายวิชา (ใช้ได้ทั่วไป) --</option>
+                  {courses.map((c) => (
+                    <option key={c.id} value={`${c.code} ${c.name}`}>
+                      {c.code} - {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  คำอธิบายเพิ่มเติม
                 </label>
                 <textarea
                   rows={2}
                   value={editForm.description}
                   onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500"
                 />
               </div>
 
-              {/* Edit Components in Kit */}
-              <div className="space-y-2 pt-2 border-t border-slate-100">
+              {/* Items in Kit */}
+              <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-slate-800">
-                    รายการอุปกรณ์และเวชภัณฑ์ในชุด (ต่อ 1 เซ็ต) *
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                    รายการอุปกรณ์และวัสดุในชุด (Components) *
                   </label>
                   <button
                     type="button"
                     onClick={handleAddEditItemRow}
-                    className="inline-flex items-center gap-1 text-xs font-bold text-teal-600 hover:text-teal-700 cursor-pointer"
+                    className="inline-flex items-center gap-1 text-xs font-bold text-teal-600 dark:text-teal-400 hover:text-teal-700 cursor-pointer"
                   >
-                    <Plus className="w-3.5 h-3.5" /> เพิ่มส่วนประกอบ
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>เพิ่มรายการ</span>
                   </button>
                 </div>
 
-                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                <div className="space-y-2">
                   {editForm.items.map((row, idx) => (
                     <div
                       key={idx}
-                      className="flex items-center gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200/80"
+                      className="flex items-center gap-2 p-2.5 bg-slate-50 dark:bg-slate-850 rounded-xl border border-slate-200/80 dark:border-slate-750"
                     >
-                      <div className="flex-1 grid grid-cols-1 sm:grid-cols-12 gap-1.5">
+                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-1.5 flex-1">
                         <div className="sm:col-span-5">
                           <select
                             value={(row as any).categoryId || ''}
@@ -1049,7 +1043,7 @@ export default function PracticeKitsPage() {
                               }
                               setEditForm({ ...editForm, items: updated });
                             }}
-                            className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-700"
+                            className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-700 dark:text-slate-300"
                           >
                             <option value="">-- ทุกหมวดหมู่ --</option>
                             {(() => {
@@ -1073,7 +1067,7 @@ export default function PracticeKitsPage() {
                               if (it?.category?.id) (updated[idx] as any).categoryId = it.category.id;
                               setEditForm({ ...editForm, items: updated });
                             }}
-                            className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium"
+                            className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg px-2.5 py-1.5 text-xs font-medium"
                             required
                           >
                             <option value="">-- กรุณาเลือกรายการ --</option>
@@ -1098,7 +1092,7 @@ export default function PracticeKitsPage() {
                             updated[idx].quantity = Math.max(1, parseInt(e.target.value) || 1);
                             setEditForm({ ...editForm, items: updated });
                           }}
-                          className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-center text-xs font-bold"
+                          className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg px-2 py-1.5 text-center text-xs font-bold"
                           placeholder="จำนวน"
                           required
                         />
@@ -1144,12 +1138,12 @@ export default function PracticeKitsPage() {
       {/* ========================================================================= */}
       {prepChecklist && (
         <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-100 space-y-5 max-h-[92vh] overflow-y-auto print:max-w-none print:shadow-none print:border-none print:p-0">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-100 dark:border-slate-800 space-y-5 max-h-[92vh] overflow-y-auto print:bg-white print:text-black print:max-w-none print:shadow-none print:border-none print:p-0">
             {/* Action Bar (Hidden on Print) */}
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 print:hidden">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 print:hidden">
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                <span className="font-bold text-slate-800 text-sm">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                <span className="font-bold text-slate-800 dark:text-slate-100 text-sm">
                   ตัดสต็อกและจัดเตรียมชุดฝึกสำเร็จ!
                 </span>
               </div>
@@ -1163,7 +1157,7 @@ export default function PracticeKitsPage() {
                 </button>
                 <button
                   onClick={() => setPrepChecklist(null)}
-                  className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                  className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -1171,26 +1165,26 @@ export default function PracticeKitsPage() {
             </div>
 
             {/* Printable Document Container */}
-            <div className="space-y-4 text-slate-800 print:text-black">
+            <div className="space-y-4 text-slate-800 dark:text-slate-100 print:text-black">
               {/* Header */}
-              <div className="text-center space-y-1 pb-3 border-b-2 border-slate-800">
+              <div className="text-center space-y-1 pb-3 border-b-2 border-slate-800 dark:border-slate-600 print:border-black">
                 <h2 className="text-lg font-bold">
                   คณะพยาบาลศาสตร์ / วิทยาลัยพยาบาล
                 </h2>
-                <h3 className="text-sm font-semibold text-slate-600 print:text-black">
+                <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-300 print:text-black">
                   ใบรายการจัดเตรียมและตรวจรับชุดฝึกปฏิบัติการ (Practice Kit Preparation Checklist)
                 </h3>
-                <div className="flex items-center justify-center gap-4 text-xs font-mono text-slate-500 pt-1">
+                <div className="flex items-center justify-center gap-4 text-xs font-mono text-slate-500 dark:text-slate-400 print:text-black pt-1">
                   <span>เลขที่เอกสาร: <b>{prepChecklist.prepReference}</b></span>
                   <span>วันที่: <b>{new Date(prepChecklist.preparedAt).toLocaleString('th-TH')}</b></span>
                 </div>
               </div>
 
               {/* Kit & Course Details */}
-              <div className="grid grid-cols-2 gap-3 text-xs bg-slate-50 p-3 rounded-xl border border-slate-200 print:bg-transparent print:border-slate-400">
+              <div className="grid grid-cols-2 gap-3 text-xs bg-slate-50 dark:bg-slate-850 p-3 rounded-xl border border-slate-200 dark:border-slate-700 print:bg-transparent print:border-slate-400">
                 <div>
-                  <span className="text-slate-500">ชุดฝึกปฏิบัติการ:</span>{' '}
-                  <b className="text-slate-900 font-bold">{prepChecklist.kit.name} ({prepChecklist.kit.code})</b>
+                  <span className="text-slate-500 dark:text-slate-400 print:text-black">ชุดฝึกปฏิบัติการ:</span>{' '}
+                  <b className="text-slate-900 dark:text-slate-100 print:text-black font-bold">{prepChecklist.kit.name} ({prepChecklist.kit.code})</b>
                 </div>
                 <div>
                   <span className="text-slate-500">จำนวนที่จัดเตรียม:</span>{' '}
@@ -1310,24 +1304,24 @@ export default function PracticeKitsPage() {
       {/* ========================================================================= */}
       {requestTargetKit && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-800 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600">
+                <div className="w-10 h-10 rounded-2xl bg-teal-50 dark:bg-teal-950/40 border border-teal-100 dark:border-teal-800/60 flex items-center justify-center text-teal-600 dark:text-teal-400">
                   <BriefcaseMedical className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-900 text-sm sm:text-base">
+                  <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm sm:text-base">
                     ยื่นคำขอชุดฝึกปฏิบัติการ (Quick Request)
                   </h3>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     {requestTargetKit.name}
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setRequestTargetKit(null)}
-                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1335,10 +1329,10 @@ export default function PracticeKitsPage() {
 
             <form onSubmit={handleSubmitQuickRequest} className="space-y-4">
               {/* Number of Kits */}
-              <div className="p-3.5 bg-teal-50/70 border border-teal-100 rounded-2xl flex items-center justify-between gap-4">
+              <div className="p-3.5 bg-teal-50/70 dark:bg-teal-950/30 border border-teal-100 dark:border-teal-900/60 rounded-2xl flex items-center justify-between gap-4">
                 <div>
-                  <div className="text-xs font-bold text-teal-900">จำนวนชุดที่ต้องการขอเบิก/ยืม</div>
-                  <div className="text-[11px] text-teal-700">สต็อกพร้อมจัดได้สูงสุด: {requestTargetKit.maxAvailableKits} ชุด</div>
+                  <div className="text-xs font-bold text-teal-900 dark:text-teal-200">จำนวนชุดที่ต้องการขอเบิก/ยืม</div>
+                  <div className="text-[11px] text-teal-700 dark:text-teal-300">สต็อกพร้อมจัดได้สูงสุด: {requestTargetKit.maxAvailableKits} ชุด</div>
                 </div>
                 <div className="w-24">
                   <input
@@ -1352,7 +1346,7 @@ export default function PracticeKitsPage() {
                         setsRequested: Math.max(1, parseInt(e.target.value) || 1),
                       })
                     }
-                    className="w-full bg-white border border-teal-200 rounded-xl px-2.5 py-1.5 text-center font-bold text-sm text-teal-900 focus:ring-2 focus:ring-teal-500"
+                    className="w-full bg-white dark:bg-slate-950 border border-teal-200 dark:border-teal-800 rounded-xl px-2.5 py-1.5 text-center font-bold text-sm text-teal-900 dark:text-teal-100 focus:ring-2 focus:ring-teal-500"
                     required
                   />
                 </div>
@@ -1361,13 +1355,13 @@ export default function PracticeKitsPage() {
               {/* Course & Advisor */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     สำหรับรายวิชา
                   </label>
                   <select
                     value={requestForm.courseId}
                     onChange={(e) => setRequestForm({ ...requestForm, courseId: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-teal-500"
                     required
                   >
                     <option value="">-- กรุณาเลือกรายวิชาที่นำชุดไปใช้ --</option>
@@ -1380,7 +1374,7 @@ export default function PracticeKitsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     อาจารย์ผู้สอน / ที่ปรึกษา
                   </label>
                   <input
@@ -1388,7 +1382,7 @@ export default function PracticeKitsPage() {
                     placeholder="ระบุชื่ออาจารย์ที่รับทราบ"
                     value={requestForm.advisorName}
                     onChange={(e) => setRequestForm({ ...requestForm, advisorName: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-teal-500"
                   />
                 </div>
               </div>
@@ -1396,20 +1390,20 @@ export default function PracticeKitsPage() {
               {/* Dates */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     วันและเวลาที่ต้องการใช้
                   </label>
                   <input
                     type="datetime-local"
                     value={requestForm.borrowDate}
                     onChange={(e) => setRequestForm({ ...requestForm, borrowDate: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-teal-500"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     กำหนดส่งคืนครุภัณฑ์
                   </label>
                   <input
@@ -1418,7 +1412,7 @@ export default function PracticeKitsPage() {
                     onChange={(e) =>
                       setRequestForm({ ...requestForm, expectedReturnDate: e.target.value })
                     }
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-teal-500"
                     required
                   />
                 </div>
@@ -1426,7 +1420,7 @@ export default function PracticeKitsPage() {
 
               {/* Purpose */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   วัตถุประสงค์ / หัวข้อการฝึกปฏิบัติ
                 </label>
                 <textarea
@@ -1434,16 +1428,16 @@ export default function PracticeKitsPage() {
                   placeholder="เช่น ฝึกทำแผลผ่าตัดช่องท้อง กลุ่ม 1-5"
                   value={requestForm.purpose}
                   onChange={(e) => setRequestForm({ ...requestForm, purpose: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-teal-500"
                   required
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setRequestTargetKit(null)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 transition cursor-pointer"
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
                 >
                   ยกเลิก
                 </button>
@@ -1467,24 +1461,24 @@ export default function PracticeKitsPage() {
       {/* ========================================================================= */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] overflow-y-auto flex flex-col">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-800 space-y-4 max-h-[90vh] overflow-y-auto flex flex-col">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600">
+                <div className="w-10 h-10 rounded-2xl bg-teal-50 dark:bg-teal-950/40 border border-teal-100 dark:border-teal-800/60 flex items-center justify-center text-teal-600 dark:text-teal-400">
                   <Plus className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-900 text-base">
+                  <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">
                     สร้างชุดฝึกปฏิบัติการใหม่ (New Practice Kit)
                   </h3>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     เลือกเครื่องมือ ครุภัณฑ์ และวัสดุย่อยที่ Repack แล้วมารวมเป็นชุดหัตถการมาตรฐาน
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setShowCreateModal(false)}
-                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1493,7 +1487,7 @@ export default function PracticeKitsPage() {
             <form onSubmit={handleCreateKit} className="space-y-4 flex-1">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     ชื่อชุดฝึกปฏิบัติการ *
                   </label>
                   <input
@@ -1501,13 +1495,13 @@ export default function PracticeKitsPage() {
                     placeholder="เช่น ชุดฝึกปฏิบัติการทำแผลปราศจากเชื้อ (Dressing Set)"
                     value={kitForm.name}
                     onChange={(e) => setKitForm({ ...kitForm, name: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-teal-500"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     รหัสชุด (เว้นว่างเพื่อสร้างอัตโนมัติ)
                   </label>
                   <input
@@ -1515,14 +1509,14 @@ export default function PracticeKitsPage() {
                     placeholder="KIT-DRESSING-01"
                     value={kitForm.code}
                     onChange={(e) => setKitForm({ ...kitForm, code: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono uppercase"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-mono uppercase text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-teal-500"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     หมวดหมู่หัตถการ
                   </label>
                   <input
@@ -1530,13 +1524,13 @@ export default function PracticeKitsPage() {
                     placeholder="เช่น หัตถการพื้นฐาน, การดูแลผู้ป่วยวิกฤต"
                     value={kitForm.category}
                     onChange={(e) => setKitForm({ ...kitForm, category: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-teal-500"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     รายวิชาที่ใช้บ่อย (ถ้ามี)
                   </label>
                   <input
@@ -1544,13 +1538,13 @@ export default function PracticeKitsPage() {
                     placeholder="เช่น NUR2101 การพยาบาลพื้นฐาน"
                     value={kitForm.targetCourse}
                     onChange={(e) => setKitForm({ ...kitForm, targetCourse: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-teal-500"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   รายละเอียด / หัตถการที่ใช้
                 </label>
                 <textarea
@@ -1558,20 +1552,20 @@ export default function PracticeKitsPage() {
                   placeholder="เช่น ใช้สำหรับฝึกหัตถการการทำแผลแห้งและแผลเปียก"
                   value={kitForm.description}
                   onChange={(e) => setKitForm({ ...kitForm, description: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-teal-500"
                 />
               </div>
 
               {/* Item Components in Kit with Repack labels */}
-              <div className="space-y-2 pt-2 border-t border-slate-100">
+              <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-slate-800">
+                  <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
                     รายการอุปกรณ์และเวชภัณฑ์ในชุด (ต่อ 1 เซ็ต) *
                   </label>
                   <button
                     type="button"
                     onClick={handleAddKitItemRow}
-                    className="inline-flex items-center gap-1 text-xs font-bold text-teal-600 hover:text-teal-700 cursor-pointer"
+                    className="inline-flex items-center gap-1 text-xs font-bold text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" /> เพิ่มส่วนประกอบ
                   </button>
@@ -1581,7 +1575,7 @@ export default function PracticeKitsPage() {
                   {kitForm.items.map((row, idx) => (
                     <div
                       key={idx}
-                      className="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200/80"
+                      className="flex items-center gap-2 bg-slate-50 dark:bg-slate-950/60 p-2 rounded-xl border border-slate-200/80 dark:border-slate-800"
                     >
                       <div className="flex-1 grid grid-cols-1 sm:grid-cols-12 gap-1.5">
                         <div className="sm:col-span-5">
@@ -1599,7 +1593,7 @@ export default function PracticeKitsPage() {
                               }
                               setKitForm({ ...kitForm, items: updated });
                             }}
-                            className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-700"
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-700 dark:text-slate-300"
                           >
                             <option value="">-- ทุกหมวดหมู่ --</option>
                             {(() => {
@@ -1623,7 +1617,7 @@ export default function PracticeKitsPage() {
                               if (it?.category?.id) (updated[idx] as any).categoryId = it.category.id;
                               setKitForm({ ...kitForm, items: updated });
                             }}
-                            className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium"
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-800 dark:text-slate-200"
                             required
                           >
                             <option value="">-- กรุณาเลือกรายการ --</option>
@@ -1648,7 +1642,7 @@ export default function PracticeKitsPage() {
                             updated[idx].quantity = Math.max(1, parseInt(e.target.value) || 1);
                             setKitForm({ ...kitForm, items: updated });
                           }}
-                          className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-center text-xs font-bold"
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-center text-xs font-bold text-slate-800 dark:text-slate-200"
                           placeholder="จำนวน"
                           required
                         />
@@ -1658,7 +1652,7 @@ export default function PracticeKitsPage() {
                         <button
                           type="button"
                           onClick={() => handleRemoveKitItemRow(idx)}
-                          className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition cursor-pointer"
+                          className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/30 transition cursor-pointer"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -1668,11 +1662,11 @@ export default function PracticeKitsPage() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 transition cursor-pointer"
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
                 >
                   ยกเลิก
                 </button>

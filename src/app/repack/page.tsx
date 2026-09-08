@@ -303,53 +303,53 @@ export default function RepackPage() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 print:hidden">
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
-          <div className="text-[11px] font-semibold text-slate-500 flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+          <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 flex items-center justify-between">
             <span>บันทึกการแบ่งบรรจุทั้งหมด</span>
             <PackageCheck className="w-4 h-4 text-teal-500" />
           </div>
-          <div className="text-xl font-black text-slate-900 mt-1">
+          <div className="text-xl font-black text-slate-900 dark:text-slate-100 mt-1">
             {records.length}{' '}
-            <span className="text-xs font-normal text-slate-500">รอบ</span>
+            <span className="text-xs font-normal text-slate-500 dark:text-slate-400">รอบ</span>
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
-          <div className="text-[11px] font-semibold text-slate-500 flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+          <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 flex items-center justify-between">
             <span>ซองย่อยที่ผลิตได้รวม</span>
             <Layers className="w-4 h-4 text-emerald-500" />
           </div>
-          <div className="text-xl font-black text-emerald-700 mt-1">
+          <div className="text-xl font-black text-emerald-700 dark:text-emerald-400 mt-1">
             {records.reduce((sum, r) => sum + (r.totalPacksProduced || 0), 0).toLocaleString()}{' '}
-            <span className="text-xs font-normal text-slate-500">ซองย่อย</span>
+            <span className="text-xs font-normal text-slate-500 dark:text-slate-400">ซองย่อย</span>
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
-          <div className="text-[11px] font-semibold text-slate-500 flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+          <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 flex items-center justify-between">
             <span>เวชภัณฑ์ที่พร้อมนำมาแพ็ค</span>
             <Boxes className="w-4 h-4 text-blue-500" />
           </div>
-          <div className="text-xl font-black text-blue-700 mt-1">
+          <div className="text-xl font-black text-blue-700 dark:text-blue-400 mt-1">
             {consumableItems.length}{' '}
-            <span className="text-xs font-normal text-slate-500">รายการ</span>
+            <span className="text-xs font-normal text-slate-500 dark:text-slate-400">รายการ</span>
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
-          <div className="text-[11px] font-semibold text-slate-500 flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+          <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 flex items-center justify-between">
             <span>มาตรฐานการสเตอร์ไรด์</span>
             <Flame className="w-4 h-4 text-amber-500" />
           </div>
-          <div className="text-sm font-bold text-slate-800 mt-1">
+          <div className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-1">
             Autoclave 121°C / ETO
           </div>
-          <div className="text-[10px] text-slate-400 mt-0.5">ปราศจากเชื้อตามมาตรฐาน CSSD</div>
+          <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">ปราศจากเชื้อตามมาตรฐาน CSSD</div>
         </div>
       </div>
 
       {/* Search Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between gap-4 print:hidden">
+      <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between gap-4 print:hidden">
         <div className="relative w-full sm:w-96">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
@@ -357,16 +357,16 @@ export default function RepackPage() {
             placeholder="ค้นหาเลขที่บันทึก, รหัส Sub-lot, รหัสซองย่อย, ชื่อเวชภัณฑ์..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+            className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 rounded-xl text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
           />
         </div>
       </div>
 
       {/* Repack History Table */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden print:border-slate-300">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden print:border-slate-300">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-600">
-            <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold uppercase text-[10px] tracking-wider">
+          <table className="w-full text-left text-xs text-slate-600 dark:text-slate-300">
+            <thead className="bg-slate-50 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-bold uppercase text-[10px] tracking-wider">
               <tr>
                 <th className="py-3 px-4">รหัสบันทึก / วันที่แพ็ค</th>
                 <th className="py-3 px-4">เวชภัณฑ์ต้นทาง</th>
@@ -525,20 +525,20 @@ export default function RepackPage() {
       {/* ========================================================================= */}
       {selectedRecordForPacks && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-800 space-y-4 max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600">
+                <div className="w-10 h-10 rounded-2xl bg-teal-50 dark:bg-teal-950/60 border border-teal-100 dark:border-teal-800/60 flex items-center justify-center text-teal-600 dark:text-teal-400">
                   <ListOrdered className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                  <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base flex items-center gap-2">
                     <span>รายการซองย่อยในล็อต</span>
-                    <span className="font-mono text-xs bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded border border-emerald-200">
+                    <span className="font-mono text-xs bg-emerald-50 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
                       {selectedRecordForPacks.subLotNumber}
                     </span>
                   </h3>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     {selectedRecordForPacks.sourceItem?.name} | ผลิตได้ทั้งหมด {selectedRecordForPacks.totalPacksProduced} ซอง (ซองละ {selectedRecordForPacks.unitsPerPack} {selectedRecordForPacks.sourceItem?.usageUnit || 'ชิ้น'})
                   </p>
                 </div>
@@ -670,17 +670,17 @@ export default function RepackPage() {
       {/* ========================================================================= */}
       {showModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] overflow-y-auto flex flex-col">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-800 space-y-4 max-h-[90vh] overflow-y-auto flex flex-col">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600">
+                <div className="w-10 h-10 rounded-2xl bg-teal-50 dark:bg-teal-950/60 border border-teal-100 dark:border-teal-800/60 flex items-center justify-center text-teal-600 dark:text-teal-400">
                   <Scissors className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-900 text-base">
+                  <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">
                     บันทึกการแบ่งบรรจุเวชภัณฑ์ย่อย (Sub-packaging & Sterilization)
                   </h3>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     เบิกจากห่อใหญ่/ถุงใหญ่ ตัดสต็อกเดิม และสร้าง Sub-lot ปราศจากเชื้อใหม่พร้อมสร้างรหัสรายซองอัตโนมัติ
                   </p>
                 </div>
@@ -711,7 +711,7 @@ export default function RepackPage() {
                     <select
                       value={form.sourceItemId}
                       onChange={(e) => handleSourceItemChange(e.target.value)}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500 font-medium"
+                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500 font-medium"
                       required
                     >
                       <option value="">-- เลือกเวชภัณฑ์ที่มีในสต็อก --</option>
@@ -724,13 +724,13 @@ export default function RepackPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                       เลือกล็อตเดิมของโรงงาน *
                     </label>
                     <select
                       value={form.sourceLotId}
                       onChange={(e) => setForm({ ...form, sourceLotId: e.target.value })}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500 font-medium"
+                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500 font-medium"
                       required
                       disabled={!selectedSourceItem}
                     >
@@ -812,7 +812,7 @@ export default function RepackPage() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  <div className="bg-white p-3 rounded-xl border border-teal-100 shadow-sm">
+                  <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-teal-100 dark:border-teal-900/60 shadow-sm">
                     <label className="block text-xs font-bold text-slate-700 mb-1">
                       1. เบิกออกมากี่{selectedSourceItem?.unit || 'กล่อง'} ? *
                     </label>
@@ -826,17 +826,17 @@ export default function RepackPage() {
                           const val = Math.max(1, parseInt(e.target.value) || 1);
                           handleCalcPacks(val, form.unitsPerPack);
                         }}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-base font-black text-center text-slate-900 focus:bg-white focus:ring-2 focus:ring-teal-500"
+                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-base font-black text-center text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-teal-500"
                         required
                       />
-                      <span className="text-xs font-bold text-slate-600 whitespace-nowrap min-w-[3rem]">
+                      <span className="text-xs font-bold text-slate-600 dark:text-slate-300 whitespace-nowrap min-w-[3rem]">
                         {selectedSourceItem?.unit || 'กล่อง'}
                       </span>
                     </div>
                   </div>
 
-                  <div className="bg-white p-3 rounded-xl border border-teal-100 shadow-sm">
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-teal-100 dark:border-teal-900/60 shadow-sm">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                       2. แพ็คซองละกี่{form.customUsageUnit || selectedSourceItem?.usageUnit || 'คู่/ชิ้น'} ? *
                     </label>
                     <div className="flex items-center gap-2">
@@ -848,10 +848,10 @@ export default function RepackPage() {
                           const val = Math.max(1, parseInt(e.target.value) || 1);
                           handleCalcPacks(form.sourceQtyUsed, val);
                         }}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-base font-black text-center text-teal-800 focus:bg-white focus:ring-2 focus:ring-teal-500"
+                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-base font-black text-center text-teal-800 dark:text-teal-300 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-teal-500"
                         required
                       />
-                      <span className="text-xs font-bold text-slate-600 whitespace-nowrap min-w-[3rem]">
+                      <span className="text-xs font-bold text-slate-600 dark:text-slate-300 whitespace-nowrap min-w-[3rem]">
                         {form.customUsageUnit || selectedSourceItem?.usageUnit || 'คู่/ชิ้น'}
                       </span>
                     </div>
@@ -859,7 +859,7 @@ export default function RepackPage() {
                 </div>
 
                 {/* Live calculation banner */}
-                <div className="p-3 bg-white rounded-xl border-2 border-emerald-400/80 shadow-sm flex items-center justify-between">
+                <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border-2 border-emerald-400/80 dark:border-emerald-600/80 shadow-sm flex items-center justify-between">
                   <div>
                     <div className="text-[11px] text-slate-500">
                       รวมเนื้อเวชภัณฑ์ที่นำมาแพ็ค: <b className="text-slate-800">{form.sourceQtyUsed * (form.customRatio || 1)}</b> {form.customUsageUnit || selectedSourceItem?.usageUnit || 'หน่วย'}
@@ -897,7 +897,7 @@ export default function RepackPage() {
                     <select
                       value={form.sterilizeMethod}
                       onChange={(e) => setForm({ ...form, sterilizeMethod: e.target.value })}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-medium"
+                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl px-2.5 py-1.5 text-xs font-medium"
                     >
                       <option value="Autoclave ไอน้ำแรงดันสูง (121°C)">Autoclave ไอน้ำแรงดันสูง (121°C)</option>
                       <option value="ก๊าซเอทิลีนออกไซด์ (ETO Gas)">ก๊าซเอทิลีนออกไซด์ (ETO Gas)</option>
@@ -907,27 +907,27 @@ export default function RepackPage() {
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                    <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
                       วันที่แบ่งบรรจุ / อบ
                     </label>
                     <input
                       type="date"
                       value={form.packedDate}
                       onChange={(e) => setForm({ ...form, packedDate: e.target.value })}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-medium"
+                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl px-2.5 py-1.5 text-xs font-medium"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-emerald-800 mb-1">
+                    <label className="block text-[11px] font-bold text-emerald-800 dark:text-emerald-300 mb-1">
                       วันหมดอายุความปลอดเชื้อ
                     </label>
                     <input
                       type="date"
                       value={form.sterileExpiryDate}
                       onChange={(e) => setForm({ ...form, sterileExpiryDate: e.target.value })}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-emerald-800"
+                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-300"
                     />
                   </div>
                 </div>
@@ -970,15 +970,15 @@ export default function RepackPage() {
       {/* ========================================================================= */}
       {selectedRecordForLabel && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 print:hidden">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-800 space-y-4 max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 print:hidden">
               <div className="flex items-center gap-2">
-                <Tag className="w-5 h-5 text-teal-600" />
+                <Tag className="w-5 h-5 text-teal-600 dark:text-teal-400" />
                 <div>
-                  <h3 className="font-bold text-slate-900 text-base">
+                  <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">
                     พิมพ์สติกเกอร์ฉลากซองเวชภัณฑ์ปราศจากเชื้อ (Sterile Label)
                   </h3>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     เลือกรูปแบบการพิมพ์สำหรับติดหน้าซองเวชภัณฑ์
                   </p>
                 </div>
@@ -1277,24 +1277,24 @@ export default function RepackPage() {
       {/* Enlarged QR Code Preview Modal for Screen Scanning */}
       {previewQrModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-100 text-center space-y-4 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-100 dark:border-slate-800 text-center space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 สแกน QR ผ่านหน้าจอ
               </span>
               <button
                 onClick={() => setPreviewQrModal(null)}
-                className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div>
-              <h4 className="text-sm font-black text-slate-900 line-clamp-2">
+              <h4 className="text-sm font-black text-slate-900 dark:text-slate-100 line-clamp-2">
                 {previewQrModal.name}
               </h4>
-              <p className="font-mono font-bold text-xs text-teal-800 mt-0.5">
+              <p className="font-mono font-bold text-xs text-teal-800 dark:text-teal-300 mt-0.5">
                 {previewQrModal.code}
               </p>
             </div>

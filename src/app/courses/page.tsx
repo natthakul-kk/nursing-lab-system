@@ -69,10 +69,10 @@ export default function CoursesPage() {
 
   if (currentUser?.role === 'USER' && !isTeacher) {
     return (
-      <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center max-w-md mx-auto space-y-3">
+      <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 text-center max-w-md mx-auto space-y-3 shadow-sm">
         <ShieldAlert className="w-12 h-12 text-amber-500 mx-auto" />
-        <h3 className="text-base font-bold text-slate-800">ไม่มีสิทธิ์เข้าถึงหน้านี้</h3>
-        <p className="text-xs text-slate-500">
+        <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">ไม่มีสิทธิ์เข้าถึงหน้านี้</h3>
+        <p className="text-xs text-slate-500 dark:text-slate-400">
           หน้ารายงานต้นทุนวัสดุตามรายวิชาสงวนไว้สำหรับเจ้าหน้าที่ คณาจารย์ผู้สอน และผู้บริหารเท่านั้น
         </p>
       </div>

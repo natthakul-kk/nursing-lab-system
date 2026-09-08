@@ -643,7 +643,7 @@ export default function InventoryPage() {
           <div className="flex items-center gap-2.5 flex-wrap">
             <button
               onClick={handleOpenAddCategory}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold shadow-sm transition cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 text-xs font-bold shadow-sm transition cursor-pointer"
               title="จัดการหมวดหมู่พัสดุ (เพิ่ม, แก้ไขชื่อ, ลบหมวดหมู่)"
             >
               <Folder className="w-4 h-4 text-teal-600" />
@@ -895,13 +895,13 @@ export default function InventoryPage() {
 
                       {/* Expanded Sub-table for Pieces (Assets) or Lots */}
                       {isExpanded && (
-                        <tr className="bg-slate-50/90 border-b border-slate-200">
+                        <tr className="bg-slate-50/90 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800">
                           <td colSpan={5} className="p-4">
-                            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-inner space-y-3">
+                            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 shadow-inner space-y-3">
                               {isEquipment ? (
                                 <div>
                                   <div className="flex items-center justify-between mb-2">
-                                    <h4 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                    <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
                                       <Tag className="w-3.5 h-3.5 text-teal-600" />
                                       รายการชิ้นครุภัณฑ์รายบุคคล (Individual Asset Codes)
                                     </h4>
@@ -913,21 +913,21 @@ export default function InventoryPage() {
                                       return (
                                         <div
                                           key={asset.id}
-                                          className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-white hover:border-teal-300 transition space-y-2.5 shadow-sm"
+                                          className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/40 hover:bg-white dark:hover:bg-slate-800/80 hover:border-teal-300 dark:hover:border-teal-700 transition space-y-2.5 shadow-sm"
                                         >
                                           {/* Card Header: Dual-Code and Status */}
                                           <div className="flex items-start justify-between gap-2">
                                             <div>
                                               <div className="flex items-center gap-2">
-                                                <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-teal-100 text-teal-800">
+                                                <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-teal-100 dark:bg-teal-900/60 text-teal-800 dark:text-teal-300">
                                                   เครื่อง/ชิ้นที่ {asset.sequenceNumber || 1}
                                                 </span>
-                                                <span className="font-mono font-black text-slate-900 text-xs tracking-wider">
+                                                <span className="font-mono font-black text-slate-900 dark:text-slate-100 text-xs tracking-wider">
                                                   {asset.assetCode}
                                                 </span>
                                               </div>
                                               {asset.govAssetCode && (
-                                                <div className="mt-1 flex items-center gap-1 font-mono text-[10px] text-slate-500 font-medium">
+                                                <div className="mt-1 flex items-center gap-1 font-mono text-[10px] text-slate-500 dark:text-slate-400 font-medium">
                                                   <Tag className="w-3 h-3 text-slate-400" />
                                                   <span>เลขครุภัณฑ์: {asset.govAssetCode}</span>
                                                 </div>
@@ -957,12 +957,12 @@ export default function InventoryPage() {
                                           {/* Role-based Maintenance Banner / Details */}
                                           {asset.status === 'MAINTENANCE' && (
                                             !isStaff ? (
-                                              <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-100 text-rose-800 text-[11px] flex items-center gap-2">
+                                              <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-100 dark:border-rose-900/60 text-rose-800 dark:text-rose-300 text-[11px] flex items-center gap-2">
                                                 <Wrench className="w-4 h-4 text-rose-600 flex-shrink-0" />
                                                 <span>อุปกรณ์ชิ้นนี้อยู่ระหว่างการซ่อมบำรุง ไม่สามารถเลือกยืมได้ชั่วคราว</span>
                                               </div>
                                             ) : (
-                                              <div className="p-2.5 rounded-xl bg-rose-50/80 border border-rose-200 text-slate-700 text-[11px] space-y-1">
+                                              <div className="p-2.5 rounded-xl bg-rose-50/80 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-slate-700 dark:text-slate-200 text-[11px] space-y-1">
                                                 <div className="flex items-center justify-between text-rose-800 font-bold">
                                                   <span className="flex items-center gap-1">
                                                     <Wrench className="w-3.5 h-3.5 text-rose-600" />
@@ -996,7 +996,7 @@ export default function InventoryPage() {
                                               />
                                             ) : null}
 
-                                            <div className="space-y-1 text-[11px] text-slate-600 flex-1">
+                                            <div className="space-y-1 text-[11px] text-slate-600 dark:text-slate-300 flex-1">
                                               <div className="flex items-center gap-1.5 font-medium">
                                                 <MapPin className="w-3.5 h-3.5 text-teal-600 flex-shrink-0" />
                                                 <span className="truncate">
@@ -1028,7 +1028,7 @@ export default function InventoryPage() {
                                           </div>
 
                                           {/* Action Buttons */}
-                                          <div className="pt-2 border-t border-slate-200/60 flex flex-wrap items-center justify-between gap-2">
+                                          <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
                                             <div className="flex items-center gap-1.5 flex-wrap">
                                               {/* Restore to Available (Staff only) */}
                                               {isStaff && asset.status === 'MAINTENANCE' && (
@@ -1060,7 +1060,7 @@ export default function InventoryPage() {
                                                       technicianNote: '',
                                                     });
                                                   }}
-                                                  className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 text-[11px] font-bold transition border border-rose-200 cursor-pointer"
+                                                  className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 text-[11px] font-bold transition border border-rose-200 dark:border-rose-800 cursor-pointer"
                                                 >
                                                   <Wrench className="w-3 h-3" />
                                                   <span>ส่งซ่อม</span>
@@ -1071,7 +1071,7 @@ export default function InventoryPage() {
                                               {isStaff && asset.maintenanceLogs && asset.maintenanceLogs.length > 0 && (
                                                 <button
                                                   onClick={() => setHistoryTarget({ asset, itemName: item.name })}
-                                                  className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-medium transition cursor-pointer"
+                                                  className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-[11px] font-medium transition cursor-pointer"
                                                 >
                                                   <History className="w-3 h-3 text-slate-500" />
                                                   <span>ประวัติ ({asset.maintenanceLogs.length})</span>
@@ -1082,7 +1082,7 @@ export default function InventoryPage() {
                                               {isStaff && (
                                                 <button
                                                   onClick={() => openEditAsset(asset, item.name)}
-                                                  className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100 hover:bg-teal-50 text-slate-700 hover:text-teal-700 text-[11px] font-medium transition border border-slate-200 hover:border-teal-300 cursor-pointer"
+                                                  className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-teal-50 dark:hover:bg-teal-950/40 text-slate-700 dark:text-slate-200 hover:text-teal-700 dark:hover:text-teal-300 text-[11px] font-medium transition border border-slate-200 dark:border-slate-700 hover:border-teal-300 dark:hover:border-teal-600 cursor-pointer"
                                                   title="แก้ไขข้อมูลชิ้นนี้ (เปลี่ยนที่อยู่, รหัส, Serial, ราคา, หมายเหตุ)"
                                                 >
                                                   <Edit className="w-3 h-3 text-slate-500" />
@@ -1094,7 +1094,7 @@ export default function InventoryPage() {
                                               {isStaff && asset.status !== 'BORROWED' && (
                                                 <button
                                                   onClick={() => handleDeleteAsset(asset, item.name)}
-                                                  className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 text-[11px] font-medium transition border border-slate-200 hover:border-rose-300 cursor-pointer"
+                                                  className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 text-[11px] font-medium transition border border-slate-200 dark:border-slate-700 hover:border-rose-300 dark:hover:border-rose-700 cursor-pointer"
                                                   title="ลบชิ้นอุปกรณ์นี้ออกจากระบบ"
                                                 >
                                                   <Trash2 className="w-3 h-3 text-slate-400" />
@@ -1110,7 +1110,7 @@ export default function InventoryPage() {
                                                   itemName: item.name,
                                                 })
                                               }
-                                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-700 text-xs font-bold transition border border-teal-200 cursor-pointer ml-auto"
+                                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-teal-50 dark:bg-teal-950/40 hover:bg-teal-100 dark:hover:bg-teal-900/60 text-teal-700 dark:text-teal-300 text-xs font-bold transition border border-teal-200 dark:border-teal-800 cursor-pointer ml-auto"
                                             >
                                               <QrCode className="w-3.5 h-3.5" />
                                               <span>พิมพ์ป้าย QR Code</span>
@@ -1136,7 +1136,7 @@ export default function InventoryPage() {
                                   </div>
                                   <div className="overflow-x-auto">
                                     <table className="w-full text-xs text-left">
-                                      <thead className="text-[10px] uppercase text-slate-400 border-b border-slate-100">
+                                      <thead className="text-[10px] uppercase text-slate-400 border-b border-slate-100 dark:border-slate-800">
                                         <tr>
                                           <th className="py-2">เลข Lot</th>
                                           <th className="py-2">จำนวนคงเหลือ</th>
@@ -1146,7 +1146,7 @@ export default function InventoryPage() {
                                           <th className="py-2 text-right">ป้าย QR</th>
                                         </tr>
                                       </thead>
-                                      <tbody className="divide-y divide-slate-100 font-medium">
+                                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
                                         {item.stockLots?.map((lot: any) => {
                                           const nextBox =
                                             lot.boxes?.find((b: any) => b.status === 'IN_USE') ||
@@ -1154,11 +1154,11 @@ export default function InventoryPage() {
 
                                           return (
                                             <tr key={lot.id}>
-                                              <td className="py-2 font-mono font-bold text-teal-800">
+                                              <td className="py-2 font-mono font-bold text-teal-800 dark:text-teal-300">
                                                 <div>{lot.lotNumber}</div>
                                                 {nextBox && (
                                                   <div className="mt-1">
-                                                    <span className="font-sans text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-300 px-1.5 py-0.5 rounded-md inline-flex items-center gap-1">
+                                                    <span className="font-sans text-[10px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800 px-1.5 py-0.5 rounded-md inline-flex items-center gap-1">
                                                       👉 หยิบกล่อง #{nextBox.boxNumberInLot} ({nextBox.boxCode})
                                                     </span>
                                                   </div>
@@ -1175,12 +1175,12 @@ export default function InventoryPage() {
                                                   </span>
                                                 )}
                                               </td>
-                                              <td className="py-2 text-slate-700">
+                                              <td className="py-2 text-slate-700 dark:text-slate-300">
                                                 ฿{lot.unitCost.toFixed(2)}
                                               </td>
                                               <td className="py-2">
                                                 {lot.expiryDate ? (
-                                                  <span className="text-slate-800">
+                                                  <span className="text-slate-800 dark:text-slate-200">
                                                     {new Date(lot.expiryDate).toLocaleDateString('th-TH')}
                                                   </span>
                                                 ) : (
@@ -1212,7 +1212,7 @@ export default function InventoryPage() {
                                                   <button
                                                     type="button"
                                                     onClick={() => setSelectedLotForQr({ lot, item })}
-                                                    className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-700 text-[11px] font-bold transition border border-teal-200 cursor-pointer"
+                                                    className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-teal-50 dark:bg-teal-950/40 hover:bg-teal-100 dark:hover:bg-teal-900/60 text-teal-700 dark:text-teal-300 text-[11px] font-bold transition border border-teal-200 dark:border-teal-800 cursor-pointer"
                                                     title="พิมพ์ป้ายสติกเกอร์ QR Code ประจำล็อตนี้"
                                                   >
                                                     <QrCode className="w-3.5 h-3.5" />
@@ -1251,9 +1251,9 @@ export default function InventoryPage() {
       {/* Modal: Add New Item */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                 <PackagePlus className="w-5 h-5 text-teal-600" />
                 เพิ่มพัสดุ / ครุภัณฑ์ใหม่
               </h3>
@@ -1268,7 +1268,7 @@ export default function InventoryPage() {
             <form onSubmit={handleCreateItem} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     ประเภทพัสดุ
                   </label>
                   <select
@@ -1283,7 +1283,7 @@ export default function InventoryPage() {
                         unit: newType === 'CONSUMABLE' ? 'กล่อง' : 'เครื่อง',
                       });
                     }}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                   >
                     <option value="EQUIPMENT">ครุภัณฑ์คงทน (Equipment)</option>
                     <option value="CONSUMABLE">วัสดุสิ้นเปลือง (Consumable)</option>
@@ -1292,7 +1292,7 @@ export default function InventoryPage() {
 
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="block text-xs font-bold text-slate-700">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
                       รหัสพัสดุ (Item Code) *
                     </label>
                     <button
@@ -1315,7 +1315,7 @@ export default function InventoryPage() {
                     onChange={(e) =>
                       setNewItem({ ...newItem, code: e.target.value })
                     }
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono font-bold text-teal-900 focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono font-bold text-teal-900 dark:text-teal-300 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                   />
                   <p className="text-[10px] text-slate-400 mt-1">
                     * ระบบสร้างรหัสให้อัตโนมัติตามหมวดหมู่ (แก้ไขเองได้)
@@ -1324,7 +1324,7 @@ export default function InventoryPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   ชื่ออุปกรณ์ / เวชภัณฑ์
                 </label>
                 <input
@@ -1335,14 +1335,14 @@ export default function InventoryPage() {
                   onChange={(e) =>
                     setNewItem({ ...newItem, name: e.target.value })
                   }
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="block text-xs font-bold text-slate-700">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
                       หมวดหมู่พัสดุ <span className="text-rose-500">*</span>
                     </label>
                     <button
@@ -1365,7 +1365,7 @@ export default function InventoryPage() {
                         code: suggested || newItem.code,
                       });
                     }}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-medium text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                   >
                     <option value="">-- กรุณาเลือกหมวดหมู่ --</option>
                     {categories
@@ -1391,7 +1391,7 @@ export default function InventoryPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     {newItem.type === 'CONSUMABLE' ? 'หน่วยจัดซื้อ/คลังหลัก (Unit) *' : 'หน่วยนับ *'}
                   </label>
                   <input
@@ -1408,13 +1408,13 @@ export default function InventoryPage() {
               </div>
 
               {newItem.type === 'CONSUMABLE' && (
-                <div className="p-3.5 bg-teal-50/50 border border-teal-200/80 rounded-2xl space-y-2.5">
+                <div className="p-3.5 bg-teal-50/50 dark:bg-teal-950/30 border border-teal-200/80 dark:border-teal-800/60 rounded-2xl space-y-2.5">
                   <div className="text-xs font-bold text-teal-900 flex items-center gap-1.5">
                     <span>⚡ กำหนดหน่วยย่อยและการแปลงสต็อก (Unit of Measure)</span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
                         หน่วยย่อยใช้งานจริง (Usage Unit)
                       </label>
                       <input
@@ -1422,11 +1422,11 @@ export default function InventoryPage() {
                         placeholder="เช่น คู่, ชิ้น, แผ่น, ก้อน, กรัม"
                         value={newItem.usageUnit}
                         onChange={(e) => setNewItem({ ...newItem, usageUnit: e.target.value })}
-                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500"
+                        className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
                         อัตราส่วนแปลงหน่วย (1 {newItem.unit || 'หน่วยหลัก'} = ? {newItem.usageUnit || 'หน่วยย่อย'})
                       </label>
                       <input
@@ -1435,7 +1435,7 @@ export default function InventoryPage() {
                         placeholder="เช่น 100"
                         value={newItem.conversionRatio}
                         onChange={(e) => setNewItem({ ...newItem, conversionRatio: e.target.value === '' ? ('' as any) : Number(e.target.value) })}
-                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-teal-800 focus:ring-2 focus:ring-teal-500"
+                        className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-teal-800 dark:text-teal-300 focus:ring-2 focus:ring-teal-500"
                       />
                     </div>
                   </div>
@@ -1447,7 +1447,7 @@ export default function InventoryPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     จุดแจ้งเตือนใกล้หมด (Min Alert)
                   </label>
                   <input
@@ -1463,7 +1463,7 @@ export default function InventoryPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     สถานที่จัดเก็บ
                   </label>
                   <input
@@ -1479,7 +1479,7 @@ export default function InventoryPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   รายละเอียดเพิ่มเติม
                 </label>
                 <textarea
@@ -1493,7 +1493,7 @@ export default function InventoryPage() {
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
@@ -1520,10 +1520,10 @@ export default function InventoryPage() {
       {/* Modal: Send to Repair */}
       {repairTarget && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-slate-100 dark:border-slate-800">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <Wrench className="w-4 h-4 text-rose-600" />
+              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <Wrench className="w-4 h-4 text-rose-600 dark:text-rose-400" />
                 แจ้งชำรุด / ส่งซ่อมบำรุง
               </h3>
               <button
@@ -1534,7 +1534,7 @@ export default function InventoryPage() {
               </button>
             </div>
 
-            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1">
+            <div className="bg-slate-50 dark:bg-slate-950/60 p-3 rounded-xl border border-slate-200 dark:border-slate-800 text-xs space-y-1">
               <div className="font-bold text-slate-800">{repairTarget.itemName}</div>
               <div className="font-mono text-teal-700 font-bold">
                 รหัสแล็บ: {repairTarget.asset.assetCode}
@@ -1548,7 +1548,7 @@ export default function InventoryPage() {
 
             <form onSubmit={handleSendRepair} className="space-y-3">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   อาการชำรุด / สาเหตุที่ส่งซ่อม *
                 </label>
                 <textarea
@@ -1562,7 +1562,7 @@ export default function InventoryPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   ส่งซ่อมที่ / ช่างผู้รับผิดชอบ
                 </label>
                 <input
@@ -1574,7 +1574,7 @@ export default function InventoryPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   ประมาณการค่าซ่อม (บาท)
                 </label>
                 <div className="relative">
@@ -1583,14 +1583,14 @@ export default function InventoryPage() {
                     min="0"
                     value={repairForm.repairCost}
                     onChange={(e) => setRepairForm({ ...repairForm, repairCost: Number(e.target.value) })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 pl-7 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 pl-7 text-xs font-bold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
                   />
                   <span className="absolute left-2.5 top-2 text-slate-400 text-xs font-bold">฿</span>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   หมายเหตุเพิ่มเติม (ถ้ามี)
                 </label>
                 <input
@@ -1627,10 +1627,10 @@ export default function InventoryPage() {
       {/* Modal: Complete Repair & Restore to Stock */}
       {completeTarget && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-slate-100 dark:border-slate-800">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 บันทึกผลซ่อมเสร็จ & คืนสต็อกพร้อมใช้
               </h3>
               <button
@@ -1655,7 +1655,7 @@ export default function InventoryPage() {
 
             <form onSubmit={handleCompleteRepair} className="space-y-3">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   ผลการซ่อมแซมและการทดสอบใช้งาน *
                 </label>
                 <textarea
@@ -1670,7 +1670,7 @@ export default function InventoryPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     ค่าใช้จ่ายจริง (บาท)
                   </label>
                   <div className="relative">
@@ -1679,14 +1679,14 @@ export default function InventoryPage() {
                       min="0"
                       value={completeForm.repairCost}
                       onChange={(e) => setCompleteForm({ ...completeForm, repairCost: Number(e.target.value) })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 pl-7 text-xs font-bold text-emerald-700 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 pl-7 text-xs font-bold text-emerald-700 dark:text-emerald-300 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                     />
                     <span className="absolute left-2.5 top-2 text-slate-400 text-xs font-bold">฿</span>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     ร้าน/ศูนย์ที่ซ่อม
                   </label>
                   <input
@@ -1699,7 +1699,7 @@ export default function InventoryPage() {
                 </div>
               </div>
 
-              <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-800 text-[11px] leading-relaxed">
+              <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/60 text-emerald-800 dark:text-emerald-300 text-[11px] leading-relaxed">
                 * เมื่อกดยืนยัน อุปกรณ์ชิ้นนี้จะเปลี่ยนสถานะเป็น <strong>"พร้อมใช้ (AVAILABLE)"</strong> และนิสิต/อาจารย์จะสามารถเลือกยืมได้ทันที
               </div>
 
@@ -1728,10 +1728,10 @@ export default function InventoryPage() {
       {/* Modal: Repair History */}
       {historyTarget && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col border border-slate-100 dark:border-slate-800">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 flex-shrink-0">
-              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <History className="w-4 h-4 text-teal-600" />
+              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <History className="w-4 h-4 text-teal-600 dark:text-teal-400" />
                 ประวัติการซ่อมบำรุง
               </h3>
               <button
@@ -1762,7 +1762,7 @@ export default function InventoryPage() {
                 return (
                   <div
                     key={log.id}
-                    className="p-3.5 rounded-xl border border-slate-200 bg-white space-y-2 text-xs shadow-sm"
+                    className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/60 space-y-2 text-xs shadow-sm"
                   >
                     <div className="flex items-center justify-between">
                       <span
@@ -1796,7 +1796,7 @@ export default function InventoryPage() {
                     )}
 
                     {log.technicianNote && (
-                      <div className="p-2 rounded-lg bg-slate-50 border border-slate-100 text-slate-700 text-[11px]">
+                      <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-[11px]">
                         <strong>บันทึกผลการซ่อม:</strong> {log.technicianNote}
                       </div>
                     )}
@@ -1822,7 +1822,7 @@ export default function InventoryPage() {
               <button
                 type="button"
                 onClick={() => setHistoryTarget(null)}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition"
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer"
               >
                 ปิด
               </button>
@@ -1834,10 +1834,10 @@ export default function InventoryPage() {
       {/* Modal: Edit Individual Asset */}
       {editAssetTarget && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto border border-slate-100 dark:border-slate-800">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Edit className="w-5 h-5 text-teal-600" />
+              <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <Edit className="w-5 h-5 text-teal-600 dark:text-teal-400" />
                 แก้ไขข้อมูลชิ้นอุปกรณ์ / ครุภัณฑ์
               </h3>
               <button
@@ -1858,7 +1858,7 @@ export default function InventoryPage() {
             <form onSubmit={handleSaveAsset} className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     รหัสประจำชิ้นในแล็บ (Lab Code) *
                   </label>
                   <input
@@ -1868,12 +1868,12 @@ export default function InventoryPage() {
                     onChange={(e) =>
                       setEditAssetForm({ ...editAssetForm, assetCode: e.target.value })
                     }
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono font-bold focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     เลขครุภัณฑ์ทางราชการ
                   </label>
                   <input
@@ -1883,14 +1883,14 @@ export default function InventoryPage() {
                     onChange={(e) =>
                       setEditAssetForm({ ...editAssetForm, govAssetCode: e.target.value })
                     }
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     สถานที่จัดเก็บเฉพาะชิ้น (ที่อยู่) *
                   </label>
                   <input
@@ -1906,7 +1906,7 @@ export default function InventoryPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     Serial Number
                   </label>
                   <input
@@ -1923,7 +1923,7 @@ export default function InventoryPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     สถานะการใช้งาน
                   </label>
                   <select
@@ -1941,7 +1941,7 @@ export default function InventoryPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     สภาพอุปกรณ์
                   </label>
                   <select
@@ -1960,7 +1960,7 @@ export default function InventoryPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     ราคา / มูลค่าจัดซื้อ (บาท)
                   </label>
                   <input
@@ -1975,7 +1975,7 @@ export default function InventoryPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     วันที่รับเข้า
                   </label>
                   <input
@@ -1990,7 +1990,7 @@ export default function InventoryPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   ลิงก์รูปภาพครุภัณฑ์ (URL หรือ Google Drive)
                 </label>
                 <input
@@ -2005,7 +2005,7 @@ export default function InventoryPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   หมายเหตุเพิ่มเติม
                 </label>
                 <textarea
@@ -2043,10 +2043,10 @@ export default function InventoryPage() {
       {/* Modal: Edit Item (Name, Code, Category, Unit, MinAlert, Description) */}
       {editItemTarget && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto border border-slate-100 dark:border-slate-800">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <FileEdit className="w-5 h-5 text-teal-600" />
+              <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <FileEdit className="w-5 h-5 text-teal-600 dark:text-teal-400" />
                 แก้ไขข้อมูลพัสดุ / ครุภัณฑ์หลัก
               </h3>
               <button
@@ -2059,7 +2059,7 @@ export default function InventoryPage() {
 
             <form onSubmit={handleSaveItem} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   ชื่ออุปกรณ์ / เวชภัณฑ์ *
                 </label>
                 <input
@@ -2070,13 +2070,13 @@ export default function InventoryPage() {
                   onChange={(e) =>
                     setEditItemForm({ ...editItemForm, name: e.target.value })
                   }
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     รหัสพัสดุ (Item Code) *
                   </label>
                   <input
@@ -2092,7 +2092,7 @@ export default function InventoryPage() {
 
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="block text-xs font-bold text-slate-700">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
                       หมวดหมู่พัสดุ <span className="text-rose-500">*</span>
                     </label>
                     <button
@@ -2136,7 +2136,7 @@ export default function InventoryPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     {editItemTarget?.type === 'CONSUMABLE' ? 'หน่วยจัดซื้อ/คลังหลัก (เช่น กล่อง, ถุง, ห่อ) *' : 'หน่วยนับ *'}
                   </label>
                   <input
@@ -2152,7 +2152,7 @@ export default function InventoryPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     จุดแจ้งเตือนขั้นต่ำ (Min Alert)
                   </label>
                   <input
@@ -2169,16 +2169,16 @@ export default function InventoryPage() {
 
               {/* ส่วนกำหนดและแก้ไขหน่วยย่อย สำหรับวัสดุสิ้นเปลือง */}
               {editItemTarget?.type === 'CONSUMABLE' && (
-                <div className="p-3.5 bg-teal-50/60 border border-teal-200 rounded-2xl space-y-2.5">
+                <div className="p-3.5 bg-teal-50/60 dark:bg-teal-950/30 border border-teal-200 dark:border-teal-800/60 rounded-2xl space-y-2.5">
                   <div className="text-xs font-bold text-teal-900 flex items-center justify-between">
                     <span>⚡ กำหนดหน่วยย่อยและการแปลงสต็อก (เช่น 1 กล่อง = กี่คู่)</span>
-                    <span className="text-[10px] text-teal-700 bg-white px-2 py-0.5 rounded-full border border-teal-200">
+                    <span className="text-[10px] text-teal-700 dark:text-teal-300 bg-white dark:bg-slate-900 px-2 py-0.5 rounded-full border border-teal-200 dark:border-teal-800">
                       ใช้คำนวณอัตโนมัติเวลาแบ่งบรรจุ
                     </span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
                         หน่วยย่อยใช้งานจริง
                       </label>
                       <input
@@ -2186,11 +2186,11 @@ export default function InventoryPage() {
                         placeholder="เช่น คู่, ชิ้น, แผ่น, ก้อน, กรัม"
                         value={editItemForm.usageUnit}
                         onChange={(e) => setEditItemForm({ ...editItemForm, usageUnit: e.target.value })}
-                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-teal-500"
+                        className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-teal-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
                         1 {editItemForm.unit || 'หน่วยหลัก'} มีกี่ {editItemForm.usageUnit || 'หน่วยย่อย'} ?
                       </label>
                       <input
@@ -2199,18 +2199,18 @@ export default function InventoryPage() {
                         placeholder="เช่น 100 (1 กล่อง = 100 คู่)"
                         value={editItemForm.conversionRatio}
                         onChange={(e) => setEditItemForm({ ...editItemForm, conversionRatio: Math.max(1, Number(e.target.value) || 1) })}
-                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-black text-center text-teal-800 focus:ring-2 focus:ring-teal-500"
+                        className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-black text-center text-teal-800 dark:text-teal-300 focus:ring-2 focus:ring-teal-500"
                       />
                     </div>
                   </div>
-                  <p className="text-[11px] text-teal-800 bg-teal-100/60 p-2 rounded-xl">
+                  <p className="text-[11px] text-teal-800 dark:text-teal-200 bg-teal-100/60 dark:bg-teal-950/50 p-2 rounded-xl">
                     💡 ตัวอย่าง: ถุงมือ 1 <b>{editItemForm.unit || 'กล่อง'}</b> มี <b>{editItemForm.conversionRatio || 100}</b> <b>{editItemForm.usageUnit || 'คู่'}</b>
                   </p>
                 </div>
               )}
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   สถานที่จัดเก็บหลัก
                 </label>
                 <input
@@ -2225,7 +2225,7 @@ export default function InventoryPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   รายละเอียดเพิ่มเติม
                 </label>
                 <textarea
@@ -2294,24 +2294,24 @@ export default function InventoryPage() {
       {/* Bulk Import Modal */}
       {showBulkModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
-          <div className="bg-white rounded-3xl max-w-3xl w-full p-6 shadow-2xl border border-slate-100 max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-3xl w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-800 max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600">
+                <div className="w-10 h-10 rounded-2xl bg-teal-50 dark:bg-teal-950/60 border border-teal-100 dark:border-teal-800 flex items-center justify-center text-teal-600 dark:text-teal-400">
                   <FileSpreadsheet className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-900 text-base">
+                  <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">
                     นำเข้าพัสดุและครุภัณฑ์คงทนจากไฟล์ Excel / CSV
                   </h3>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     นำเข้ารายการวัสดุสิ้นเปลืองพร้อมล็อต หรือครุภัณฑ์คงทนพร้อมรหัสแล็บและเลขครุภัณฑ์ราชการ
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setShowBulkModal(false)}
-                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -2319,7 +2319,7 @@ export default function InventoryPage() {
 
             <div className="space-y-4 py-4 overflow-y-auto flex-1">
               {/* Step 1: Download Template */}
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="space-y-0.5">
                   <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                     <span className="w-5 h-5 rounded-full bg-teal-600 text-white text-[10px] flex items-center justify-center font-bold">1</span>
@@ -2332,7 +2332,7 @@ export default function InventoryPage() {
                 <button
                   type="button"
                   onClick={handleDownloadTemplate}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-bold shadow-sm transition flex-shrink-0 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs font-bold shadow-sm transition flex-shrink-0 cursor-pointer"
                 >
                   <Download className="w-3.5 h-3.5 text-teal-600" />
                   <span>ดาวน์โหลด Template (.xlsx)</span>
@@ -2340,13 +2340,13 @@ export default function InventoryPage() {
               </div>
 
               {/* Step 2: Upload File */}
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200/80 dark:border-slate-800 space-y-3">
                 <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                   <span className="w-5 h-5 rounded-full bg-teal-600 text-white text-[10px] flex items-center justify-center font-bold">2</span>
                   เลือกไฟล์ที่กรอกข้อมูลแล้ว (.xlsx, .xls, .csv)
                 </div>
 
-                <div className="border-2 border-dashed border-slate-300 hover:border-teal-500 rounded-2xl p-6 text-center transition bg-white">
+                <div className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-teal-500 rounded-2xl p-6 text-center transition bg-white dark:bg-slate-950">
                   <Upload className="w-8 h-8 mx-auto text-slate-400 mb-2" />
                   <label className="cursor-pointer">
                     <span className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-sm inline-block transition">
@@ -2423,11 +2423,11 @@ export default function InventoryPage() {
               )}
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
               <button
                 type="button"
                 onClick={() => setShowBulkModal(false)}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 cursor-pointer"
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
               >
                 ปิดหน้าต่าง
               </button>
@@ -2452,7 +2452,7 @@ export default function InventoryPage() {
       {/* ========================================================================= */}
       {showCategoryModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] flex flex-col">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-800 space-y-4 max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2.5">
                 <div className="w-10 h-10 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600">
@@ -2476,7 +2476,7 @@ export default function InventoryPage() {
             </div>
 
             {/* Form to Add / Edit Category */}
-            <form onSubmit={handleSaveCategory} className="p-4 bg-teal-50/50 border border-teal-200/80 rounded-2xl space-y-3">
+            <form onSubmit={handleSaveCategory} className="p-4 bg-teal-50/50 dark:bg-teal-950/30 border border-teal-200/80 dark:border-teal-800/60 rounded-2xl space-y-3">
               <div className="text-xs font-bold text-teal-900 flex items-center justify-between">
                 <span>{isEditingCategory ? '✏️ กำลังแก้ไขหมวดหมู่' : '➕ เพิ่มหมวดหมู่ใหม่'}</span>
                 {isEditingCategory && (
@@ -2495,7 +2495,7 @@ export default function InventoryPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="sm:col-span-2">
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
                     ชื่อหมวดหมู่ *
                   </label>
                   <input
@@ -2504,18 +2504,18 @@ export default function InventoryPage() {
                     placeholder="เช่น เวชภัณฑ์ฉีดและให้สารน้ำ, อุปกรณ์ทำแผล"
                     value={categoryForm.name}
                     onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-teal-500"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
                     ประเภทการใช้งาน *
                   </label>
                   <select
                     value={categoryForm.type}
                     onChange={(e) => setCategoryForm({ ...categoryForm, type: e.target.value })}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-medium text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500"
                   >
                     <option value="CONSUMABLE">วัสดุสิ้นเปลือง</option>
                     <option value="EQUIPMENT">ครุภัณฑ์คงทน</option>
@@ -2540,11 +2540,11 @@ export default function InventoryPage() {
                 <span>รายการหมวดหมู่ที่มีอยู่ในระบบทั้งหมด ({categories.length} หมวด)</span>
               </div>
 
-              <div className="divide-y divide-slate-100 border border-slate-200 rounded-2xl overflow-hidden bg-white">
+              <div className="divide-y divide-slate-100 dark:divide-slate-800 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900">
                 {categories.map((cat) => (
                   <div
                     key={cat.id}
-                    className="p-3.5 hover:bg-slate-50/80 transition flex items-center justify-between gap-3"
+                    className="p-3.5 hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition flex items-center justify-between gap-3"
                   >
                     <div className="space-y-0.5">
                       <div className="font-bold text-slate-900 text-xs flex items-center gap-2">
@@ -2585,7 +2585,7 @@ export default function InventoryPage() {
               </div>
             </div>
 
-            <div className="pt-3 border-t border-slate-100 text-right">
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 text-right">
               <button
                 onClick={() => setShowCategoryModal(false)}
                 className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition cursor-pointer"

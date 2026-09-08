@@ -943,30 +943,30 @@ export default function PracticePage() {
       {activeTab === 'TIMETABLE' && (
         <div className="space-y-6">
           {/* Calendar Controls & Filter Bar */}
-          <div className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-sm space-y-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-sm space-y-4">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               {/* Left: Month Navigator & View Switcher */}
               <div className="flex flex-wrap items-center gap-3">
-                <div className="flex items-center bg-slate-100/80 p-1 rounded-2xl border border-slate-200">
+                <div className="flex items-center bg-slate-100/80 dark:bg-slate-800/80 p-1 rounded-2xl border border-slate-200 dark:border-slate-700">
                   <button
                     onClick={handlePrevMonth}
                     title="เดือนก่อนหน้า"
-                    className="p-2 hover:bg-white rounded-xl text-slate-700 hover:text-teal-700 transition cursor-pointer shadow-none hover:shadow-sm"
+                    className="p-2 hover:bg-white dark:hover:bg-slate-700 rounded-xl text-slate-700 dark:text-slate-300 hover:text-teal-700 dark:hover:text-teal-300 transition cursor-pointer shadow-none hover:shadow-sm"
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
                   <div className="px-4 py-1 text-center min-w-[160px]">
-                    <span className="text-sm font-black text-slate-900 capitalize block">
+                    <span className="text-sm font-black text-slate-900 dark:text-slate-100 capitalize block">
                       {thaiMonthDisplay}
                     </span>
-                    <span className="text-[10px] text-slate-500 font-medium">
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
                       (พ.ศ. {currentMonth.getFullYear() + 543})
                     </span>
                   </div>
                   <button
                     onClick={handleNextMonth}
                     title="เดือนถัดไป"
-                    className="p-2 hover:bg-white rounded-xl text-slate-700 hover:text-teal-700 transition cursor-pointer shadow-none hover:shadow-sm"
+                    className="p-2 hover:bg-white dark:hover:bg-slate-700 rounded-xl text-slate-700 dark:text-slate-300 hover:text-teal-700 dark:hover:text-teal-300 transition cursor-pointer shadow-none hover:shadow-sm"
                   >
                     <ChevronRight className="w-5 h-5" />
                   </button>
@@ -974,19 +974,19 @@ export default function PracticePage() {
 
                 <button
                   onClick={handleTodayMonth}
-                  className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition cursor-pointer"
+                  className="px-3 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition cursor-pointer"
                 >
                   วันนี้
                 </button>
 
                 {/* View Mode Toggle */}
-                <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold">
+                <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold">
                   <button
                     onClick={() => setViewMode('CALENDAR')}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition cursor-pointer ${
                       viewMode === 'CALENDAR'
-                        ? 'bg-white text-teal-700 shadow-sm'
-                        : 'text-slate-600 hover:text-slate-900'
+                        ? 'bg-white dark:bg-slate-700 text-teal-700 dark:text-teal-300 shadow-sm'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
                     }`}
                   >
                     <Calendar className="w-3.5 h-3.5" />
@@ -996,8 +996,8 @@ export default function PracticePage() {
                     onClick={() => setViewMode('LIST')}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition cursor-pointer ${
                       viewMode === 'LIST'
-                        ? 'bg-white text-teal-700 shadow-sm'
-                        : 'text-slate-600 hover:text-slate-900'
+                        ? 'bg-white dark:bg-slate-700 text-teal-700 dark:text-teal-300 shadow-sm'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
                     }`}
                   >
                     <LayoutGrid className="w-3.5 h-3.5" />
@@ -1073,20 +1073,20 @@ export default function PracticePage() {
           {/* VIEW 1: MONTHLY INTERACTIVE CALENDAR GRID */}
           {viewMode === 'CALENDAR' && (
             <div className="space-y-6">
-              <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden">
+              <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm overflow-hidden">
                 {/* 7 Days of the Week Header */}
-                <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50/80 text-center text-xs font-black text-slate-700 py-3">
-                  <div className="text-rose-600">อาทิตย์</div>
+                <div className="grid grid-cols-7 border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/80 text-center text-xs font-black text-slate-700 dark:text-slate-300 py-3">
+                  <div className="text-rose-600 dark:text-rose-400">อาทิตย์</div>
                   <div>จันทร์</div>
                   <div>อังคาร</div>
                   <div>พุธ</div>
                   <div>พฤหัสบดี</div>
                   <div>ศุกร์</div>
-                  <div className="text-indigo-600">เสาร์</div>
+                  <div className="text-indigo-600 dark:text-indigo-400">เสาร์</div>
                 </div>
 
                 {/* 42 Calendar Cells (6 rows x 7 cols) */}
-                <div className="grid grid-cols-7 divide-x divide-y divide-slate-100">
+                <div className="grid grid-cols-7 divide-x divide-y divide-slate-100 dark:divide-slate-800">
                   {calendarCells.map((cell, idx) => {
                     const cellSlots = slotsByDate[cell.dateStr] || [];
                     const isSelected = selectedDate === cell.dateStr;
@@ -1100,10 +1100,10 @@ export default function PracticePage() {
                         onClick={() => setSelectedDate(cell.dateStr)}
                         className={`min-h-[105px] sm:min-h-[125px] p-2 flex flex-col justify-between transition cursor-pointer relative group ${
                           !cell.isCurrentMonth
-                            ? 'bg-slate-50/40 text-slate-300'
+                            ? 'bg-slate-50/40 dark:bg-slate-950/40 text-slate-300 dark:text-slate-600'
                             : isSelected
-                            ? 'bg-teal-50/50 ring-2 ring-inset ring-teal-500'
-                            : 'bg-white hover:bg-slate-50/80'
+                            ? 'bg-teal-50/50 dark:bg-teal-950/40 ring-2 ring-inset ring-teal-500'
+                            : 'bg-white dark:bg-slate-900 hover:bg-slate-50/80 dark:hover:bg-slate-800/80'
                         }`}
                       >
                         {/* Day Number Header */}
@@ -1113,10 +1113,10 @@ export default function PracticePage() {
                               cell.isToday
                                 ? 'bg-teal-600 text-white shadow-sm'
                                 : isSelected
-                                ? 'bg-teal-100 text-teal-900'
+                                ? 'bg-teal-100 dark:bg-teal-950/80 text-teal-900 dark:text-teal-200'
                                 : cell.isCurrentMonth
-                                ? 'text-slate-800'
-                                : 'text-slate-400'
+                                ? 'text-slate-800 dark:text-slate-200'
+                                : 'text-slate-400 dark:text-slate-600'
                             }`}
                           >
                             {cell.dayNumber}
@@ -1213,11 +1213,11 @@ export default function PracticePage() {
               </div>
 
               {/* Selected Day Details Panel */}
-              <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-2">
+              <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 gap-2">
                   <div>
-                    <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                      <CalendarRange className="w-5 h-5 text-teal-600" />
+                    <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                      <CalendarRange className="w-5 h-5 text-teal-600 dark:text-teal-400" />
                       <span>
                         รอบเวลาเปิดให้บริการในวันที่{' '}
                         {new Date(selectedDate).toLocaleDateString('th-TH', {
@@ -1228,7 +1228,7 @@ export default function PracticePage() {
                         })}
                       </span>
                     </h3>
-                    <p className="text-xs text-slate-500 mt-0.5">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                       พบทั้งหมด {selectedDateSlots.length} รอบเวลาในวันที่เลือก
                     </p>
                   </div>
@@ -1249,9 +1249,9 @@ export default function PracticePage() {
                         });
                         setShowCreateSlotModal(true);
                       }}
-                      className="px-3.5 py-1.5 bg-teal-50 hover:bg-teal-100 text-teal-800 rounded-xl text-xs font-bold border border-teal-200 transition cursor-pointer flex items-center gap-1.5"
+                      className="px-3.5 py-1.5 bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 dark:hover:bg-teal-900/60 text-teal-800 dark:text-teal-300 rounded-xl text-xs font-bold border border-teal-200 dark:border-teal-800/60 transition cursor-pointer flex items-center gap-1.5"
                     >
-                      <Plus className="w-3.5 h-3.5 text-teal-600" />
+                      <Plus className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
                       <span>+ เพิ่มรอบเวลาในวันนี้</span>
                     </button>
                   )}
@@ -1259,9 +1259,9 @@ export default function PracticePage() {
 
                 {/* Slots Grid for Selected Date */}
                 {selectedDateSlots.length === 0 ? (
-                  <div className="py-10 text-center text-slate-400 space-y-2">
-                    <CalendarDays className="w-10 h-10 text-slate-300 mx-auto" />
-                    <p className="text-xs font-bold text-slate-700">ไม่มีรอบเวลาเปิดให้บริการในวันที่เลือก</p>
+                  <div className="py-10 text-center text-slate-400 dark:text-slate-500 space-y-2">
+                    <CalendarDays className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto" />
+                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300">ไม่มีรอบเวลาเปิดให้บริการในวันที่เลือก</p>
                     <p className="text-xs">
                       {canManageSlots
                         ? 'กดปุ่ม "+ เพิ่มรอบเวลาในวันนี้" เพื่อเปิดรอบให้นิสิตยื่นจอง'
@@ -1279,20 +1279,20 @@ export default function PracticePage() {
                           key={slot.id}
                           className={`rounded-2xl border p-4 shadow-sm transition flex flex-col justify-between space-y-3 ${
                             !isOpen
-                              ? 'bg-slate-50 border-slate-200 opacity-80'
+                              ? 'bg-slate-50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 opacity-80'
                               : isFull
-                              ? 'bg-white border-amber-200'
-                              : 'bg-white border-slate-200/90 hover:shadow-md hover:border-teal-300'
+                              ? 'bg-white dark:bg-slate-800 border-amber-200 dark:border-amber-900/50'
+                              : 'bg-white dark:bg-slate-800 border-slate-200/90 dark:border-slate-700 hover:shadow-md hover:border-teal-300 dark:hover:border-teal-600'
                           }`}
                         >
                           <div>
                             {/* Room Header */}
-                            <div className="flex items-start justify-between gap-2 pb-2.5 border-b border-slate-100">
+                            <div className="flex items-start justify-between gap-2 pb-2.5 border-b border-slate-100 dark:border-slate-700">
                               <div>
-                                <span className="font-mono text-[10px] font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded">
+                                <span className="font-mono text-[10px] font-bold text-teal-800 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800/60 px-2 py-0.5 rounded">
                                   {slot.room?.code}
                                 </span>
-                                <h4 className="text-sm font-bold text-slate-900 mt-1 line-clamp-1">
+                                <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 mt-1 line-clamp-1">
                                   {slot.room?.name}
                                 </h4>
                                 {slot.room?.location && (
@@ -1403,16 +1403,16 @@ export default function PracticePage() {
           {viewMode === 'LIST' && (
             <div className="space-y-4">
               {loading ? (
-                <div className="bg-white rounded-2xl border border-slate-200/80 p-8 text-center shadow-sm">
+                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-8 text-center shadow-sm">
                   <LoadingSpinner
                     message="กำลังโหลดตารางช่วงเวลา..."
                     submessage="กำลังดึงข้อมูลความจุและสถานะการเปิดรับจองจาก Supabase"
                   />
                 </div>
               ) : filteredSlots.length === 0 ? (
-                <div className="bg-white rounded-2xl border border-slate-200/80 p-12 text-center text-slate-400 text-xs shadow-sm space-y-2">
+                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-12 text-center text-slate-400 dark:text-slate-500 text-xs shadow-sm space-y-2">
                   <CalendarDays className="w-10 h-10 text-slate-300 mx-auto" />
-                  <p className="font-bold text-slate-700">ไม่มีช่วงเวลาเปิดให้บริการในเดือนนี้</p>
+                  <p className="font-bold text-slate-700 dark:text-slate-200">ไม่มีช่วงเวลาเปิดให้บริการในเดือนนี้</p>
                   <p>กรุณาเปลี่ยนเดือน หรือให้เจ้าหน้าที่สร้างรอบเวลาเปิดให้บริการ</p>
                 </div>
               ) : (
@@ -1560,7 +1560,7 @@ export default function PracticePage() {
       {activeTab === 'BOOKINGS' && (
         <div className="space-y-5">
           {/* Status Tabs */}
-          <div className="flex flex-wrap items-center gap-2 p-1.5 bg-white rounded-2xl border border-slate-200 shadow-sm">
+          <div className="flex flex-wrap items-center gap-2 p-1.5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
             {['ALL', 'PENDING', 'APPROVED', 'CHECKED_IN', 'COMPLETED', 'REJECTED'].map((st) => (
               <button
                 key={st}
@@ -1568,7 +1568,7 @@ export default function PracticePage() {
                 className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition cursor-pointer ${
                   bookingStatusFilter === st
                     ? 'bg-teal-600 text-white shadow-sm'
-                    : 'text-slate-600 hover:bg-slate-100'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
               >
                 {st === 'ALL' && 'ทั้งหมด'}
@@ -1583,7 +1583,7 @@ export default function PracticePage() {
 
           {/* Bookings List */}
           {filteredBookings.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-400 text-xs shadow-sm">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-12 text-center text-slate-400 dark:text-slate-500 text-xs shadow-sm">
               ไม่พบคำขอเข้าฝึกปฏิบัติในหมวดหมู่นี้
             </div>
           ) : (
@@ -1598,7 +1598,7 @@ export default function PracticePage() {
                 return (
                   <div
                     key={b.id}
-                    className={`bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-4 border-l-4 ${
+                    className={`bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-sm space-y-4 border-l-4 ${
                       isPending
                         ? 'border-l-amber-500'
                         : isApproved
@@ -1611,33 +1611,33 @@ export default function PracticePage() {
                     }`}
                   >
                     {/* Header */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-mono text-xs font-black text-slate-800 bg-slate-100 px-2.5 py-0.5 rounded">
+                        <span className="font-mono text-xs font-black text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded">
                           {b.bookingNumber}
                         </span>
-                        <span className="text-xs font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-100">
+                        <span className="text-xs font-bold text-teal-800 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 border border-teal-100 dark:border-teal-800/60 px-2 py-0.5 rounded">
                           {b.slot?.room?.name}
                         </span>
                         {/* Status Label */}
                         {isPending && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 px-2.5 py-0.5 rounded-full">
-                            <Clock className="w-3 h-3 text-amber-600" /> รออาจารย์อนุมัติ
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 px-2.5 py-0.5 rounded-full">
+                            <Clock className="w-3 h-3 text-amber-600 dark:text-amber-400" /> รออาจารย์อนุมัติ
                           </span>
                         )}
                         {isApproved && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-teal-100 text-teal-800 border border-teal-200 px-2.5 py-0.5 rounded-full">
-                            <CheckCircle2 className="w-3 h-3 text-teal-600" /> อนุมัติแล้ว (พร้อมสแกนเข้า)
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-teal-100 dark:bg-teal-950/60 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800/60 px-2.5 py-0.5 rounded-full">
+                            <CheckCircle2 className="w-3 h-3 text-teal-600 dark:text-teal-400" /> อนุมัติแล้ว (พร้อมสแกนเข้า)
                           </span>
                         )}
                         {isCheckedIn && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200 px-2.5 py-0.5 rounded-full animate-pulse">
-                            <Sparkles className="w-3 h-3 text-indigo-600" /> กำลังฝึกปฏิบัติการอยู่
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-indigo-100 dark:bg-indigo-950/60 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/60 px-2.5 py-0.5 rounded-full animate-pulse">
+                            <Sparkles className="w-3 h-3 text-indigo-600 dark:text-indigo-400" /> กำลังฝึกปฏิบัติการอยู่
                           </span>
                         )}
                         {isCompleted && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 px-2.5 py-0.5 rounded-full">
-                            <Check className="w-3 h-3 text-emerald-600" /> เสร็จสิ้น ({b.actualMinutes || 0} นาที)
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 px-2.5 py-0.5 rounded-full">
+                            <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" /> เสร็จสิ้น ({b.actualMinutes || 0} นาที)
                           </span>
                         )}
                         {isRejected && (
@@ -1785,15 +1785,15 @@ export default function PracticePage() {
       {/* TAB 3: SCANNER STATION */}
       {activeTab === 'SCANNER' && (
         <div className="max-w-2xl mx-auto space-y-6">
-          <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-sm space-y-6 text-center">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 p-6 sm:p-8 shadow-sm space-y-6 text-center">
             <div>
-              <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto mb-3">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto mb-3">
                 <QrCode className="w-6 h-6" />
               </div>
-              <h3 className="text-lg font-black text-slate-900">
+              <h3 className="text-lg font-black text-slate-900 dark:text-slate-100">
                 จุดสแกน QR Code เช็คอิน & เช็คเอาท์ (Lab Check-in Station)
               </h3>
-              <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">
                 นำบัตร QR Code ประจำคำขอมาจ่อที่กล้อง หรือกรอกรหัส Token เพื่อบันทึกเวลาเข้า-ออกห้องปฏิบัติการจริง
               </p>
             </div>
@@ -1813,7 +1813,7 @@ export default function PracticePage() {
 
             {/* Manual Code Input Option */}
             <div className="pt-2">
-              <div className="text-xs font-bold text-slate-600 mb-2">หรือกรอกรหัสคำขอ / Token ด้วยตนเอง</div>
+              <div className="text-xs font-bold text-slate-600 dark:text-slate-400 mb-2">หรือกรอกรหัสคำขอ / Token ด้วยตนเอง</div>
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -1827,7 +1827,7 @@ export default function PracticePage() {
                   placeholder="เช่น SPK-E58C4F... หรือ SPB-2569..."
                   value={manualCodeInput}
                   onChange={(e) => setManualCodeInput(e.target.value.toUpperCase())}
-                  className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-mono font-bold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 uppercase disabled:opacity-60"
+                  className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-mono font-bold text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 uppercase disabled:opacity-60"
                 />
                 <button
                   type="submit"
@@ -1851,15 +1851,15 @@ export default function PracticePage() {
               <div
                 className={`p-4 rounded-2xl border text-left text-xs transition animate-fade-in ${
                   scannerStatus.type === 'SUCCESS'
-                    ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
-                    : 'bg-rose-50 border-rose-200 text-rose-900'
+                    ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60 text-emerald-900 dark:text-emerald-200'
+                    : 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800/60 text-rose-900 dark:text-rose-200'
                 }`}
               >
                 <div className="flex items-start gap-2">
                   {scannerStatus.type === 'SUCCESS' ? (
-                    <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
                   ) : (
-                    <XCircle className="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" />
+                    <XCircle className="w-5 h-5 text-rose-600 dark:text-rose-400 flex-shrink-0 mt-0.5" />
                   )}
                   <div>
                     <h5 className="font-bold text-sm">{scannerStatus.title}</h5>
@@ -1876,14 +1876,14 @@ export default function PracticePage() {
       {activeTab === 'SETTINGS' && canManageSlots && (
         <div className="max-w-3xl mx-auto space-y-8">
           {/* SECTION 1: MANAGE PRACTICE ROOMS */}
-          <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-sm space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 p-6 sm:p-8 shadow-sm space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
               <div>
-                <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
-                  <Building className="w-5 h-5 text-teal-600" />
+                <h3 className="text-base font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                  <Building className="w-5 h-5 text-teal-600 dark:text-teal-400" />
                   จัดการห้องปฏิบัติการพยาบาล (Skill Lab Rooms)
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   เพิ่ม แก้ไข หรือปิดใช้งานห้องปฏิบัติการที่เปิดให้นิสิตเข้าฝึกปฏิบัติการ
                 </p>
               </div>
@@ -1902,24 +1902,24 @@ export default function PracticePage() {
               {rooms.map((r) => (
                 <div
                   key={r.id}
-                  className="bg-slate-50 rounded-2xl border border-slate-200/80 p-4 space-y-3 hover:border-teal-200 transition"
+                  className="bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200/80 dark:border-slate-700 p-4 space-y-3 hover:border-teal-200 dark:hover:border-teal-600 transition"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs font-black text-teal-800 bg-teal-100/80 px-2 py-0.5 rounded-md">
+                        <span className="font-mono text-xs font-black text-teal-800 dark:text-teal-300 bg-teal-100/80 dark:bg-teal-950/80 border border-teal-200 dark:border-teal-800/60 px-2 py-0.5 rounded-md">
                           {r.code}
                         </span>
-                        <span className="text-[11px] font-bold text-slate-500">
+                        <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
                           ความจุ: {r.capacity} คน
                         </span>
                       </div>
-                      <h4 className="text-sm font-bold text-slate-900 mt-1">
+                      <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 mt-1">
                         {r.name}
                       </h4>
                       {r.location && (
-                        <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-                          <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                        <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
+                          <MapPin className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                           <span>{r.location}</span>
                         </p>
                       )}
@@ -1929,7 +1929,7 @@ export default function PracticePage() {
                       <button
                         type="button"
                         onClick={() => handleOpenEditRoomModal(r)}
-                        className="p-1.5 text-slate-500 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition"
+                        className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-teal-50 dark:hover:bg-slate-700 rounded-lg transition cursor-pointer"
                         title="แก้ไขข้อมูลห้อง"
                       >
                         <Edit className="w-3.5 h-3.5" />
@@ -1937,7 +1937,7 @@ export default function PracticePage() {
                       <button
                         type="button"
                         onClick={() => handleDeleteRoom(r.id, r.name)}
-                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                        className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-slate-700 rounded-lg transition cursor-pointer"
                         title="ลบหรือปิดใช้งานห้อง"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -1946,7 +1946,7 @@ export default function PracticePage() {
                   </div>
 
                   {r.description && (
-                    <p className="text-[11px] text-slate-600 bg-white p-2.5 rounded-xl border border-slate-150 line-clamp-2">
+                    <p className="text-[11px] text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-150 dark:border-slate-800 line-clamp-2">
                       {r.description}
                     </p>
                   )}
@@ -1956,7 +1956,7 @@ export default function PracticePage() {
           </div>
 
           {/* SECTION 2: BOOKING POLICY SETTINGS */}
-          <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-sm space-y-6">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 p-6 sm:p-8 shadow-sm space-y-6">
             <div>
               <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
                 <Settings className="w-5 h-5 text-teal-600" />
@@ -2018,7 +2018,7 @@ export default function PracticePage() {
                   onChange={(e) =>
                     setSettingsForm({ ...settingsForm, checkInEarlyMinutes: Number(e.target.value) })
                   }
-                  className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-medium text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                 />
                 <span className="text-[10px] text-slate-400 mt-1 block">
                   เช่น 30 นาที (เริ่ม 13:00 น. จะสแกนเข้าได้ตั้งแต่ 12:30 น.)
@@ -2038,7 +2038,7 @@ export default function PracticePage() {
                   onChange={(e) =>
                     setSettingsForm({ ...settingsForm, checkOutEarlyMinutes: Number(e.target.value) })
                   }
-                  className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                 />
                 <span className="text-[10px] text-slate-400 mt-1 block">
                   เช่น 15 นาที (สิ้นสุด 16:00 น. จะสแกนออกได้ตั้งแต่ 15:45 น.)
@@ -2085,23 +2085,23 @@ export default function PracticePage() {
       {/* MODAL: CREATE OPEN PRACTICE SESSION / EVENT (Staff / Teacher) */}
       {showCreateSlotModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-start justify-between pb-3 border-b border-slate-100">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150 border border-slate-100 dark:border-slate-800">
+            <div className="flex items-start justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-teal-700 bg-teal-50 px-2.5 py-0.5 rounded-full border border-teal-100">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 px-2.5 py-0.5 rounded-full border border-teal-100 dark:border-teal-800/60">
                   สำหรับอาจารย์ / เจ้าหน้าที่ห้องแล็บ
                 </span>
-                <h3 className="text-lg font-black text-slate-900 mt-1 flex items-center gap-2">
-                  <CalendarRange className="w-5 h-5 text-teal-600" />
+                <h3 className="text-lg font-black text-slate-900 dark:text-slate-100 mt-1 flex items-center gap-2">
+                  <CalendarRange className="w-5 h-5 text-teal-600 dark:text-teal-400" />
                   สร้างรอบเปิดห้องแล็บ (Open Session / Event)
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   กำหนดห้องปฏิบัติการ วันที่ เวลา และความจุ เพื่อเปิดให้นิสิตยื่นขอเข้าฝึกปฏิบัติด้วยตนเอง
                 </p>
               </div>
               <button
                 onClick={() => setShowCreateSlotModal(false)}
-                className="text-slate-400 hover:text-slate-600 text-lg font-bold p-1"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg font-bold p-1 cursor-pointer"
               >
                 ✕
               </button>
@@ -2292,23 +2292,23 @@ export default function PracticePage() {
       {/* MODAL: EDIT PRACTICE SLOT / EVENT (Staff / Teacher) */}
       {slotToEdit && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-start justify-between pb-3 border-b border-slate-100">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150 border border-slate-100 dark:border-slate-800">
+            <div className="flex items-start justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-teal-700 bg-teal-50 px-2.5 py-0.5 rounded-full border border-teal-100">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 px-2.5 py-0.5 rounded-full border border-teal-100 dark:border-teal-800/60">
                   แก้ไขข้อมูลรอบเวลา
                 </span>
-                <h3 className="text-lg font-black text-slate-900 mt-1 flex items-center gap-2">
-                  <Edit className="w-5 h-5 text-teal-600" />
+                <h3 className="text-lg font-black text-slate-900 dark:text-slate-100 mt-1 flex items-center gap-2">
+                  <Edit className="w-5 h-5 text-teal-600 dark:text-teal-400" />
                   แก้ไขรอบเปิดห้องแล็บ
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   ปรับเปลี่ยนห้อง วันที่ เวลาเปิดให้บริการ หรือจำนวนความจุผู้เข้าฝึก
                 </p>
               </div>
               <button
                 onClick={() => setSlotToEdit(null)}
-                className="text-slate-400 hover:text-slate-600 text-lg font-bold p-1"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg font-bold p-1 cursor-pointer"
               >
                 ✕
               </button>
@@ -2516,18 +2516,18 @@ export default function PracticePage() {
       {/* MODAL: DIRECT SLOT DETAILS & ACTION (OPENED WHEN CLICKING A SLOT ON CALENDAR) */}
       {slotDetailModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150 relative">
-            <div className="flex items-start justify-between pb-3 border-b border-slate-100">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150 relative border border-slate-100 dark:border-slate-800">
+            <div className="flex items-start justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div>
-                <span className="font-mono text-[10px] font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-100">
+                <span className="font-mono text-[10px] font-bold text-teal-800 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 px-2 py-0.5 rounded border border-teal-100 dark:border-teal-800/60">
                   {slotDetailModal.room?.code}
                 </span>
-                <h3 className="text-lg font-black text-slate-900 mt-1">
+                <h3 className="text-lg font-black text-slate-900 dark:text-slate-100 mt-1">
                   {slotDetailModal.room?.name}
                 </h3>
                 {slotDetailModal.room?.location && (
-                  <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-                    <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                  <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
+                    <MapPin className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                     {slotDetailModal.room.location}
                   </p>
                 )}
@@ -2668,20 +2668,20 @@ export default function PracticePage() {
       {/* MODAL: BOOKING FORM */}
       {showBookingModal && slotForBooking && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl space-y-4 border border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div>
-                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-teal-600" />
+                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-teal-600 dark:text-teal-400" />
                   ยื่นคำขอเข้าฝึกปฏิบัติการด้วยตนเอง
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   {slotForBooking.room?.name} • {new Date(slotForBooking.date).toLocaleDateString('th-TH')} (เวลา {slotForBooking.startTime} - {slotForBooking.endTime} น.)
                 </p>
               </div>
               <button
                 onClick={() => setShowBookingModal(false)}
-                className="text-slate-400 hover:text-slate-600 text-lg font-bold"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg font-bold cursor-pointer"
               >
                 ✕
               </button>
@@ -2865,7 +2865,7 @@ export default function PracticePage() {
                   <select
                     value={bookingForm.practiceKitId}
                     onChange={(e) => setBookingForm({ ...bookingForm, practiceKitId: e.target.value })}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                   >
                     <option value="">-- ไม่มี / ใช้อุปกรณ์และหุ่นประจำห้องแล็บ --</option>
                     {practiceKits.map((k) => (
@@ -2877,7 +2877,7 @@ export default function PracticePage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     อุปกรณ์ที่ต้องการขอเพิ่มเติม (ถ้ามี)
                   </label>
                   <input
@@ -2885,7 +2885,7 @@ export default function PracticePage() {
                     placeholder="เช่น ขอแผ่นปิดแผล Hydrocolloid 1 แผ่น, เข็มผีเสื้อเบอร์ 24, ถุงมือเบอร์ S"
                     value={bookingForm.additionalEquipment}
                     onChange={(e) => setBookingForm({ ...bookingForm, additionalEquipment: e.target.value })}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                   />
                   <span className="text-[10px] text-slate-400 mt-0.5 block">
                     เจ้าหน้าที่จะเตรียมอุปกรณ์เสริมนี้ไว้ให้พร้อมกับชุดฝึก
@@ -2949,28 +2949,28 @@ export default function PracticePage() {
       {/* MODAL: CLOSE/OPEN SLOT REASON */}
       {slotToToggle && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
-            <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-slate-100 dark:border-slate-800">
+            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
               {slotToToggle.isOpen ? (
                 <>
-                  <Lock className="w-5 h-5 text-rose-600" />
+                  <Lock className="w-5 h-5 text-rose-600 dark:text-rose-400" />
                   ปิดรอบเวลา (ระงับการจอง)
                 </>
               ) : (
                 <>
-                  <Unlock className="w-5 h-5 text-emerald-600" />
+                  <Unlock className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                   เปิดรอบเวลาให้จองได้
                 </>
               )}
             </h3>
 
-            <p className="text-xs text-slate-600">
+            <p className="text-xs text-slate-600 dark:text-slate-400">
               {slotToToggle.room?.name} • วันที่ {new Date(slotToToggle.date).toLocaleDateString('th-TH')} ({slotToToggle.startTime} - {slotToToggle.endTime} น.)
             </p>
 
             {slotToToggle.isOpen && (
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   เหตุผลที่ปิดรอบเวลา (จะแสดงให้นิสิตเห็น)
                 </label>
                 <input
@@ -2978,7 +2978,7 @@ export default function PracticePage() {
                   placeholder="เช่น คาบเรียนปฏิบัติการประจำ, ซ่อมบำรุงหุ่นจำลอง"
                   value={closeReasonInput}
                   onChange={(e) => setCloseReasonInput(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
                 />
               </div>
             )}
@@ -2987,7 +2987,7 @@ export default function PracticePage() {
               <button
                 type="button"
                 onClick={() => setSlotToToggle(null)}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100"
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
               >
                 ยกเลิก
               </button>
@@ -3016,21 +3016,21 @@ export default function PracticePage() {
       {/* MODAL: ADD / EDIT PRACTICE ROOM */}
       {showAddRoomModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150 border border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div>
-                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                  <Building className="w-5 h-5 text-teal-600" />
+                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                  <Building className="w-5 h-5 text-teal-600 dark:text-teal-400" />
                   {roomToEdit ? 'แก้ไขห้องปฏิบัติการ' : 'เพิ่มห้องปฏิบัติการใหม่'}
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   ระบุรหัส ชื่อห้อง และสถานที่ตั้ง เพื่อใช้เปิดรอบฝึกทักษะ
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setShowAddRoomModal(false)}
-                className="text-slate-400 hover:text-slate-600 text-lg font-bold p-1"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg font-bold p-1 cursor-pointer"
               >
                 ✕
               </button>
@@ -3141,33 +3141,33 @@ export default function PracticePage() {
       {/* MODAL: QR CODE CARD FOR STUDENT */}
       {activeBookingForQr && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl text-center space-y-4 relative">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-sm w-full p-6 shadow-2xl text-center space-y-4 relative border border-slate-100 dark:border-slate-800">
             <button
               onClick={() => setActiveBookingForQr(null)}
-              className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 text-lg font-bold"
+              className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg font-bold cursor-pointer"
             >
               ✕
             </button>
 
             <div className="pt-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-teal-700 bg-teal-50 px-2.5 py-0.5 rounded-full border border-teal-100">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 px-2.5 py-0.5 rounded-full border border-teal-100 dark:border-teal-800/60">
                 บัตรเข้าห้องปฏิบัติการพยาบาล
               </span>
-              <h4 className="text-base font-black text-slate-900 mt-1">
+              <h4 className="text-base font-black text-slate-900 dark:text-slate-100 mt-1">
                 {activeBookingForQr.slot?.room?.name}
               </h4>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 {new Date(activeBookingForQr.slot?.date).toLocaleDateString('th-TH')} ({activeBookingForQr.slot?.startTime} - {activeBookingForQr.slot?.endTime} น.)
               </p>
             </div>
 
             {/* QR Code Container */}
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 inline-block shadow-inner">
+            <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 inline-block shadow-inner">
               {qrDataUrl ? (
                 <img
                   src={qrDataUrl}
                   alt="Booking QR Code"
-                  className="w-56 h-56 mx-auto object-contain"
+                  className="w-56 h-56 mx-auto object-contain bg-white rounded-lg p-1"
                 />
               ) : (
                 <div className="w-56 h-56 flex items-center justify-center text-xs text-slate-400">

@@ -189,7 +189,7 @@ export default function StudentDashboard() {
         <div className="flex flex-wrap items-center gap-2.5">
           <Link
             href="/borrow"
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white text-teal-800 hover:bg-slate-100 text-xs font-bold transition shadow-lg"
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white dark:bg-slate-800 text-teal-800 dark:text-teal-200 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs font-bold transition shadow-lg dark:border dark:border-slate-700"
           >
             <PlusCircle className="w-4 h-4 text-teal-600" />
             <span>ยื่นขอยืมอุปกรณ์ฝึกซ้อม</span>

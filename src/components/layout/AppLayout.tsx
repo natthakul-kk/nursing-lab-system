@@ -43,7 +43,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
         <LoadingSpinner
           size="lg"
           message="กำลังเชื่อมต่อระบบห้องปฏิบัติการพยาบาล..."
@@ -55,7 +55,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
   if (!currentUser) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
         <LoadingSpinner
           size="lg"
           message="กำลังนำทางไปยังหน้าเข้าสู่ระบบ..."
@@ -111,7 +111,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
             setIsMobileMenuOpen(false);
             setIsScannerOpen(true);
           }}
-          className="flex flex-col items-center -mt-5 bg-gradient-to-tr from-teal-600 to-indigo-600 text-white p-3 rounded-full shadow-lg shadow-teal-600/30 border-2 border-white transition active:scale-95 cursor-pointer"
+          className="flex flex-col items-center -mt-5 bg-gradient-to-tr from-teal-600 to-indigo-600 text-white p-3 rounded-full shadow-lg shadow-teal-600/30 border-2 border-white dark:border-slate-800 transition active:scale-95 cursor-pointer"
           title="สแกน QR Code"
         >
           <QrCode className="w-5 h-5" />
@@ -121,7 +121,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
           href="/practice"
           onClick={() => setIsMobileMenuOpen(false)}
           className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition ${
-            pathname?.startsWith('/practice') ? 'text-teal-600 font-bold' : 'text-slate-500 hover:text-slate-800'
+            pathname?.startsWith('/practice') ? 'text-teal-600 dark:text-teal-400 font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
         >
           <Stethoscope className="w-5 h-5" />
@@ -132,7 +132,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
           type="button"
           onClick={() => setIsMobileMenuOpen((prev) => !prev)}
           className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition cursor-pointer ${
-            isMobileMenuOpen ? 'text-teal-600 font-bold' : 'text-slate-500 hover:text-slate-800'
+            isMobileMenuOpen ? 'text-teal-600 dark:text-teal-400 font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
         >
           <Menu className="w-5 h-5" />

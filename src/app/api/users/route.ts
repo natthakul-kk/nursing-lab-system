@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCached, setCached, invalidateCache } from '@/lib/cache';
+import { hashPassword } from '@/lib/auth-security';
 
 export async function GET(req: Request) {
   try {
@@ -54,11 +55,13 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
+    const rawPassword = body.password || '123456';
+    const hashedPassword = await hashPassword(rawPassword);
     const user = await prisma.user.create({
       data: {
         name: body.name,
         email: body.email,
-        password: body.password || '123456',
+        password: hashedPassword,
         role: body.role || 'USER',
         department: body.department,
         studentId: body.studentId,

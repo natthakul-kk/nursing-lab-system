@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { AuthProvider, useAuth } from '@/lib/auth-context';
 import Navbar from './Navbar';
 import Sidebar from './Sidebar';
@@ -18,15 +18,24 @@ import {
 
 function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { isLoading } = useAuth();
+  const router = useRouter();
+  const { currentUser, isLoading } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   const isLoginPage = pathname === '/login';
   const isPublicAssetPage = pathname?.startsWith('/asset/');
   const isPublicConsumablePage = pathname?.startsWith('/consumable/');
+  const isResetPasswordPage = pathname?.startsWith('/reset-password');
+  const isPublicRoute = isLoginPage || isPublicAssetPage || isPublicConsumablePage || isResetPasswordPage;
 
-  if (isLoginPage || isPublicAssetPage || isPublicConsumablePage) {
+  React.useEffect(() => {
+    if (!isLoading && !currentUser && !isPublicRoute) {
+      router.replace('/login');
+    }
+  }, [isLoading, currentUser, isPublicRoute, router]);
+
+  if (isPublicRoute) {
     return <main className="min-h-screen">{children}</main>;
   }
 
@@ -36,7 +45,18 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         <LoadingSpinner
           size="lg"
           message="กำลังเชื่อมต่อระบบห้องปฏิบัติการพยาบาล..."
-          submessage="กำลังโหลดข้อมูลจาก Supabase Cloud Database"
+          submessage="กำลังตรวจสอบสิทธิ์การเข้าใช้งาน"
+        />
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <LoadingSpinner
+          size="lg"
+          message="กำลังนำทางไปยังหน้าเข้าสู่ระบบ..."
         />
       </div>
     );

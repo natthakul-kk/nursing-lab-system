@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { hashPassword } from '@/lib/auth-security';
 
 export async function PUT(
   req: Request,
@@ -16,7 +17,9 @@ export async function PUT(
     if (body.department !== undefined) dataToUpdate.department = body.department;
     if (body.studentId !== undefined) dataToUpdate.studentId = body.studentId;
     if (body.role !== undefined) dataToUpdate.role = body.role;
-    if (body.password) dataToUpdate.password = body.password;
+    if (body.password) {
+      dataToUpdate.password = await hashPassword(body.password);
+    }
     if (body.status !== undefined) dataToUpdate.status = body.status;
 
     const updatedUser = await prisma.user.update({

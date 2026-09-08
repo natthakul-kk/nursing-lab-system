@@ -19,7 +19,7 @@ interface AuthContextType {
   currentUser: User | null;
   availableUsers: User[];
 
-  login: (email: string) => Promise<boolean>;
+  login: (email: string, password?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   updateUser: (updatedData: Partial<User>) => Promise<boolean>;
   refreshUsers: () => Promise<void>;
@@ -38,27 +38,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    // 1. Instant local cache hydration for 0ms initial render
+    // 1. Instant local cache hydration for authenticated session
     if (typeof window !== 'undefined') {
       try {
         const cachedStr = localStorage.getItem('cached_users');
         const savedUserId = localStorage.getItem('active_user_id');
+        const cachedCurrentUserStr = localStorage.getItem('cached_current_user');
+
+        if (cachedCurrentUserStr) {
+          try {
+            setCurrentUser(JSON.parse(cachedCurrentUserStr));
+          } catch (e) {}
+        }
+
         if (cachedStr) {
           const cachedUsers: User[] = JSON.parse(cachedStr);
           if (Array.isArray(cachedUsers) && cachedUsers.length > 0) {
             setAvailableUsers(cachedUsers);
-            const found = cachedUsers.find((u) => u.id === savedUserId);
-            if (found) {
-              setCurrentUser(found);
-            } else {
-              const defaultUser = cachedUsers.find((u) => u.role === 'ADMIN') || cachedUsers[0];
-              setCurrentUser(defaultUser);
+            if (savedUserId) {
+              const found = cachedUsers.find((u) => u.id === savedUserId);
+              if (found) setCurrentUser(found);
             }
-            setIsLoading(false); // Render immediately without waiting for network!
           }
         }
       } catch (e) {
         console.error('Error reading cached users', e);
+      } finally {
+        setIsLoading(false);
       }
     }
 
@@ -74,17 +80,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
 
           const savedUserId = typeof window !== 'undefined' ? localStorage.getItem('active_user_id') : null;
-          const found = users.find((u) => u.id === savedUserId);
-
-          if (found) {
-            setCurrentUser(found);
-          } else if (users.length > 0) {
-            // Default to Admin
-            const defaultUser = users.find((u) => u.role === 'ADMIN') || users[0];
-            setCurrentUser(defaultUser);
-            if (typeof window !== 'undefined') {
-              localStorage.setItem('active_user_id', defaultUser.id);
+          if (savedUserId) {
+            const found = users.find((u) => u.id === savedUserId);
+            if (found) {
+              setCurrentUser(found);
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('cached_current_user', JSON.stringify(found));
+              }
+            } else {
+              // Saved user was deleted or invalid
+              setCurrentUser(null);
+              if (typeof window !== 'undefined') {
+                localStorage.removeItem('active_user_id');
+                localStorage.removeItem('cached_current_user');
+              }
             }
+          } else {
+            setCurrentUser(null);
           }
         }
       } catch (err) {
@@ -97,21 +109,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loadUsers();
   }, []);
 
+  const login = async (email: string, password?: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
 
+      const data = await res.json();
 
+      if (!res.ok || !data.success) {
+        return { success: false, error: data.error || 'เข้าสู่ระบบไม่สำเร็จ' };
+      }
 
-  const login = async (email: string): Promise<boolean> => {
-    const user = availableUsers.find(
-      (u) => u.email.toLowerCase() === email.toLowerCase().trim()
-    );
-    if (user) {
+      const user: User = data.user;
       setCurrentUser(user);
       if (typeof window !== 'undefined') {
         localStorage.setItem('active_user_id', user.id);
+        localStorage.setItem('cached_current_user', JSON.stringify(user));
       }
-      return true;
+      return { success: true };
+    } catch (err: any) {
+      console.error('Login request failed', err);
+      return { success: false, error: 'เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์' };
     }
-    return false;
   };
 
   const refreshUsers = async () => {
@@ -159,6 +181,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setCurrentUser(null);
     if (typeof window !== 'undefined') {
       localStorage.removeItem('active_user_id');
+      localStorage.removeItem('cached_current_user');
     }
     router.push('/login');
   };

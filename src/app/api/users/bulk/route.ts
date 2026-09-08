@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { hashPassword } from '@/lib/auth-security';
 
 // Map Thai or common role words to valid UserRole
 function normalizeRole(roleInput?: string): string {
@@ -23,6 +24,7 @@ export async function POST(req: Request) {
     let createdCount = 0;
     let updatedCount = 0;
     const errors: string[] = [];
+    const defaultPassword = await hashPassword('123456');
 
     for (let i = 0; i < users.length; i++) {
       const u = users[i];
@@ -71,6 +73,7 @@ export async function POST(req: Request) {
             data: {
               name: u.name.trim(),
               email,
+              password: defaultPassword,
               role,
               studentId,
               department,

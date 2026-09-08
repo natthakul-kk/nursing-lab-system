@@ -46,7 +46,8 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
-    if (currentUser?.role !== 'USER') {
+    if (!currentUser) return;
+    if (currentUser.role !== 'USER') {
       fetchDashboard();
     } else {
       setLoading(false);

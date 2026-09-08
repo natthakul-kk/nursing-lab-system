@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-export type UserRole = 'ADMIN' | 'OFFICER' | 'APPROVER' | 'USER';
+export type UserRole = 'ADMIN' | 'OFFICER' | 'APPROVER' | 'TEACHER' | 'USER';
 
 export interface User {
   id: string;
@@ -273,6 +273,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isOfficer = currentUser?.role === 'OFFICER' || isAdmin;
   const isApprover = currentUser?.role === 'APPROVER' || isAdmin;
   const isTeacher =
+    currentUser?.role === 'TEACHER' ||
     currentUser?.role === 'APPROVER' ||
     isAdmin ||
     Boolean(currentUser?.email?.includes('teacher')) ||

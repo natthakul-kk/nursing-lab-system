@@ -8,6 +8,7 @@ import {
   Activity,
   UserCheck,
   GraduationCap,
+  BookOpen,
   Plus,
   Mail,
   Phone,
@@ -194,20 +195,20 @@ export default function UsersPage() {
         'เบอร์โทร': '0812345678',
       },
       {
-        'ชื่อ-นามสกุล': 'นางสาวพยาบาล รักเด็ก',
-        'อีเมล': 'nurse.r@nurse.ac.th',
-        'บทบาท': 'USER',
-        'ภาควิชา/คณะ': 'การพยาบาลเด็ก',
-        'รหัสนิสิต/บุคลากร': '66010002',
-        'เบอร์โทร': '0898765432',
-      },
-      {
-        'ชื่อ-นามสกุล': 'ผศ.ดร.อาจารย์ ประจำวิชา',
-        'อีเมล': 'instructor@nurse.ac.th',
-        'บทบาท': 'APPROVER',
-        'ภาควิชา/คณะ': 'คณะพยาบาลศาสตร์',
+        'ชื่อ-นามสกุล': 'ผศ.ดร.สมศรี ใจดี (อาจารย์ผู้สอน)',
+        'อีเมล': 'somsri.t@nurse.ac.th',
+        'บทบาท': 'TEACHER',
+        'ภาควิชา/คณะ': 'ภาควิชาการพยาบาลเด็ก',
         'รหัสนิสิต/บุคลากร': 'T0042',
         'เบอร์โทร': '0861112233',
+      },
+      {
+        'ชื่อ-นามสกุล': 'รศ.ดร.ประสิทธิ์ รักงาน (หัวหน้าภาค)',
+        'อีเมล': 'prasit.h@nurse.ac.th',
+        'บทบาท': 'APPROVER',
+        'ภาควิชา/คณะ': 'ภาควิชาการพยาบาลเด็ก',
+        'รหัสนิสิต/บุคลากร': 'T0001',
+        'เบอร์โทร': '0899998877',
       },
     ];
 
@@ -285,13 +286,19 @@ export default function UsersPage() {
       case 'APPROVER':
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
-            <UserCheck className="w-3.5 h-3.5 text-amber-600" /> ผู้อนุมัติ (Approver)
+            <UserCheck className="w-3.5 h-3.5 text-amber-600" /> ผู้อนุมัติ / หัวหน้าภาค (Approver)
+          </span>
+        );
+      case 'TEACHER':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800 border border-indigo-200">
+            <BookOpen className="w-3.5 h-3.5 text-indigo-600" /> อาจารย์ผู้สอน (Teacher)
           </span>
         );
       default:
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">
-            <GraduationCap className="w-3.5 h-3.5 text-blue-600" /> ผู้ใช้งาน (User)
+            <GraduationCap className="w-3.5 h-3.5 text-blue-600" /> นิสิต / ผู้ใช้งาน (Student)
           </span>
         );
     }
@@ -302,6 +309,7 @@ export default function UsersPage() {
     ADMIN: users.filter((u) => u.role === 'ADMIN').length,
     OFFICER: users.filter((u) => u.role === 'OFFICER').length,
     APPROVER: users.filter((u) => u.role === 'APPROVER').length,
+    TEACHER: users.filter((u) => u.role === 'TEACHER').length,
     USER: users.filter((u) => u.role === 'USER').length,
   };
 
@@ -365,10 +373,10 @@ export default function UsersPage() {
       </div>
 
       {/* Role Descriptions Grid (Interactive Click to Filter) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
         <div
           onClick={() => setSelectedTab(selectedTab === 'ADMIN' ? 'ALL' : 'ADMIN')}
-          className={`p-4 rounded-2xl bg-purple-50 border transition cursor-pointer hover:shadow-md ${
+          className={`p-3.5 rounded-2xl bg-purple-50 border transition cursor-pointer hover:shadow-md ${
             selectedTab === 'ADMIN'
               ? 'border-purple-400 ring-2 ring-purple-400 shadow-md bg-purple-100/70'
               : 'border-purple-100'
@@ -383,13 +391,13 @@ export default function UsersPage() {
             </span>
           </div>
           <p className="text-[11px] text-purple-800 leading-relaxed mt-1.5">
-            ดูแลระบบทั้งหมด เพิ่ม/แก้ไขผู้ใช้งาน กำหนดสิทธิ์ และเข้าถึงรายงานและข้อมูลทุกส่วน
+            ดูแลระบบทั้งหมด เพิ่ม/แก้ไขผู้ใช้ กำหนดสิทธิ์ และเข้าถึงข้อมูลทุกส่วน
           </p>
         </div>
 
         <div
           onClick={() => setSelectedTab(selectedTab === 'OFFICER' ? 'ALL' : 'OFFICER')}
-          className={`p-4 rounded-2xl bg-emerald-50 border transition cursor-pointer hover:shadow-md ${
+          className={`p-3.5 rounded-2xl bg-emerald-50 border transition cursor-pointer hover:shadow-md ${
             selectedTab === 'OFFICER'
               ? 'border-emerald-400 ring-2 ring-emerald-400 shadow-md bg-emerald-100/70'
               : 'border-emerald-100'
@@ -397,20 +405,20 @@ export default function UsersPage() {
         >
           <div className="flex items-center justify-between">
             <div className="font-bold text-emerald-900 text-xs flex items-center gap-1.5">
-              <Activity className="w-4 h-4 text-emerald-600" /> เจ้าหน้าที่แล็บ (Officer)
+              <Activity className="w-4 h-4 text-emerald-600" /> จนท.แล็บ (Officer)
             </div>
             <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-emerald-200/80 text-emerald-800">
               {tabCounts.OFFICER} คน
             </span>
           </div>
           <p className="text-[11px] text-emerald-800 leading-relaxed mt-1.5">
-            จัดการคลังพัสดุ รับเข้าสต็อก ตรวจจ่ายอุปกรณ์ และตรวจรับคืนพร้อมประเมินสภาพ
+            จัดการคลัง รับเข้าสต็อก ตรวจจ่ายอุปกรณ์ และตรวจรับคืนพร้อมประเมินสภาพ
           </p>
         </div>
 
         <div
           onClick={() => setSelectedTab(selectedTab === 'APPROVER' ? 'ALL' : 'APPROVER')}
-          className={`p-4 rounded-2xl bg-amber-50 border transition cursor-pointer hover:shadow-md ${
+          className={`p-3.5 rounded-2xl bg-amber-50 border transition cursor-pointer hover:shadow-md ${
             selectedTab === 'APPROVER'
               ? 'border-amber-400 ring-2 ring-amber-400 shadow-md bg-amber-100/70'
               : 'border-amber-100'
@@ -425,13 +433,34 @@ export default function UsersPage() {
             </span>
           </div>
           <p className="text-[11px] text-amber-800 leading-relaxed mt-1.5">
-            พิจารณาอนุมัติคำขอยืมครุภัณฑ์ และคำขอเบิกวัสดุสิ้นเปลืองสำหรับรายวิชา
+            หัวหน้าภาค/ประธานสาขา พิจารณาอนุมัติคำขอยืม-เบิกขั้นสุดท้ายส่งต่อห้องแล็บ
+          </p>
+        </div>
+
+        <div
+          onClick={() => setSelectedTab(selectedTab === 'TEACHER' ? 'ALL' : 'TEACHER')}
+          className={`p-3.5 rounded-2xl bg-indigo-50 border transition cursor-pointer hover:shadow-md ${
+            selectedTab === 'TEACHER'
+              ? 'border-indigo-400 ring-2 ring-indigo-400 shadow-md bg-indigo-100/70'
+              : 'border-indigo-100'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <div className="font-bold text-indigo-900 text-xs flex items-center gap-1.5">
+              <BookOpen className="w-4 h-4 text-indigo-600" /> อาจารย์ (Teacher)
+            </div>
+            <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-indigo-200/80 text-indigo-800">
+              {tabCounts.TEACHER} คน
+            </span>
+          </div>
+          <p className="text-[11px] text-indigo-800 leading-relaxed mt-1.5">
+            อาจารย์ผู้สอน/ที่ปรึกษา กดรับทราบคำขอนิสิต ยืมพัสดุสอน และดูต้นทุนวิชา
           </p>
         </div>
 
         <div
           onClick={() => setSelectedTab(selectedTab === 'USER' ? 'ALL' : 'USER')}
-          className={`p-4 rounded-2xl bg-blue-50 border transition cursor-pointer hover:shadow-md ${
+          className={`p-3.5 rounded-2xl bg-blue-50 border transition cursor-pointer hover:shadow-md ${
             selectedTab === 'USER'
               ? 'border-blue-400 ring-2 ring-blue-400 shadow-md bg-blue-100/70'
               : 'border-blue-100'
@@ -439,14 +468,14 @@ export default function UsersPage() {
         >
           <div className="flex items-center justify-between">
             <div className="font-bold text-blue-900 text-xs flex items-center gap-1.5">
-              <GraduationCap className="w-4 h-4 text-blue-600" /> ผู้ใช้งาน (User)
+              <GraduationCap className="w-4 h-4 text-blue-600" /> นิสิต (Student)
             </div>
             <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-blue-200/80 text-blue-800">
               {tabCounts.USER} คน
             </span>
           </div>
           <p className="text-[11px] text-blue-800 leading-relaxed mt-1.5">
-            อาจารย์ผู้สอนหรือนิสิต ค้นหาของในคลัง ยื่นคำขอยืมหรือเบิกวัสดุสำหรับเรียน
+            นิสิตผู้เรียน ค้นหาพัสดุ ยื่นคำขอยืมหรือเบิก และจองห้องฝึกปฏิบัติ
           </p>
         </div>
       </div>
@@ -459,8 +488,9 @@ export default function UsersPage() {
             { key: 'ALL', label: 'ทั้งหมด (รวม)', icon: Users, count: tabCounts.ALL },
             { key: 'ADMIN', label: 'ผู้ดูแลระบบ', icon: ShieldCheck, count: tabCounts.ADMIN },
             { key: 'OFFICER', label: 'เจ้าหน้าที่แล็บ', icon: Activity, count: tabCounts.OFFICER },
-            { key: 'APPROVER', label: 'ผู้อนุมัติ/อาจารย์', icon: UserCheck, count: tabCounts.APPROVER },
-            { key: 'USER', label: 'ผู้ใช้ทั่วไป/นิสิต', icon: GraduationCap, count: tabCounts.USER },
+            { key: 'APPROVER', label: 'ผู้อนุมัติ/หัวหน้าภาค', icon: UserCheck, count: tabCounts.APPROVER },
+            { key: 'TEACHER', label: 'อาจารย์ผู้สอน', icon: BookOpen, count: tabCounts.TEACHER },
+            { key: 'USER', label: 'นิสิต/ผู้ใช้ทั่วไป', icon: GraduationCap, count: tabCounts.USER },
           ].map((tab) => {
             const isSelected = selectedTab === tab.key;
             return (
@@ -498,8 +528,9 @@ export default function UsersPage() {
             <option value="ALL">ทั้งหมด (รวม) ({tabCounts.ALL})</option>
             <option value="ADMIN">ผู้ดูแลระบบ (Admin) ({tabCounts.ADMIN})</option>
             <option value="OFFICER">เจ้าหน้าที่แล็บ (Officer) ({tabCounts.OFFICER})</option>
-            <option value="APPROVER">ผู้อนุมัติ/อาจารย์ (Approver) ({tabCounts.APPROVER})</option>
-            <option value="USER">ผู้ใช้ทั่วไป/นิสิต (User) ({tabCounts.USER})</option>
+            <option value="APPROVER">ผู้อนุมัติ/หัวหน้าภาค (Approver) ({tabCounts.APPROVER})</option>
+            <option value="TEACHER">อาจารย์ผู้สอน (Teacher) ({tabCounts.TEACHER})</option>
+            <option value="USER">นิสิต/ผู้ใช้ทั่วไป (Student/User) ({tabCounts.USER})</option>
           </select>
         </div>
 
@@ -696,8 +727,9 @@ export default function UsersPage() {
                   onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold"
                 >
-                  <option value="USER">ผู้ใช้งานทั่วไป (อาจารย์ / นศ.)</option>
-                  <option value="APPROVER">ผู้อนุมัติ (Approver / หัวหน้าสาขา)</option>
+                  <option value="USER">นิสิต / นักศึกษา (Student)</option>
+                  <option value="TEACHER">อาจารย์ผู้สอน / ที่ปรึกษา (Teacher)</option>
+                  <option value="APPROVER">ผู้อนุมัติ / หัวหน้าภาค (Approver)</option>
                   <option value="OFFICER">เจ้าหน้าที่ห้องแล็บ (Officer)</option>
                   <option value="ADMIN">ผู้ดูแลระบบ (Admin)</option>
                 </select>
@@ -817,8 +849,9 @@ export default function UsersPage() {
                   onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold"
                 >
-                  <option value="USER">ผู้ใช้งานทั่วไป (อาจารย์ / นศ.)</option>
-                  <option value="APPROVER">ผู้อนุมัติ (Approver / หัวหน้าสาขา)</option>
+                  <option value="USER">นิสิต / นักศึกษา (Student)</option>
+                  <option value="TEACHER">อาจารย์ผู้สอน / ที่ปรึกษา (Teacher)</option>
+                  <option value="APPROVER">ผู้อนุมัติ / หัวหน้าภาค (Approver)</option>
                   <option value="OFFICER">เจ้าหน้าที่ห้องแล็บ (Officer)</option>
                   <option value="ADMIN">ผู้ดูแลระบบ (Admin)</option>
                 </select>

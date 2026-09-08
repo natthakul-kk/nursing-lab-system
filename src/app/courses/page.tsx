@@ -24,7 +24,7 @@ import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 export default function CoursesPage() {
   const router = useRouter();
-  const { currentUser, isOfficer, isAdmin } = useAuth();
+  const { currentUser, isOfficer, isAdmin, isTeacher } = useAuth();
   const [courses, setCourses] = useState<any[]>([]);
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,14 +60,14 @@ export default function CoursesPage() {
   };
 
   useEffect(() => {
-    if (currentUser?.role === 'USER') {
+    if (currentUser?.role === 'USER' && !isTeacher) {
       router.push('/');
       return;
     }
     fetchCourses();
-  }, [currentUser, router]);
+  }, [currentUser, router, isTeacher]);
 
-  if (currentUser?.role === 'USER') {
+  if (currentUser?.role === 'USER' && !isTeacher) {
     return (
       <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center max-w-md mx-auto space-y-3">
         <ShieldAlert className="w-12 h-12 text-amber-500 mx-auto" />

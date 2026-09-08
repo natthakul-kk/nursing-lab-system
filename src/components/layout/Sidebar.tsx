@@ -90,13 +90,13 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
           label: 'ภาพรวมห้องแล็บ',
           href: '/',
           icon: LayoutDashboard,
-          roles: ['ADMIN', 'OFFICER', 'APPROVER', 'USER'],
+          roles: ['ADMIN', 'OFFICER', 'APPROVER', 'TEACHER', 'USER'],
         },
         {
           label: 'ตารางงาน & กำหนดรับ-คืน',
           href: '/schedule',
           icon: CalendarDays,
-          roles: ['ADMIN', 'OFFICER', 'APPROVER'],
+          roles: ['ADMIN', 'OFFICER', 'APPROVER', 'TEACHER'],
           badge: 'เจ้าหน้าที่',
         },
       ],
@@ -110,34 +110,34 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
           label: 'ยืม-คืนครุภัณฑ์ & เบิกพัสดุ',
           href: '/borrow',
           icon: RefreshCw,
-          roles: ['ADMIN', 'OFFICER', 'APPROVER', 'USER'],
+          roles: ['ADMIN', 'OFFICER', 'APPROVER', 'TEACHER', 'USER'],
           badge: 'One-Stop',
         },
         {
           label: 'ชุดฝึกปฏิบัติการ (Kits)',
           href: '/kits',
           icon: BriefcaseMedical,
-          roles: ['ADMIN', 'OFFICER', 'APPROVER', 'USER'],
+          roles: ['ADMIN', 'OFFICER', 'APPROVER', 'TEACHER', 'USER'],
           badge: 'แนะนำ',
         },
         {
           label: 'ขอเข้าฝึกปฏิบัติด้วยตนเอง',
           href: '/practice',
           icon: QrCode,
-          roles: ['ADMIN', 'OFFICER', 'APPROVER', 'USER'],
+          roles: ['ADMIN', 'OFFICER', 'APPROVER', 'TEACHER', 'USER'],
           badge: 'ใหม่',
         },
         {
           label: 'ประวัติเบิกจ่ายวัสดุ',
           href: '/requisitions',
           icon: FileSpreadsheet,
-          roles: ['ADMIN', 'OFFICER', 'APPROVER', 'USER'],
+          roles: ['ADMIN', 'OFFICER', 'APPROVER', 'TEACHER', 'USER'],
         },
         {
           label: 'ศูนย์อนุมัติคำขอ',
           href: '/approvals',
           icon: CheckSquare,
-          roles: ['ADMIN', 'OFFICER', 'APPROVER', 'USER'],
+          roles: ['ADMIN', 'OFFICER', 'APPROVER', 'TEACHER', 'USER'],
           badgeCount: pendingCount,
         },
       ],
@@ -151,7 +151,7 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
           label: 'ทะเบียนพัสดุ-ครุภัณฑ์',
           href: '/inventory',
           icon: Boxes,
-          roles: ['ADMIN', 'OFFICER', 'APPROVER', 'USER'],
+          roles: ['ADMIN', 'OFFICER', 'APPROVER', 'TEACHER', 'USER'],
         },
         {
           label: 'รับเข้าพัสดุ (Stock In)',
@@ -178,13 +178,13 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
           label: 'ต้นทุนวัสดุตามรายวิชา',
           href: '/courses',
           icon: BarChart3,
-          roles: ['ADMIN', 'OFFICER', 'APPROVER'],
+          roles: ['ADMIN', 'OFFICER', 'APPROVER', 'TEACHER'],
         },
         {
           label: 'รายงาน & วิเคราะห์ข้อมูล',
           href: '/reports',
           icon: BarChart3,
-          roles: ['ADMIN', 'OFFICER', 'APPROVER'],
+          roles: ['ADMIN', 'OFFICER', 'APPROVER', 'TEACHER'],
         },
       ],
     },
@@ -371,7 +371,8 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
           <div className="text-[10px] text-slate-400">
             {userRole === 'ADMIN' && 'เข้าถึงและกำหนดค่าได้ทุกระบบ'}
             {userRole === 'OFFICER' && 'จัดการคลัง รับเข้า จ่ายของ และตรวจคืน'}
-            {userRole === 'APPROVER' && 'มีสิทธิ์อนุมัติคำขอยืมและเบิก'}
+            {userRole === 'APPROVER' && 'มีสิทธิ์อนุมัติคำขอยืมและเบิก (หัวหน้าภาค/ผู้บริหาร)'}
+            {userRole === 'TEACHER' && 'มีสิทธิ์กดรับทราบคำขอ ยืมพัสดุสอน และดูต้นทุนวิชา'}
             {userRole === 'USER' && 'มีสิทธิ์ยื่นคำขอยืมและขอเบิกวัสดุ'}
           </div>
         </div>

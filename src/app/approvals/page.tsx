@@ -27,7 +27,9 @@ import {
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 export default function ApprovalsPage() {
-  const { currentUser, isApprover, isAdmin, isTeacher } = useAuth();
+  const { currentUser, isApprover, isAdmin, isOfficer, isTeacher } = useAuth();
+  const canApprove = isApprover || isAdmin || isOfficer;
+  const isPureTeacher = !canApprove && isTeacher;
   const [allBorrows, setAllBorrows] = useState<any[]>([]);
   const [allRequisitions, setAllRequisitions] = useState<any[]>([]);
   const [allPracticeBookings, setAllPracticeBookings] = useState<any[]>([]);
@@ -730,8 +732,8 @@ export default function ApprovalsPage() {
                         )}
                       </div>
 
-                      <div className="flex items-center justify-end gap-2">
-                        {!req.instructorAcknowledged && (isTeacher || isAdmin || isApprover) && (
+                      <div className="flex flex-wrap items-center justify-end gap-2">
+                        {!req.instructorAcknowledged && (isTeacher || canApprove) && (
                           <button
                             disabled={acknowledgingId === req.id || submitting}
                             onClick={() => handleAcknowledge(req.id, 'BORROW')}
@@ -746,6 +748,14 @@ export default function ApprovalsPage() {
                             <span>{acknowledgingId === req.id ? 'กำลังบันทึกการรับทราบ...' : 'อาจารย์กดรับทราบคำขอ'}</span>
                           </button>
                         )}
+
+                        {isPureTeacher && req.instructorAcknowledged && (
+                          <span className="px-3 py-1.5 rounded-xl text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 flex items-center gap-1.5">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            ท่านรับทราบแล้ว (รอผู้อนุมัติ/หัวหน้าภาคปล่อยของ)
+                          </span>
+                        )}
+
                         <button
                           disabled={submitting}
                           onClick={() => setRejectItem({ id: req.id, type: 'BORROW' })}
@@ -753,23 +763,34 @@ export default function ApprovalsPage() {
                         >
                           ไม่อนุมัติ
                         </button>
-                        <button
-                          disabled={submitting}
-                          onClick={() => handleApprove(req.id, 'BORROW')}
-                          className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-teal-600 hover:bg-teal-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-teal-600/20 transition cursor-pointer flex items-center gap-1.5"
-                        >
-                          {approvingId === req.id ? (
-                            <>
-                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                              <span>กำลังอนุมัติ...</span>
-                            </>
-                          ) : (
-                            <>
-                              <Check className="w-3.5 h-3.5" />
-                              <span>{req.requisitionRequest ? 'อนุมัติคำขอรวม (ยืม+เบิก)' : 'อนุมัติคำขอยืม'}</span>
-                            </>
-                          )}
-                        </button>
+
+                        {canApprove && (
+                          <button
+                            disabled={submitting}
+                            onClick={() => handleApprove(req.id, 'BORROW')}
+                            className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-teal-600 hover:bg-teal-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-teal-600/20 transition cursor-pointer flex items-center gap-1.5"
+                          >
+                            {approvingId === req.id ? (
+                              <>
+                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                <span>กำลังอนุมัติ...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Check className="w-3.5 h-3.5" />
+                                <span>
+                                  {!req.instructorAcknowledged && isRelevantToTeacher(req, currentUser)
+                                    ? req.requisitionRequest
+                                      ? 'อนุมัติคำขอรวม (ควบรวมรับทราบ)'
+                                      : 'อนุมัติคำขอยืม (ควบรวมรับทราบ)'
+                                    : req.requisitionRequest
+                                    ? 'อนุมัติคำขอรวม (ยืม+เบิก)'
+                                    : 'อนุมัติคำขอยืม'}
+                                </span>
+                              </>
+                            )}
+                          </button>
+                        )}
                       </div>
                     </div>
                   ) : statusFilter === 'APPROVED' ? (
@@ -893,8 +914,8 @@ export default function ApprovalsPage() {
                         )}
                       </div>
 
-                      <div className="flex items-center justify-end gap-2">
-                        {!req.instructorAcknowledged && (isTeacher || isAdmin || isApprover) && (
+                      <div className="flex flex-wrap items-center justify-end gap-2">
+                        {!req.instructorAcknowledged && (isTeacher || canApprove) && (
                           <button
                             disabled={acknowledgingId === req.id || submitting}
                             onClick={() => handleAcknowledge(req.id, 'REQUISITION')}
@@ -909,6 +930,14 @@ export default function ApprovalsPage() {
                             <span>{acknowledgingId === req.id ? 'กำลังบันทึกการรับทราบ...' : 'อาจารย์กดรับทราบคำขอ'}</span>
                           </button>
                         )}
+
+                        {isPureTeacher && req.instructorAcknowledged && (
+                          <span className="px-3 py-1.5 rounded-xl text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 flex items-center gap-1.5">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            ท่านรับทราบแล้ว (รอหัวหน้าภาค/เจ้าหน้าที่แล็บอนุมัติจ่ายของ)
+                          </span>
+                        )}
+
                         <button
                           disabled={submitting}
                           onClick={() => setRejectItem({ id: req.id, type: 'REQUISITION' })}
@@ -916,23 +945,30 @@ export default function ApprovalsPage() {
                         >
                           ไม่อนุมัติ
                         </button>
-                        <button
-                          disabled={submitting}
-                          onClick={() => handleApprove(req.id, 'REQUISITION')}
-                          className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-teal-600 hover:bg-teal-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-teal-600/20 transition cursor-pointer flex items-center gap-1.5"
-                        >
-                          {approvingId === req.id ? (
-                            <>
-                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                              <span>กำลังอนุมัติ...</span>
-                            </>
-                          ) : (
-                            <>
-                              <Check className="w-3.5 h-3.5" />
-                              <span>อนุมัติการเบิกจ่าย</span>
-                            </>
-                          )}
-                        </button>
+
+                        {canApprove && (
+                          <button
+                            disabled={submitting}
+                            onClick={() => handleApprove(req.id, 'REQUISITION')}
+                            className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-teal-600 hover:bg-teal-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-teal-600/20 transition cursor-pointer flex items-center gap-1.5"
+                          >
+                            {approvingId === req.id ? (
+                              <>
+                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                <span>กำลังอนุมัติ...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Check className="w-3.5 h-3.5" />
+                                <span>
+                                  {!req.instructorAcknowledged && isRelevantToTeacher(req, currentUser)
+                                    ? 'อนุมัติการเบิกจ่าย (ควบรวมรับทราบ)'
+                                    : 'อนุมัติการเบิกจ่าย'}
+                                </span>
+                              </>
+                            )}
+                          </button>
+                        )}
                       </div>
                     </div>
                   ) : statusFilter === 'APPROVED' ? (

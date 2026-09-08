@@ -8,7 +8,8 @@ function normalizeRole(roleInput?: string): string {
   const r = roleInput.trim().toUpperCase();
   if (r === 'ADMIN' || r.includes('ผู้ดูแล') || r.includes('แอดมิน')) return 'ADMIN';
   if (r === 'OFFICER' || r.includes('เจ้าหน้าที่') || r.includes('แล็บ')) return 'OFFICER';
-  if (r === 'APPROVER' || r.includes('อาจารย์') || r.includes('ผู้อนุมัติ') || r.includes('หัวหน้า')) return 'APPROVER';
+  if (r === 'APPROVER' || r.includes('ผู้อนุมัติ') || r.includes('หัวหน้า')) return 'APPROVER';
+  if (r === 'TEACHER' || r.includes('อาจารย์') || r.includes('ครู') || r.includes('ผู้สอน') || r.includes('ที่ปรึกษา')) return 'TEACHER';
   return 'USER';
 }
 

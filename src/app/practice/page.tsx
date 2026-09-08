@@ -472,7 +472,7 @@ export default function PracticePage() {
         return;
       }
 
-      if (currentUser?.role === 'USER' && !bookingForm.advisorName?.trim()) {
+      if (currentUser?.role === 'USER' && !isTeacher && !bookingForm.advisorName?.trim()) {
         alert('⚠️ เนื่องจากท่านเป็นนิสิต กรุณาระบุหรือเลือกอาจารย์ผู้รับรอง/อาจารย์ประจำวิชา (ไม่อนุญาตให้เว้นว่าง)');
         setSubmitting(false);
         return;

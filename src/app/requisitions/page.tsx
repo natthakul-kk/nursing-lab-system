@@ -119,7 +119,7 @@ export default function RequisitionsPage() {
     }
 
     const matchedCourse = courses.find((c) => c.id === newReq.courseId);
-    if (currentUser?.role === 'USER' && !matchedCourse?.instructorName?.trim()) {
+    if (currentUser?.role === 'USER' && !isTeacher && !matchedCourse?.instructorName?.trim()) {
       alert('⚠️ เนื่องจากท่านเป็นนิสิต รายวิชาที่เลือกต้องมีอาจารย์ประจำวิชาผู้รับทราบ (ไม่อนุญาตให้เว้นว่าง)');
       return;
     }

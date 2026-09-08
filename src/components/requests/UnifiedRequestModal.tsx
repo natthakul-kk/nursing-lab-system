@@ -224,24 +224,24 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
-      <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200 max-w-3xl w-full max-h-[96vh] sm:max-h-[92vh] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/70 backdrop-blur-md animate-fadeIn">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 max-w-3xl w-full max-h-[96vh] sm:max-h-[92vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 border-b border-slate-100 bg-gradient-to-r from-teal-50 via-indigo-50/50 to-white">
+        <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-teal-50 via-indigo-50/50 to-white dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
           <div className="flex items-center gap-2.5 sm:gap-3">
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-teal-600 flex items-center justify-center text-white shadow-md shadow-teal-600/30 flex-shrink-0">
               <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
               <div className="flex items-center gap-1.5 sm:gap-2">
-                <h2 className="text-sm sm:text-base font-black text-slate-900">
+                <h2 className="text-sm sm:text-base font-black text-slate-900 dark:text-white">
                   ยื่นคำขอเบิก-ยืมพัสดุแล็บแบบครบวงจร
                 </h2>
-                <span className="hidden sm:inline-block px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-teal-100 text-teal-800 border border-teal-200">
+                <span className="hidden sm:inline-block px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-teal-100 dark:bg-teal-950/80 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
                   One-Stop Lab Request
                 </span>
               </div>
-              <p className="text-[11px] sm:text-xs text-slate-500">
+              <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
                 กรอกข้อมูลครั้งเดียว เลือกได้ทั้งครุภัณฑ์ที่ต้องส่งคืน และวัสดุสิ้นเปลืองที่ใช้แล้วหมดไป
               </p>
             </div>
@@ -249,7 +249,7 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 sm:p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+            className="p-1.5 sm:p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -258,15 +258,15 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
         {/* Body Form */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-3.5 sm:p-6 space-y-4 sm:space-y-6">
           {/* Section 1: Course & Purpose */}
-          <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-4">
-            <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
-              <BookOpen className="w-4 h-4 text-teal-600" />
+          <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-4 space-y-4">
+            <h3 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
+              <BookOpen className="w-4 h-4 text-teal-600 dark:text-teal-400" />
               1. ข้อมูลรายวิชาและวันเวลาที่ใช้งาน
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   รายวิชาทางการพยาบาล
                 </label>
                 <select
@@ -290,7 +290,7 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
                       setAdvisorName('');
                     }
                   }}
-                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-teal-500/20"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20"
                 >
                   <option value="">-- ไม่ระบุรายวิชา (ฝึกปฏิบัติส่วนบุคคล/กิจกรรมอื่น) --</option>
                   {courses.map((c) => (
@@ -302,15 +302,15 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  อาจารย์ผู้รับทราบ / อาจารย์ที่ปรึกษา {isStudent && <span className="text-rose-600 font-extrabold">* (นิสิตจำเป็นต้องระบุ)</span>}
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  อาจารย์ผู้รับทราบ / อาจารย์ที่ปรึกษา {isStudent && <span className="text-rose-600 dark:text-rose-400 font-extrabold">* (นิสิตจำเป็นต้องระบุ)</span>}
                 </label>
                 <select
                   required={isStudent}
                   value={advisorName}
                   onChange={(e) => setAdvisorName(e.target.value)}
-                  className={`w-full bg-white border rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-teal-500/20 ${
-                    isStudent && !advisorName ? 'border-amber-300 ring-1 ring-amber-200' : 'border-slate-300'
+                  className={`w-full bg-white dark:bg-slate-900 border rounded-xl px-3 py-2 text-xs font-medium text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20 ${
+                    isStudent && !advisorName ? 'border-amber-300 dark:border-amber-500 ring-1 ring-amber-200 dark:ring-amber-900/50' : 'border-slate-300 dark:border-slate-700'
                   }`}
                 >
                   <option value="">-- เลือกอาจารย์ในระบบ --</option>

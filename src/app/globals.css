@@ -31,7 +31,7 @@ body {
 }
 
 .dark ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: #020617;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -40,7 +40,7 @@ body {
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #1e293b;
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -48,5 +48,21 @@ body {
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #334155;
+}
+
+/* Glassmorphic & Medical Surface Utilities for Dark Mode */
+@layer utilities {
+  .dark-card {
+    @apply dark:bg-slate-900/90 dark:border-slate-800/80 dark:shadow-none;
+  }
+  .dark-card-hover {
+    @apply dark:hover:bg-slate-900 dark:hover:border-slate-700/80;
+  }
+  .dark-subsurface {
+    @apply dark:bg-slate-800/60 dark:border-slate-700/60;
+  }
+  .dark-input {
+    @apply dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:border-teal-400 dark:focus:ring-teal-400/20;
+  }
 }

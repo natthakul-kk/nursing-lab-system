@@ -272,10 +272,10 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full shadow-2xl border border-slate-100 dark:border-slate-800 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
-        <div className="bg-gradient-to-r from-teal-700 to-slate-900 p-6 text-white flex items-center justify-between">
+        <div className="bg-gradient-to-r from-teal-700 via-teal-800 to-slate-900 p-6 text-white flex items-center justify-between border-b border-teal-600/30">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center text-teal-300">
               <User className="w-5 h-5" />
@@ -294,7 +294,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         </div>
 
         {/* Tab Selector */}
-        <div className="flex border-b border-slate-200 bg-slate-50/80 px-6 pt-3 gap-2">
+        <div className="flex border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/40 px-6 pt-3 gap-2">
           <button
             type="button"
             onClick={() => {
@@ -304,8 +304,8 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
             }}
             className={`pb-3 px-3 text-xs font-bold transition border-b-2 cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'PROFILE'
-                ? 'border-teal-600 text-teal-700'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
+                ? 'border-teal-600 text-teal-700 dark:text-teal-400'
+                : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
             }`}
           >
             <User className="w-4 h-4" />
@@ -320,8 +320,8 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
             }}
             className={`pb-3 px-3 text-xs font-bold transition border-b-2 cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'PASSWORD'
-                ? 'border-teal-600 text-teal-700'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
+                ? 'border-teal-600 text-teal-700 dark:text-teal-400'
+                : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
             }`}
           >
             <KeyRound className="w-4 h-4" />
@@ -332,15 +332,15 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         {/* Content */}
         <div className="p-6">
           {successMsg && (
-            <div className="mb-4 p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+            <div className="mb-4 p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/70 text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
               <span>{successMsg}</span>
             </div>
           )}
 
           {errorMsg && (
-            <div className="mb-4 p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+            <div className="mb-4 p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800/70 text-rose-800 dark:text-rose-300 text-xs font-bold flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 flex-shrink-0" />
               <span>{errorMsg}</span>
             </div>
           )}
@@ -351,14 +351,14 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Name */}
                 <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-slate-700 mb-1">ชื่อ - สกุล *</label>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">ชื่อ - สกุล *</label>
                   <div className="relative">
                     <input
                       type="text"
                       required
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-9 pr-3 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
+                      className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-9 pr-3 text-xs font-medium text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
                     />
                     <User className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                   </div>
@@ -367,9 +367,9 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                 {/* Email */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="block text-xs font-bold text-slate-700">อีเมล *</label>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">อีเมล *</label>
                     {formData.email.trim().toLowerCase() !== (currentUser.email || '').toLowerCase() && (
-                      <span className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded font-medium">
+                      <span className="text-[10px] text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 px-1.5 py-0.5 rounded font-medium">
                         ต้องยืนยัน OTP ที่อีเมลใหม่
                       </span>
                     )}
@@ -381,10 +381,10 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                       disabled={isVerifyingEmail}
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className={`w-full bg-slate-50 border rounded-xl py-2 pl-9 pr-3 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition ${
+                      className={`w-full bg-slate-50 dark:bg-slate-800/80 border rounded-xl py-2 pl-9 pr-3 text-xs font-medium text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition ${
                         formData.email.trim().toLowerCase() !== (currentUser.email || '').toLowerCase()
-                          ? 'border-amber-400 bg-amber-50/20'
-                          : 'border-slate-200'
+                          ? 'border-amber-400 bg-amber-50/20 dark:bg-amber-950/20'
+                          : 'border-slate-200 dark:border-slate-700'
                       }`}
                     />
                     <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
@@ -393,14 +393,14 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
 
                 {/* Phone */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">เบอร์โทรศัพท์</label>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">เบอร์โทรศัพท์</label>
                   <div className="relative">
                     <input
                       type="text"
                       placeholder="08X-XXX-XXXX"
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-9 pr-3 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
+                      className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-9 pr-3 text-xs font-medium text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
                     />
                     <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                   </div>
@@ -409,7 +409,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                 {/* Student / User ID (Admin-only editable) */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="block text-xs font-bold text-slate-700">รหัสประจำตัว (ID)</label>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">รหัสประจำตัว (ID)</label>
                     <span className="text-[10px] text-slate-400 font-normal">กำหนดโดยผู้ดูแลระบบ</span>
                   </div>
                   <div className="relative">
@@ -417,7 +417,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                       type="text"
                       disabled
                       value={formData.studentId || 'ยังไม่ได้กำหนด'}
-                      className="w-full bg-slate-100 border border-slate-200 rounded-xl py-2 pl-9 pr-3 text-xs font-mono font-bold text-slate-600 cursor-not-allowed select-none"
+                      className="w-full bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-9 pr-3 text-xs font-mono font-bold text-slate-600 dark:text-slate-400 cursor-not-allowed select-none"
                     />
                     <GraduationCap className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                   </div>
@@ -425,14 +425,14 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
 
                 {/* Department */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">สาขาวิชา / ชั้นปี</label>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">สาขาวิชา / ชั้นปี</label>
                   <div className="relative">
                     <input
                       type="text"
                       placeholder="เช่น นิสิตพยาบาล ชั้นปีที่ 2"
                       value={formData.department}
                       onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-9 pr-3 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
+                      className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-9 pr-3 text-xs font-medium text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
                     />
                     <Building2 className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                   </div>
@@ -552,7 +552,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
               <div className="space-y-3">
                 {/* Current Password */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     รหัสผ่านปัจจุบัน *
                   </label>
                   <div className="relative">
@@ -564,13 +564,13 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                       onChange={(e) =>
                         setPasswordData({ ...passwordData, currentPassword: e.target.value })
                       }
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-9 pr-10 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
+                      className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-9 pr-10 text-xs font-medium text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
                     />
                     <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                     <button
                       type="button"
                       onClick={() => setShowCurrentPass(!showCurrentPass)}
-                      className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+                      className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
                     >
                       {showCurrentPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -579,7 +579,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
 
                 {/* New Password */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     รหัสผ่านใหม่ * <span className="text-slate-400 font-normal">(อย่างน้อย 6 ตัวอักษร)</span>
                   </label>
                   <div className="relative">
@@ -591,13 +591,13 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                       onChange={(e) =>
                         setPasswordData({ ...passwordData, newPassword: e.target.value })
                       }
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-9 pr-10 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
+                      className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-9 pr-10 text-xs font-medium text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
                     />
                     <KeyRound className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                     <button
                       type="button"
                       onClick={() => setShowNewPass(!showNewPass)}
-                      className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+                      className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
                     >
                       {showNewPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -606,7 +606,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
 
                 {/* Confirm New Password */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     ยืนยันรหัสผ่านใหม่อีกครั้ง *
                   </label>
                   <div className="relative">
@@ -618,7 +618,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                       onChange={(e) =>
                         setPasswordData({ ...passwordData, confirmPassword: e.target.value })
                       }
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-9 pr-3 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
+                      className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-9 pr-3 text-xs font-medium text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
                     />
                     <KeyRound className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                   </div>
@@ -626,32 +626,32 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
               </div>
 
               {/* Security Hint */}
-              <div className="p-3 bg-teal-50 rounded-xl border border-teal-200 text-[11px] text-teal-800 space-y-1">
+              <div className="p-3 bg-teal-50 dark:bg-teal-950/60 rounded-xl border border-teal-200 dark:border-teal-800 text-[11px] text-teal-800 dark:text-teal-300 space-y-1">
                 <div className="font-bold flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5 text-teal-600" />
+                  <ShieldCheck className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
                   ความปลอดภัยของรหัสผ่าน:
                 </div>
-                <p className="text-teal-700">
+                <p className="text-teal-700 dark:text-teal-400">
                   รหัสผ่านจะได้รับการเข้ารหัสด้วยอัลกอริทึม Bcrypt ก่อนบันทึกลงฐานข้อมูล Supabase
                 </p>
               </div>
 
               {/* Buttons */}
-              <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                  className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition cursor-pointer"
                 >
                   ยกเลิก
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition cursor-pointer disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition cursor-pointer disabled:opacity-50"
                 >
-                  <KeyRound className="w-4 h-4" />
-                  <span>{submitting ? 'กำลังเปลี่ยนรหัสผ่าน...' : 'บันทึกรหัสผ่านใหม่'}</span>
+                  <Save className="w-3.5 h-3.5" />
+                  <span>{submitting ? 'กำลังบันทึก...' : 'เปลี่ยนรหัสผ่าน'}</span>
                 </button>
               </div>
             </form>

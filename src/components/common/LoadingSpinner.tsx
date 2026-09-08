@@ -27,16 +27,16 @@ export default function LoadingSpinner({
     <div className="flex flex-col items-center justify-center text-center p-6">
       <div className="relative flex items-center justify-center mb-3">
         <div
-          className={`${spinnerSize} rounded-full border-teal-100 border-t-teal-600 border-r-teal-500 animate-spin`}
+          className={`${spinnerSize} rounded-full border-teal-100 dark:border-teal-950/60 border-t-teal-600 dark:border-t-teal-400 border-r-teal-500 dark:border-r-teal-400 animate-spin`}
         />
         <div className="absolute flex items-center justify-center">
-          <Database className="w-4 h-4 text-teal-600 animate-pulse" />
+          <Database className="w-4 h-4 text-teal-600 dark:text-teal-400 animate-pulse" />
         </div>
       </div>
 
-      <p className="text-sm font-bold text-slate-700 tracking-wide">{message}</p>
+      <p className="text-sm font-bold text-slate-700 dark:text-slate-200 tracking-wide">{message}</p>
       {submessage && (
-        <p className="text-xs text-slate-400 mt-1 flex items-center justify-center gap-1.5">
+        <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 flex items-center justify-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-teal-500 animate-ping inline-block" />
           <span>{submessage}</span>
         </p>
@@ -46,8 +46,8 @@ export default function LoadingSpinner({
 
   if (fullScreen) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/20 backdrop-blur-sm">
-        <div className="bg-white rounded-3xl p-6 shadow-2xl border border-slate-100 max-w-sm w-full mx-4">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-md">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl border border-slate-100 dark:border-slate-800 max-w-sm w-full mx-4">
           {content}
         </div>
       </div>
@@ -68,11 +68,12 @@ export function TableLoadingRow({
     <tr>
       <td colSpan={colSpan} className="py-14 text-center">
         <div className="flex flex-col items-center justify-center gap-2.5">
-          <div className="w-8 h-8 rounded-full border-[3px] border-teal-100 border-t-teal-600 animate-spin" />
-          <p className="text-xs font-bold text-slate-600">{message}</p>
-          <p className="text-[11px] text-slate-400">กำลังซิงค์ข้อมูลล่าสุดจาก Supabase...</p>
+          <div className="w-8 h-8 rounded-full border-[3px] border-teal-100 dark:border-teal-950/60 border-t-teal-600 dark:border-t-teal-400 animate-spin" />
+          <p className="text-xs font-bold text-slate-600 dark:text-slate-300">{message}</p>
+          <p className="text-[11px] text-slate-400 dark:text-slate-500">กำลังซิงค์ข้อมูลล่าสุดจาก Supabase...</p>
         </div>
       </td>
     </tr>
   );
 }
+

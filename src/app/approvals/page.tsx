@@ -398,37 +398,37 @@ export default function ApprovalsPage() {
       </div>
 
       {/* Scope Selector: [ เฉพาะคำขอที่ฉันรับผิดชอบ | ทั้งหมดในระบบ ] */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-teal-50/70 via-slate-50 to-white p-3.5 rounded-2xl border border-teal-200/80 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-teal-50/70 via-slate-50 to-white dark:from-slate-900 dark:via-slate-800/80 dark:to-slate-900 p-3.5 rounded-2xl border border-teal-200/80 dark:border-slate-800 shadow-xs transition-colors">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl bg-teal-600 text-white flex items-center justify-center shadow-xs shrink-0">
             <GraduationCap className="w-4 h-4" />
           </div>
           <div>
-            <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+            <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
               <span>ขอบเขตรายการที่แสดง:</span>
-              <span className="text-teal-700 font-extrabold">
+              <span className="text-teal-700 dark:text-teal-400 font-extrabold">
                 {viewScope === 'RELEVANT' ? 'เฉพาะคำขอที่เกี่ยวข้องกับท่าน (ตามรายวิชา/อาจารย์ที่ปรึกษา)' : 'คำขอทั้งหมดในระบบ (ทุกรายวิชา)'}
               </span>
             </div>
             {currentUser && (
-              <div className="text-[11px] text-slate-500">
-                อาจารย์ผู้ใช้งาน: <strong className="text-slate-700">{currentUser.name}</strong>
+              <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                อาจารย์ผู้ใช้งาน: <strong className="text-slate-700 dark:text-slate-300">{currentUser.name}</strong>
               </div>
             )}
           </div>
         </div>
 
-        <div className="flex items-center gap-1 bg-slate-200/70 p-1 rounded-xl text-xs font-semibold self-start sm:self-auto">
+        <div className="flex items-center gap-1 bg-slate-200/70 dark:bg-slate-800 p-1 rounded-xl text-xs font-semibold self-start sm:self-auto border border-transparent dark:border-slate-700">
           <button
             type="button"
             onClick={() => setViewScope('RELEVANT')}
             className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 cursor-pointer ${
               viewScope === 'RELEVANT'
-                ? 'bg-white text-teal-800 shadow-sm font-bold'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-white dark:bg-slate-700 text-teal-800 dark:text-teal-300 shadow-sm font-bold'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
-            <CheckCircle2 className="w-3.5 h-3.5 text-teal-600" />
+            <CheckCircle2 className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
             <span>เฉพาะที่เกี่ยวข้องกับฉัน ({totalRelevantItems})</span>
           </button>
           <button
@@ -436,27 +436,27 @@ export default function ApprovalsPage() {
             onClick={() => setViewScope('ALL')}
             className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 cursor-pointer ${
               viewScope === 'ALL'
-                ? 'bg-white text-teal-800 shadow-sm font-bold'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-white dark:bg-slate-700 text-teal-800 dark:text-teal-300 shadow-sm font-bold'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
-            <Layers className="w-3.5 h-3.5 text-slate-500" />
+            <Layers className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
             <span>ทั้งหมดในระบบ ({totalSystemItems})</span>
           </button>
         </div>
       </div>
 
       {/* Main Status Tabs: [ รอพิจารณา | อนุมัติแล้ว | ไม่อนุมัติ ] */}
-      <div className="flex flex-wrap items-center gap-2 p-1.5 bg-white rounded-2xl border border-slate-200 shadow-sm">
+      <div className="flex flex-wrap items-center gap-2 p-1.5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-colors">
         <button
           onClick={() => {
             setStatusFilter('PENDING');
             setActiveTab('ALL');
           }}
-          className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition ${
+          className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition cursor-pointer ${
             statusFilter === 'PENDING'
               ? 'bg-amber-500 text-white shadow-md shadow-amber-500/20'
-              : 'text-slate-600 hover:bg-slate-100'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
           <Clock className="w-4 h-4" />
@@ -468,10 +468,10 @@ export default function ApprovalsPage() {
             setStatusFilter('APPROVED');
             setActiveTab('ALL');
           }}
-          className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition ${
+          className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition cursor-pointer ${
             statusFilter === 'APPROVED'
               ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
-              : 'text-slate-600 hover:bg-slate-100'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
           <CheckCircle2 className="w-4 h-4" />
@@ -483,58 +483,58 @@ export default function ApprovalsPage() {
             setStatusFilter('REJECTED');
             setActiveTab('ALL');
           }}
-          className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition ${
+          className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition cursor-pointer ${
             statusFilter === 'REJECTED'
               ? 'bg-rose-600 text-white shadow-md shadow-rose-600/20'
-              : 'text-slate-600 hover:bg-slate-100'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
           <XCircle className="w-4 h-4" />
-          <span>รายการที่ไม่อนุมัติ ({rejectedCount})</span>
+          <span>ประวัติไม่อนุมัติ ({rejectedCount})</span>
         </button>
       </div>
 
-      {/* Category Sub-Tabs */}
-      <div className="flex items-center p-1 bg-slate-100 rounded-xl w-full sm:w-auto">
+      {/* Sub-tabs: Filter by Request Type */}
+      <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl w-fit border border-transparent dark:border-slate-700">
         <button
           onClick={() => setActiveTab('ALL')}
-          className={`px-4 py-1.5 text-xs font-bold rounded-lg transition ${
+          className={`px-4 py-1.5 text-xs font-bold rounded-lg transition cursor-pointer ${
             activeTab === 'ALL'
-              ? 'bg-white text-teal-700 shadow-sm'
-              : 'text-slate-500 hover:text-slate-800'
+              ? 'bg-white dark:bg-slate-700 text-teal-700 dark:text-teal-300 shadow-sm'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'
           }`}
         >
           ทั้งหมด ({currentTabTotal})
         </button>
         <button
           onClick={() => setActiveTab('BORROW')}
-          className={`px-4 py-1.5 text-xs font-bold rounded-lg transition ${
+          className={`px-4 py-1.5 text-xs font-bold rounded-lg transition cursor-pointer ${
             activeTab === 'BORROW'
-              ? 'bg-white text-teal-700 shadow-sm'
-              : 'text-slate-500 hover:text-slate-800'
+              ? 'bg-white dark:bg-slate-700 text-teal-700 dark:text-teal-300 shadow-sm'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'
           }`}
         >
           คำขอเบิก-ยืมพัสดุ ({filteredBorrows.length})
         </button>
         <button
           onClick={() => setActiveTab('REQUISITION')}
-          className={`px-4 py-1.5 text-xs font-bold rounded-lg transition ${
+          className={`px-4 py-1.5 text-xs font-bold rounded-lg transition cursor-pointer ${
             activeTab === 'REQUISITION'
-              ? 'bg-white text-teal-700 shadow-sm'
-              : 'text-slate-500 hover:text-slate-800'
+              ? 'bg-white dark:bg-slate-700 text-teal-700 dark:text-teal-300 shadow-sm'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'
           }`}
         >
           คำขอเบิกเฉพาะวัสดุ ({filteredRequisitions.length})
         </button>
         <button
           onClick={() => setActiveTab('PRACTICE')}
-          className={`px-4 py-1.5 text-xs font-bold rounded-lg transition flex items-center gap-1.5 ${
+          className={`px-4 py-1.5 text-xs font-bold rounded-lg transition flex items-center gap-1.5 cursor-pointer ${
             activeTab === 'PRACTICE'
-              ? 'bg-white text-teal-700 shadow-sm'
-              : 'text-slate-500 hover:text-slate-800'
+              ? 'bg-white dark:bg-slate-700 text-teal-700 dark:text-teal-300 shadow-sm'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'
           }`}
         >
-          <Sparkles className="w-3.5 h-3.5 text-teal-600" />
+          <Sparkles className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
           <span>ขอฝึกปฏิบัติด้วยตนเอง ({filteredPracticeBookings.length})</span>
         </button>
       </div>
@@ -549,20 +549,20 @@ export default function ApprovalsPage() {
             />
           </div>
         ) : currentTabTotal === 0 ? (
-          <div className="bg-white p-10 sm:p-12 text-center rounded-2xl border border-slate-200/80 text-slate-400 text-xs space-y-3">
+          <div className="bg-white dark:bg-slate-900 p-10 sm:p-12 text-center rounded-2xl border border-slate-200/80 dark:border-slate-800 text-slate-400 dark:text-slate-500 text-xs space-y-3 transition-colors">
             {statusFilter === 'PENDING' ? (
               <>
                 <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-1 opacity-85" />
-                <p className="font-bold text-slate-700 text-sm">ไม่มีคำขอค้างรอการอนุมัติในหมวดนี้</p>
+                <p className="font-bold text-slate-700 dark:text-slate-200 text-sm">ไม่มีคำขอค้างรอการอนุมัติในหมวดนี้</p>
                 {viewScope === 'RELEVANT' && totalSystemItems > 0 && (
-                  <div className="pt-2 text-slate-500 text-[11px] max-w-md mx-auto space-y-2">
+                  <div className="pt-2 text-slate-500 dark:text-slate-400 text-[11px] max-w-md mx-auto space-y-2">
                     <p>ขณะนี้ไม่มีคำขอที่ระบุชื่อของท่านเป็นอาจารย์ผู้รับทราบหรืออาจารย์ประจำวิชาในสถานะนี้</p>
                     <button
                       type="button"
                       onClick={() => setViewScope('ALL')}
-                      className="px-3 py-1.5 rounded-xl bg-teal-50 text-teal-800 border border-teal-200 hover:bg-teal-100 font-bold transition inline-flex items-center gap-1.5 cursor-pointer"
+                      className="px-3 py-1.5 rounded-xl bg-teal-50 dark:bg-teal-950/70 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800 hover:bg-teal-100 dark:hover:bg-teal-900/80 font-bold transition inline-flex items-center gap-1.5 cursor-pointer"
                     >
-                      <Layers className="w-3.5 h-3.5 text-teal-600" />
+                      <Layers className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
                       <span>สลับไปดูคำขอทั้งหมดในระบบ ({totalSystemItems} รายการ)</span>
                     </button>
                   </div>
@@ -571,15 +571,15 @@ export default function ApprovalsPage() {
             ) : statusFilter === 'APPROVED' ? (
               <>
                 <CheckSquare className="w-10 h-10 text-teal-500 mx-auto mb-1 opacity-85" />
-                <p className="font-bold text-slate-700 text-sm">ยังไม่มีประวัติรายการที่อนุมัติในหมวดนี้</p>
+                <p className="font-bold text-slate-700 dark:text-slate-200 text-sm">ยังไม่มีประวัติรายการที่อนุมัติในหมวดนี้</p>
                 {viewScope === 'RELEVANT' && totalSystemItems > 0 && (
                   <div className="pt-2">
                     <button
                       type="button"
                       onClick={() => setViewScope('ALL')}
-                      className="px-3 py-1.5 rounded-xl bg-teal-50 text-teal-800 border border-teal-200 hover:bg-teal-100 font-bold transition inline-flex items-center gap-1.5 cursor-pointer text-[11px]"
+                      className="px-3 py-1.5 rounded-xl bg-teal-50 dark:bg-teal-950/70 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800 hover:bg-teal-100 dark:hover:bg-teal-900/80 font-bold transition inline-flex items-center gap-1.5 cursor-pointer text-[11px]"
                     >
-                      <Layers className="w-3.5 h-3.5 text-teal-600" />
+                      <Layers className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
                       <span>ดูประวัติการอนุมัติทั้งหมดในระบบ</span>
                     </button>
                   </div>
@@ -587,8 +587,8 @@ export default function ApprovalsPage() {
               </>
             ) : (
               <>
-                <XCircle className="w-10 h-10 text-slate-300 mx-auto mb-1" />
-                <p className="font-bold text-slate-700 text-sm">ไม่มีรายการที่ไม่อนุมัติในหมวดนี้</p>
+                <XCircle className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-1" />
+                <p className="font-bold text-slate-700 dark:text-slate-200 text-sm">ไม่มีรายการที่ไม่อนุมัติในหมวดนี้</p>
               </>
             )}
           </div>
@@ -599,7 +599,7 @@ export default function ApprovalsPage() {
               filteredBorrows.map((req) => (
                 <div
                   key={req.id}
-                  className={`bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-4 border-l-4 ${
+                  className={`bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-sm space-y-4 border-l-4 transition-colors ${
                     statusFilter === 'PENDING'
                       ? 'border-l-amber-500'
                       : statusFilter === 'APPROVED'
@@ -607,7 +607,7 @@ export default function ApprovalsPage() {
                       : 'border-l-rose-500'
                   }`}
                 >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
                     <div className="flex items-center gap-2">
                       {req.requisitionRequest ? (
                         <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-gradient-to-r from-teal-500 to-indigo-600 text-white shadow-sm flex items-center gap-1">
@@ -615,11 +615,11 @@ export default function ApprovalsPage() {
                           คำขอรวม (เบิกวัสดุ + ยืมครุภัณฑ์)
                         </span>
                       ) : (
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800 uppercase">
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 dark:bg-purple-950/70 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800 uppercase">
                           ยืมครุภัณฑ์
                         </span>
                       )}
-                      <span className="font-mono text-xs font-bold text-slate-800">
+                      <span className="font-mono text-xs font-bold text-slate-800 dark:text-slate-200">
                         {req.requestNumber}
                         {req.requisitionRequest && ` + ${req.requisitionRequest.requestNumber}`}
                       </span>

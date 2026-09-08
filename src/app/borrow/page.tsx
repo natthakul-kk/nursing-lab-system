@@ -387,7 +387,7 @@ export default function BorrowPage() {
       </div>
 
       {/* Filter Tabs & Scope */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-sm">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm transition-colors">
         {/* Status Tabs */}
         <div className="flex flex-wrap items-center gap-2">
           {[
@@ -408,13 +408,13 @@ export default function BorrowPage() {
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                   filterStatus === tab.key
                     ? 'bg-teal-600 text-white shadow-sm'
-                    : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                    : 'bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
               >
                 <span>{tab.label}</span>
                 {count > 0 && (
                   <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
-                    filterStatus === tab.key ? 'bg-white/25 text-white' : 'bg-slate-200 text-slate-700'
+                    filterStatus === tab.key ? 'bg-white/25 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
                   }`}>
                     {count}
                   </span>
@@ -426,30 +426,30 @@ export default function BorrowPage() {
 
         {/* View Scope (Toggle for Staff / Info pill for Student) */}
         {isStaff ? (
-          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-semibold self-start md:self-auto">
+          <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold self-start md:self-auto">
             <button
               onClick={() => setViewScope('ALL')}
-              className={`px-3 py-1.5 rounded-lg transition ${
+              className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
                 viewScope === 'ALL'
-                  ? 'bg-white text-teal-700 shadow-sm font-bold'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-white dark:bg-slate-700 text-teal-700 dark:text-teal-300 shadow-sm font-bold'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               รายการทั้งหมดในระบบ
             </button>
             <button
               onClick={() => setViewScope('MY')}
-              className={`px-3 py-1.5 rounded-lg transition ${
+              className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
                 viewScope === 'MY'
-                  ? 'bg-white text-teal-700 shadow-sm font-bold'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-white dark:bg-slate-700 text-teal-700 dark:text-teal-300 shadow-sm font-bold'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               เฉพาะของฉัน
             </button>
           </div>
         ) : (
-          <div className="text-xs font-medium text-teal-800 bg-teal-50 px-3 py-1.5 rounded-xl border border-teal-200/70 flex items-center gap-1.5 self-start md:self-auto">
+          <div className="text-xs font-medium text-teal-800 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 px-3 py-1.5 rounded-xl border border-teal-200/70 dark:border-teal-800 flex items-center gap-1.5 self-start md:self-auto">
             <span>📌</span>
             <span>แสดงเฉพาะรายการยืมของท่าน ({currentUser?.name || 'นิสิต'})</span>
           </div>
@@ -478,59 +478,59 @@ export default function BorrowPage() {
       {/* Requests List */}
       <div className="space-y-4">
         {loading ? (
-          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
             <LoadingSpinner
               message="กำลังโหลดรายการคำขอยืม-คืน..."
               submessage="กำลังดึงข้อมูลสถานะการอนุมัติและประวัติการส่งคืนจาก Supabase"
             />
           </div>
         ) : filteredRequests.length === 0 ? (
-          <div className="bg-white p-12 text-center rounded-2xl border border-slate-200/80 text-slate-400 text-xs">
+          <div className="bg-white dark:bg-slate-900 p-12 text-center rounded-2xl border border-slate-200/80 dark:border-slate-800 text-slate-400 dark:text-slate-500 text-xs">
             ไม่พบคำขอยืมครุภัณฑ์ในหมวดหมู่นี้
           </div>
         ) : (
           filteredRequests.map((req) => (
             <div
               key={req.id}
-              className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm hover:shadow-md transition space-y-4"
+              className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-sm hover:shadow-md transition space-y-4"
             >
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
                 <div className="flex items-center gap-3">
-                  <span className="font-mono text-xs font-black text-teal-800 bg-teal-50 px-2.5 py-1 rounded-lg">
+                  <span className="font-mono text-xs font-black text-teal-800 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/80 px-2.5 py-1 rounded-lg border border-teal-100 dark:border-teal-800/60">
                     {req.requestNumber}
                   </span>
                   <div>{getStatusBadge(req.status)}</div>
                   {req.requisitionRequest && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-teal-50 to-indigo-50 text-indigo-800 border border-indigo-200">
-                      <Sparkles className="w-3 h-3 text-indigo-600" /> คำขอรวม One-Stop
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-teal-50 to-indigo-50 dark:from-teal-950/60 dark:to-indigo-950/60 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                      <Sparkles className="w-3 h-3 text-indigo-600 dark:text-indigo-400" /> คำขอรวม One-Stop
                     </span>
                   )}
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
                   <div className="flex items-center gap-1.5 font-medium">
                     <User className="w-3.5 h-3.5 text-slate-400" />
-                    <span>ผู้ยืม: {req.user?.name}</span>
+                    <span className="dark:text-slate-200">ผู้ยืม: {req.user?.name}</span>
                     {req.user?.studentId && (
-                      <span className="font-mono text-[10px] text-teal-700 bg-teal-50 px-1.5 py-0.2 rounded border border-teal-200">
+                      <span className="font-mono text-[10px] text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/70 px-1.5 py-0.2 rounded border border-teal-200 dark:border-teal-800">
                         {req.user.studentId}
                       </span>
                     )}
                   </div>
                   {req.course && (
-                    <div className="flex items-center gap-1.5 font-medium text-teal-700 bg-teal-50 px-2 py-0.5 rounded">
+                    <div className="flex items-center gap-1.5 font-medium text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/70 px-2 py-0.5 rounded border border-teal-100 dark:border-teal-800/60">
                       <BookOpen className="w-3.5 h-3.5" />
                       <span>{req.course.code}</span>
                     </div>
                   )}
                   {req.instructorAcknowledged ? (
-                    <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200 dark:border-emerald-800 px-2.5 py-0.5 rounded-full">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                       <span>อ.รับทราบแล้ว ({req.advisorName || req.course?.instructorName || 'อาจารย์'}{req.acknowledgedAt ? ` • ${new Date(req.acknowledgedAt).toLocaleDateString('th-TH')}` : ''})</span>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-1 text-[11px] font-medium text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
-                      <Clock className="w-3.5 h-3.5 text-amber-600" />
+                    <div className="flex items-center gap-1 text-[11px] font-medium text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/70 border border-amber-200 dark:border-amber-800 px-2.5 py-0.5 rounded-full">
+                      <Clock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                       <span>รออาจารย์รับทราบ ({req.advisorName || req.course?.instructorName || 'อาจารย์ผู้สอน'})</span>
                     </div>
                   )}
@@ -540,27 +540,27 @@ export default function BorrowPage() {
               {/* Purpose & Detailed Timeline */}
               <div className="grid grid-cols-1 md:grid-cols-12 gap-4 text-xs">
                 <div className="md:col-span-6">
-                  <span className="text-slate-400 font-bold block mb-1">วัตถุประสงค์การใช้งาน & สถานที่:</span>
-                  <p className="text-slate-800 font-medium leading-relaxed">{req.purpose}</p>
+                  <span className="text-slate-400 dark:text-slate-500 font-bold block mb-1">วัตถุประสงค์การใช้งาน & สถานที่:</span>
+                  <p className="text-slate-800 dark:text-slate-200 font-medium leading-relaxed">{req.purpose}</p>
                 </div>
 
                 {/* Scheduled Times */}
-                <div className="md:col-span-3 bg-slate-50 p-2.5 rounded-xl border border-slate-100 space-y-1.5">
-                  <span className="text-slate-500 font-bold text-[11px] block border-b border-slate-200 pb-1">
+                <div className="md:col-span-3 bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-xl border border-slate-100 dark:border-slate-700/80 space-y-1.5">
+                  <span className="text-slate-500 dark:text-slate-400 font-bold text-[11px] block border-b border-slate-200 dark:border-slate-700 pb-1">
                     📅 นัดหมายรับ-คืนของ:
                   </span>
-                  <div className="text-[11px] space-y-1 text-slate-700 font-medium">
+                  <div className="text-[11px] space-y-1 text-slate-700 dark:text-slate-300 font-medium">
                     <div className="flex items-start gap-1.5">
-                      <Clock className="w-3.5 h-3.5 text-teal-600 flex-shrink-0 mt-0.5" />
+                      <Clock className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 flex-shrink-0 mt-0.5" />
                       <span>
-                        <strong className="text-slate-800">เวลานัดรับ:</strong>{' '}
+                        <strong className="text-slate-800 dark:text-slate-100">เวลานัดรับ:</strong>{' '}
                         {new Date(req.borrowDate).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' })} น.
                       </span>
                     </div>
                     <div className="flex items-start gap-1.5">
                       <Clock className="w-3.5 h-3.5 text-rose-500 flex-shrink-0 mt-0.5" />
                       <span>
-                        <strong className="text-slate-800">กำหนดคืน:</strong>{' '}
+                        <strong className="text-slate-800 dark:text-slate-100">กำหนดคืน:</strong>{' '}
                         {new Date(req.expectedReturnDate).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' })} น.
                       </span>
                     </div>
@@ -568,35 +568,35 @@ export default function BorrowPage() {
                 </div>
 
                 {/* Actual Operation Logs (Checked out & Returned) */}
-                <div className="md:col-span-3 bg-teal-50/40 p-2.5 rounded-xl border border-teal-100 space-y-1.5">
-                  <span className="text-teal-800 font-bold text-[11px] block border-b border-teal-200 pb-1">
+                <div className="md:col-span-3 bg-teal-50/40 dark:bg-teal-950/30 p-2.5 rounded-xl border border-teal-100 dark:border-teal-900/50 space-y-1.5">
+                  <span className="text-teal-800 dark:text-teal-300 font-bold text-[11px] block border-b border-teal-200 dark:border-teal-800 pb-1">
                     ⏱️ เวลาดำเนินการจริง:
                   </span>
-                  <div className="text-[11px] space-y-1 text-slate-700 font-medium">
+                  <div className="text-[11px] space-y-1 text-slate-700 dark:text-slate-300 font-medium">
                     <div className="flex items-start gap-1.5">
-                      <ClipboardCheck className="w-3.5 h-3.5 text-teal-600 flex-shrink-0 mt-0.5" />
+                      <ClipboardCheck className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 flex-shrink-0 mt-0.5" />
                       <span>
                         <strong>เวลาจ่ายของ:</strong>{' '}
                         {req.checkedOutAt ? (
-                          <span className="text-teal-800 font-bold">
+                          <span className="text-teal-800 dark:text-teal-300 font-bold">
                             {new Date(req.checkedOutAt).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })} น.
-                            {req.officer?.name && <span className="block text-[10px] text-slate-500 font-normal">จนท. ผู้จ่าย: {req.officer.name}</span>}
+                            {req.officer?.name && <span className="block text-[10px] text-slate-500 dark:text-slate-400 font-normal">จนท. ผู้จ่าย: {req.officer.name}</span>}
                           </span>
                         ) : (
-                          <span className="text-slate-400">ยังไม่จ่ายอุปกรณ์</span>
+                          <span className="text-slate-400 dark:text-slate-500">ยังไม่จ่ายอุปกรณ์</span>
                         )}
                       </span>
                     </div>
                     <div className="flex items-start gap-1.5">
-                      <RotateCcw className="w-3.5 h-3.5 text-purple-600 flex-shrink-0 mt-0.5" />
+                      <RotateCcw className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 flex-shrink-0 mt-0.5" />
                       <span>
                         <strong>เวลารับคืน:</strong>{' '}
                         {req.actualReturnDate ? (
-                          <span className="text-purple-800 font-bold">
+                          <span className="text-purple-800 dark:text-purple-300 font-bold">
                             {new Date(req.actualReturnDate).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })} น.
                           </span>
                         ) : (
-                          <span className="text-slate-400">ยังไม่ส่งคืน</span>
+                          <span className="text-slate-400 dark:text-slate-500">ยังไม่ส่งคืน</span>
                         )}
                       </span>
                     </div>
@@ -605,7 +605,7 @@ export default function BorrowPage() {
               </div>
 
               {/* Items List */}
-              <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+              <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 border border-slate-100 dark:border-slate-800">
                 <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center justify-between">
                   <span>รายการครุภัณฑ์ที่ยืม:</span>
                   {(req.status === 'RETURNED_COMPLETE' || req.status === 'RETURNED_WITH_ISSUE') && (

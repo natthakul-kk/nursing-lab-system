@@ -206,15 +206,15 @@ export default function StudentDashboard() {
 
       {/* OVERDUE ALERT BANNER */}
       {overdueBorrows.length > 0 && (
-        <div className="bg-rose-50 border-2 border-rose-300 rounded-2xl p-4 sm:p-5 flex items-start gap-3 shadow-md shadow-rose-100">
+        <div className="bg-rose-50 dark:bg-rose-950/40 border-2 border-rose-300 dark:border-rose-800 rounded-2xl p-4 sm:p-5 flex items-start gap-3 shadow-md shadow-rose-100 dark:shadow-none">
           <div className="w-10 h-10 rounded-xl bg-rose-500 text-white flex items-center justify-center flex-shrink-0">
             <AlertTriangle className="w-6 h-6 animate-bounce" />
           </div>
           <div className="flex-1">
-            <h3 className="text-sm font-black text-rose-900">
+            <h3 className="text-sm font-black text-rose-900 dark:text-rose-200">
               แจ้งเตือนด่วน: มีอุปกรณ์ {overdueBorrows.length} รายการที่เกินกำหนดส่งคืนแล้ว!
             </h3>
-            <p className="text-xs text-rose-700 mt-1 leading-relaxed">
+            <p className="text-xs text-rose-700 dark:text-rose-300 mt-1 leading-relaxed">
               กรุณานำอุปกรณ์มาส่งคืนและตรวจสภาพที่เคาน์เตอร์ห้องปฏิบัติการทางการพยาบาลโดยเร็ว เพื่อเปิดโอกาสให้เพื่อนร่วมชั้นได้ใช้งานต่อ
             </p>
           </div>
@@ -224,85 +224,85 @@ export default function StudentDashboard() {
       {/* Quick Summary Cards for Student */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Currently Holding */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between transition-colors">
           <div>
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">กำลังยืมอยู่ขณะนี้</span>
-            <div className="text-2xl font-black text-slate-800 mt-1.5">
-              {activeBorrows.length} <span className="text-xs font-normal text-slate-500">คำขอ</span>
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">กำลังยืมอยู่ขณะนี้</span>
+            <div className="text-2xl font-black text-slate-800 dark:text-white mt-1.5">
+              {activeBorrows.length} <span className="text-xs font-normal text-slate-500 dark:text-slate-400">คำขอ</span>
             </div>
-            <p className="text-[11px] text-teal-600 font-medium mt-1">
+            <p className="text-[11px] text-teal-600 dark:text-teal-400 font-medium mt-1">
               {overdueBorrows.length > 0 ? `(เกินกำหนด ${overdueBorrows.length} รายการ)` : 'ยังไม่มีรายการเกินกำหนด'}
             </p>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center">
+          <div className="w-12 h-12 rounded-2xl bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 flex items-center justify-center">
             <Package className="w-6 h-6" />
           </div>
         </div>
 
         {/* Card 2: Pending Approval */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between transition-colors">
           <div>
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">คำขอที่รออนุมัติ</span>
-            <div className="text-2xl font-black text-slate-800 mt-1.5">
-              {pendingBorrows.length} <span className="text-xs font-normal text-slate-500">รายการ</span>
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">คำขอที่รออนุมัติ</span>
+            <div className="text-2xl font-black text-slate-800 dark:text-white mt-1.5">
+              {pendingBorrows.length} <span className="text-xs font-normal text-slate-500 dark:text-slate-400">รายการ</span>
             </div>
-            <p className="text-[11px] text-amber-600 font-medium mt-1">รอเจ้าหน้าที่ตรวจสอบคำขอ</p>
+            <p className="text-[11px] text-amber-600 dark:text-amber-400 font-medium mt-1">รอเจ้าหน้าที่ตรวจสอบคำขอ</p>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
+          <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center">
             <Clock className="w-6 h-6" />
           </div>
         </div>
 
         {/* Card 3: Returned Completed */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between transition-colors">
           <div>
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">ประวัติการคืนแล้ว</span>
-            <div className="text-2xl font-black text-slate-800 mt-1.5">
-              {returnedBorrows.length} <span className="text-xs font-normal text-slate-500">รายการ</span>
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">ประวัติการคืนแล้ว</span>
+            <div className="text-2xl font-black text-slate-800 dark:text-white mt-1.5">
+              {returnedBorrows.length} <span className="text-xs font-normal text-slate-500 dark:text-slate-400">รายการ</span>
             </div>
-            <p className="text-[11px] text-emerald-600 font-medium mt-1">ส่งคืนตรวจสภาพสมบูรณ์</p>
+            <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-1">ส่งคืนตรวจสภาพสมบูรณ์</p>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
             <CheckCircle2 className="w-6 h-6" />
           </div>
         </div>
 
         {/* Card 4: Self-Practice Lab Hours */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between transition-colors">
           <div>
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">ชั่วโมงฝึกด้วยตนเอง</span>
-            <div className="text-2xl font-black text-indigo-700 mt-1.5">
-              {practiceStats?.userStats?.totalHours || '0.0'} <span className="text-xs font-normal text-slate-500">ชม.</span>
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">ชั่วโมงฝึกด้วยตนเอง</span>
+            <div className="text-2xl font-black text-indigo-700 dark:text-indigo-400 mt-1.5">
+              {practiceStats?.userStats?.totalHours || '0.0'} <span className="text-xs font-normal text-slate-500 dark:text-slate-400">ชม.</span>
             </div>
             <Link
               href="/practice"
-              className="text-[11px] text-indigo-600 hover:text-indigo-800 font-bold mt-1 flex items-center gap-0.5 hover:underline"
+              className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-bold mt-1 flex items-center gap-0.5 hover:underline"
             >
               จองรอบเข้าฝึก <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+          <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
             <Sparkles className="w-6 h-6" />
           </div>
         </div>
       </div>
 
       {/* Main Section: My Borrowed Items & Return Due Alerts */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-        <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
+        <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50 dark:bg-slate-950/40">
           <div>
-            <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <RefreshCw className="w-5 h-5 text-teal-600" />
+            <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <RefreshCw className="w-5 h-5 text-teal-600 dark:text-teal-400" />
               รายการอุปกรณ์ที่ฉันกำลังยืม & แจ้งเตือนวันคืน
             </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               แสดงเฉพาะรายการยืมของท่าน พร้อมสถานะและกำหนดเวลาส่งคืนห้องปฏิบัติการ
             </p>
           </div>
 
           <Link
             href="/borrow"
-            className="text-xs font-bold text-teal-700 hover:text-teal-800 flex items-center gap-1 hover:underline"
+            className="text-xs font-bold text-teal-700 dark:text-teal-400 hover:text-teal-800 dark:hover:text-teal-300 flex items-center gap-1 hover:underline"
           >
             ดูประวัติทั้งหมด <ArrowRight className="w-3.5 h-3.5" />
           </Link>

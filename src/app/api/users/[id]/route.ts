@@ -12,7 +12,24 @@ export async function PUT(
 
     const dataToUpdate: any = {};
     if (body.name !== undefined) dataToUpdate.name = body.name;
-    if (body.email !== undefined) dataToUpdate.email = body.email;
+    if (body.email !== undefined) {
+      const trimmedEmail = body.email ? String(body.email).trim().toLowerCase() : '';
+      if (trimmedEmail) {
+        const duplicateEmail = await prisma.user.findFirst({
+          where: {
+            email: { equals: trimmedEmail, mode: 'insensitive' },
+            id: { not: id },
+          },
+        });
+        if (duplicateEmail) {
+          return NextResponse.json(
+            { error: `อีเมล "${trimmedEmail}" นี้มีผู้ใช้งานอื่นในระบบใช้อยู่แล้ว` },
+            { status: 400 }
+          );
+        }
+      }
+      dataToUpdate.email = trimmedEmail;
+    }
     if (body.phone !== undefined) dataToUpdate.phone = body.phone;
     if (body.department !== undefined) dataToUpdate.department = body.department;
     if (body.studentId !== undefined) {

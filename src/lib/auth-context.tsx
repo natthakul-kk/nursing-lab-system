@@ -30,6 +30,7 @@ interface AuthContextType {
   extendSession: () => void;
   updateUser: (updatedData: Partial<User>) => Promise<boolean>;
   refreshUsers: () => Promise<void>;
+  setCurrentUser: (user: User | null) => void;
   isLoading: boolean;
   isAdmin: boolean;
   isOfficer: boolean;
@@ -230,6 +231,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const updated = users.find((u) => u.id === currentUser.id);
           if (updated) {
             setCurrentUser(updated);
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('cached_current_user', JSON.stringify(updated));
+            }
           }
         }
       }
@@ -249,6 +253,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (res.ok) {
         const updated: User = await res.json();
         setCurrentUser(updated);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('cached_current_user', JSON.stringify(updated));
+        }
         setAvailableUsers((prev) =>
           prev.map((u) => (u.id === updated.id ? updated : u))
         );
@@ -275,6 +282,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         extendSession,
         updateUser,
         refreshUsers,
+        setCurrentUser,
         isLoading,
         isAdmin,
         isOfficer,

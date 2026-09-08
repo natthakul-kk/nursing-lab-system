@@ -17,6 +17,8 @@ import {
   KeyRound,
   Eye,
   EyeOff,
+  RotateCcw,
+  Send,
 } from 'lucide-react';
 
 interface ProfileModalProps {
@@ -25,7 +27,7 @@ interface ProfileModalProps {
 }
 
 export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
-  const { currentUser, updateUser } = useAuth();
+  const { currentUser, updateUser, setCurrentUser } = useAuth();
   const [activeTab, setActiveTab] = useState<'PROFILE' | 'PASSWORD'>('PROFILE');
 
   // Profile form state
@@ -49,6 +51,14 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   const [submitting, setSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  // Email verification state
+  const [isVerifyingEmail, setIsVerifyingEmail] = useState(false);
+  const [emailOtp, setEmailOtp] = useState('');
+  const [emailSendingOtp, setEmailSendingOtp] = useState(false);
+  const [emailVerifyLoading, setEmailVerifyLoading] = useState(false);
+  const [emailOtpSentTo, setEmailOtpSentTo] = useState('');
+  const [emailDevOtp, setEmailDevOtp] = useState<string | null>(null);
+
 
   useEffect(() => {
     if (currentUser) {
@@ -66,25 +76,135 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
       });
       setSuccessMsg(null);
       setErrorMsg(null);
+      setIsVerifyingEmail(false);
+      setEmailOtp('');
+      setEmailDevOtp(null);
     }
   }, [currentUser, isOpen]);
 
   if (!isOpen || !currentUser) return null;
 
+  // Request Email Change OTP
+  const handleRequestEmailOtp = async (targetEmail: string) => {
+    if (!currentUser) return false;
+    setEmailSendingOtp(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    try {
+      const res = await fetch('/api/auth/request-email-change', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: currentUser.id,
+          newEmail: targetEmail,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setErrorMsg(data.error || 'ไม่สามารถส่งรหัสยืนยันไปยังอีเมลใหม่ได้');
+        setEmailSendingOtp(false);
+        return false;
+      }
+
+      setIsVerifyingEmail(true);
+      setEmailOtpSentTo(targetEmail);
+      if (data.devOtp) {
+        setEmailDevOtp(data.devOtp);
+      }
+      setSuccessMsg(data.message || 'ส่งรหัสยืนยัน (OTP) ไปยังอีเมลใหม่เรียบร้อยแล้ว');
+      return true;
+    } catch (err) {
+      setErrorMsg('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
+      return false;
+    } finally {
+      setEmailSendingOtp(false);
+    }
+  };
+
+  // Verify Email OTP & Finish Saving Profile
+  const handleVerifyEmailAndSave = async () => {
+    if (!currentUser) return;
+    if (!emailOtp || emailOtp.trim().length !== 6) {
+      setErrorMsg('กรุณากรอกรหัส OTP 6 หลัก');
+      return;
+    }
+
+    setEmailVerifyLoading(true);
+    setErrorMsg(null);
+
+    try {
+      const res = await fetch('/api/auth/verify-email-change', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: currentUser.id,
+          otp: emailOtp.trim(),
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setErrorMsg(data.error || 'รหัสยืนยัน OTP ไม่ถูกต้อง');
+        setEmailVerifyLoading(false);
+        return;
+      }
+
+      // Also update other profile fields (name, phone, department)
+      await updateUser({
+        name: formData.name,
+        phone: formData.phone,
+        department: formData.department,
+        email: data.user?.email || emailOtpSentTo,
+      });
+
+      if (data.user) {
+        setCurrentUser(data.user);
+      }
+
+      setSuccessMsg('ยืนยันและเปลี่ยนอีเมลสำเร็จแล้ว');
+      setIsVerifyingEmail(false);
+      setEmailOtp('');
+
+      setTimeout(() => {
+        onClose();
+      }, 1500);
+    } catch (err) {
+      setErrorMsg('เกิดข้อผิดพลาดในการยืนยัน OTP กรุณาลองใหม่');
+    } finally {
+      setEmailVerifyLoading(false);
+    }
+  };
+
   // Handle Profile Update
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitting(true);
     setSuccessMsg(null);
     setErrorMsg(null);
 
+    const isEmailChanged =
+      formData.email.trim().toLowerCase() !== (currentUser?.email || '').toLowerCase();
+
+    // If email is changed, user must verify OTP sent to the new email
+    if (isEmailChanged) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email.trim())) {
+        setErrorMsg('รูปแบบอีเมลไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง');
+        return;
+      }
+
+      await handleRequestEmailOtp(formData.email.trim());
+      return;
+    }
+
+    // Email unchanged: save profile directly
+    setSubmitting(true);
     const success = await updateUser({
       name: formData.name,
-      email: formData.email,
       phone: formData.phone,
       department: formData.department,
     });
-
     setSubmitting(false);
 
     if (success) {
@@ -246,14 +366,26 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
 
                 {/* Email */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">อีเมล *</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-700">อีเมล *</label>
+                    {formData.email.trim().toLowerCase() !== (currentUser.email || '').toLowerCase() && (
+                      <span className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded font-medium">
+                        ต้องยืนยัน OTP ที่อีเมลใหม่
+                      </span>
+                    )}
+                  </div>
                   <div className="relative">
                     <input
                       type="email"
                       required
+                      disabled={isVerifyingEmail}
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-9 pr-3 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
+                      className={`w-full bg-slate-50 border rounded-xl py-2 pl-9 pr-3 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition ${
+                        formData.email.trim().toLowerCase() !== (currentUser.email || '').toLowerCase()
+                          ? 'border-amber-400 bg-amber-50/20'
+                          : 'border-slate-200'
+                      }`}
                     />
                     <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                   </div>
@@ -307,6 +439,75 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                 </div>
               </div>
 
+              {/* Email Change OTP Verification Card */}
+              {isVerifyingEmail && (
+                <div className="p-4 rounded-2xl bg-teal-50/80 border-2 border-teal-500/40 space-y-3 animate-in fade-in zoom-in-95">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-teal-600 text-white flex items-center justify-center flex-shrink-0">
+                      <Mail className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-xs font-bold text-teal-950">ยืนยันรหัส OTP เพื่อเปลี่ยนอีเมล</h4>
+                      <p className="text-[11px] text-teal-800 mt-0.5 leading-relaxed">
+                        ระบบได้ส่งรหัส OTP 6 หลักไปยัง <span className="font-bold font-mono underline">{emailOtpSentTo}</span> แล้ว (รหัสมีอายุ 15 นาที)
+                      </p>
+                      {emailDevOtp && (
+                        <div className="mt-1 inline-block px-2 py-0.5 rounded bg-teal-200/70 text-teal-900 text-[10px] font-mono font-bold">
+                          [โหมดทดสอบ Dev OTP: {emailDevOtp}]
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">กรอกรหัสยืนยัน OTP 6 หลัก</label>
+                    <input
+                      type="text"
+                      maxLength={6}
+                      autoFocus
+                      placeholder="••••••"
+                      value={emailOtp}
+                      onChange={(e) => setEmailOtp(e.target.value.replace(/\D/g, ''))}
+                      className="w-full bg-white border border-teal-300 rounded-xl py-2.5 px-4 text-center font-mono font-bold text-lg tracking-widest text-teal-900 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1">
+                    <button
+                      type="button"
+                      disabled={emailSendingOtp}
+                      onClick={() => handleRequestEmailOtp(emailOtpSentTo)}
+                      className="text-xs font-bold text-teal-700 hover:text-teal-900 underline transition cursor-pointer disabled:opacity-50 flex items-center gap-1"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      <span>{emailSendingOtp ? 'กำลังส่งใหม่...' : 'ส่งรหัส OTP อีกครั้ง'}</span>
+                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsVerifyingEmail(false);
+                          setEmailOtp('');
+                          setFormData({ ...formData, email: currentUser.email });
+                        }}
+                        className="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-200/60 transition cursor-pointer"
+                      >
+                        ยกเลิก (ใช้อีเมลเดิม)
+                      </button>
+                      <button
+                        type="button"
+                        disabled={emailVerifyLoading || emailOtp.length !== 6}
+                        onClick={handleVerifyEmailAndSave}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition cursor-pointer disabled:opacity-50"
+                      >
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>{emailVerifyLoading ? 'กำลังตรวจสอบ...' : 'ยืนยันและเปลี่ยนอีเมล'}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Current Role Notice */}
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between text-xs">
                 <span className="text-slate-500 font-semibold flex items-center gap-1.5">
@@ -319,23 +520,31 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
               </div>
 
               {/* Buttons */}
-              <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
-                >
-                  ยกเลิก
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition cursor-pointer disabled:opacity-50"
-                >
-                  <Save className="w-4 h-4" />
-                  <span>{submitting ? 'กำลังบันทึก...' : 'บันทึกข้อมูล'}</span>
-                </button>
-              </div>
+              {!isVerifyingEmail && (
+                <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                  >
+                    ยกเลิก
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submitting || emailSendingOtp}
+                    className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition cursor-pointer disabled:opacity-50"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>
+                      {submitting || emailSendingOtp
+                        ? 'กำลังส่งรหัสยืนยัน...'
+                        : formData.email.trim().toLowerCase() !== (currentUser.email || '').toLowerCase()
+                        ? 'ขอรหัส OTP เพื่อเปลี่ยนอีเมล'
+                        : 'บันทึกข้อมูล'}
+                    </span>
+                  </button>
+                </div>
+              )}
             </form>
           ) : (
             /* Tab 2: Change Password Form */

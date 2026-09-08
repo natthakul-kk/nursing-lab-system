@@ -318,3 +318,69 @@ export async function sendPasswordResetEmail(params: {
   }
 }
 
+/**
+ * 4. Send Email Change Verification OTP
+ */
+export async function sendEmailChangeOtpEmail(params: {
+  recipientEmail: string;
+  recipientName: string;
+  otpCode: string;
+}) {
+  const { recipientEmail, recipientName, otpCode } = params;
+
+  if (!resend) {
+    console.log(`[DEV MODE] Resend not configured. Email Change OTP for ${recipientEmail}: ${otpCode}`);
+    return { success: true, devMode: true };
+  }
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>รหัสยืนยันเพื่อเปลี่ยนที่อยู่อีเมล (OTP)</title>
+    </head>
+    <body style="font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; padding: 24px; margin: 0;">
+      <div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid #e2e8f0;">
+        <div style="background: linear-gradient(135deg, #0d9488, #0f766e); padding: 24px; text-align: center; color: #ffffff;">
+          <h2 style="margin: 0; font-size: 20px; font-weight: 700;">ยืนยันการเปลี่ยนอีเมล</h2>
+          <p style="margin: 4px 0 0; font-size: 12px; color: #ccfbf1;">ห้องปฏิบัติการพยาบาลศาสตร์ (Nursing Lab)</p>
+        </div>
+        <div style="padding: 24px;">
+          <p style="font-size: 14px; color: #334155; margin-top: 0;">เรียนคุณ <b>${recipientName}</b>,</p>
+          <p style="font-size: 13px; color: #475569; line-height: 1.6;">
+            ท่านได้ขอเปลี่ยนที่อยู่อีเมลประจำบัญชีมายัง <b>${recipientEmail}</b> กรุณาใช้รหัสยืนยัน (OTP) ด้านล่างนี้เพื่อยืนยันการแก้ไขข้อมูล:
+          </p>
+          <div style="text-align: center; margin: 24px 0;">
+            <div style="display: inline-block; background-color: #f0fdfa; border: 2px dashed #0d9488; padding: 14px 32px; border-radius: 12px; letter-spacing: 6px; font-size: 28px; font-weight: 800; color: #0f766e; font-family: monospace;">
+              ${otpCode}
+            </div>
+            <p style="font-size: 11px; color: #64748b; margin-top: 8px;">รหัสมีอายุการใช้งาน 15 นาที</p>
+          </div>
+          <div style="background-color: #fffbeb; border-radius: 8px; padding: 10px 12px; font-size: 11px; color: #92400e;">
+            ⚠️ หากท่านไม่ได้เป็นผู้ทำรายการนี้ กรุณาอย่าเปิดเผยรหัส OTP ให้แก่ผู้อื่น
+          </div>
+        </div>
+        <div style="background-color: #f8fafc; padding: 12px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #f1f5f9;">
+          ระบบบริหารจัดการห้องปฏิบัติการพยาบาลศาสตร์ คณะพยาบาลศาสตร์
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  try {
+    const result = await resend.emails.send({
+      from: senderEmail,
+      to: [recipientEmail],
+      subject: `[รหัส OTP: ${otpCode}] ยืนยันการเปลี่ยนอีเมล - ระบบห้องแล็บพยาบาล`,
+      html: htmlContent,
+    });
+    return { success: true, data: result };
+  } catch (error: any) {
+    console.error('Resend email error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+

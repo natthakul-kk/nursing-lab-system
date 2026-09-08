@@ -1,13 +1,208 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+// Map Thai or common item type words
 function normalizeItemType(typeInput?: string): 'EQUIPMENT' | 'CONSUMABLE' {
   if (!typeInput) return 'EQUIPMENT';
   const t = typeInput.trim().toUpperCase();
-  if (t.includes('CONSUMABLE') || t.includes('สิ้นเปลือง') || t.includes('เวชภัณฑ์') || t.includes('ยา')) {
+  if (t.includes('CONSUMABLE') || t.includes('สิ้นเปลือง') || t.includes('เวชภัณฑ์') || t.includes('ยา') || t.includes('วัสดุ')) {
     return 'CONSUMABLE';
   }
   return 'EQUIPMENT';
+}
+
+// Robust extractor for Thai & English headers from Excel/CSV
+function extractItemFromRow(row: Record<string, any>) {
+  const map: Record<string, any> = {};
+  for (const [k, v] of Object.entries(row)) {
+    if (v === undefined || v === null) continue;
+    const cleanKey = k.toString().trim().toLowerCase().replace(/[\s\-_/()]/g, '');
+    map[cleanKey] = typeof v === 'string' ? v.trim() : v;
+    map[k.trim()] = typeof v === 'string' ? v.trim() : v;
+  }
+
+  // 1. Name
+  const name =
+    map['ชื่อรายการ'] ||
+    map['ชื่อพัสดุ'] ||
+    map['ชื่ออุปกรณ์'] ||
+    map['ชื่อเวชภัณฑ์'] ||
+    map['ชื่อ'] ||
+    map['name'] ||
+    map['itemname'] ||
+    row['ชื่อรายการ'] ||
+    row['ชื่อพัสดุ'] ||
+    row['ชื่ออุปกรณ์'] ||
+    row['ชื่อ'] ||
+    row['name'] ||
+    '';
+
+  // 2. Code
+  const code =
+    map['รหัสพัสดุ'] ||
+    map['รหัสอุปกรณ์'] ||
+    map['รหัสเวชภัณฑ์'] ||
+    map['รหัส'] ||
+    map['code'] ||
+    map['itemcode'] ||
+    row['รหัสพัสดุ'] ||
+    row['รหัส'] ||
+    row['code'] ||
+    '';
+
+  // 3. Type
+  const type =
+    map['ประเภท'] ||
+    map['ประเภทพัสดุ'] ||
+    map['ประเภทequipmentconsumable'] ||
+    row['ประเภท (EQUIPMENT/CONSUMABLE)'] ||
+    row['ประเภท'] ||
+    row['type'] ||
+    '';
+
+  // 4. Category
+  const category =
+    map['หมวดหมู่'] ||
+    map['หมวด'] ||
+    map['category'] ||
+    row['หมวดหมู่'] ||
+    row['category'] ||
+    '';
+
+  // 5. Unit
+  const unit =
+    map['หน่วยนับ'] ||
+    map['หน่วย'] ||
+    map['unit'] ||
+    row['หน่วยนับ'] ||
+    row['unit'] ||
+    '';
+
+  // 6. Quantity
+  const quantity =
+    map['จำนวนรับเข้า'] ||
+    map['จำนวน'] ||
+    map['จำนวนชิ้น'] ||
+    map['quantity'] ||
+    map['qty'] ||
+    row['จำนวนรับเข้า'] ||
+    row['จำนวน'] ||
+    row['quantity'] ||
+    1;
+
+  // 7. Cost
+  const cost =
+    map['ราคาต่อหน่วย'] ||
+    map['ราคา'] ||
+    map['ราคาทุน'] ||
+    map['cost'] ||
+    map['price'] ||
+    map['unitcost'] ||
+    row['ราคาต่อหน่วย'] ||
+    row['ราคา'] ||
+    row['cost'] ||
+    0;
+
+  // 8. Location
+  const location =
+    map['สถานที่จัดเก็บ'] ||
+    map['สถานที่'] ||
+    map['location'] ||
+    row['สถานที่จัดเก็บ'] ||
+    row['location'] ||
+    '';
+
+  // 9. Description
+  const description =
+    map['คำอธิบาย'] ||
+    map['รายละเอียด'] ||
+    map['หมายเหตุ'] ||
+    map['description'] ||
+    map['note'] ||
+    row['คำอธิบาย'] ||
+    row['description'] ||
+    '';
+
+  // 10. Consumable - Lot Number
+  const lotNumber =
+    map['หมายเลขล็อต'] ||
+    map['ล็อต'] ||
+    map['เลขล็อต'] ||
+    map['lotnumber'] ||
+    map['lot'] ||
+    row['หมายเลขล็อต'] ||
+    row['lotNumber'] ||
+    '';
+
+  // 11. Consumable - Expiry Date
+  const expiryDate =
+    map['วันหมดอายุyyyymmdd'] ||
+    map['วันหมดอายุ'] ||
+    map['หมดอายุ'] ||
+    map['expirydate'] ||
+    map['expiry'] ||
+    row['วันหมดอายุ (YYYY-MM-DD)'] ||
+    row['วันหมดอายุ'] ||
+    row['expiryDate'] ||
+    '';
+
+  // 12. Consumable - Supplier
+  const supplier =
+    map['ผู้จัดจำหน่าย'] ||
+    map['บริษัท'] ||
+    map['supplier'] ||
+    row['ผู้จัดจำหน่าย'] ||
+    row['supplier'] ||
+    '';
+
+  // 13. Equipment - Lab Code Prefix
+  const labCodePrefix =
+    map['รหัสแล็บขึ้นต้น'] ||
+    map['รหัสแล็บ'] ||
+    map['รหัสครุภัณฑ์'] ||
+    map['assetcode'] ||
+    row['รหัสแล็บ (ขึ้นต้น)'] ||
+    row['รหัสแล็บ'] ||
+    row['assetCode'] ||
+    '';
+
+  // 14. Equipment - Gov Asset Code
+  const govAssetCode =
+    map['เลขครุภัณฑ์ราชการ'] ||
+    map['เลขครุภัณฑ์'] ||
+    map['หมายเลขครุภัณฑ์'] ||
+    map['govassetcode'] ||
+    row['เลขครุภัณฑ์ราชการ'] ||
+    row['govAssetCode'] ||
+    '';
+
+  // 15. Equipment - Serial Number
+  const serialNumber =
+    map['หมายเลขเครื่อง'] ||
+    map['serialnumber'] ||
+    map['serial'] ||
+    row['หมายเลขเครื่อง'] ||
+    row['serialNumber'] ||
+    '';
+
+  return {
+    name: String(name || '').trim(),
+    code: String(code || '').trim().toUpperCase(),
+    type: String(type || '').trim(),
+    category: String(category || '').trim(),
+    unit: String(unit || '').trim(),
+    quantity: Math.max(1, Number(quantity) || 1),
+    cost: Number(cost) || 0,
+    location: String(location || '').trim(),
+    description: String(description || '').trim(),
+    lotNumber: String(lotNumber || '').trim(),
+    expiryDate: expiryDate ? String(expiryDate).trim() : null,
+    supplier: String(supplier || '').trim(),
+    labCodePrefix: String(labCodePrefix || '').trim(),
+    assetCode: String(labCodePrefix || '').trim(),
+    govAssetCode: String(govAssetCode || '').trim(),
+    serialNumber: String(serialNumber || '').trim(),
+  };
 }
 
 export async function POST(req: Request) {
@@ -25,6 +220,7 @@ export async function POST(req: Request) {
     existingCategories.forEach((c) => categoryMap.set(c.name.trim().toLowerCase(), c.id));
 
     let createdItemsCount = 0;
+    let updatedItemsCount = 0;
     let createdAssetsCount = 0;
     let createdLotsCount = 0;
     const errors: string[] = [];
@@ -32,24 +228,33 @@ export async function POST(req: Request) {
     const currentYearThai = new Date().getFullYear() + 543;
 
     for (let i = 0; i < items.length; i++) {
-      const row = items[i];
+      const raw = items[i];
       const rowNum = i + 1;
 
-      if (!row.name || !row.name.trim()) {
+      if (!raw || typeof raw !== 'object') continue;
+
+      const row = extractItemFromRow(raw);
+
+      // Skip completely blank rows in Excel
+      if (!row.name && !row.code && !row.category) {
+        continue;
+      }
+
+      if (!row.name) {
         errors.push(`แถวที่ ${rowNum}: กรุณาระบุชื่ออุปกรณ์/เวชภัณฑ์`);
         continue;
       }
 
-      const name = row.name.trim();
+      const name = row.name;
       const type = normalizeItemType(row.type);
-      const unit = row.unit ? String(row.unit).trim() : (type === 'EQUIPMENT' ? 'เครื่อง' : 'ชิ้น');
-      const location = row.location ? String(row.location).trim() : 'ห้องปฏิบัติการพยาบาล';
-      const cost = Number(row.cost || row.unitCost || row.price) || 0;
-      const quantity = Math.max(1, Number(row.quantity) || 1);
+      const unit = row.unit || (type === 'EQUIPMENT' ? 'เครื่อง' : 'ชิ้น');
+      const location = row.location || 'ห้องปฏิบัติการพยาบาล';
+      const cost = row.cost;
+      const quantity = row.quantity;
 
       // Handle category
       let categoryId = '';
-      const catName = row.category ? String(row.category).trim() : (type === 'EQUIPMENT' ? 'ครุภัณฑ์ทั่วไป' : 'เวชภัณฑ์ทั่วไป');
+      const catName = row.category || (type === 'EQUIPMENT' ? 'ครุภัณฑ์ทั่วไป' : 'เวชภัณฑ์ทั่วไป');
       const catKey = catName.toLowerCase();
 
       if (categoryMap.has(catKey)) {
@@ -67,7 +272,7 @@ export async function POST(req: Request) {
       }
 
       // Generate or sanitize item code
-      let code = row.code ? String(row.code).trim().toUpperCase() : '';
+      let code = row.code;
       if (!code) {
         const prefix = type === 'EQUIPMENT' ? 'EQ' : 'CON';
         const count = await prisma.item.count({ where: { type } });
@@ -76,8 +281,13 @@ export async function POST(req: Request) {
 
       try {
         // Find existing item or create new
-        let item = await prisma.item.findUnique({
-          where: { code },
+        let item = await prisma.item.findFirst({
+          where: {
+            OR: [
+              { code: { equals: code, mode: 'insensitive' as const } },
+              { name: { equals: name, mode: 'insensitive' as const } },
+            ],
+          },
         });
 
         if (!item) {
@@ -89,11 +299,13 @@ export async function POST(req: Request) {
               categoryId,
               unit,
               location,
-              minStockAlert: Number(row.minStockAlert) || 5,
+              minStockAlert: 5,
               description: row.description || null,
             },
           });
           createdItemsCount++;
+        } else {
+          updatedItemsCount++;
         }
 
         if (type === 'CONSUMABLE') {
@@ -138,6 +350,9 @@ export async function POST(req: Request) {
           });
 
           const prefixClean = item.code.replace('EQ-', '').replace(/-\d+$/, '') || 'EQ';
+          const govCodes = row.govAssetCode
+            ? String(row.govAssetCode).split(',').map((s: string) => s.trim()).filter(Boolean)
+            : [];
 
           for (let q = 1; q <= quantity; q++) {
             const seq = existingAssetsCount + q;
@@ -146,6 +361,9 @@ export async function POST(req: Request) {
             // If only 1 piece and user provided custom assetCode, use it
             if (quantity === 1 && row.assetCode) {
               assetCode = String(row.assetCode).trim().toUpperCase();
+            } else if (row.labCodePrefix) {
+              const prefixNorm = row.labCodePrefix.endsWith('-') ? row.labCodePrefix : `${row.labCodePrefix}-`;
+              assetCode = `${prefixNorm}${String(seq).padStart(3, '0')}`;
             } else {
               assetCode = `${prefixClean}-${currentYearThai}-${String(seq).padStart(3, '0')}`;
             }
@@ -158,7 +376,7 @@ export async function POST(req: Request) {
               assetCode = `${assetCode}-${String(Date.now()).slice(-3)}`;
             }
 
-            const govCode = quantity === 1 && row.govAssetCode ? String(row.govAssetCode).trim() : null;
+            const govCode = govCodes[q - 1] || (quantity === 1 && row.govAssetCode ? String(row.govAssetCode).trim() : null);
             const serialNumber = quantity === 1 && row.serialNumber ? String(row.serialNumber).trim() : null;
 
             await prisma.equipmentAsset.create({
@@ -200,10 +418,15 @@ export async function POST(req: Request) {
       success: true,
       totalProcessed: items.length,
       createdItemsCount,
+      itemsCreated: createdItemsCount,
+      updatedItemsCount,
+      itemsUpdated: updatedItemsCount,
       createdAssetsCount,
+      assetsCreated: createdAssetsCount,
       createdLotsCount,
+      lotsCreated: createdLotsCount,
       errors,
-      message: `นำเข้าพัสดุและครุภัณฑ์เรียบร้อยแล้ว: เพิ่มรายการหลัก ${createdItemsCount} รายการ, ครุภัณฑ์ ${createdAssetsCount} ชิ้น, ล็อตเวชภัณฑ์ ${createdLotsCount} ล็อต`,
+      message: `นำเข้าพัสดุและครุภัณฑ์เรียบร้อยแล้ว: เพิ่มรายการใหม่ ${createdItemsCount} รายการ, อัปเดต ${updatedItemsCount} รายการ, ครุภัณฑ์ ${createdAssetsCount} ชิ้น, ล็อตเวชภัณฑ์ ${createdLotsCount} ล็อต`,
     });
   } catch (error: any) {
     console.error('Bulk item import error:', error);

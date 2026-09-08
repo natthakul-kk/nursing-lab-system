@@ -63,6 +63,7 @@ model Course {
 
 model Category {
   id          String   @id @default(cuid())
+  code        String?  @unique // รหัสหมวดหมู่ภาษาอังกฤษ เช่น IV, PPE, WD, CPR, OBS
   name        String
   type        String   // "EQUIPMENT" or "CONSUMABLE"
   description String?

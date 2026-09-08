@@ -32,26 +32,38 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { name, type, description } = body;
+    const { name, code, type, description } = body;
 
     if (!name || !name.trim()) {
       return NextResponse.json({ error: 'กรุณากรอกชื่อหมวดหมู่' }, { status: 400 });
     }
 
     const categoryType = type === 'EQUIPMENT' ? 'EQUIPMENT' : 'CONSUMABLE';
+    const categoryCode = code ? code.trim().toUpperCase() : null;
 
     // Check duplicate name
-    const existing = await prisma.category.findFirst({
+    const existingName = await prisma.category.findFirst({
       where: { name: name.trim() },
     });
 
-    if (existing) {
+    if (existingName) {
       return NextResponse.json({ error: 'ชื่อหมวดหมู่นี้มีอยู่ในระบบแล้ว' }, { status: 400 });
+    }
+
+    // Check duplicate code if provided
+    if (categoryCode) {
+      const existingCode = await prisma.category.findFirst({
+        where: { code: categoryCode },
+      });
+      if (existingCode) {
+        return NextResponse.json({ error: `รหัสหมวดหมู่ "${categoryCode}" มีอยู่ในระบบแล้ว กรุณาใช้รหัสอื่น` }, { status: 400 });
+      }
     }
 
     const created = await prisma.category.create({
       data: {
         name: name.trim(),
+        code: categoryCode,
         type: categoryType,
         description: description?.trim() || null,
       },

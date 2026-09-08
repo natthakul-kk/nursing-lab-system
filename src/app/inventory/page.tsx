@@ -63,6 +63,7 @@ export default function InventoryPage() {
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [categoryForm, setCategoryForm] = useState({
     id: '',
+    code: '',
     name: '',
     type: 'CONSUMABLE',
     description: '',
@@ -382,51 +383,46 @@ export default function InventoryPage() {
     const cat = categories.find((c) => c.id === categoryId);
     const catName = cat?.name || '';
     
-    if (type === 'CONSUMABLE') {
-      let group = 'GEN';
-      if (catName.includes('ฉีด') || catName.includes('สารน้ำ') || catName.includes('IV')) {
-        group = 'IV';
-      } else if (catName.includes('แผล') || catName.includes('ผ่าตัด') || catName.includes('ฆ่าเชื้อ')) {
-        group = 'WD';
-      } else if (catName.includes('ป้องกัน') || catName.includes('PPE') || catName.includes('ถุงมือ')) {
-        group = 'PPE';
+    // ใช้รหัสหมวดหมู่ภาษาอังกฤษที่ผู้ใช้กำหนด (ถ้ามี) มิฉะนั้นใช้การจับคู่คำอัตโนมัติ
+    let group = cat?.code ? cat.code.toUpperCase() : '';
+    if (!group) {
+      if (type === 'CONSUMABLE') {
+        if (catName.includes('ฉีด') || catName.includes('สารน้ำ') || catName.includes('IV')) {
+          group = 'IV';
+        } else if (catName.includes('แผล') || catName.includes('ผ่าตัด') || catName.includes('ฆ่าเชื้อ')) {
+          group = 'WD';
+        } else if (catName.includes('ป้องกัน') || catName.includes('PPE') || catName.includes('ถุงมือ')) {
+          group = 'PPE';
+        } else {
+          group = 'GEN';
+        }
+      } else {
+        if (catName.includes('หุ่น') || catName.includes('โมเดล')) {
+          group = 'MNK';
+        } else if (catName.includes('สัญญาณชีพ') || catName.includes('ตรวจ')) {
+          group = 'MED';
+        } else if (catName.includes('หัตถการ')) {
+          group = 'PRO';
+        } else {
+          group = 'EQ';
+        }
       }
-
-      // หาเลขรหัสสูงสุดในกลุ่มนี้
-      const prefix = `CON-${group}-`;
-      const existingInGroup = currentItems.filter((i) => i.code && i.code.startsWith(prefix));
-      let maxNum = 0;
-      existingInGroup.forEach((i) => {
-        const parts = i.code.split('-');
-        const num = parseInt(parts[parts.length - 1], 10);
-        if (!isNaN(num) && num > maxNum) maxNum = num;
-      });
-      return `${prefix}${String(maxNum + 1).padStart(3, '0')}`;
-    } else {
-      let group = 'EQ';
-      if (catName.includes('หุ่น') || catName.includes('โมเดล')) {
-        group = 'MNK';
-      } else if (catName.includes('สัญญาณชีพ') || catName.includes('ตรวจ')) {
-        group = 'MED';
-      } else if (catName.includes('หัตถการ')) {
-        group = 'PRO';
-      }
-
-      const prefix = `EQ-${group}-`;
-      const existingInGroup = currentItems.filter((i) => i.code && i.code.startsWith(prefix));
-      let maxNum = 0;
-      existingInGroup.forEach((i) => {
-        const parts = i.code.split('-');
-        const num = parseInt(parts[parts.length - 1], 10);
-        if (!isNaN(num) && num > maxNum) maxNum = num;
-      });
-      return `${prefix}${String(maxNum + 1).padStart(3, '0')}`;
     }
+
+    // หาเลขรหัสสูงสุดในกลุ่มนี้
+    const prefix = `${type === 'CONSUMABLE' ? 'CON' : 'EQ'}-${group}-`;
+    const existingInGroup = currentItems.filter((i) => i.code && i.code.startsWith(prefix));
+    let maxNum = 0;
+    existingInGroup.forEach((i) => {
+      const parts = i.code.split('-');
+      const num = parseInt(parts[parts.length - 1], 10);
+      if (!isNaN(num) && num > maxNum) maxNum = num;
+    });
+    return `${prefix}${String(maxNum + 1).padStart(3, '0')}`;
   };
 
-
   const handleOpenAddCategory = () => {
-    setCategoryForm({ id: '', name: '', type: 'CONSUMABLE', description: '' });
+    setCategoryForm({ id: '', code: '', name: '', type: 'CONSUMABLE', description: '' });
     setIsEditingCategory(false);
     setShowCategoryModal(true);
   };
@@ -434,6 +430,7 @@ export default function InventoryPage() {
   const handleEditCategory = (cat: any) => {
     setCategoryForm({
       id: cat.id,
+      code: cat.code || '',
       name: cat.name,
       type: cat.type || 'CONSUMABLE',
       description: cat.description || '',
@@ -455,7 +452,7 @@ export default function InventoryPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        setCategoryForm({ id: '', name: '', type: 'CONSUMABLE', description: '' });
+        setCategoryForm({ id: '', code: '', name: '', type: 'CONSUMABLE', description: '' });
         setIsEditingCategory(false);
         await fetchCategories();
         await fetchItems();
@@ -1347,7 +1344,7 @@ export default function InventoryPage() {
                     </label>
                     <button
                       type="button"
-                      onClick={() => setShowCategoryModal(true)}
+                      onClick={handleOpenAddCategory}
                       className="text-[10px] text-teal-600 hover:text-teal-700 font-bold hover:underline cursor-pointer"
                     >
                       + เพิ่มหมวดหมู่ใหม่
@@ -1372,7 +1369,7 @@ export default function InventoryPage() {
                       .filter((c) => !c.type || c.type === newItem.type)
                       .map((c) => (
                         <option key={c.id} value={c.id}>
-                          📁 {c.name}
+                          📁 {c.code ? `[${c.code}] ` : ''}{c.name}
                         </option>
                       ))}
                     {/* Fallback to show remaining categories if any */}
@@ -1382,7 +1379,7 @@ export default function InventoryPage() {
                           .filter((c) => c.type && c.type !== newItem.type)
                           .map((c) => (
                             <option key={c.id} value={c.id}>
-                              📁 {c.name}
+                              📁 {c.code ? `[${c.code}] ` : ''}{c.name}
                             </option>
                           ))}
                       </optgroup>
@@ -2097,7 +2094,7 @@ export default function InventoryPage() {
                     </label>
                     <button
                       type="button"
-                      onClick={() => setShowCategoryModal(true)}
+                      onClick={handleOpenAddCategory}
                       className="text-[10px] text-teal-600 hover:text-teal-700 font-bold hover:underline cursor-pointer"
                     >
                       + เพิ่มหมวดหมู่ใหม่
@@ -2109,14 +2106,14 @@ export default function InventoryPage() {
                     onChange={(e) =>
                       setEditItemForm({ ...editItemForm, categoryId: e.target.value })
                     }
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-medium text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                   >
                     <option value="">-- กรุณาเลือกหมวดหมู่ --</option>
                     {categories
                       .filter((c) => !c.type || c.type === editItemTarget?.type)
                       .map((c) => (
                         <option key={c.id} value={c.id}>
-                          📁 {c.name}
+                          📁 {c.code ? `[${c.code}] ` : ''}{c.name}
                         </option>
                       ))}
                     {categories.some((c) => c.type && c.type !== editItemTarget?.type) && (
@@ -2125,7 +2122,7 @@ export default function InventoryPage() {
                           .filter((c) => c.type && c.type !== editItemTarget?.type)
                           .map((c) => (
                             <option key={c.id} value={c.id}>
-                              📁 {c.name}
+                              📁 {c.code ? `[${c.code}] ` : ''}{c.name}
                             </option>
                           ))}
                       </optgroup>
@@ -2483,7 +2480,7 @@ export default function InventoryPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      setCategoryForm({ id: '', name: '', type: 'CONSUMABLE', description: '' });
+                      setCategoryForm({ id: '', code: '', name: '', type: 'CONSUMABLE', description: '' });
                       setIsEditingCategory(false);
                     }}
                     className="text-[11px] text-teal-700 hover:underline"
@@ -2493,7 +2490,30 @@ export default function InventoryPage() {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                <div className="sm:col-span-1">
+                  <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    รหัสหมวดหมู่ (Code) *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    maxLength={10}
+                    placeholder="เช่น IV, PPE, WD"
+                    value={categoryForm.code}
+                    onChange={(e) =>
+                      setCategoryForm({
+                        ...categoryForm,
+                        code: e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, ''),
+                      })
+                    }
+                    className="w-full font-mono uppercase bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-teal-700 dark:text-teal-400 focus:ring-2 focus:ring-teal-500"
+                  />
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                    เช่น IV, WD (ใช้นำหน้ารหัสพัสดุ)
+                  </p>
+                </div>
+
                 <div className="sm:col-span-2">
                   <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
                     ชื่อหมวดหมู่ *
@@ -2508,7 +2528,7 @@ export default function InventoryPage() {
                   />
                 </div>
 
-                <div>
+                <div className="sm:col-span-1">
                   <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
                     ประเภทการใช้งาน *
                   </label>
@@ -2547,13 +2567,18 @@ export default function InventoryPage() {
                     className="p-3.5 hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition flex items-center justify-between gap-3"
                   >
                     <div className="space-y-0.5">
-                      <div className="font-bold text-slate-900 text-xs flex items-center gap-2">
+                      <div className="font-bold text-slate-900 dark:text-slate-100 text-xs flex items-center gap-2">
+                        {cat.code && (
+                          <span className="font-mono text-[11px] font-black px-1.5 py-0.5 rounded bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-400 border border-teal-200 dark:border-teal-800">
+                            [{cat.code}]
+                          </span>
+                        )}
                         <span>{cat.name}</span>
                         <span
                           className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                             cat.type === 'EQUIPMENT'
-                              ? 'bg-blue-50 text-blue-800 border-blue-200'
-                              : 'bg-teal-50 text-teal-800 border-teal-200'
+                              ? 'bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-800'
+                              : 'bg-teal-50 text-teal-800 border-teal-200 dark:bg-teal-950/50 dark:text-teal-300 dark:border-teal-800'
                           }`}
                         >
                           {cat.type === 'EQUIPMENT' ? 'ครุภัณฑ์คงทน' : 'วัสดุสิ้นเปลือง'}

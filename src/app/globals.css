@@ -5,11 +5,25 @@
 :root {
   --background: #f8fafc;
   --foreground: #0f172a;
+  --surface-0: #f8fafc;
+  --surface-1: #ffffff;
+  --surface-2: #f1f5f9;
+  --surface-3: #e2e8f0;
+  --border-default: #e2e8f0;
+  --border-subtle: #f1f5f9;
 }
 
 .dark {
   --background: #020617;
   --foreground: #f8fafc;
+  --surface-0: #020617;
+  --surface-1: #0f172a;
+  --surface-2: #1e293b;
+  --surface-3: #334155;
+  --border-default: rgba(255, 255, 255, 0.1);
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --glow-teal: 0 0 20px rgba(20, 184, 166, 0.25);
+  --glow-cyan: 0 0 20px rgba(56, 189, 248, 0.25);
   color-scheme: dark;
 }
 
@@ -54,15 +68,18 @@ body {
 /* Glassmorphic & Medical Surface Utilities for Dark Mode */
 @layer utilities {
   .dark-card {
-    @apply dark:bg-slate-900/90 dark:border-slate-800/80 dark:shadow-none;
+    @apply dark:bg-slate-900 dark:border-slate-800 dark:shadow-none;
   }
   .dark-card-hover {
-    @apply dark:hover:bg-slate-900 dark:hover:border-slate-700/80;
+    @apply dark:hover:bg-slate-800/80 dark:hover:border-slate-700;
   }
   .dark-subsurface {
-    @apply dark:bg-slate-800/60 dark:border-slate-700/60;
+    @apply dark:bg-slate-800/80 dark:border-slate-700/80;
   }
   .dark-input {
-    @apply dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:border-teal-400 dark:focus:ring-teal-400/20;
+    @apply dark:bg-slate-800/90 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-400 dark:focus:border-teal-400 dark:focus:ring-teal-400/20;
+  }
+  .dark-modal {
+    @apply dark:bg-slate-900 dark:border-slate-800 dark:text-slate-100;
   }
 }

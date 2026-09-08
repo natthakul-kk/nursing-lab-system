@@ -376,112 +376,112 @@ export default function UsersPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
         <div
           onClick={() => setSelectedTab(selectedTab === 'ADMIN' ? 'ALL' : 'ADMIN')}
-          className={`p-3.5 rounded-2xl bg-purple-50 border transition cursor-pointer hover:shadow-md ${
+          className={`p-3.5 rounded-2xl border transition cursor-pointer hover:shadow-md ${
             selectedTab === 'ADMIN'
-              ? 'border-purple-400 ring-2 ring-purple-400 shadow-md bg-purple-100/70'
-              : 'border-purple-100'
+              ? 'border-purple-400 ring-2 ring-purple-400 shadow-md bg-purple-100/70 dark:bg-purple-950/60 dark:border-purple-500'
+              : 'bg-purple-50/80 dark:bg-purple-950/20 border-purple-100 dark:border-purple-900/50 hover:dark:bg-purple-950/30'
           }`}
         >
           <div className="flex items-center justify-between">
-            <div className="font-bold text-purple-900 text-xs flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-purple-600" /> แอดมิน (Admin)
+            <div className="font-bold text-purple-900 dark:text-purple-300 text-xs flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 text-purple-600 dark:text-purple-400" /> แอดมิน (Admin)
             </div>
-            <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-purple-200/80 text-purple-800">
+            <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-purple-200/80 dark:bg-purple-900/60 text-purple-800 dark:text-purple-200">
               {tabCounts.ADMIN} คน
             </span>
           </div>
-          <p className="text-[11px] text-purple-800 leading-relaxed mt-1.5">
+          <p className="text-[11px] text-purple-800 dark:text-purple-300/80 leading-relaxed mt-1.5">
             ดูแลระบบทั้งหมด เพิ่ม/แก้ไขผู้ใช้ กำหนดสิทธิ์ และเข้าถึงข้อมูลทุกส่วน
           </p>
         </div>
 
         <div
           onClick={() => setSelectedTab(selectedTab === 'OFFICER' ? 'ALL' : 'OFFICER')}
-          className={`p-3.5 rounded-2xl bg-emerald-50 border transition cursor-pointer hover:shadow-md ${
+          className={`p-3.5 rounded-2xl border transition cursor-pointer hover:shadow-md ${
             selectedTab === 'OFFICER'
-              ? 'border-emerald-400 ring-2 ring-emerald-400 shadow-md bg-emerald-100/70'
-              : 'border-emerald-100'
+              ? 'border-emerald-400 ring-2 ring-emerald-400 shadow-md bg-emerald-100/70 dark:bg-emerald-950/60 dark:border-emerald-500'
+              : 'bg-emerald-50/80 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-900/50 hover:dark:bg-emerald-950/30'
           }`}
         >
           <div className="flex items-center justify-between">
-            <div className="font-bold text-emerald-900 text-xs flex items-center gap-1.5">
-              <Activity className="w-4 h-4 text-emerald-600" /> จนท.แล็บ (Officer)
+            <div className="font-bold text-emerald-900 dark:text-emerald-300 text-xs flex items-center gap-1.5">
+              <Activity className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> จนท.แล็บ (Officer)
             </div>
-            <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-emerald-200/80 text-emerald-800">
+            <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-emerald-200/80 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200">
               {tabCounts.OFFICER} คน
             </span>
           </div>
-          <p className="text-[11px] text-emerald-800 leading-relaxed mt-1.5">
+          <p className="text-[11px] text-emerald-800 dark:text-emerald-300/80 leading-relaxed mt-1.5">
             จัดการคลัง รับเข้าสต็อก ตรวจจ่ายอุปกรณ์ และตรวจรับคืนพร้อมประเมินสภาพ
           </p>
         </div>
 
         <div
           onClick={() => setSelectedTab(selectedTab === 'APPROVER' ? 'ALL' : 'APPROVER')}
-          className={`p-3.5 rounded-2xl bg-amber-50 border transition cursor-pointer hover:shadow-md ${
+          className={`p-3.5 rounded-2xl border transition cursor-pointer hover:shadow-md ${
             selectedTab === 'APPROVER'
-              ? 'border-amber-400 ring-2 ring-amber-400 shadow-md bg-amber-100/70'
-              : 'border-amber-100'
+              ? 'border-amber-400 ring-2 ring-amber-400 shadow-md bg-amber-100/70 dark:bg-amber-950/60 dark:border-amber-500'
+              : 'bg-amber-50/80 dark:bg-amber-950/20 border-amber-100 dark:border-amber-900/50 hover:dark:bg-amber-950/30'
           }`}
         >
           <div className="flex items-center justify-between">
-            <div className="font-bold text-amber-900 text-xs flex items-center gap-1.5">
-              <UserCheck className="w-4 h-4 text-amber-600" /> ผู้อนุมัติ (Approver)
+            <div className="font-bold text-amber-900 dark:text-amber-300 text-xs flex items-center gap-1.5">
+              <UserCheck className="w-4 h-4 text-amber-600 dark:text-amber-400" /> ผู้อนุมัติ (Approver)
             </div>
-            <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-amber-200/80 text-amber-800">
+            <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-amber-200/80 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200">
               {tabCounts.APPROVER} คน
             </span>
           </div>
-          <p className="text-[11px] text-amber-800 leading-relaxed mt-1.5">
+          <p className="text-[11px] text-amber-800 dark:text-amber-300/80 leading-relaxed mt-1.5">
             หัวหน้าภาค/ประธานสาขา พิจารณาอนุมัติคำขอยืม-เบิกขั้นสุดท้ายส่งต่อห้องแล็บ
           </p>
         </div>
 
         <div
           onClick={() => setSelectedTab(selectedTab === 'TEACHER' ? 'ALL' : 'TEACHER')}
-          className={`p-3.5 rounded-2xl bg-indigo-50 border transition cursor-pointer hover:shadow-md ${
+          className={`p-3.5 rounded-2xl border transition cursor-pointer hover:shadow-md ${
             selectedTab === 'TEACHER'
-              ? 'border-indigo-400 ring-2 ring-indigo-400 shadow-md bg-indigo-100/70'
-              : 'border-indigo-100'
+              ? 'border-indigo-400 ring-2 ring-indigo-400 shadow-md bg-indigo-100/70 dark:bg-indigo-950/60 dark:border-indigo-500'
+              : 'bg-indigo-50/80 dark:bg-indigo-950/20 border-indigo-100 dark:border-indigo-900/50 hover:dark:bg-indigo-950/30'
           }`}
         >
           <div className="flex items-center justify-between">
-            <div className="font-bold text-indigo-900 text-xs flex items-center gap-1.5">
-              <BookOpen className="w-4 h-4 text-indigo-600" /> อาจารย์ (Teacher)
+            <div className="font-bold text-indigo-900 dark:text-indigo-300 text-xs flex items-center gap-1.5">
+              <BookOpen className="w-4 h-4 text-indigo-600 dark:text-indigo-400" /> อาจารย์ (Teacher)
             </div>
-            <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-indigo-200/80 text-indigo-800">
+            <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-indigo-200/80 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-200">
               {tabCounts.TEACHER} คน
             </span>
           </div>
-          <p className="text-[11px] text-indigo-800 leading-relaxed mt-1.5">
+          <p className="text-[11px] text-indigo-800 dark:text-indigo-300/80 leading-relaxed mt-1.5">
             อาจารย์ผู้สอน/ที่ปรึกษา กดรับทราบคำขอนิสิต ยืมพัสดุสอน และดูต้นทุนวิชา
           </p>
         </div>
 
         <div
           onClick={() => setSelectedTab(selectedTab === 'USER' ? 'ALL' : 'USER')}
-          className={`p-3.5 rounded-2xl bg-blue-50 border transition cursor-pointer hover:shadow-md ${
+          className={`p-3.5 rounded-2xl border transition cursor-pointer hover:shadow-md ${
             selectedTab === 'USER'
-              ? 'border-blue-400 ring-2 ring-blue-400 shadow-md bg-blue-100/70'
-              : 'border-blue-100'
+              ? 'border-blue-400 ring-2 ring-blue-400 shadow-md bg-blue-100/70 dark:bg-blue-950/60 dark:border-blue-500'
+              : 'bg-blue-50/80 dark:bg-blue-950/20 border-blue-100 dark:border-blue-900/50 hover:dark:bg-blue-950/30'
           }`}
         >
           <div className="flex items-center justify-between">
-            <div className="font-bold text-blue-900 text-xs flex items-center gap-1.5">
-              <GraduationCap className="w-4 h-4 text-blue-600" /> นิสิต (Student)
+            <div className="font-bold text-blue-900 dark:text-blue-300 text-xs flex items-center gap-1.5">
+              <GraduationCap className="w-4 h-4 text-blue-600 dark:text-blue-400" /> นิสิต (Student)
             </div>
-            <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-blue-200/80 text-blue-800">
+            <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-blue-200/80 dark:bg-blue-900/60 text-blue-800 dark:text-blue-200">
               {tabCounts.USER} คน
             </span>
           </div>
-          <p className="text-[11px] text-blue-800 leading-relaxed mt-1.5">
+          <p className="text-[11px] text-blue-800 dark:text-blue-300/80 leading-relaxed mt-1.5">
             นิสิตผู้เรียน ค้นหาพัสดุ ยื่นคำขอยืมหรือเบิก และจองห้องฝึกปฏิบัติ
           </p>
         </div>
       </div>
 
       {/* Role Filter Tabs & Search Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-sm">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
         {/* Role Tabs (Desktop) */}
         <div className="hidden lg:flex flex-wrap items-center gap-1.5">
           {[
@@ -499,15 +499,15 @@ export default function UsersPage() {
                 onClick={() => setSelectedTab(tab.key)}
                 className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
                   isSelected
-                    ? 'bg-slate-900 text-white shadow-sm ring-2 ring-slate-700/50'
-                    : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                    ? 'bg-slate-900 dark:bg-teal-600 text-white shadow-sm ring-2 ring-slate-700/50 dark:ring-teal-500/30'
+                    : 'bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
-                <tab.icon className={`w-3.5 h-3.5 ${isSelected ? 'text-teal-400' : 'text-slate-400'}`} />
+                <tab.icon className={`w-3.5 h-3.5 ${isSelected ? 'text-teal-400 dark:text-white' : 'text-slate-400'}`} />
                 <span>{tab.label}</span>
                 <span
                   className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${
-                    isSelected ? 'bg-teal-500 text-white' : 'bg-slate-200 text-slate-700'
+                    isSelected ? 'bg-teal-500 dark:bg-teal-700 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
                   }`}
                 >
                   {tab.count}
@@ -519,11 +519,11 @@ export default function UsersPage() {
 
         {/* Role Dropdown (Compact / Mobile Mode) */}
         <div className="flex lg:hidden items-center gap-2 w-full sm:w-auto">
-          <label className="text-xs text-slate-500 font-bold whitespace-nowrap">กลุ่มผู้ใช้:</label>
+          <label className="text-xs text-slate-500 dark:text-slate-400 font-bold whitespace-nowrap">กลุ่มผู้ใช้:</label>
           <select
             value={selectedTab}
             onChange={(e) => setSelectedTab(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-teal-500/20 cursor-pointer"
+            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-teal-500/20 cursor-pointer"
           >
             <option value="ALL">ทั้งหมด (รวม) ({tabCounts.ALL})</option>
             <option value="ADMIN">ผู้ดูแลระบบ (Admin) ({tabCounts.ADMIN})</option>
@@ -542,12 +542,12 @@ export default function UsersPage() {
             placeholder="ค้นหาชื่อ, อีเมล, รหัส, ภาควิชา..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
+            className="w-full pl-9 pr-8 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -556,10 +556,10 @@ export default function UsersPage() {
       </div>
 
       {/* Users Table */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-600">
-            <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold uppercase text-[10px] tracking-wider">
+          <table className="w-full text-left text-xs text-slate-600 dark:text-slate-300">
+            <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 font-bold uppercase text-[10px] tracking-wider">
               <tr>
                 <th className="py-3 px-4">ชื่อ - นามสกุล</th>
                 <th className="py-3 px-4">อีเมล / รหัสนิสิต</th>
@@ -569,14 +569,14 @@ export default function UsersPage() {
                 <th className="py-3 px-4 text-right">จัดการ</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {loading ? (
                 <TableLoadingRow colSpan={6} message="กำลังโหลดรายชื่อผู้ใช้งานและกำหนดสิทธิ์..." />
               ) : filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-slate-400">
+                  <td colSpan={6} className="py-12 text-center text-slate-400 dark:text-slate-500">
                     <div className="flex flex-col items-center justify-center gap-2">
-                      <Users className="w-8 h-8 text-slate-300" />
+                      <Users className="w-8 h-8 text-slate-300 dark:text-slate-600" />
                       <span className="text-xs font-medium">
                         {searchQuery
                           ? `ไม่พบผู้ใช้งานที่ตรงกับคำค้นหา "${searchQuery}"`
@@ -588,7 +588,7 @@ export default function UsersPage() {
                             setSelectedTab('ALL');
                             setSearchQuery('');
                           }}
-                          className="text-xs text-teal-600 hover:text-teal-700 font-bold underline cursor-pointer mt-1"
+                          className="text-xs text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 font-bold underline cursor-pointer mt-1"
                         >
                           ล้างตัวกรองทั้งหมด
                         </button>
@@ -598,25 +598,25 @@ export default function UsersPage() {
                 </tr>
               ) : (
                 filteredUsers.map((u) => (
-                <tr key={u.id} className="hover:bg-slate-50/60 transition">
+                <tr key={u.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition">
                   <td className="py-3.5 px-4">
-                    <div className="font-bold text-slate-900 text-xs">{u.name}</div>
+                    <div className="font-bold text-slate-900 dark:text-slate-100 text-xs">{u.name}</div>
                   </td>
                   <td className="py-3.5 px-4">
-                    <div className="flex items-center gap-1 text-slate-600">
+                    <div className="flex items-center gap-1 text-slate-600 dark:text-slate-300">
                       <Mail className="w-3 h-3 text-slate-400" />
                       <span>{u.email}</span>
                     </div>
                     {u.studentId && (
-                      <div className="text-[10px] text-teal-700 font-mono mt-0.5">
+                      <div className="text-[10px] text-teal-700 dark:text-teal-400 font-mono mt-0.5">
                         รหัส: {u.studentId}
                       </div>
                     )}
                   </td>
-                  <td className="py-3.5 px-4 text-slate-600 font-medium">
+                  <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300 font-medium">
                     {u.department || '-'}
                   </td>
-                  <td className="py-3.5 px-4 text-slate-500">
+                  <td className="py-3.5 px-4 text-slate-500 dark:text-slate-400">
                     {u.phone || '-'}
                   </td>
                   <td className="py-3.5 px-4">{getRoleBadge(u.role)}</td>
@@ -630,18 +630,18 @@ export default function UsersPage() {
                           setResetCopied(false);
                           setResetError(null);
                         }}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100 font-bold text-xs transition cursor-pointer"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/60 font-bold text-xs transition cursor-pointer"
                         title="รีเซ็ตรหัสผ่านให้ผู้ใช้นี้"
                       >
-                        <KeyRound className="w-3 h-3 text-amber-600" />
+                        <KeyRound className="w-3 h-3 text-amber-600 dark:text-amber-400" />
                         <span>รีเซ็ตรหัส</span>
                       </button>
                       <button
                         onClick={() => setEditingUser({ ...u, password: '' })}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100 font-bold text-xs transition cursor-pointer"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 hover:bg-teal-100 dark:hover:bg-teal-900/60 font-bold text-xs transition cursor-pointer"
                         title="แก้ไขข้อมูลผู้ใช้"
                       >
-                        <Edit3 className="w-3 h-3 text-teal-600" />
+                        <Edit3 className="w-3 h-3 text-teal-600 dark:text-teal-400" />
                         <span>แก้ไข</span>
                       </button>
                     </div>
@@ -655,16 +655,16 @@ export default function UsersPage() {
 
       {/* Modal: Add User */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Users className="w-5 h-5 text-teal-600" />
+        <div className="fixed inset-0 z-50 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-800 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Users className="w-5 h-5 text-teal-600 dark:text-teal-400" />
                 เพิ่มบัญชีผู้ใช้งานใหม่
               </h3>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="text-slate-400 hover:text-slate-600 text-lg font-bold"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg font-bold cursor-pointer"
               >
                 ✕
               </button>
@@ -672,7 +672,7 @@ export default function UsersPage() {
 
             <form onSubmit={handleCreateUser} className="space-y-3">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   ชื่อ - นามสกุล *
                 </label>
                 <input
@@ -681,12 +681,12 @@ export default function UsersPage() {
                   placeholder="เช่น อ. ดร. วิภาดา สมรรถนะ"
                   value={newUser.name}
                   onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-teal-500/20"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   อีเมล (Email) *
                 </label>
                 <input
@@ -695,12 +695,12 @@ export default function UsersPage() {
                   placeholder="name@nurse.university.ac.th"
                   value={newUser.email}
                   onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-teal-500/20"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   รหัสผ่านเริ่มต้น (Default Password)
                 </label>
                 <div className="relative">
@@ -710,22 +710,22 @@ export default function UsersPage() {
                     placeholder="เช่น 123456"
                     value={newUser.password}
                     onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-teal-500/20"
                   />
                 </div>
-                <p className="text-[11px] text-slate-400 mt-1">
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
                   ค่าเริ่มต้นคือ 123456 (ระบบจะเข้ารหัส Bcrypt เมื่อบันทึก)
                 </p>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   สิทธิ์การใช้งาน (Role) *
                 </label>
                 <select
                   value={newUser.role}
                   onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-teal-500/20 cursor-pointer"
                 >
                   <option value="USER">นิสิต / นักศึกษา (Student)</option>
                   <option value="TEACHER">อาจารย์ผู้สอน / ที่ปรึกษา (Teacher)</option>
@@ -736,7 +736,7 @@ export default function UsersPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   หน่วยงาน / ภาควิชา / ชั้นปี
                 </label>
                 <input
@@ -744,13 +744,13 @@ export default function UsersPage() {
                   placeholder="เช่น กลุ่มวิชาการพยาบาลเด็ก, นศ.พยาบาลศาสตร์ ชั้นปี 2"
                   value={newUser.department}
                   onChange={(e) => setNewUser({ ...newUser, department: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-teal-500/20"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     รหัสประจำตัว (ID) / รหัสนิสิต
                   </label>
                   <input
@@ -758,11 +758,11 @@ export default function UsersPage() {
                     placeholder="เช่น 6610210099, T0042 หรือ admin"
                     value={newUser.studentId}
                     onChange={(e) => setNewUser({ ...newUser, studentId: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-teal-500/20"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     เบอร์โทรศัพท์
                   </label>
                   <input
@@ -770,23 +770,23 @@ export default function UsersPage() {
                     placeholder="08X-XXX-XXXX"
                     value={newUser.phone}
                     onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-teal-500/20"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100"
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
                 >
                   ยกเลิก
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-5 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md transition disabled:opacity-50"
+                  className="px-5 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md transition disabled:opacity-50 cursor-pointer"
                 >
                   {submitting ? 'กำลังบันทึก...' : 'บันทึกผู้ใช้'}
                 </button>
@@ -798,16 +798,16 @@ export default function UsersPage() {
 
       {/* Modal: Edit User */}
       {editingUser && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Edit3 className="w-5 h-5 text-teal-600" />
+        <div className="fixed inset-0 z-50 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-800 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Edit3 className="w-5 h-5 text-teal-600 dark:text-teal-400" />
                 แก้ไขข้อมูลผู้ใช้งาน
               </h3>
               <button
                 onClick={() => setEditingUser(null)}
-                className="text-slate-400 hover:text-slate-600 text-lg font-bold"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg font-bold cursor-pointer"
               >
                 ✕
               </button>
@@ -815,7 +815,7 @@ export default function UsersPage() {
 
             <form onSubmit={handleUpdateUser} className="space-y-3">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   ชื่อ - นามสกุล *
                 </label>
                 <input
@@ -823,12 +823,12 @@ export default function UsersPage() {
                   required
                   value={editingUser.name}
                   onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-teal-500/20"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   อีเมล (Email) *
                 </label>
                 <input
@@ -836,18 +836,18 @@ export default function UsersPage() {
                   required
                   value={editingUser.email}
                   onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-teal-500/20"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   สิทธิ์การใช้งาน (Role) *
                 </label>
                 <select
                   value={editingUser.role}
                   onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-teal-500/20 cursor-pointer"
                 >
                   <option value="USER">นิสิต / นักศึกษา (Student)</option>
                   <option value="TEACHER">อาจารย์ผู้สอน / ที่ปรึกษา (Teacher)</option>
@@ -858,7 +858,7 @@ export default function UsersPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   หน่วยงาน / ภาควิชา / ชั้นปี
                 </label>
                 <input
@@ -866,13 +866,13 @@ export default function UsersPage() {
                   placeholder="เช่น กลุ่มวิชาการพยาบาลเด็ก, นศ.พยาบาลศาสตร์ ชั้นปี 2"
                   value={editingUser.department || ''}
                   onChange={(e) => setEditingUser({ ...editingUser, department: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-teal-500/20"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     รหัสประจำตัว (ID) / รหัสนิสิต
                   </label>
                   <input
@@ -880,11 +880,11 @@ export default function UsersPage() {
                     placeholder="เช่น 6610210099, T0042 หรือ admin"
                     value={editingUser.studentId || ''}
                     onChange={(e) => setEditingUser({ ...editingUser, studentId: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-teal-500/20"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     เบอร์โทรศัพท์
                   </label>
                   <input
@@ -892,29 +892,29 @@ export default function UsersPage() {
                     placeholder="08X-XXX-XXXX"
                     value={editingUser.phone || ''}
                     onChange={(e) => setEditingUser({ ...editingUser, phone: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-teal-500/20"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  ตั้งรหัสผ่านใหม่ <span className="text-slate-400 font-normal">(เว้นว่างไว้หากไม่เปลี่ยน)</span>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  ตั้งรหัสผ่านใหม่ <span className="text-slate-400 dark:text-slate-500 font-normal">(เว้นว่างไว้หากไม่เปลี่ยน)</span>
                 </label>
                 <input
                   type="password"
                   placeholder="กรอกหากต้องการเปลี่ยนรหัสผ่าน"
                   value={editingUser.password || ''}
                   onChange={(e) => setEditingUser({ ...editingUser, password: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-teal-500/20"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setEditingUser(null)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 cursor-pointer"
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
                 >
                   ยกเลิก
                 </button>
@@ -933,8 +933,8 @@ export default function UsersPage() {
 
       {/* Admin Reset Password Modal */}
       {resettingUser && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full shadow-2xl border border-slate-100 dark:border-slate-800 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             {/* Header */}
             <div className="bg-gradient-to-r from-amber-600 to-slate-900 p-5 text-white flex items-center justify-between">
               <div className="flex items-center gap-2.5">
@@ -942,7 +942,7 @@ export default function UsersPage() {
                   <KeyRound className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold">รีเซ็ตรหัสผ่านโดยผู้ดูแลระบบ</h3>
+                  <h3 className="text-sm font-bold text-white">รีเซ็ตรหัสผ่านโดยผู้ดูแลระบบ</h3>
                   <p className="text-[11px] text-amber-200">
                     กำหนดรหัสผ่านใหม่ให้แก่ผู้ใช้งาน
                   </p>
@@ -960,37 +960,37 @@ export default function UsersPage() {
             {/* Content */}
             <div className="p-6 space-y-4">
               {/* User Info Box */}
-              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
-                <div className="text-xs font-bold text-slate-800">{resettingUser.name}</div>
-                <div className="text-[11px] text-slate-500 flex items-center gap-1">
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-1">
+                <div className="text-xs font-bold text-slate-800 dark:text-slate-100">{resettingUser.name}</div>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
                   <Mail className="w-3 h-3" />
                   <span>{resettingUser.email}</span>
                 </div>
                 {resettingUser.studentId && (
-                  <div className="text-[11px] text-teal-700 font-mono">
+                  <div className="text-[11px] text-teal-700 dark:text-teal-400 font-mono">
                     รหัสนิสิต: {resettingUser.studentId}
                   </div>
                 )}
               </div>
 
               {resetError && (
-                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+                <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 flex-shrink-0" />
                   <span>{resetError}</span>
                 </div>
               )}
 
               {resetSuccessMessage ? (
                 <div className="space-y-4">
-                  <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 space-y-2">
+                  <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 space-y-2">
                     <div className="flex items-center gap-2 text-xs font-bold">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                       <span>{resetSuccessMessage}</span>
                     </div>
-                    <div className="p-2.5 bg-white rounded-xl border border-emerald-200 flex items-center justify-between">
+                    <div className="p-2.5 bg-white dark:bg-slate-900 rounded-xl border border-emerald-200 dark:border-emerald-800 flex items-center justify-between">
                       <div>
                         <div className="text-[10px] text-slate-400">รหัสผ่านใหม่ที่ตั้งไว้:</div>
-                        <div className="font-mono text-sm font-bold text-slate-900">{newResetPassword}</div>
+                        <div className="font-mono text-sm font-bold text-slate-900 dark:text-slate-100">{newResetPassword}</div>
                       </div>
                       <button
                         type="button"
@@ -999,9 +999,9 @@ export default function UsersPage() {
                           setResetCopied(true);
                           setTimeout(() => setResetCopied(false), 2000);
                         }}
-                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-700 text-xs font-bold border border-teal-200 transition cursor-pointer"
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 dark:hover:bg-teal-900/60 text-teal-700 dark:text-teal-300 text-xs font-bold border border-teal-200 dark:border-teal-800 transition cursor-pointer"
                       >
-                        {resetCopied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                        {resetCopied ? <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                         <span>{resetCopied ? 'คัดลอกแล้ว!' : 'คัดลอกรหัส'}</span>
                       </button>
                     </div>
@@ -1011,7 +1011,7 @@ export default function UsersPage() {
                     <button
                       type="button"
                       onClick={() => setResettingUser(null)}
-                      className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition cursor-pointer"
+                      className="px-5 py-2 rounded-xl bg-slate-800 dark:bg-slate-700 hover:bg-slate-700 text-white text-xs font-bold transition cursor-pointer"
                     >
                       เสร็จสิ้น
                     </button>
@@ -1021,13 +1021,13 @@ export default function UsersPage() {
                 <form onSubmit={handleAdminResetPassword} className="space-y-4">
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs font-bold text-slate-700">
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
                         รหัสผ่านใหม่ *
                       </label>
                       <button
                         type="button"
                         onClick={generateRandomPassword}
-                        className="text-[11px] text-teal-600 hover:text-teal-700 font-bold inline-flex items-center gap-1 cursor-pointer"
+                        className="text-[11px] text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 font-bold inline-flex items-center gap-1 cursor-pointer"
                       >
                         <Sparkles className="w-3 h-3" />
                         <span>สุ่มรหัสผ่านปลอดภัย</span>
@@ -1040,32 +1040,32 @@ export default function UsersPage() {
                         placeholder="อย่างน้อย 6 ตัวอักษร"
                         value={newResetPassword}
                         onChange={(e) => setNewResetPassword(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-9 pr-10 text-xs font-mono font-medium focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition"
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-9 pr-10 text-xs font-mono font-medium text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition"
                       />
                       <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                       <button
                         type="button"
                         onClick={() => setResetShowPassword(!resetShowPassword)}
-                        className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+                        className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
                       >
                         {resetShowPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
-                    <p className="text-[11px] text-slate-400 mt-1">
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
                       เช่น 123456 หรือคลิก "สุ่มรหัสผ่านปลอดภัย" ด้านบน
                     </p>
                   </div>
 
-                  <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-[11px] text-amber-800 flex items-start gap-2">
-                    <ShieldCheck className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200 dark:border-amber-800/60 text-[11px] text-amber-800 dark:text-amber-300 flex items-start gap-2">
+                    <ShieldCheck className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                     <span>รหัสผ่านใหม่จะถูกเข้ารหัส Bcrypt โดยอัตโนมัติ ผู้ใช้สามารถเข้าสู่ระบบด้วยรหัสนี้ได้ทันที</span>
                   </div>
 
-                  <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+                  <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
                     <button
                       type="button"
                       onClick={() => setResettingUser(null)}
-                      className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                      className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
                     >
                       ยกเลิก
                     </button>
@@ -1087,25 +1087,25 @@ export default function UsersPage() {
 
       {/* Bulk Import Modal */}
       {showBulkModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+        <div className="fixed inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-800 max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600">
+                <div className="w-10 h-10 rounded-2xl bg-teal-50 dark:bg-teal-950/60 border border-teal-100 dark:border-teal-800 flex items-center justify-center text-teal-600 dark:text-teal-400">
                   <FileSpreadsheet className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-900 text-base">
+                  <h3 className="font-bold text-slate-900 dark:text-white text-base">
                     นำเข้าบัญชีผู้ใช้งานจากไฟล์ Excel / CSV
                   </h3>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     นำเข้ารายชื่อนิสิตทั้งชั้นปี, อาจารย์ หรือเจ้าหน้าที่พร้อมกันทีละหลายรายการ
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setShowBulkModal(false)}
-                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1113,35 +1113,35 @@ export default function UsersPage() {
 
             <div className="space-y-4 py-4 overflow-y-auto flex-1">
               {/* Step 1: Download Template */}
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="space-y-0.5">
-                  <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                     <span className="w-5 h-5 rounded-full bg-teal-600 text-white text-[10px] flex items-center justify-center font-bold">1</span>
                     ดาวน์โหลดแม่แบบไฟล์ Excel
                   </div>
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
                     ใช้เทมเพลตมาตรฐานที่มีหัวตารางถูกต้อง (ชื่อ-นามสกุล, อีเมล, บทบาท, ภาควิชา, รหัส, เบอร์โทร)
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={handleDownloadTemplate}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-bold shadow-sm transition flex-shrink-0 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs font-bold shadow-sm transition flex-shrink-0 cursor-pointer"
                 >
-                  <Download className="w-3.5 h-3.5 text-teal-600" />
+                  <Download className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
                   <span>ดาวน์โหลด Template (.xlsx)</span>
                 </button>
               </div>
 
               {/* Step 2: Upload File */}
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
-                <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 space-y-3">
+                <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                   <span className="w-5 h-5 rounded-full bg-teal-600 text-white text-[10px] flex items-center justify-center font-bold">2</span>
                   เลือกไฟล์ที่กรอกข้อมูลแล้ว (.xlsx, .xls, .csv)
                 </div>
 
-                <div className="border-2 border-dashed border-slate-300 hover:border-teal-500 rounded-2xl p-6 text-center transition bg-white">
-                  <Upload className="w-8 h-8 mx-auto text-slate-400 mb-2" />
+                <div className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-teal-500 rounded-2xl p-6 text-center transition bg-white dark:bg-slate-850 dark:bg-slate-900">
+                  <Upload className="w-8 h-8 mx-auto text-slate-400 dark:text-slate-500 mb-2" />
                   <label className="cursor-pointer">
                     <span className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-sm inline-block transition">
                       เลือกไฟล์จากคอมพิวเตอร์
@@ -1153,7 +1153,7 @@ export default function UsersPage() {
                       className="hidden"
                     />
                   </label>
-                  <p className="text-[11px] text-slate-400 mt-2">
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-2">
                     {bulkFile ? `ไฟล์ที่เลือก: ${bulkFile.name}` : 'รองรับไฟล์ Excel และ CSV'}
                   </p>
                 </div>
@@ -1162,24 +1162,24 @@ export default function UsersPage() {
               {/* Preview Box */}
               {previewData.length > 0 && (
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs font-bold text-slate-800">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
                     <span>ตัวอย่างข้อมูลที่จะนำเข้า ({previewData.length} รายการ)</span>
-                    <span className="text-[11px] text-teal-600 font-medium">แสดง 5 แถวแรก</span>
+                    <span className="text-[11px] text-teal-600 dark:text-teal-400 font-medium">แสดง 5 แถวแรก</span>
                   </div>
-                  <div className="overflow-x-auto border border-slate-200 rounded-xl max-h-48">
+                  <div className="overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-xl max-h-48">
                     <table className="w-full text-left text-[11px]">
-                      <thead className="bg-slate-100 text-slate-700 font-bold">
+                      <thead className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold">
                         <tr>
                           {Object.keys(previewData[0] || {}).slice(0, 6).map((col) => (
                             <th key={col} className="p-2 whitespace-nowrap">{col}</th>
                           ))}
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100">
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                         {previewData.slice(0, 5).map((row, idx) => (
-                          <tr key={idx} className="hover:bg-slate-50">
+                          <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
                             {Object.keys(previewData[0] || {}).slice(0, 6).map((col) => (
-                              <td key={col} className="p-2 whitespace-nowrap text-slate-600">
+                              <td key={col} className="p-2 whitespace-nowrap text-slate-600 dark:text-slate-300">
                                 {String(row[col] ?? '-')}
                               </td>
                             ))}
@@ -1193,15 +1193,15 @@ export default function UsersPage() {
 
               {/* Result Summary */}
               {bulkResult && (
-                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 space-y-1">
+                <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-300 space-y-1">
                   <div className="text-xs font-bold flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" /> นำเข้าข้อมูลเรียบร้อยแล้ว
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> นำเข้าข้อมูลเรียบร้อยแล้ว
                   </div>
                   <p className="text-xs">
                     สร้างผู้ใช้ใหม่: <b>{bulkResult.created ?? bulkResult.createdCount ?? 0}</b> บัญชี | อัปเดตข้อมูลเดิม: <b>{bulkResult.updated ?? bulkResult.updatedCount ?? 0}</b> บัญชี
                   </p>
                   {bulkResult.errors && bulkResult.errors.length > 0 && (
-                    <div className="mt-2 text-[11px] text-rose-700 bg-rose-50 p-2 rounded-lg border border-rose-200">
+                    <div className="mt-2 text-[11px] text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 p-2 rounded-lg border border-rose-200 dark:border-rose-800">
                       <b>พบข้อผิดพลาดบางรายการ:</b>
                       <ul className="list-disc pl-4 mt-0.5 space-y-0.5">
                         {bulkResult.errors.map((e, idx) => (
@@ -1214,11 +1214,11 @@ export default function UsersPage() {
               )}
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
               <button
                 type="button"
                 onClick={() => setShowBulkModal(false)}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 cursor-pointer"
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
               >
                 ปิดหน้าต่าง
               </button>

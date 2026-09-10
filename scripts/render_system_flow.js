@@ -1,0 +1,569 @@
+const fs = require('fs');
+const path = require('path');
+const puppeteer = require('puppeteer-core');
+
+const EDGE_PATH = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
+const ROOT_DIR = 'd:\\LAB-system';
+const HTML_OUTPUT_PATH = path.join(ROOT_DIR, 'SYSTEM_FLOW_VIEWER.html');
+const PNG_OUTPUT_PATH = path.join(ROOT_DIR, 'SYSTEM_FLOW_DIAGRAM.png');
+const PDF_OUTPUT_PATH = path.join(ROOT_DIR, 'SYSTEM_FLOW_DIAGRAM.pdf');
+const SVG_OUTPUT_PATH = path.join(ROOT_DIR, 'SYSTEM_FLOW_DIAGRAM.svg');
+
+// Mermaid definition for the 6-dimension System Flow
+const mermaidCode = `
+flowchart TB
+    %% STYLING DEFINITIONS
+    classDef master fill:#f8fafc,stroke:#64748b,stroke-width:2.5px,color:#0f172a,rx:8,ry:8;
+    classDef inv fill:#ecfdf5,stroke:#10b981,stroke-width:2.5px,color:#065f46,rx:8,ry:8;
+    classDef teach fill:#eff6ff,stroke:#3b82f6,stroke-width:2.5px,color:#1e40af,rx:8,ry:8;
+    classDef flow fill:#fff7ed,stroke:#f97316,stroke-width:2.5px,color:#9a3412,rx:8,ry:8;
+    classDef report fill:#faf5ff,stroke:#a855f7,stroke-width:2.5px,color:#6b21a8,rx:8,ry:8;
+
+    %% 1. INVENTORY & ASSET CORE
+    subgraph S1 ["1. ทะเบียนคลัง & ครุภัณฑ์ (Inventory & Assets)"]
+        direction TB
+        ERP["ไฟล์ฐานข้อมูล ERP / Excel"] --> StockIn["รับเข้าพัสดุ (Stock-In)"]
+        StockIn --> Items["ทะเบียนพัสดุหลัก (Item)\\n(รหัส, ชื่อ, หน่วยนับ, ยี่ห้อ, รุ่น)"]
+        Items -->|ประเภท EQUIPMENT| Assets["ครุภัณฑ์รายชิ้น (EquipmentAsset)\\n(รหัสชิ้น, เลขครุภัณฑ์, สถานะ, ผู้จำหน่าย, ประกัน)"]
+        Items -->|ประเภท CONSUMABLE| Lots["ล็อตเวชภัณฑ์ (StockLot)\\n(Lot No, วันหมดอายุ, จำนวนคงเหลือ)"]
+        
+        Assets --> QR["QR Code ประจำเครื่อง\\n(ป้ายสแกนดูข้อมูล & คู่มือ)"]
+        Assets --> Maint["ระบบแจ้งซ่อม / ประวัติบำรุงรักษา\\n(Maintenance Logs)"]
+    end
+    class S1 inv;
+    class ERP,StockIn,Items,Assets,Lots,QR,Maint inv;
+
+    %% 2. LAB PREPARATION & PACKAGING
+    subgraph S2 ["2. การเตรียมการสอน & จัดชุด (Preparation & Repack)"]
+        direction TB
+        Lots -->|เบิกตัดยอดกล่องใหญ่| Repack["ระบบแบ่งบรรจุ & สเตอร์ไรด์ (Repack)\\n(ห่อซองย่อยปลอดเชื้อ เช่น สำลี/ผ้าก๊อซ)"]
+        Repack --> Packs["เวชภัณฑ์พร้อมใช้ (Packs/Sets)\\n(มีบาร์โค้ด & วันหมดอายุซอง)"]
+        
+        Assets -.->|ประกอบเป็นเซ็ต| Kits["ชุดฝึกปฏิบัติการ (Practice Kits)\\n(เช่น ชุดสวนปัสสาวะ, ชุดทำแผล, กระเป๋าเยี่ยมบ้าน)"]
+        Lots -.->|ประกอบเป็นเซ็ต| Kits
+        Packs -.->|ประกอบเป็นเซ็ต| Kits
+    end
+    class S2 flow;
+    class Repack,Packs,Kits flow;
+
+    %% 3. ACADEMIC & PRACTICE SLOTS
+    subgraph S3 ["3. หลักสูตร & การฝึกปฏิบัติ (Academic & Practice)"]
+        direction TB
+        Faculty["คณาจารย์ / หัวหน้าภาค"] --> Course["จัดการรายวิชา & ต้นทุน\\n(รหัสวิชา, อาจารย์ผู้ประสานงาน, งบประมาณ)"]
+        Course -.-> Kits
+        
+        Rooms["ห้องปฏิบัติการพยาบาล (Rooms)"] --> Practice["ระบบจองฝึกหัตถการอิสระ"]
+        Slots["ตารางช่วงเวลา (Slots)"] --> Practice
+        Students["นิสิตพยาบาล (Students)"] -->|จองห้องซ้อมแล็บ| Practice
+        Practice -->|ผูกกับ| Course
+    end
+    class S3 teach;
+    class Faculty,Course,Rooms,Slots,Students,Practice teach;
+
+    %% 4. REQUEST & APPROVAL WORKFLOW
+    subgraph S4 ["4. ระบบคำขอ & อนุมัติ (Unified Request Flow)"]
+        direction TB
+        Request["ยื่นคำขอใช้งานพัสดุ (Unified Request)\\n- ยืมครุภัณฑ์ (Borrow)\\n- เบิกวัสดุสิ้นเปลือง (Requisition)\\n- เบิกชุดฝึกประจำวิชา (Kit Request)"]
+        
+        Students -->|ยื่นคำขอ| Request
+        Faculty -->|ยื่นคำขอ| Request
+        
+        Request --> Approver["ขั้นตอนการอนุมัติ (Approval Chain)\\n(อาจารย์ผู้สอน -> เจ้าหน้าที่แล็บ -> หัวหน้าแล็บ)"]
+        Approver -->|อนุมัติและจ่ายของ| Dispense["จ่ายพัสดุ / สแกนจ่าย (Dispense)"]
+        
+        Dispense -->|ยืมครุภัณฑ์| Assets
+        Dispense -->|ตัดยอดคงเหลือ| Lots
+        Dispense -->|ตัดยอดชุดฝึก| Kits
+    end
+    class S4 flow;
+    class Request,Approver,Dispense flow;
+
+    %% 5. RETURN & RECOVERY
+    subgraph S5 ["5. การคืนพัสดุ & สถานะเครื่อง (Return & Status)"]
+        direction TB
+        Return["คืนครุภัณฑ์ (Return)"]
+        Dispense -.->|เมื่อใช้งานเสร็จ| Return
+        Return --> Check["ตรวจสอบสภาพ (Inspection)\\n- สภาพดี -> คืนเข้าสต็อก (AVAILABLE)\\n- ชำรุด -> ส่งซ่อม (UNDER_REPAIR)"]
+        Check --> Assets
+        Check --> Maint
+    end
+    class S5 master;
+    class Return,Check master;
+
+    %% 6. ANALYTICS & EXECUTIVE INTELLIGENCE
+    subgraph S6 ["6. การวิเคราะห์ต้นทุน & รายงาน (Executive Intelligence)"]
+        direction TB
+        Dispense --> Tx["บันทึกธุรกรรม (Stock Transactions)"]
+        Course --> CostCalc["คำนวณต้นทุนวัสดุรายวิชา (Cost Analytics)"]
+        Tx --> CostCalc
+        
+        CostCalc --> Balance["งบประมาณที่จัดสรร vs ยอดใช้จริง"]
+        CostCalc --> Reports["รายงานและสถิติภาพรวม (Reports)\\n- อัตราการใช้ห้องแล็บ\\n- ครุภัณฑ์ที่ถูกใช้งานบ่อย/เสื่อมสภาพ\\n- สรุปต้นทุนแยกตามภาควิชา"]
+    end
+    class S6 report;
+    class Tx,CostCalc,Balance,Reports report;
+`;
+
+const htmlTemplate = `<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>แผนภาพการไหลเวียนของข้อมูลและกระบวนการทำงานทั้งระบบ (System Flow Diagram) - NSS-LAB</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,350;0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <script src="./manual_images/mermaid.min.js"></script>
+  <style>
+    :root {
+      --primary: #0F766E;
+      --primary-dark: #115E59;
+      --secondary: #0E7490;
+      --slate-dark: #0F172A;
+      --slate-muted: #475569;
+      --bg-page: #F8FAFC;
+      --bg-card: #FFFFFF;
+      --border-color: #E2E8F0;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Sarabun', 'Leelawadee UI', Tahoma, sans-serif;
+      background-color: var(--bg-page);
+      color: var(--slate-dark);
+      padding: 24px;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    header {
+      background: linear-gradient(135deg, #0F766E 0%, #0E7490 100%);
+      color: white;
+      padding: 32px 36px;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px -5px rgba(15, 118, 110, 0.25);
+      margin-bottom: 24px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+    }
+    .header-content h1 {
+      font-size: 26px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      letter-spacing: -0.5px;
+    }
+    .header-content p {
+      font-size: 15px;
+      color: #CCFBF1;
+    }
+    .action-buttons {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      border: none;
+    }
+    .btn-white {
+      background-color: #FFFFFF;
+      color: var(--primary);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    .btn-white:hover {
+      background-color: #F0FDFA;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+    }
+    .btn-outline {
+      background-color: rgba(255, 255, 255, 0.15);
+      color: #FFFFFF;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+    }
+    .btn-outline:hover {
+      background-color: rgba(255, 255, 255, 0.25);
+      transform: translateY(-2px);
+    }
+    .diagram-card {
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 28px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+      margin-bottom: 28px;
+      overflow-x: auto;
+    }
+    .diagram-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .diagram-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+    .zoom-controls {
+      display: flex;
+      gap: 8px;
+    }
+    .zoom-btn {
+      padding: 6px 14px;
+      border: 1px solid var(--border-color);
+      background: #F8FAFC;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--slate-dark);
+      transition: all 0.2s ease;
+    }
+    .zoom-btn:hover {
+      background: #E2E8F0;
+    }
+    #diagram-container {
+      display: flex;
+      justify-content: center;
+      transition: transform 0.2s ease;
+      transform-origin: top center;
+    }
+    .mermaid svg {
+      max-width: 100% !important;
+      height: auto !important;
+      font-family: 'Sarabun', 'Leelawadee UI', Tahoma, sans-serif !important;
+    }
+    .details-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+      gap: 20px;
+    }
+    .module-card {
+      background: var(--bg-card);
+      border-radius: 14px;
+      padding: 24px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+      transition: all 0.2s ease;
+    }
+    .module-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+    }
+    .module-card.m1 { border-top: 4px solid #10B981; }
+    .module-card.m2 { border-top: 4px solid #F97316; }
+    .module-card.m3 { border-top: 4px solid #3B82F6; }
+    .module-card.m4 { border-top: 4px solid #EA580C; }
+    .module-card.m5 { border-top: 4px solid #64748B; }
+    .module-card.m6 { border-top: 4px solid #A855F7; }
+
+    .module-badge {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      margin-bottom: 12px;
+    }
+    .badge-1 { background: #ECFDF5; color: #065F46; }
+    .badge-2 { background: #FFF7ED; color: #9A3412; }
+    .badge-3 { background: #EFF6FF; color: #1E40AF; }
+    .badge-4 { background: #FFF7ED; color: #C2410C; }
+    .badge-5 { background: #F1F5F9; color: #334155; }
+    .badge-6 { background: #FAF5FF; color: #6B21A8; }
+
+    .module-card h3 {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: var(--slate-dark);
+    }
+    .module-card ul {
+      list-style-position: inside;
+      font-size: 14.5px;
+      color: var(--slate-muted);
+    }
+    .module-card li {
+      margin-bottom: 6px;
+    }
+    footer {
+      text-align: center;
+      margin-top: 36px;
+      padding: 24px;
+      color: #94A3B8;
+      font-size: 14px;
+      border-top: 1px solid var(--border-color);
+    }
+    @media print {
+      body { background: white; padding: 0; }
+      header, .zoom-controls, .action-buttons, footer { display: none; }
+      .diagram-card { border: none; box-shadow: none; padding: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-content">
+        <h1>แผนภาพการไหลเวียนของข้อมูลและกระบวนการทำงานทั้งระบบ (System Flow)</h1>
+        <p>คณะพยาบาลศาสตร์ มหาวิทยาลัยเกษตรศาสตร์ • Nursing Skills & Simulation Lab System (NSS-LAB)</p>
+      </div>
+      <div class="action-buttons">
+        <button class="btn btn-white" onclick="downloadImage()">💾 ดาวน์โหลดภาพ PNG</button>
+        <button class="btn btn-outline" onclick="downloadSVG()">📐 ดาวน์โหลดไฟล์ SVG</button>
+        <button class="btn btn-outline" onclick="window.print()">🖨️ พิมพ์ / บันทึก PDF</button>
+      </div>
+    </header>
+
+    <div class="diagram-card">
+      <div class="diagram-toolbar">
+        <div class="diagram-title">🌐 แผนผังภาพรวมความเชื่อมโยงเชิงสถาปัตยกรรมระบบ 6 มิติ (System Architecture Flow)</div>
+        <div class="zoom-controls">
+          <button class="zoom-btn" onclick="zoomIn()">🔍 ซูมเข้า (+)</button>
+          <button class="zoom-btn" onclick="zoomOut()">🔍 ซูมออก (-)</button>
+          <button class="zoom-btn" onclick="resetZoom()">↺ รีเซ็ตขนาด</button>
+        </div>
+      </div>
+
+      <div id="diagram-container">
+        <div class="mermaid" id="mermaid-diagram">
+${mermaidCode}
+        </div>
+      </div>
+    </div>
+
+    <!-- 6 Core Modules Explanation -->
+    <div class="details-grid">
+      <div class="module-card m1">
+        <span class="module-badge badge-1">มิติที่ 1 • INVENTORY & ASSETS</span>
+        <h3>1. ทะเบียนคลัง & ครุภัณฑ์</h3>
+        <ul>
+          <li>นำเข้าและซิงค์ข้อมูลพัสดุจากไฟล์ฐานข้อมูล ERP 373 ชิ้น</li>
+          <li>แยกประเภทครุภัณฑ์ (Equipment) รายชิ้น และเวชภัณฑ์ (Consumables) รายล็อต</li>
+          <li>สร้างป้ายสติกเกอร์ QR Code ประจำตัวเครื่อง สแกนดูคู่มือและสเปก</li>
+          <li>บันทึกประวัติการบำรุงรักษาและประเมินอายุการใช้งาน</li>
+        </ul>
+      </div>
+
+      <div class="module-card m2">
+        <span class="module-badge badge-2">มิติที่ 2 • PREPARATION & REPACK</span>
+        <h3>2. การเตรียมการสอน & จัดชุดฝึก</h3>
+        <ul>
+          <li>ตัดเบิกเวชภัณฑ์กล่องใหญ่มาแบ่งบรรจุเป็นซองย่อยปลอดเชื้อ (Repack)</li>
+          <li>กำหนดรหัสบาร์โค้ดและวันหมดอายุประจำซองย่อย</li>
+          <li>ประกอบเวชภัณฑ์และหุ่นฝึกเข้าด้วยกันเป็น <b>ชุดฝึกปฏิบัติการมาตรฐาน (Kits)</b></li>
+          <li>จัดเตรียมสำเร็จรูป เช่น ชุดสวนปัสสาวะ, ชุดทำแผล, ชุดทำคลอด, CPR</li>
+        </ul>
+      </div>
+
+      <div class="module-card m3">
+        <span class="module-badge badge-3">มิติที่ 3 • ACADEMIC & PRACTICE</span>
+        <h3>3. หลักสูตร & การฝึกปฏิบัติ</h3>
+        <ul>
+          <li>คณาจารย์กำหนดรายวิชา ผู้ประสานงาน และโควตางบประมาณประจำเทอม</li>
+          <li>ระบบเปิดตารางเวลา (Timetable Slots) ห้องปฏิบัติการ 3 ห้อง</li>
+          <li>นิสิตจองรอบฝึกปฏิบัติด้วยตนเอง ระบุหัตถการและรายชื่อสมาชิกกลุ่ม</li>
+          <li>ระบบจัดสรรห้องอัตโนมัติ ป้องกันการจองเวลาชนกัน 100%</li>
+        </ul>
+      </div>
+
+      <div class="module-card m4">
+        <span class="module-badge badge-4">มิติที่ 4 • UNIFIED REQUEST FLOW</span>
+        <h3>4. ระบบคำขอรวม & การอนุมัติ</h3>
+        <ul>
+          <li>แบบฟอร์มรวม One-Stop Service: ยืมครุภัณฑ์ + เบิกพัสดุ + ขอชุดฝึก ในคลิกเดียว</li>
+          <li>ระบบตรวจสอบสต็อกคงเหลือจริงแบบ Real-time ป้องกันการเบิกเกิน</li>
+          <li>สายอนุมัติอัตโนมัติ: นิสิตส่ง ➔ อาจารย์ผู้สอนอนุมัติ ➔ เจ้าหน้าที่แล็บจ่ายของ</li>
+          <li>เมื่อจ่ายของ ระบบตัดสต็อกคลังและเปลี่ยนสถานะอุปกรณ์เป็น 'กำลังยืม' ทันที</li>
+        </ul>
+      </div>
+
+      <div class="module-card m5">
+        <span class="module-badge badge-5">มิติที่ 5 • RETURN & STATUS</span>
+        <h3>5. การคืนพัสดุ & ตรวจสอบสภาพ</h3>
+        <ul>
+          <li>นิสิตนำอุปกรณ์มาส่งคืน ณ ห้องเตรียมการปฏิบัติการพยาบาล</li>
+          <li>เจ้าหน้าที่ตรวจสภาพ: หากสมบูรณ์ ปรับสถานะเป็น 'พร้อมใช้ (Available)'</li>
+          <li>กรณีชำรุด: ระบบตัดเข้าสู่สถานะ 'ส่งซ่อม (Under Repair)' พร้อมบันทึกเหตุขัดข้อง</li>
+          <li>ปลดล็อคโควตาการยืมครั้งถัดไปให้นิสิตโดยอัตโนมัติ</li>
+        </ul>
+      </div>
+
+      <div class="module-card m6">
+        <span class="module-badge badge-6">มิติที่ 6 • EXECUTIVE INTELLIGENCE</span>
+        <h3>6. การวิเคราะห์ต้นทุน & รายงาน</h3>
+        <ul>
+          <li>บันทึกธุรกรรมการใช้วัสดุผูกตรงเข้ากับ <b>รายวิชา (Course ID)</b></li>
+          <li>คำนวณต้นทุนการเรียนการสอนจริงเทียบกับเพดานงบประมาณแบบ Real-time</li>
+          <li>สรุปสถิติอัตราการเข้าใช้ห้องแล็บ และอัตราการใช้ชั่วโมงฝึกของนิสิต</li>
+          <li>รายงานภาพรวมสำหรับผู้บริหาร คณบดี และหัวหน้าภาควิชา</li>
+        </ul>
+      </div>
+    </div>
+
+    <footer>
+      คณะพยาบาลศาสตร์ มหาวิทยาลัยเกษตรศาสตร์ • ระบบบริหารจัดการห้องปฏิบัติการทักษะและสถานการณ์จำลองทางการพยาบาล (NSS-LAB)
+    </footer>
+  </div>
+
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'neutral',
+      flowchart: {
+        curve: 'basis',
+        useMaxWidth: false,
+        htmlLabels: true
+      },
+      fontFamily: 'Sarabun, Leelawadee UI, Tahoma, sans-serif'
+    });
+
+    let currentScale = 1;
+    const container = document.getElementById('diagram-container');
+
+    function zoomIn() {
+      currentScale += 0.15;
+      container.style.transform = 'scale(' + currentScale + ')';
+    }
+
+    function zoomOut() {
+      if (currentScale > 0.4) {
+        currentScale -= 0.15;
+        container.style.transform = 'scale(' + currentScale + ')';
+      }
+    }
+
+    function resetZoom() {
+      currentScale = 1;
+      container.style.transform = 'scale(1)';
+    }
+
+    function downloadSVG() {
+      const svg = document.querySelector('.mermaid svg');
+      if (!svg) { alert('กำลังเรนเดอร์แผนผัง กรุณารอสักครู่'); return; }
+      const serializer = new XMLSerializer();
+      let source = serializer.serializeToString(svg);
+      if(!source.match(/^<svg[^>]+xmlns="http\\:\\/\\/www\\.w3\\.org\\/2000\\/svg"/)){
+        source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+      }
+      const blob = new Blob([source], {type: "image/svg+xml;charset=utf-8"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'NSS_LAB_System_Flow_Diagram.svg';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    function downloadImage() {
+      const svg = document.querySelector('.mermaid svg');
+      if (!svg) { alert('กำลังเรนเดอร์แผนผัง กรุณารอสักครู่'); return; }
+      const serializer = new XMLSerializer();
+      let source = serializer.serializeToString(svg);
+      const svgBlob = new Blob([source], {type: 'image/svg+xml;charset=utf-8'});
+      const URL_obj = window.URL || window.webkitURL || window;
+      const blobURL = URL_obj.createObjectURL(svgBlob);
+      const image = new Image();
+      image.onload = function () {
+        const canvas = document.createElement('canvas');
+        const scale = 2.5; // High-Res
+        canvas.width = (svg.clientWidth || 1400) * scale;
+        canvas.height = (svg.clientHeight || 1000) * scale;
+        const context = canvas.getContext('2d');
+        context.fillStyle = '#FFFFFF';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        const png = canvas.toDataURL('image/png');
+        const a = document.createElement('a');
+        a.download = 'NSS_LAB_System_Flow_Diagram.png';
+        a.href = png;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      };
+      image.src = blobURL;
+    }
+  </script>
+</body>
+</html>
+`;
+
+async function generateArtifacts() {
+  console.log('--- 1. WRITING INTERACTIVE HTML VIEWER ---');
+  fs.writeFileSync(HTML_OUTPUT_PATH, htmlTemplate, 'utf8');
+  console.log('Saved:', HTML_OUTPUT_PATH);
+
+  console.log('--- 2. LAUNCHING HEADLESS BROWSER TO RENDER PNG & PDF ---');
+  const browser = await puppeteer.launch({
+    executablePath: EDGE_PATH,
+    headless: 'new',
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--allow-file-access-from-files']
+  });
+
+  const page = await browser.newPage();
+  await page.setViewport({ width: 1920, height: 1600, deviceScaleFactor: 2 });
+  await page.goto('file:///' + HTML_OUTPUT_PATH.replace(/\\\\/g, '/'), { waitUntil: 'networkidle0' });
+
+  // Wait for mermaid SVG to be rendered
+  await page.waitForSelector('.mermaid svg', { timeout: 15000 });
+  console.log('Mermaid SVG element found and rendered!');
+
+  // Extract SVG content
+  const svgContent = await page.evaluate(() => {
+    const svg = document.querySelector('.mermaid svg');
+    return svg ? svg.outerHTML : '';
+  });
+  if (svgContent) {
+    fs.writeFileSync(SVG_OUTPUT_PATH, svgContent, 'utf8');
+    console.log('Saved Vector SVG:', SVG_OUTPUT_PATH);
+  }
+
+  // Hide header and buttons temporarily to capture pure diagram card
+  const diagramHandle = await page.$('.diagram-card');
+  if (diagramHandle) {
+    await diagramHandle.screenshot({
+      path: PNG_OUTPUT_PATH,
+      type: 'png'
+    });
+    console.log('Saved High-Res PNG:', PNG_OUTPUT_PATH);
+  }
+
+  // Also export full-page PDF
+  await page.pdf({
+    path: PDF_OUTPUT_PATH,
+    format: 'A3',
+    landscape: true,
+    printBackground: true,
+    margin: { top: '15mm', right: '15mm', bottom: '15mm', left: '15mm' }
+  });
+  console.log('Saved Landscape A3 PDF:', PDF_OUTPUT_PATH);
+
+  await browser.close();
+  console.log('--- ALL SYSTEM FLOW ARTIFACTS GENERATED SUCCESSFULLY ---');
+}
+
+generateArtifacts().catch(err => {
+  console.error('Error generating artifacts:', err);
+  process.exit(1);
+});

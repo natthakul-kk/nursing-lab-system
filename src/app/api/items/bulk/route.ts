@@ -357,9 +357,13 @@ export async function POST(req: Request) {
 
         if (type === 'CONSUMABLE') {
           // Create Stock Lot for consumable
-          const lotNum = row.lotNumber
-            ? String(row.lotNumber).trim()
-            : `LOT-${currentYearThai}-${String(Date.now()).slice(-4)}`;
+          let lotNum = row.lotNumber ? String(row.lotNumber).trim() : '';
+          if (!lotNum) {
+            const lotCount = await prisma.stockLot.count({
+              where: { itemId: item.id },
+            });
+            lotNum = `LOT-${currentYearThai}-${String(lotCount + createdLotsCount + 1).padStart(3, '0')}`;
+          }
 
           const expiryDate = row.expiryDate;
           const receivedDate = row.receivedDate || new Date();
@@ -405,22 +409,26 @@ export async function POST(req: Request) {
             : [];
 
           for (let q = 1; q <= quantity; q++) {
-            const seq = existingAssetsCount + q;
+            let seq = existingAssetsCount + q;
             let assetCode = '';
 
-            if (row.labCodePrefix) {
-              const prefixNorm = row.labCodePrefix.endsWith('-') ? row.labCodePrefix : `${row.labCodePrefix}-`;
-              assetCode = `${prefixNorm}${String(seq).padStart(3, '0')}`;
-            } else {
-              assetCode = `${prefixClean}-${currentYearThai}-${String(seq).padStart(3, '0')}`;
-            }
+            // Clean sequential check: if code exists, increment to next number (001, 002, 003...)
+            // NEVER use random numbers or timestamps!
+            while (true) {
+              if (row.labCodePrefix) {
+                const prefixNorm = row.labCodePrefix.endsWith('-') ? row.labCodePrefix : `${row.labCodePrefix}-`;
+                assetCode = `${prefixNorm}${String(seq).padStart(3, '0')}`;
+              } else {
+                assetCode = `${prefixClean}-${currentYearThai}-${String(seq).padStart(3, '0')}`;
+              }
 
-            // Verify unique
-            const existingAsset = await prisma.equipmentAsset.findUnique({
-              where: { assetCode },
-            });
-            if (existingAsset) {
-              assetCode = `${assetCode}-${String(Date.now()).slice(-3)}`;
+              const existingAsset = await prisma.equipmentAsset.findUnique({
+                where: { assetCode },
+              });
+              if (!existingAsset) {
+                break;
+              }
+              seq++;
             }
 
             const govCode = govCodes[q - 1] || (quantity === 1 && row.govAssetCode ? String(row.govAssetCode).trim() : null);

@@ -408,10 +408,7 @@ export async function POST(req: Request) {
             const seq = existingAssetsCount + q;
             let assetCode = '';
 
-            // If only 1 piece and user provided custom assetCode, use it
-            if (quantity === 1 && row.assetCode) {
-              assetCode = String(row.assetCode).trim().toUpperCase();
-            } else if (row.labCodePrefix) {
+            if (row.labCodePrefix) {
               const prefixNorm = row.labCodePrefix.endsWith('-') ? row.labCodePrefix : `${row.labCodePrefix}-`;
               assetCode = `${prefixNorm}${String(seq).padStart(3, '0')}`;
             } else {

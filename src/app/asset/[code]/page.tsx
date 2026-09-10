@@ -203,7 +203,7 @@ export default function PublicAssetPage() {
             {/* Sequence Number */}
             <div className="absolute bottom-4 left-4">
               <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-900/80 text-white backdrop-blur-md">
-                เครื่อง/ชิ้นที่ {asset.sequenceNumber || 1}
+                {asset.item?.unit || 'ชิ้น'}ที่ {asset.sequenceNumber || 1}
               </span>
             </div>
           </div>

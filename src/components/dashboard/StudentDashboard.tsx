@@ -405,7 +405,7 @@ export default function StudentDashboard() {
                             </span>
                             {itemRow.asset && (
                               <span className="text-[10px] font-mono font-semibold text-teal-700 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-200">
-                                รหัส: {itemRow.asset.assetCode} (เครื่องที่ {itemRow.asset.sequenceNumber || 1})
+                                รหัส: {itemRow.asset.assetCode} ({itemRow.item?.unit || 'ชิ้น'}ที่ {itemRow.asset.sequenceNumber || 1})
                               </span>
                             )}
                           </div>

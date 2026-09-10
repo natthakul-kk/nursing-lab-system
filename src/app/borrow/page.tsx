@@ -626,7 +626,7 @@ export default function BorrowPage() {
                         <span>{it.item?.name}</span>
                         {it.asset && (
                           <span className="font-mono text-[10px] bg-slate-200 px-1.5 py-0.5 rounded text-slate-700">
-                            Asset: {it.asset.assetCode} (เครื่องที่ {it.asset.sequenceNumber || 1})
+                            Asset: {it.asset.assetCode} ({it.item?.unit || 'ชิ้น'}ที่ {it.asset.sequenceNumber || 1})
                           </span>
                         )}
                         <span className="text-slate-500 font-normal text-[11px]">
@@ -1458,7 +1458,7 @@ export default function BorrowPage() {
                                 จำนวน {it.quantity} {it.item?.unit}
                                 {it.asset && (
                                   <span className="font-mono text-[10px] bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 text-teal-700 dark:text-teal-300 ml-1.5">
-                                    รหัส: {it.asset.assetCode} (เครื่องที่ {it.asset.sequenceNumber || 1})
+                                    รหัส: {it.asset.assetCode} ({it.item?.unit || 'ชิ้น'}ที่ {it.asset.sequenceNumber || 1})
                                   </span>
                                 )}
                               </div>

@@ -6,6 +6,7 @@ import { formatImageUrl } from '@/lib/image-helper';
 import { QrCode, Printer, X, Tag, MapPin, Calendar, Coins, Image as ImageIcon, SlidersHorizontal } from 'lucide-react';
 
 interface AssetQrModalProps {
+  itemUnit?: string;
   asset: {
     id: string;
     assetCode: string;
@@ -27,10 +28,11 @@ interface AssetQrModalProps {
   onClose: () => void;
 }
 
-export default function AssetQrModal({ asset, itemName, onClose }: AssetQrModalProps) {
+export default function AssetQrModal({ asset, itemName, itemUnit, onClose }: AssetQrModalProps) {
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [labelSize, setLabelSize] = useState<'standard' | 'compact' | 'mini'>('standard');
   const title = itemName || asset.item?.name || 'ครุภัณฑ์ห้องปฏิบัติการพยาบาล';
+  const unit = itemUnit || asset.item?.unit || 'ชิ้น';
 
   useEffect(() => {
     async function generateQr() {
@@ -153,7 +155,7 @@ export default function AssetQrModal({ asset, itemName, onClose }: AssetQrModalP
           <div class="mini-info">
             <div class="mini-code-row">
               <span class="mini-code">${asset.assetCode}</span>
-              <span class="mini-seq">เครื่องที่ ${asset.sequenceNumber || 1}</span>
+              <span class="mini-seq">${unit}ที่ ${asset.sequenceNumber || 1}</span>
             </div>
             <div class="mini-title">${title}</div>
             <div class="mini-loc">📍 ${asset.location || 'ห้องแล็บพยาบาล'}</div>
@@ -232,7 +234,7 @@ export default function AssetQrModal({ asset, itemName, onClose }: AssetQrModalP
           <div class="compact-info">
             <div class="compact-org">คณะพยาบาลศาสตร์</div>
             <div class="compact-code">${asset.assetCode}</div>
-            <div class="compact-title">${title} (${asset.sequenceNumber || 1})</div>
+            <div class="compact-title">${title} (${unit}ที่ ${asset.sequenceNumber || 1})</div>
             <div class="compact-meta">
               <span>📍 ${asset.location || 'ห้องแล็บพยาบาล'}</span>
               ${asset.govAssetCode ? `<div>เลข: ${asset.govAssetCode}</div>` : ''}
@@ -315,7 +317,7 @@ export default function AssetQrModal({ asset, itemName, onClose }: AssetQrModalP
         <div class="label-card">
           <div class="header-org">คณะพยาบาลศาสตร์ • ห้องปฏิบัติการ</div>
           <div class="item-title">${title}</div>
-          <div class="seq-badge">เครื่อง/ชิ้นที่ ${asset.sequenceNumber || 1}</div>
+          <div class="seq-badge">${unit}ที่ ${asset.sequenceNumber || 1}</div>
           <img src="${qrDataUrl}" class="qr-img" />
           <div class="asset-code">${asset.assetCode}</div>
           ${asset.govAssetCode ? `<div style="font-family: monospace; font-size: 11px; color: #64748b; margin-top: -2px; margin-bottom: 6px;">เลขครุภัณฑ์: ${asset.govAssetCode}</div>` : ''}
@@ -448,7 +450,7 @@ export default function AssetQrModal({ asset, itemName, onClose }: AssetQrModalP
                     {asset.assetCode}
                   </span>
                   <span className="text-[9px] font-extrabold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 px-1.5 py-0.5 rounded border border-teal-200 dark:border-teal-800 flex-shrink-0">
-                    เครื่องที่ {asset.sequenceNumber || 1}
+                    {unit}ที่ {asset.sequenceNumber || 1}
                   </span>
                 </div>
                 <div className="text-[10px] font-bold text-slate-700 dark:text-slate-300 line-clamp-1 leading-tight">
@@ -482,7 +484,7 @@ export default function AssetQrModal({ asset, itemName, onClose }: AssetQrModalP
                   {asset.assetCode}
                 </div>
                 <div className="text-[11px] font-bold text-slate-800 dark:text-slate-200 line-clamp-2 leading-tight">
-                  {title} <span className="text-teal-600 dark:text-teal-400 font-semibold">({asset.sequenceNumber || 1})</span>
+                  {title} <span className="text-teal-600 dark:text-teal-400 font-semibold">({unit}ที่ {asset.sequenceNumber || 1})</span>
                 </div>
                 <div className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
                   <MapPin className="w-3 h-3 text-teal-600 dark:text-teal-400 flex-shrink-0" />
@@ -502,7 +504,7 @@ export default function AssetQrModal({ asset, itemName, onClose }: AssetQrModalP
 
             <div>
               <span className="inline-block bg-teal-100 dark:bg-teal-950/60 text-teal-800 dark:text-teal-200 text-xs font-bold px-3 py-0.5 rounded-full border border-teal-200 dark:border-teal-800">
-                เครื่อง/ชิ้นที่ {asset.sequenceNumber || 1}
+                {unit}ที่ {asset.sequenceNumber || 1}
               </span>
             </div>
 

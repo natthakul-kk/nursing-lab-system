@@ -130,7 +130,7 @@ export async function POST(req: Request) {
           imageUrl: imageUrl || null,
           status: 'AVAILABLE',
           condition: 'GOOD',
-          note: note || `เครื่อง/ชิ้นที่ ${seq}`,
+          note: note || `${item.unit || "ชิ้น"}ที่ ${seq}`,
         },
       });
 
@@ -143,7 +143,7 @@ export async function POST(req: Request) {
           totalCost: assetCost,
           createdById: userId,
           createdAt: asset.receivedDate,
-          note: note || `รับเข้าครุภัณฑ์ ${item.name} เครื่องที่ ${seq} (รหัส: ${assetCode})`,
+          note: note || `รับเข้าครุภัณฑ์ ${item.name} ${item.unit || "ชิ้น"}ที่ ${seq} (รหัส: ${assetCode})`,
         },
       });
 

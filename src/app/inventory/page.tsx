@@ -49,7 +49,7 @@ export default function InventoryPage() {
   const isStaff = isOfficer || isAdmin;
 
   const [items, setItems] = useState<any[]>([]);
-  const [selectedAssetForQr, setSelectedAssetForQr] = useState<{ asset: any; itemName: string } | null>(null);
+  const [selectedAssetForQr, setSelectedAssetForQr] = useState<{ asset: any; itemName: string; itemUnit?: string } | null>(null);
   const [selectedLotForQr, setSelectedLotForQr] = useState<{ lot: any; item: any } | null>(null);
   const [selectedLotForBoxStickers, setSelectedLotForBoxStickers] = useState<{ item: any; lot: any; boxes: any[] } | null>(null);
   const [categories, setCategories] = useState<any[]>([]);
@@ -919,7 +919,7 @@ export default function InventoryPage() {
                                             <div>
                                               <div className="flex items-center gap-2">
                                                 <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-teal-100 dark:bg-teal-900/60 text-teal-800 dark:text-teal-300">
-                                                  เครื่อง/ชิ้นที่ {asset.sequenceNumber || 1}
+                                                  {item.unit || 'ชิ้น'}ที่ {asset.sequenceNumber || 1}
                                                 </span>
                                                 <span className="font-mono font-black text-slate-900 dark:text-slate-100 text-xs tracking-wider">
                                                   {asset.assetCode}
@@ -2267,6 +2267,7 @@ export default function InventoryPage() {
         <AssetQrModal
           asset={selectedAssetForQr.asset}
           itemName={selectedAssetForQr.itemName}
+          itemUnit={selectedAssetForQr.itemUnit}
           onClose={() => setSelectedAssetForQr(null)}
         />
       )}

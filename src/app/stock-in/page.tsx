@@ -530,7 +530,7 @@ export default function StockInPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                      ลำดับของครุภัณฑ์/ชิ้น (เช่น เครื่องที่ 1, ใบที่ 2) *
+                      ลำดับของครุภัณฑ์ (เช่น เครื่องที่ 1, ชุดที่ 2, ตัวที่ 3) *
                     </label>
                     <input
                       type="number"

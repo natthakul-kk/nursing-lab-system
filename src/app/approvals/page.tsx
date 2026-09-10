@@ -683,7 +683,7 @@ export default function ApprovalsPage() {
                             <span>• {it.item?.name} ({it.quantity} {it.item?.unit})</span>
                             {it.asset && (
                               <span className="text-[10px] font-mono text-teal-700 dark:text-teal-300 bg-white dark:bg-slate-800 px-2 py-0.5 rounded border border-teal-200 dark:border-teal-800/80">
-                                {it.asset.assetCode} (เครื่องที่ {it.asset.sequenceNumber || 1})
+                                {it.asset.assetCode} ({it.item?.unit || 'ชิ้น'}ที่ {it.asset.sequenceNumber || 1})
                               </span>
                             )}
                           </div>

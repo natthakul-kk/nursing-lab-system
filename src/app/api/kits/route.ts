@@ -103,7 +103,11 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { code, name, category, description, targetCourse, imageUrl, items } = body;
 
-    if (!name || !items || !Array.isArray(items) || items.length === 0) {
+    const validItems = Array.isArray(items)
+      ? items.filter((it: any) => it && it.itemId && typeof it.itemId === 'string' && it.itemId.trim() !== '')
+      : [];
+
+    if (!name || !name.trim() || validItems.length === 0) {
       return NextResponse.json(
         { error: 'กรุณาระบุชื่อชุดฝึกและเลือกส่วนประกอบอย่างน้อย 1 รายการ' },
         { status: 400 }
@@ -125,8 +129,8 @@ export async function POST(req: Request) {
         targetCourse: targetCourse || null,
         imageUrl: imageUrl || null,
         items: {
-          create: items.map((it: any) => ({
-            itemId: it.itemId,
+          create: validItems.map((it: any) => ({
+            itemId: it.itemId.trim(),
             quantity: Math.max(1, Number(it.quantity) || 1),
           })),
         },

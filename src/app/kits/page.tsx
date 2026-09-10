@@ -256,14 +256,15 @@ export default function PracticeKitsPage() {
       items: kit.components?.map((c: any) => ({
         itemId: c.itemId,
         quantity: c.quantityPerKit,
-      })) || [{ itemId: allItems[0]?.id || '', quantity: 1 }],
+      })) || [{ itemId: '', quantity: 1 }],
     });
     setShowEditModal(true);
   };
 
   const handleUpdateKit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editForm.name || editForm.items.length === 0) {
+    const validItems = editForm.items.filter((it) => it.itemId && it.itemId.trim());
+    if (!editForm.name.trim() || validItems.length === 0) {
       alert('กรุณากรอกชื่อชุดฝึกและเลือกส่วนประกอบอย่างน้อย 1 รายการ');
       return;
     }
@@ -274,11 +275,11 @@ export default function PracticeKitsPage() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: editForm.name,
+          name: editForm.name.trim(),
           category: editForm.category,
           description: editForm.description,
           targetCourse: editForm.targetCourse,
-          items: editForm.items,
+          items: validItems,
         }),
       });
 
@@ -300,12 +301,10 @@ export default function PracticeKitsPage() {
 
   // Create Kit
   const handleAddKitItemRow = () => {
-    if (allItems.length > 0) {
-      setKitForm((prev) => ({
-        ...prev,
-        items: [...prev.items, { itemId: allItems[0].id, quantity: 1 }],
-      }));
-    }
+    setKitForm((prev) => ({
+      ...prev,
+      items: [...prev.items, { itemId: '', quantity: 1 }],
+    }));
   };
 
   const handleRemoveKitItemRow = (idx: number) => {
@@ -316,12 +315,10 @@ export default function PracticeKitsPage() {
   };
 
   const handleAddEditItemRow = () => {
-    if (allItems.length > 0) {
-      setEditForm((prev) => ({
-        ...prev,
-        items: [...prev.items, { itemId: allItems[0].id, quantity: 1 }],
-      }));
-    }
+    setEditForm((prev) => ({
+      ...prev,
+      items: [...prev.items, { itemId: '', quantity: 1 }],
+    }));
   };
 
   const handleRemoveEditItemRow = (idx: number) => {
@@ -333,7 +330,8 @@ export default function PracticeKitsPage() {
 
   const handleCreateKit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!kitForm.name || kitForm.items.length === 0) {
+    const validItems = kitForm.items.filter((it) => it.itemId && it.itemId.trim());
+    if (!kitForm.name.trim() || validItems.length === 0) {
       alert('กรุณากรอกชื่อชุดฝึกและเลือกส่วนประกอบอย่างน้อย 1 รายการ');
       return;
     }
@@ -343,7 +341,11 @@ export default function PracticeKitsPage() {
       const res = await fetch('/api/kits', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(kitForm),
+        body: JSON.stringify({
+          ...kitForm,
+          name: kitForm.name.trim(),
+          items: validItems,
+        }),
       });
 
       if (res.ok) {
@@ -354,7 +356,7 @@ export default function PracticeKitsPage() {
           category: 'หัตถการพื้นฐาน',
           description: '',
           targetCourse: '',
-          items: [{ itemId: allItems[0]?.id || '', quantity: 1 }],
+          items: [{ itemId: '', quantity: 1 }],
         });
         fetchKitsAndItems();
       } else {
@@ -426,7 +428,7 @@ export default function PracticeKitsPage() {
                   category: 'หัตถการพื้นฐาน',
                   description: '',
                   targetCourse: '',
-                  items: [{ itemId: allItems[0]?.id || '', quantity: 1 }],
+                  items: [{ itemId: '', quantity: 1 }],
                 });
                 setShowCreateModal(true);
               }}

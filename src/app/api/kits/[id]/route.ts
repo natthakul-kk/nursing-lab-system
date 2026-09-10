@@ -18,14 +18,24 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
     // Delete old items and insert updated items if items provided
     if (items && Array.isArray(items)) {
+      const validItems = items.filter(
+        (it: any) => it && it.itemId && typeof it.itemId === 'string' && it.itemId.trim() !== ''
+      );
+      if (validItems.length === 0) {
+        return NextResponse.json(
+          { error: 'กรุณาเลือกส่วนประกอบในชุดฝึกอย่างน้อย 1 รายการ' },
+          { status: 400 }
+        );
+      }
+
       await prisma.practiceKitItem.deleteMany({
         where: { kitId: id },
       });
 
       await prisma.practiceKitItem.createMany({
-        data: items.map((it: any) => ({
+        data: validItems.map((it: any) => ({
           kitId: id,
-          itemId: it.itemId,
+          itemId: it.itemId.trim(),
           quantity: Math.max(1, Number(it.quantity) || 1),
         })),
       });

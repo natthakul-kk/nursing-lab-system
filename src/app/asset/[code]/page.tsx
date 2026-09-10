@@ -379,6 +379,18 @@ export default function PublicAssetPage() {
               )}
             </div>
 
+            {/* Specific Asset Note (Model / Sub-specification) */}
+            {asset.note && (
+              <div className="space-y-1.5 text-xs">
+                <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                  <Info className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" /> ข้อมูลเฉพาะชิ้น / รุ่น / หมายเหตุ:
+                </div>
+                <div className="text-teal-900 dark:text-teal-200 bg-teal-50/70 dark:bg-teal-950/40 p-3.5 rounded-2xl border border-teal-100 dark:border-teal-900/50 leading-relaxed font-medium">
+                  {asset.note}
+                </div>
+              </div>
+            )}
+
             {/* Description & Usage Guide */}
             {asset.item.description && (
               <div className="space-y-1.5 text-xs">

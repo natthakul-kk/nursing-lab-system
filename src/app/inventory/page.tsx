@@ -40,6 +40,7 @@ import {
   FolderPlus,
   Settings,
   RefreshCw,
+  Info,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { TableLoadingRow } from '@/components/common/LoadingSpinner';
@@ -902,7 +903,7 @@ export default function InventoryPage() {
                                   <div className="flex items-center justify-between mb-2">
                                     <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
                                       <Tag className="w-3.5 h-3.5 text-teal-600" />
-                                      รายการชิ้นครุภัณฑ์รายบุคคล (Individual Asset Codes)
+                                      รายการครุภัณฑ์รายชิ้น (Individual Assets)
                                     </h4>
                                   </div>
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -933,21 +934,35 @@ export default function InventoryPage() {
                                               )}
                                             </div>
 
-                                            <div>
+                                            <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                                              {asset.condition && (
+                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                                  asset.condition === 'GOOD' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/40' :
+                                                  asset.condition === 'FAIR' ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200 dark:border-amber-900/40' :
+                                                  'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-200 dark:border-rose-900/40'
+                                                }`}>
+                                                  {asset.condition === 'GOOD' ? 'สมบูรณ์' : asset.condition === 'FAIR' ? 'สภาพพอใช้' : 'ชำรุด'}
+                                                </span>
+                                              )}
                                               {asset.status === 'AVAILABLE' && (
-                                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300">
                                                   พร้อมใช้
                                                 </span>
                                               )}
                                               {asset.status === 'BORROWED' && (
-                                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">
+                                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300">
                                                   ถูกยืมอยู่
                                                 </span>
                                               )}
                                               {asset.status === 'MAINTENANCE' && (
-                                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 flex items-center gap-1">
+                                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-300 flex items-center gap-1">
                                                   <Wrench className="w-3 h-3" />
                                                   กำลังซ่อมบำรุง
+                                                </span>
+                                              )}
+                                              {asset.status === 'RETIRED' && (
+                                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                                                  จำหน่ายออก
                                                 </span>
                                               )}
                                             </div>
@@ -1021,6 +1036,13 @@ export default function InventoryPage() {
                                               {asset.serialNumber && (
                                                 <div className="text-[10px] text-slate-400 font-mono">
                                                   SN: {asset.serialNumber}
+                                                </div>
+                                              )}
+
+                                              {asset.note && (
+                                                <div className="text-[10px] text-teal-800 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/40 px-2 py-1 rounded-lg border border-teal-200/60 dark:border-teal-900/40 flex items-start gap-1 mt-1">
+                                                  <Info className="w-3 h-3 text-teal-600 dark:text-teal-400 flex-shrink-0 mt-0.5" />
+                                                  <span className="leading-snug">{asset.note}</span>
                                                 </div>
                                               )}
                                             </div>

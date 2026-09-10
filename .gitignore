@@ -36,3 +36,7 @@ next-env.d.ts
 # prisma sqlite local file
 /prisma/*.db
 /prisma/*.db-journal
+
+# office temporary files
+~$*
+

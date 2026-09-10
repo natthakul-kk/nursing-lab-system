@@ -9,23 +9,24 @@ if (!fs.existsSync(OUTPUT_DIR)) {
   fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 }
 
-const studentUser = {
-  id: 'cmts3ebf30000l104gibrxmxz',
-  name: 'นางสาวกชกร คงหอม',
-  email: 'kodchakorn.kon@ku.th',
+// Strictly Mock / Fictional Users
+const mockStudentUser = {
+  id: 'demo-student-001',
+  name: 'นางสาวสมหญิง ใจดี (นิสิตตัวอย่าง)',
+  email: 'somying.demo@ku.th',
   role: 'USER',
   department: 'นิสิตชั้นปีที่ 2 คณะพยาบาลศาสตร์',
-  studentId: '6811700017',
+  studentId: '6811799999',
   status: 'ACTIVE'
 };
 
-const teacherUser = {
-  id: 'cmts5wrw90004la049ac6rce0',
-  name: 'นาง จันทร์ธิดา นิมิตกุล',
-  email: 'chanthida.n@ku.th',
+const mockTeacherUser = {
+  id: 'demo-teacher-001',
+  name: 'ผศ.ดร.พยาบาล อารีรัตน์ (อาจารย์ตัวอย่าง)',
+  email: 'nursing.demo@ku.th',
   role: 'TEACHER',
-  department: 'ภาควิชาการพยาบาลมารดา ทารก และการผดุงครรภ์',
-  studentId: 'fnrscin',
+  department: 'ภาควิชาการพยาบาลพื้นฐาน, อาจารย์',
+  studentId: 'fnrsdemo',
   status: 'ACTIVE'
 };
 
@@ -43,7 +44,7 @@ async function setAuth(page, user) {
 }
 
 async function run() {
-  console.log('Launching Edge Browser...');
+  console.log('Launching Edge Browser for Mock Screenshots...');
   const browser = await puppeteer.launch({
     executablePath: EDGE_PATH,
     headless: 'new',
@@ -60,17 +61,17 @@ async function run() {
     await new Promise(r => setTimeout(r, 800));
     await page.screenshot({ path: path.join(OUTPUT_DIR, '01_login_page.png') });
 
-    // Switch to Student
-    await setAuth(page, studentUser);
+    // Switch to Mock Student
+    await setAuth(page, mockStudentUser);
 
     // 2. Student Dashboard
-    console.log('2. Capturing Student Dashboard (with live demo alerts)...');
+    console.log('2. Capturing Mock Student Dashboard...');
     await page.goto('http://localhost:3000/', { waitUntil: 'networkidle2' });
     await new Promise(r => setTimeout(r, 2000));
     await page.screenshot({ path: path.join(OUTPUT_DIR, '02_student_dashboard.png') });
 
     // 3. Borrow Page
-    console.log('3. Capturing Borrow Page (with demo request list)...');
+    console.log('3. Capturing Mock Borrow Page...');
     await page.goto('http://localhost:3000/borrow', { waitUntil: 'networkidle2' });
     await new Promise(r => setTimeout(r, 2000));
     await page.screenshot({ path: path.join(OUTPUT_DIR, '03_borrow_page.png') });
@@ -100,13 +101,13 @@ async function run() {
     await page.screenshot({ path: path.join(OUTPUT_DIR, '05_kits_page.png') });
 
     // 6. Practice Room Booking Timetable
-    console.log('6. Capturing Practice Booking Timetable (with live slots)...');
+    console.log('6. Capturing Practice Booking Timetable...');
     await page.goto('http://localhost:3000/practice', { waitUntil: 'networkidle2' });
     await new Promise(r => setTimeout(r, 2000));
     await page.screenshot({ path: path.join(OUTPUT_DIR, '06_practice_timetable.png') });
 
     // 7. Practice Booking Tab / Pass
-    console.log('7. Capturing Practice My Bookings (with QR Pass)...');
+    console.log('7. Capturing Practice My Bookings (with Mock QR Pass)...');
     await page.evaluate(() => {
       const btns = Array.from(document.querySelectorAll('button'));
       const tab = btns.find(b => b.innerText.includes('จองของฉัน') || b.innerText.includes('รายการจอง'));
@@ -131,23 +132,23 @@ async function run() {
     await new Promise(r => setTimeout(r, 1500));
     await page.screenshot({ path: path.join(OUTPUT_DIR, '08_asset_detail_page.png') });
 
-    // 9. Switch to Teacher User
-    console.log('9. Switching to Teacher User...');
-    await setAuth(page, teacherUser);
+    // 9. Switch to Mock Teacher User
+    console.log('9. Switching to Mock Teacher User...');
+    await setAuth(page, mockTeacherUser);
 
     // 10. Teacher Approvals Page
-    console.log('10. Capturing Approvals Page (with pending requests)...');
+    console.log('10. Capturing Mock Teacher Approvals Page...');
     await page.goto('http://localhost:3000/approvals', { waitUntil: 'networkidle2' });
     await new Promise(r => setTimeout(r, 2000));
     await page.screenshot({ path: path.join(OUTPUT_DIR, '09_teacher_approvals.png') });
 
     // 11. Courses & Cost Analytics Page
-    console.log('11. Capturing Courses Page (with budgets and coordinator)...');
+    console.log('11. Capturing Mock Courses Page...');
     await page.goto('http://localhost:3000/courses', { waitUntil: 'networkidle2' });
     await new Promise(r => setTimeout(r, 2000));
     await page.screenshot({ path: path.join(OUTPUT_DIR, '10_courses_analytics.png') });
 
-    console.log('ALL 10 FRESH SCREENSHOTS CAPTURED WITH RICH DEMO DATA!');
+    console.log('ALL SCREENSHOTS CAPTURED WITH STRICTLY MOCK/FICTIONAL NAMES!');
   } catch (err) {
     console.error('Capture error:', err);
   } finally {

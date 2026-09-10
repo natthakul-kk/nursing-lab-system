@@ -2,9 +2,9 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function seed() {
-  console.log('--- STARTING DEMO DATA SEEDING ---');
+  console.log('--- STARTING DEMO DATA SEEDING (STRICTLY MOCK NAMES) ---');
 
-  // 1. Run cleanup first to ensure fresh state
+  // 1. Run cleanup first
   await prisma.practiceBooking.deleteMany({
     where: { bookingNumber: { startsWith: 'PB-DEMO' } }
   });
@@ -33,24 +33,43 @@ async function seed() {
   await prisma.course.deleteMany({ where: { code: { startsWith: 'DEMO-' } } });
   await prisma.item.deleteMany({ where: { code: { startsWith: 'DEMO-' } } });
   await prisma.category.deleteMany({ where: { code: { startsWith: 'DEMO-' } } });
-
-  // 2. Identify target demo users (existing real accounts used as demo actors)
-  let student = await prisma.user.findFirst({
-    where: { studentId: '6811700017' }
+  await prisma.user.deleteMany({
+    where: {
+      OR: [
+        { id: { startsWith: 'demo-' } },
+        { email: { contains: '.demo@ku.th' } },
+        { studentId: '6811799999' }
+      ]
+    }
   });
-  if (!student) {
-    student = await prisma.user.findFirst({ where: { role: 'USER' } });
-  }
 
-  let teacher = await prisma.user.findFirst({
-    where: { email: 'chanthida.n@ku.th' }
+  // 2. Create Explicit Mock Users (Fictional Actors)
+  const student = await prisma.user.create({
+    data: {
+      id: 'demo-student-001',
+      name: 'นางสาวสมหญิง ใจดี (นิสิตตัวอย่าง)',
+      email: 'somying.demo@ku.th',
+      studentId: '6811799999',
+      department: 'นิสิตชั้นปีที่ 2 คณะพยาบาลศาสตร์',
+      role: 'USER',
+      status: 'ACTIVE'
+    }
   });
-  if (!teacher) {
-    teacher = await prisma.user.findFirst({ where: { role: 'TEACHER' } });
-  }
 
-  console.log(`Demo Student: ${student?.name} (${student?.id})`);
-  console.log(`Demo Teacher: ${teacher?.name} (${teacher?.id})`);
+  const teacher = await prisma.user.create({
+    data: {
+      id: 'demo-teacher-001',
+      name: 'ผศ.ดร.พยาบาล อารีรัตน์ (อาจารย์ตัวอย่าง)',
+      email: 'nursing.demo@ku.th',
+      studentId: 'fnrsdemo',
+      department: 'ภาควิชาการพยาบาลพื้นฐาน, อาจารย์',
+      role: 'TEACHER',
+      status: 'ACTIVE'
+    }
+  });
+
+  console.log(`Created Mock Student: ${student.name} (${student.id})`);
+  console.log(`Created Mock Teacher: ${teacher.name} (${teacher.id})`);
 
   // 3. Create Demo Consumables Category & Items
   const conCat = await prisma.category.create({
@@ -110,14 +129,14 @@ async function seed() {
     }
   });
 
-  // 4. Create Demo Courses
+  // 4. Create Demo Courses with Fictional Instructor Names
   const c1 = await prisma.course.create({
     data: {
       code: 'DEMO-NUR1201',
       name: 'การพยาบาลพื้นฐาน (Fundamental of Nursing)',
       semester: '1',
       academicYear: '2569',
-      instructorName: 'ดร.ศิริพร อารีย์พงษ์',
+      instructorName: 'อาจารย์ ดร.วิชาการ เชี่ยวชาญ (อาจารย์ตัวอย่าง)',
       description: 'วิชาฝึกปฏิบัติการทักษะพื้นฐานทางการพยาบาลและการดูแลผู้ป่วยเบื้องต้น',
       allocatedBudget: 65000
     }
@@ -135,13 +154,11 @@ async function seed() {
     }
   });
 
-  // 5. Find Real Equipment Items
+  // 5. Find Real Equipment Items (for reference only, unedited)
   const eqItems = await prisma.item.findMany({
     where: { type: 'EQUIPMENT' },
     take: 4
   });
-
-  console.log(`Found ${eqItems.length} Equipment items, 3 Demo Consumables created`);
 
   const now = new Date();
   const todayEnd = new Date(now);
@@ -156,8 +173,8 @@ async function seed() {
   const past10Days = new Date(now.getTime() - 10 * 24 * 3600 * 1000);
   const past7Days = new Date(now.getTime() - 7 * 24 * 3600 * 1000);
 
-  // 6. Create Borrow Requests
-  // 6.1 DUE TODAY (Orange Alert Badge on Dashboard!)
+  // 6. Create Borrow Requests for Mock Student
+  // 6.1 DUE TODAY (Orange Alert Badge)
   const br1 = await prisma.borrowRequest.create({
     data: {
       requestNumber: 'REQ-DEMO-2609-0001',
@@ -179,7 +196,7 @@ async function seed() {
     });
   }
 
-  // 6.2 DUE IN 2 DAYS (Yellow Alert Badge on Dashboard!)
+  // 6.2 DUE IN 2 DAYS (Yellow Alert Badge)
   const br2 = await prisma.borrowRequest.create({
     data: {
       requestNumber: 'REQ-DEMO-2609-0002',
@@ -266,8 +283,8 @@ async function seed() {
     });
   }
 
-  // 7. Create Requisitions
-  // 7.1 Pending Requisition (for Teacher approval on /approvals)
+  // 7. Create Requisitions for Mock Student
+  // 7.1 Pending Requisition (for Teacher approval)
   const rq1 = await prisma.requisitionRequest.create({
     data: {
       requestNumber: 'REQ-DEMO-MAT-01',
@@ -308,7 +325,7 @@ async function seed() {
       purpose: 'เบิกวัสดุฝึกปฏิบัติการปฐมพยาบาลและการทำแผล ประจำสัปดาห์ที่ 3 [DEMO]',
       dateNeeded: past10Days,
       status: 'DISPENSED',
-      advisorName: 'ดร.ศิริพร อารีย์พงษ์',
+      advisorName: 'อาจารย์ ดร.วิชาการ เชี่ยวชาญ (อาจารย์ตัวอย่าง)',
       approverId: teacher.id,
       dispensedAt: past7Days,
       totalCost: 5200
@@ -407,7 +424,7 @@ async function seed() {
     }
   });
 
-  // 9. Create Approved Practice Booking for Student with QR Pass!
+  // 9. Create Approved Practice Booking for Mock Student with QR Pass!
   const booking = await prisma.practiceBooking.create({
     data: {
       bookingNumber: 'PB-DEMO-2609-0001',
@@ -421,12 +438,12 @@ async function seed() {
       approverId: teacher.id,
       approvedAt: now,
       additionalEquipment: 'หุ่นฝึกสวนปัสสาวะหญิง, ถุงมือเบอร์ 6.5, ผ้าก๊อซแพ็ค 10',
-      notes: 'สมาชิกกลุ่ม: 1. นางสาวกชกร คงหอม (6811700017) 2. นายธนกร สุขประเสริฐ 3. นางสาวกานดา วิเศษศิลป์'
+      notes: 'สมาชิกกลุ่ม: 1. นางสาวสมหญิง ใจดี (หัวหน้ากลุ่ม) 2. นายรักเรียน ขยันยิ่ง 3. นางสาวกานดา สดใส'
     }
   });
 
   console.log(`Created Practice Booking: ${booking.bookingNumber} with QR Token: ${booking.qrCodeToken}`);
-  console.log('--- DEMO DATA SEEDED SUCCESSFULLY: 5 Borrows, 2 Requisitions, 3 Slots, 1 Booking with Pass ---');
+  console.log('--- DEMO DATA SEEDED WITH STRICTLY MOCK/FICTIONAL NAMES ---');
   await prisma.$disconnect();
 }
 

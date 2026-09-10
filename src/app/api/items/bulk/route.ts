@@ -11,6 +11,38 @@ function normalizeItemType(typeInput?: string): 'EQUIPMENT' | 'CONSUMABLE' {
   return 'EQUIPMENT';
 }
 
+// Safely parse date from string, number (Excel serial), or Date object
+function parseSafeDate(val: any): Date | null {
+  if (!val) return null;
+  if (val instanceof Date && !isNaN(val.getTime())) return val;
+  if (typeof val === 'number') {
+    // Excel serial date number
+    const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+    const d = new Date(excelEpoch.getTime() + val * 86400000);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  if (typeof val === 'string') {
+    const s = val.trim();
+    if (!s) return null;
+    const d = new Date(s);
+    if (!isNaN(d.getTime())) return d;
+    const parts = s.split(/[\/\-.]/);
+    if (parts.length === 3) {
+      if (parts[0].length === 4) {
+        const parsed = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        if (!isNaN(parsed.getTime())) return parsed;
+      }
+      if (parts[2].length === 4) {
+        let yr = Number(parts[2]);
+        if (yr > 2400) yr -= 543; // Handle Buddhist Era e.g. 2569 -> 2026
+        const parsed = new Date(yr, Number(parts[1]) - 1, Number(parts[0]));
+        if (!isNaN(parsed.getTime())) return parsed;
+      }
+    }
+  }
+  return null;
+}
+
 // Robust extractor for Thai & English headers from Excel/CSV
 function extractItemFromRow(row: Record<string, any>) {
   const map: Record<string, any> = {};
@@ -134,6 +166,20 @@ function extractItemFromRow(row: Record<string, any>) {
     row['lotNumber'] ||
     '';
 
+  // 10. Received Date (Both Equipment & Consumable)
+  const rawReceivedDate =
+    map['วันที่รับเข้าyyyymmdd'] ||
+    map['วันที่รับเข้า'] ||
+    map['วันที่ตรวจรับ'] ||
+    map['วันที่ได้มา'] ||
+    map['receiveddate'] ||
+    map['received_date'] ||
+    row['วันที่รับเข้า (YYYY-MM-DD)'] ||
+    row['วันที่รับเข้า'] ||
+    row['วันที่ตรวจรับ'] ||
+    row['receivedDate'] ||
+    '';
+
   // 11. Consumable - Expiry Date
   const expiryDate =
     map['วันหมดอายุyyyymmdd'] ||
@@ -196,7 +242,8 @@ function extractItemFromRow(row: Record<string, any>) {
     location: String(location || '').trim(),
     description: String(description || '').trim(),
     lotNumber: String(lotNumber || '').trim(),
-    expiryDate: expiryDate ? String(expiryDate).trim() : null,
+    expiryDate: parseSafeDate(expiryDate),
+    receivedDate: parseSafeDate(rawReceivedDate),
     supplier: String(supplier || '').trim(),
     labCodePrefix: String(labCodePrefix || '').trim(),
     assetCode: String(labCodePrefix || '').trim(),
@@ -314,7 +361,8 @@ export async function POST(req: Request) {
             ? String(row.lotNumber).trim()
             : `LOT-${currentYearThai}-${String(Date.now()).slice(-4)}`;
 
-          const expiryDate = row.expiryDate ? new Date(row.expiryDate) : null;
+          const expiryDate = row.expiryDate;
+          const receivedDate = row.receivedDate || new Date();
           const supplier = row.supplier ? String(row.supplier).trim() : null;
 
           const lot = await prisma.stockLot.create({
@@ -325,6 +373,7 @@ export async function POST(req: Request) {
               quantityRemaining: quantity,
               unitCost: cost,
               expiryDate,
+              receivedDate,
               supplier,
             },
           });
@@ -338,6 +387,7 @@ export async function POST(req: Request) {
               unitCost: cost,
               totalCost: quantity * cost,
               createdById: userId || null,
+              createdAt: receivedDate,
               note: `นำเข้าสต็อกเป็นชุด (Lot: ${lotNum})`,
             },
           });
@@ -378,6 +428,7 @@ export async function POST(req: Request) {
 
             const govCode = govCodes[q - 1] || (quantity === 1 && row.govAssetCode ? String(row.govAssetCode).trim() : null);
             const serialNumber = quantity === 1 && row.serialNumber ? String(row.serialNumber).trim() : null;
+            const assetReceivedDate = row.receivedDate || new Date();
 
             await prisma.equipmentAsset.create({
               data: {
@@ -388,6 +439,7 @@ export async function POST(req: Request) {
                 serialNumber,
                 location: row.location || item.location || 'ห้องปฏิบัติการพยาบาล',
                 cost,
+                receivedDate: assetReceivedDate,
                 status: 'AVAILABLE',
                 condition: 'GOOD',
                 note: `นำเข้าเป็นชุด ลำดับที่ ${seq}`,
@@ -402,6 +454,7 @@ export async function POST(req: Request) {
                 unitCost: cost,
                 totalCost: cost,
                 createdById: userId || null,
+                createdAt: assetReceivedDate,
                 note: `นำเข้าครุภัณฑ์เป็นชุด (รหัส: ${assetCode})`,
               },
             });

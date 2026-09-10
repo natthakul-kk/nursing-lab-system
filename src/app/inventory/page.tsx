@@ -545,6 +545,7 @@ export default function InventoryPage() {
         'หน่วยนับ': 'เครื่อง',
         'จำนวนรับเข้า': 2,
         'ราคาต่อหน่วย': 45000,
+        'วันที่รับเข้า (YYYY-MM-DD)': '2026-09-10',
         'สถานที่จัดเก็บ': 'ห้องแล็บ 402 ตู้ฉุกเฉิน',
         'คำอธิบาย': 'เครื่องฝึกช่วยฟื้นคืนชีพ AED แบบมีเสียงแนะนำ',
         'รหัสแล็บ (ขึ้นต้น)': 'AED-2569-',
@@ -558,6 +559,7 @@ export default function InventoryPage() {
         'หน่วยนับ': 'กล่อง',
         'จำนวนรับเข้า': 50,
         'ราคาต่อหน่วย': 220,
+        'วันที่รับเข้า (YYYY-MM-DD)': '2026-09-10',
         'สถานที่จัดเก็บ': 'ตู้เก็บเวชภัณฑ์ ชั้น 2',
         'คำอธิบาย': 'ถุงมือยางธรรมชาติชนิดมีแป้ง กล่องละ 50 คู่',
         'หมายเลขล็อต': 'LOT-2026-A1',
@@ -2369,20 +2371,20 @@ export default function InventoryPage() {
                     <span>ตัวอย่างข้อมูลที่จะนำเข้า ({previewData.length} แถว)</span>
                     <span className="text-[11px] text-teal-600 font-medium">แสดง 5 แถวแรก</span>
                   </div>
-                  <div className="overflow-x-auto border border-slate-200 rounded-xl max-h-48">
+                  <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl max-h-48">
                     <table className="w-full text-left text-[11px]">
-                      <thead className="bg-slate-100 text-slate-700 font-bold">
+                      <thead className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold sticky top-0">
                         <tr>
-                          {Object.keys(previewData[0] || {}).slice(0, 7).map((col) => (
+                          {Object.keys(previewData[0] || {}).map((col) => (
                             <th key={col} className="p-2 whitespace-nowrap">{col}</th>
                           ))}
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100">
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                         {previewData.slice(0, 5).map((row, idx) => (
-                          <tr key={idx} className="hover:bg-slate-50">
-                            {Object.keys(previewData[0] || {}).slice(0, 7).map((col) => (
-                              <td key={col} className="p-2 whitespace-nowrap text-slate-600">
+                          <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                            {Object.keys(previewData[0] || {}).map((col) => (
+                              <td key={col} className="p-2 whitespace-nowrap text-slate-600 dark:text-slate-300">
                                 {String(row[col] ?? '-')}
                               </td>
                             ))}

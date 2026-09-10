@@ -39,6 +39,7 @@ export async function POST(req: Request) {
       const qty = Number(quantity);
       const cst = Number(unitCost) || 0;
       const total = qty * cst;
+      const parsedReceivedDate = receivedDate ? new Date(receivedDate) : new Date();
 
       const lot = await prisma.stockLot.create({
         data: {
@@ -48,6 +49,7 @@ export async function POST(req: Request) {
           quantityRemaining: qty,
           unitCost: cst,
           expiryDate: expiryDate ? new Date(expiryDate) : null,
+          receivedDate: parsedReceivedDate,
           supplier: supplier || null,
         },
       });
@@ -61,6 +63,7 @@ export async function POST(req: Request) {
           unitCost: cst,
           totalCost: total,
           createdById: userId,
+          createdAt: parsedReceivedDate,
           note: note || `รับเข้าสต็อก Lot: ${lotNumber}`,
         },
       });
@@ -139,6 +142,7 @@ export async function POST(req: Request) {
           unitCost: assetCost,
           totalCost: assetCost,
           createdById: userId,
+          createdAt: asset.receivedDate,
           note: note || `รับเข้าครุภัณฑ์ ${item.name} เครื่องที่ ${seq} (รหัส: ${assetCode})`,
         },
       });

@@ -333,7 +333,7 @@ export default function StockInPage() {
 
             {activeTab === 'CONSUMABLE' ? (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                       หมายเลข Lot (Lot Number) *
@@ -345,6 +345,18 @@ export default function StockInPage() {
                       value={form.lotNumber}
                       onChange={(e) => setForm({ ...form, lotNumber: e.target.value })}
                       className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      วันที่รับเข้า (Received Date)
+                    </label>
+                    <input
+                      type="date"
+                      value={form.receivedDate}
+                      onChange={(e) => setForm({ ...form, receivedDate: e.target.value })}
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                     />
                   </div>
 

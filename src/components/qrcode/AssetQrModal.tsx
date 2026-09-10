@@ -103,12 +103,29 @@ export default function AssetQrModal({ asset, itemName, onClose }: AssetQrModalP
           overflow: hidden;
           line-height: 1.15;
         }
+        .mini-code-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 4px;
+        }
         .mini-code {
           font-family: monospace;
-          font-size: 11px;
+          font-size: 10.5px;
           font-weight: 900;
           color: #0f172a;
           letter-spacing: 0.2px;
+          white-space: nowrap;
+        }
+        .mini-seq {
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          font-size: 7.5px;
+          font-weight: 800;
+          color: #0d9488;
+          background: #f0fdfa;
+          border: 0.5px solid #99f6e4;
+          border-radius: 3px;
+          padding: 0.5px 3.5px;
           white-space: nowrap;
         }
         .mini-title {
@@ -134,7 +151,10 @@ export default function AssetQrModal({ asset, itemName, onClose }: AssetQrModalP
         <div class="mini-card">
           <img src="${qrDataUrl}" class="mini-qr" />
           <div class="mini-info">
-            <div class="mini-code">${asset.assetCode}</div>
+            <div class="mini-code-row">
+              <span class="mini-code">${asset.assetCode}</span>
+              <span class="mini-seq">เครื่องที่ ${asset.sequenceNumber || 1}</span>
+            </div>
             <div class="mini-title">${title}</div>
             <div class="mini-loc">📍 ${asset.location || 'ห้องแล็บพยาบาล'}</div>
           </div>
@@ -422,9 +442,14 @@ export default function AssetQrModal({ asset, itemName, onClose }: AssetQrModalP
               ) : (
                 <div className="w-14 h-14 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />
               )}
-              <div className="overflow-hidden space-y-0.5">
-                <div className="font-mono font-black text-xs text-slate-900 dark:text-slate-100 truncate">
-                  {asset.assetCode}
+              <div className="overflow-hidden space-y-0.5 flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-1.5">
+                  <span className="font-mono font-black text-xs text-slate-900 dark:text-slate-100 truncate">
+                    {asset.assetCode}
+                  </span>
+                  <span className="text-[9px] font-extrabold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 px-1.5 py-0.5 rounded border border-teal-200 dark:border-teal-800 flex-shrink-0">
+                    เครื่องที่ {asset.sequenceNumber || 1}
+                  </span>
                 </div>
                 <div className="text-[10px] font-bold text-slate-700 dark:text-slate-300 line-clamp-1 leading-tight">
                   {title}

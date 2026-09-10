@@ -8,7 +8,6 @@ import {
   Boxes,
   PlusCircle,
   Calendar,
-  DollarSign,
   Building,
   CheckCircle2,
   AlertCircle,

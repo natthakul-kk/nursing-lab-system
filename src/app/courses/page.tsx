@@ -229,7 +229,7 @@ export default function CoursesPage() {
                       {c.code}
                     </span>
                     <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
-                      ฿{c.totalExpense.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                      ฿{c.totalExpense.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท
                     </span>
                   </div>
 
@@ -240,7 +240,7 @@ export default function CoursesPage() {
                   <div className="mt-3">
                     <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 mb-1">
                       <span>ใช้วัสดุไปแล้ว {c.percentUsed}%</span>
-                      <span>งบ ฿{c.allocatedBudget.toLocaleString('th-TH')}</span>
+                      <span>งบ ฿{c.allocatedBudget.toLocaleString('th-TH')} บาท</span>
                     </div>
                     <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
                       <div
@@ -280,7 +280,7 @@ export default function CoursesPage() {
                   <div className="text-right sm:border-l sm:pl-4 border-slate-100 dark:border-slate-800">
                     <span className="text-xs text-slate-400 dark:text-slate-500 font-bold block">ยอดใช้วัสดุจริงสะสม</span>
                     <div className="text-2xl font-black text-emerald-700 dark:text-emerald-400">
-                      ฿{selectedCourse.totalExpense.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                      ฿{selectedCourse.totalExpense.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท
                     </div>
                   </div>
                 </div>
@@ -290,13 +290,13 @@ export default function CoursesPage() {
                   <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700 text-center">
                     <span className="text-[11px] font-bold text-slate-400 dark:text-slate-400 block">งบที่ได้รับจัดสรร</span>
                     <span className="text-sm font-bold text-slate-800 dark:text-slate-100">
-                      ฿{selectedCourse.allocatedBudget.toLocaleString('th-TH')}
+                      ฿{selectedCourse.allocatedBudget.toLocaleString('th-TH')} บาท
                     </span>
                   </div>
                   <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-800 text-center">
                     <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300 block">งบประมาณคงเหลือ</span>
                     <span className="text-sm font-bold text-emerald-800 dark:text-emerald-200">
-                      ฿{selectedCourse.remainingBudget.toLocaleString('th-TH')}
+                      ฿{selectedCourse.remainingBudget.toLocaleString('th-TH')} บาท
                     </span>
                   </div>
                   <div className="p-3 rounded-xl bg-teal-50 dark:bg-teal-950/40 border border-teal-100 dark:border-teal-800 text-center">
@@ -360,7 +360,7 @@ export default function CoursesPage() {
                                 <span className="text-slate-500 dark:text-slate-400">{item.unit}</span>
                               </td>
                               <td className="py-3 px-3 text-right font-black text-emerald-700 dark:text-emerald-400 text-sm">
-                                ฿{item.totalCost.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                                ฿{item.totalCost.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท
                               </td>
                               <td className="py-3 px-3 text-right font-bold text-slate-500 dark:text-slate-400">
                                 {percentOfCourse}%

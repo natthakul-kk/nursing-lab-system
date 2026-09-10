@@ -24,7 +24,7 @@ import {
   Wrench,
   Eye,
   QrCode,
-  DollarSign,
+  Coins,
   Image as ImageIcon,
   History,
   X,
@@ -1011,9 +1011,9 @@ export default function InventoryPage() {
                                                   </span>
                                                 )}
                                                 {asset.cost && asset.cost > 0 ? (
-                                                  <span className="font-bold text-emerald-700 flex items-center gap-0.5">
-                                                    <DollarSign className="w-3 h-3" />
-                                                    ฿{Number(asset.cost).toLocaleString('th-TH')}
+                                                  <span className="font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1 text-[11px]">
+                                                    <Coins className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                                    <span>฿{Number(asset.cost).toLocaleString('th-TH')} บาท</span>
                                                   </span>
                                                 ) : null}
                                               </div>
@@ -1175,7 +1175,7 @@ export default function InventoryPage() {
                                                 )}
                                               </td>
                                               <td className="py-2 text-slate-700 dark:text-slate-300">
-                                                ฿{lot.unitCost.toFixed(2)}
+                                                ฿{lot.unitCost.toFixed(2)} บาท
                                               </td>
                                               <td className="py-2">
                                                 {lot.expiryDate ? (

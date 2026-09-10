@@ -404,7 +404,7 @@ export default function RequisitionsPage() {
                 <div className="text-right flex flex-col justify-center bg-slate-50 dark:bg-slate-800/80 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800">
                   <span className="text-slate-400 dark:text-slate-500 font-bold block mb-0.5">มูลค่าต้นทุนวัสดุ:</span>
                   <div className="text-base font-black text-emerald-700 dark:text-emerald-400">
-                    ฿{req.totalCost.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                    ฿{req.totalCost.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท
                   </div>
                   <div className="text-[11px] text-slate-600 dark:text-slate-300 mt-1 space-y-0.5">
                     <div>

@@ -9,7 +9,7 @@ import {
   Tag,
   MapPin,
   Calendar,
-  DollarSign,
+  Coins,
   Wrench,
   CheckCircle2,
   AlertTriangle,
@@ -353,6 +353,17 @@ export default function PublicAssetPage() {
                 <div className="space-y-1">
                   <div className="text-slate-400 dark:text-slate-500">Serial Number (SN)</div>
                   <div className="font-mono font-bold text-slate-800 dark:text-slate-200">{asset.serialNumber}</div>
+                </div>
+              )}
+
+              {asset.cost && asset.cost > 0 && (
+                <div className="space-y-1">
+                  <div className="text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                    <Coins className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> ราคา/มูลค่าจัดซื้อ
+                  </div>
+                  <div className="font-bold text-emerald-700 dark:text-emerald-400">
+                    ฿{Number(asset.cost).toLocaleString('th-TH')} บาท
+                  </div>
                 </div>
               )}
 

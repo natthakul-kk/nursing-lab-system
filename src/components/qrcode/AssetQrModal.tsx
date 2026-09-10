@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
 import { formatImageUrl } from '@/lib/image-helper';
-import { QrCode, Printer, X, Tag, MapPin, Calendar, DollarSign, Image as ImageIcon, SlidersHorizontal } from 'lucide-react';
+import { QrCode, Printer, X, Tag, MapPin, Calendar, Coins, Image as ImageIcon, SlidersHorizontal } from 'lucide-react';
 
 interface AssetQrModalProps {
   asset: {
@@ -537,7 +537,7 @@ export default function AssetQrModal({ asset, itemName, onClose }: AssetQrModalP
               )}
               {asset.cost && asset.cost > 0 ? (
                 <div className="flex items-center gap-1.5">
-                  <DollarSign className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                  <Coins className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
                   <span>
                     <strong>ราคา/มูลค่า:</strong> ฿{Number(asset.cost).toLocaleString('th-TH')} บาท
                   </span>

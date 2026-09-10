@@ -235,7 +235,7 @@ export default function DashboardPage() {
           </div>
           <div className="mt-3">
             <div className="text-2xl font-black text-emerald-700 dark:text-emerald-400">
-              ฿{(data?.totalSystemExpense || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+              ฿{(data?.totalSystemExpense || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท
             </div>
             <p className="text-xs text-slate-400 dark:text-slate-500 mt-2 font-medium">รวมยอดจ่ายจริงทุกรายวิชา</p>
           </div>
@@ -290,10 +290,10 @@ export default function DashboardPage() {
 
                       <div className="text-right">
                         <div className="text-sm font-black text-slate-900 dark:text-white">
-                          ฿{course.totalExpense.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                          ฿{course.totalExpense.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท
                         </div>
                         <div className="text-xs text-slate-500 dark:text-slate-400">
-                          จากงบ ฿{course.allocatedBudget.toLocaleString('th-TH')} ({course.percentBudget}%)
+                          จากงบ ฿{course.allocatedBudget.toLocaleString('th-TH')} บาท ({course.percentBudget}%)
                         </div>
                       </div>
                     </div>
@@ -344,7 +344,7 @@ export default function DashboardPage() {
                       {tx.quantity > 0 ? `+${tx.quantity}` : tx.quantity} {tx.item?.unit}
                     </div>
                     <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
-                      ฿{Math.abs(tx.totalCost).toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                      ฿{Math.abs(tx.totalCost).toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท
                     </div>
                   </div>
                 </div>

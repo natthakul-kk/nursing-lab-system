@@ -14,7 +14,7 @@ import {
   Wrench,
   Search,
   Filter,
-  DollarSign,
+  Coins,
   Package,
   Layers,
   RefreshCw
@@ -308,10 +308,10 @@ export default function ReportsPage() {
             <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm print:border-slate-300">
               <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 flex items-center justify-between">
                 <span>มูลค่าสต็อกรวม</span>
-                <DollarSign className="w-4 h-4 text-emerald-500" />
+                <Coins className="w-4 h-4 text-emerald-500" />
               </div>
               <div className="text-xl font-black text-emerald-700 dark:text-emerald-400 mt-1">
-                ฿{reportData?.consumables?.totalValuation?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+                ฿{reportData?.consumables?.totalValuation?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'} บาท
               </div>
             </div>
 
@@ -440,7 +440,7 @@ export default function ReportsPage() {
                         </td>
 
                         <td className="py-3 px-4 text-right font-medium text-slate-900 dark:text-slate-100">
-                          ฿{item.totalValuation.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          ฿{item.totalValuation.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท
                         </td>
 
                         <td className="py-3 px-4">
@@ -507,10 +507,10 @@ export default function ReportsPage() {
             <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm print:border-slate-300">
               <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 flex items-center justify-between">
                 <span>มูลค่ารวมประเมิน</span>
-                <DollarSign className="w-4 h-4 text-emerald-500" />
+                <Coins className="w-4 h-4 text-emerald-500" />
               </div>
               <div className="text-xl font-black text-emerald-700 dark:text-emerald-400 mt-1">
-                ฿{reportData?.equipment?.totalValuation?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+                ฿{reportData?.equipment?.totalValuation?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'} บาท
               </div>
             </div>
 
@@ -702,7 +702,7 @@ export default function ReportsPage() {
                           </td>
 
                           <td className="py-3 px-4 text-right font-medium text-slate-800 dark:text-slate-200">
-                            {asset.cost ? ('฿' + Number(asset.cost).toLocaleString()) : '-'}
+                            {asset.cost ? ('฿' + Number(asset.cost).toLocaleString() + ' บาท') : '-'}
                           </td>
 
                           <td className="py-3 px-4 text-center">

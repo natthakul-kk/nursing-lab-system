@@ -377,6 +377,35 @@ export default function PublicAssetPage() {
                   </div>
                 </div>
               )}
+
+              {(asset.brand || asset.model) && (
+                <div className="space-y-1">
+                  <div className="text-slate-400 dark:text-slate-500">ยี่ห้อ / รุ่น</div>
+                  <div className="font-bold text-slate-800 dark:text-slate-200">
+                    {[asset.brand, asset.model].filter(Boolean).join(' - ')}
+                  </div>
+                </div>
+              )}
+
+              {asset.supplier && (
+                <div className="space-y-1">
+                  <div className="text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                    <Building2 className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" /> ผู้จัดจำหน่าย
+                  </div>
+                  <div className="font-bold text-slate-800 dark:text-slate-200">{asset.supplier}</div>
+                </div>
+              )}
+
+              {asset.warrantyExpiry && (
+                <div className="space-y-1">
+                  <div className="text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> วันหมดประกัน
+                  </div>
+                  <div className="font-bold text-slate-800 dark:text-slate-200">
+                    {new Date(asset.warrantyExpiry).toLocaleDateString('th-TH')}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Specific Asset Note (Model / Sub-specification) */}

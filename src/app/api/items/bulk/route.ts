@@ -192,16 +192,61 @@ function extractItemFromRow(row: Record<string, any>) {
     row['expiryDate'] ||
     '';
 
-  // 12. Consumable - Supplier
+  // 12. Supplier (Both Equipment & Consumable)
   const supplier =
     map['ผู้จัดจำหน่าย'] ||
+    map['ผู้จำหน่าย'] ||
+    map['ผู้จัดจำหน่ายsupplier'] ||
+    map['ผู้จำหน่ายsupplier'] ||
+    map['บริษัทคู่ค้า'] ||
     map['บริษัท'] ||
     map['supplier'] ||
+    map['vendor'] ||
+    row['ผู้จัดจำหน่าย (Supplier)'] ||
+    row['ผู้จำหน่าย (Supplier)'] ||
     row['ผู้จัดจำหน่าย'] ||
+    row['ผู้จำหน่าย'] ||
     row['supplier'] ||
     '';
 
-  // 13. Equipment - Lab Code Prefix
+  // 13. Brand (ยี่ห้อ / ผู้ผลิต)
+  const brand =
+    map['ยี่ห้อ'] ||
+    map['ยี่ห้อbrand'] ||
+    map['แบรนด์'] ||
+    map['ผู้ผลิต'] ||
+    map['brand'] ||
+    map['manufacturer'] ||
+    row['ยี่ห้อ (Brand)'] ||
+    row['ยี่ห้อ'] ||
+    row['brand'] ||
+    '';
+
+  // 14. Model (รุ่น)
+  const model =
+    map['รุ่น'] ||
+    map['รุ่นmodel'] ||
+    map['โมเดล'] ||
+    map['model'] ||
+    row['รุ่น (Model)'] ||
+    row['รุ่น'] ||
+    row['model'] ||
+    '';
+
+  // 15. Warranty Expiry Date
+  const rawWarrantyExpiry =
+    map['วันหมดประกัน'] ||
+    map['วันสิ้นสุดการรับประกัน'] ||
+    map['วันหมดประกันyyyymmdd'] ||
+    map['warrantyexpiry'] ||
+    map['warranty'] ||
+    row['วันหมดประกัน (YYYY-MM-DD)'] ||
+    row['วันหมดประกัน'] ||
+    row['วันสิ้นสุดการรับประกัน'] ||
+    row['warrantyExpiry'] ||
+    '';
+
+  // 16. Equipment - Lab Code Prefix
   const labCodePrefix =
     map['รหัสแล็บขึ้นต้น'] ||
     map['รหัสแล็บ'] ||
@@ -212,7 +257,7 @@ function extractItemFromRow(row: Record<string, any>) {
     row['assetCode'] ||
     '';
 
-  // 14. Equipment - Gov Asset Code
+  // 17. Equipment - Gov Asset Code
   const govAssetCode =
     map['เลขครุภัณฑ์ราชการ'] ||
     map['เลขครุภัณฑ์'] ||
@@ -222,7 +267,7 @@ function extractItemFromRow(row: Record<string, any>) {
     row['govAssetCode'] ||
     '';
 
-  // 15. Equipment - Serial Number
+  // 18. Equipment - Serial Number
   const serialNumber =
     map['หมายเลขเครื่อง'] ||
     map['serialnumber'] ||
@@ -245,6 +290,9 @@ function extractItemFromRow(row: Record<string, any>) {
     expiryDate: parseSafeDate(expiryDate),
     receivedDate: parseSafeDate(rawReceivedDate),
     supplier: String(supplier || '').trim(),
+    brand: String(brand || '').trim(),
+    model: String(model || '').trim(),
+    warrantyExpiry: parseSafeDate(rawWarrantyExpiry),
     labCodePrefix: String(labCodePrefix || '').trim(),
     assetCode: String(labCodePrefix || '').trim(),
     govAssetCode: String(govAssetCode || '').trim(),
@@ -347,6 +395,8 @@ export async function POST(req: Request) {
               unit,
               location,
               minStockAlert: 5,
+              brand: row.brand || null,
+              model: row.model || null,
               description: row.description || null,
             },
           });
@@ -441,7 +491,11 @@ export async function POST(req: Request) {
                 assetCode,
                 govAssetCode: govCode,
                 sequenceNumber: seq,
+                brand: row.brand || item.brand || null,
+                model: row.model || item.model || null,
                 serialNumber,
+                supplier: row.supplier || null,
+                warrantyExpiry: row.warrantyExpiry || null,
                 location: row.location || item.location || 'ห้องปฏิบัติการพยาบาล',
                 cost,
                 receivedDate: assetReceivedDate,

@@ -61,6 +61,8 @@ export async function GET(req: Request) {
           usageUnit: true,
           conversionRatio: true,
           minStockAlert: true,
+          brand: true,
+          model: true,
           location: true,
           description: true,
           imageUrl: true,
@@ -69,7 +71,7 @@ export async function GET(req: Request) {
           category: { select: { id: true, name: true } },
           assets: {
             where: { status: 'AVAILABLE' },
-            select: { id: true, assetCode: true, sequenceNumber: true, location: true },
+            select: { id: true, assetCode: true, sequenceNumber: true, location: true, brand: true, model: true, supplier: true, warrantyExpiry: true },
             orderBy: { sequenceNumber: 'asc' },
           },
           stockLots: {
@@ -237,6 +239,8 @@ export async function POST(req: Request) {
         usageUnit: body.usageUnit ? String(body.usageUnit).trim() : null,
         conversionRatio: body.conversionRatio ? Number(body.conversionRatio) : (body.type === 'CONSUMABLE' ? 1 : null),
         minStockAlert: Number(body.minStockAlert) || 5,
+        brand: body.brand ? String(body.brand).trim() : null,
+        model: body.model ? String(body.model).trim() : null,
         location: body.location,
         description: body.description,
       },

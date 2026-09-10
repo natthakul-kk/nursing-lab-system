@@ -41,6 +41,8 @@ import {
   Settings,
   RefreshCw,
   Info,
+  Building2,
+  ShieldCheck,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { TableLoadingRow } from '@/components/common/LoadingSpinner';
@@ -188,6 +190,10 @@ export default function InventoryPage() {
   const [editAssetForm, setEditAssetForm] = useState({
     assetCode: '',
     govAssetCode: '',
+    brand: '',
+    model: '',
+    supplier: '',
+    warrantyExpiry: '',
     location: '',
     serialNumber: '',
     cost: 0,
@@ -209,6 +215,8 @@ export default function InventoryPage() {
     usageUnit: '',
     conversionRatio: 1,
     minStockAlert: 5,
+    brand: '',
+    model: '',
     location: '',
     description: '',
   });
@@ -219,6 +227,10 @@ export default function InventoryPage() {
     setEditAssetForm({
       assetCode: asset.assetCode || '',
       govAssetCode: asset.govAssetCode || '',
+      brand: asset.brand || '',
+      model: asset.model || '',
+      supplier: asset.supplier || '',
+      warrantyExpiry: asset.warrantyExpiry ? new Date(asset.warrantyExpiry).toISOString().split('T')[0] : '',
       location: asset.location || '',
       serialNumber: asset.serialNumber || '',
       cost: asset.cost || 0,
@@ -283,6 +295,8 @@ export default function InventoryPage() {
       usageUnit: item.usageUnit || '',
       conversionRatio: item.conversionRatio || (item.type === 'CONSUMABLE' ? 1 : 1),
       minStockAlert: item.minStockAlert || 5,
+      brand: item.brand || '',
+      model: item.model || '',
       location: item.location || '',
       description: item.description || '',
     });
@@ -342,6 +356,8 @@ export default function InventoryPage() {
     usageUnit: '',
     conversionRatio: 1,
     minStockAlert: 5,
+    brand: '',
+    model: '',
     location: '',
     description: '',
   });
@@ -511,6 +527,8 @@ export default function InventoryPage() {
           usageUnit: '',
           conversionRatio: 1,
           minStockAlert: 5,
+          brand: '',
+          model: '',
           location: '',
           description: '',
         });
@@ -547,6 +565,10 @@ export default function InventoryPage() {
         'จำนวนรับเข้า': 2,
         'ราคาต่อหน่วย': 45000,
         'วันที่รับเข้า (YYYY-MM-DD)': '2026-09-10',
+        'ยี่ห้อ (Brand)': 'Philips',
+        'รุ่น (Model)': 'HeartStart FRx',
+        'ผู้จัดจำหน่าย (Supplier)': 'บจก. เมดิคอลซัพพลาย',
+        'วันหมดประกัน (YYYY-MM-DD)': '2028-09-10',
         'สถานที่จัดเก็บ': 'ห้องแล็บ 402 ตู้ฉุกเฉิน',
         'คำอธิบาย': 'เครื่องฝึกช่วยฟื้นคืนชีพ AED แบบมีเสียงแนะนำ',
         'รหัสแล็บ (ขึ้นต้น)': 'AED-2569-',
@@ -561,6 +583,7 @@ export default function InventoryPage() {
         'จำนวนรับเข้า': 50,
         'ราคาต่อหน่วย': 220,
         'วันที่รับเข้า (YYYY-MM-DD)': '2026-09-10',
+        'ผู้จัดจำหน่าย (Supplier)': 'บจก. สยามเซมเพอร์เมด',
         'สถานที่จัดเก็บ': 'ตู้เก็บเวชภัณฑ์ ชั้น 2',
         'คำอธิบาย': 'ถุงมือยางธรรมชาติชนิดมีแป้ง กล่องละ 50 คู่',
         'หมายเลขล็อต': 'LOT-2026-A1',
@@ -674,6 +697,8 @@ export default function InventoryPage() {
                   usageUnit: '',
                   conversionRatio: '' as any,
                   minStockAlert: '' as any,
+                  brand: '',
+                  model: '',
                   location: '',
                   description: '',
                 });
@@ -1033,9 +1058,35 @@ export default function InventoryPage() {
                                                 ) : null}
                                               </div>
 
+                                              {(asset.brand || asset.model || item.brand || item.model) && (
+                                                <div className="text-[11px] flex items-center gap-1.5 flex-wrap">
+                                                  <span className="text-slate-400 dark:text-slate-500 text-[10px]">รุ่น/ยี่ห้อ:</span>
+                                                  <span className="font-bold text-teal-700 dark:text-teal-400">
+                                                    {[asset.brand || item.brand, asset.model || item.model].filter(Boolean).join(' - ')}
+                                                  </span>
+                                                </div>
+                                              )}
+
                                               {asset.serialNumber && (
                                                 <div className="text-[10px] text-slate-400 font-mono">
                                                   SN: {asset.serialNumber}
+                                                </div>
+                                              )}
+
+                                              {(asset.supplier || asset.warrantyExpiry) && (
+                                                <div className="flex items-center gap-2.5 text-[10px] text-slate-500 dark:text-slate-400 flex-wrap">
+                                                  {asset.supplier && (
+                                                    <span className="flex items-center gap-1">
+                                                      <Building2 className="w-3 h-3 text-slate-400" />
+                                                      <span>{asset.supplier}</span>
+                                                    </span>
+                                                  )}
+                                                  {asset.warrantyExpiry && (
+                                                    <span className="flex items-center gap-1">
+                                                      <ShieldCheck className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                                                      <span>ประกันถึง {new Date(asset.warrantyExpiry).toLocaleDateString('th-TH')}</span>
+                                                    </span>
+                                                  )}
                                                 </div>
                                               )}
 
@@ -1424,6 +1475,38 @@ export default function InventoryPage() {
                       setNewItem({ ...newItem, unit: e.target.value })
                     }
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    ยี่ห้อ / ผู้ผลิต (Brand)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="เช่น Laerdal, Amoul, 3M"
+                    value={newItem.brand}
+                    onChange={(e) =>
+                      setNewItem({ ...newItem, brand: e.target.value })
+                    }
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    รุ่น / รหัสโมเดล (Model)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="เช่น AMM-P, Resusci Anne"
+                    value={newItem.model}
+                    onChange={(e) =>
+                      setNewItem({ ...newItem, model: e.target.value })
+                    }
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                   />
                 </div>
               </div>
@@ -1937,7 +2020,70 @@ export default function InventoryPage() {
                     onChange={(e) =>
                       setEditAssetForm({ ...editAssetForm, serialNumber: e.target.value })
                     }
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    ยี่ห้อ / ผู้ผลิต (Brand)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="เช่น Laerdal, Amoul, 3M"
+                    value={editAssetForm.brand}
+                    onChange={(e) =>
+                      setEditAssetForm({ ...editAssetForm, brand: e.target.value })
+                    }
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    รุ่น / รหัสโมเดล (Model)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="เช่น AMM-P, Resusci Anne"
+                    value={editAssetForm.model}
+                    onChange={(e) =>
+                      setEditAssetForm({ ...editAssetForm, model: e.target.value })
+                    }
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    ผู้จัดจำหน่าย / บริษัทคู่ค้า (Supplier)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="เช่น บจก. นำทิศการแพทย์"
+                    value={editAssetForm.supplier}
+                    onChange={(e) =>
+                      setEditAssetForm({ ...editAssetForm, supplier: e.target.value })
+                    }
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    วันสิ้นสุดการรับประกัน (Warranty Expiry)
+                  </label>
+                  <input
+                    type="date"
+                    value={editAssetForm.warrantyExpiry}
+                    onChange={(e) =>
+                      setEditAssetForm({ ...editAssetForm, warrantyExpiry: e.target.value })
+                    }
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                   />
                 </div>
               </div>
@@ -2184,6 +2330,38 @@ export default function InventoryPage() {
                       setEditItemForm({ ...editItemForm, minStockAlert: Number(e.target.value) })
                     }
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    ยี่ห้อ / ผู้ผลิต (Brand)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="เช่น Laerdal, Amoul, 3M"
+                    value={editItemForm.brand}
+                    onChange={(e) =>
+                      setEditItemForm({ ...editItemForm, brand: e.target.value })
+                    }
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    รุ่น / รหัสโมเดล (Model)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="เช่น AMM-P, Resusci Anne"
+                    value={editItemForm.model}
+                    onChange={(e) =>
+                      setEditItemForm({ ...editItemForm, model: e.target.value })
+                    }
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                   />
                 </div>
               </div>

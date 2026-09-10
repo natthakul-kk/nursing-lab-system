@@ -81,6 +81,8 @@ model Item {
   usageUnit       String?  // หน่วยย่อยที่ใช้จริง เช่น "ก้อน", "แผ่น", "กรัม", "มล."
   conversionRatio Float?   @default(1) // อัตราแปลง 1 unit = conversionRatio usageUnit เช่น 1 ห่อ = 100 แผ่น
   minStockAlert   Int      @default(5)
+  brand           String?  // ยี่ห้อ / ผู้ผลิต เช่น Laerdal, Amoul, 3M
+  model           String?  // รุ่น / โมเดล เช่น AMM-P, Resusci Anne QCPR
   location        String?
   description     String?
   imageUrl        String?
@@ -108,7 +110,11 @@ model EquipmentAsset {
   assetCode      String    @unique // รหัสประจำชิ้นในแล็บ (Lab Internal ID) เช่น AED-01, KD-01
   govAssetCode   String?   // เลขครุภัณฑ์ทางราชการ (ยาว) เช่น 7440-001-0001/2569
   sequenceNumber Int       @default(1) // ลำดับ เช่น เครื่องที่ 1, ชิ้นที่ 2
+  brand          String?   // ยี่ห้อ / แบรนด์เฉพาะชิ้น (หากต่างจาก Item)
+  model          String?   // รุ่นเฉพาะชิ้น
   serialNumber   String?
+  supplier       String?   // บริษัทผู้จัดจำหน่าย / คู่ค้า
+  warrantyExpiry DateTime? // วันที่สิ้นสุดระยะเวลารับประกัน
   location       String?   // สถานที่จัดเก็บเฉพาะชิ้น เช่น ตู้ฉุกเฉิน ห้อง Lab 1
   receivedDate   DateTime  @default(now()) // วันที่รับเข้า
   cost           Float     @default(0)     // ราคาจัดซื้อ / มูลค่าต่อชิ้น

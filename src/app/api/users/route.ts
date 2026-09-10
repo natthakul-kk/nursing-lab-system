@@ -19,6 +19,8 @@ export async function GET(req: Request) {
       whereCondition.OR = [
         { role: 'APPROVER' },
         { role: 'TEACHER' },
+        { role: 'ADMIN' },
+        { role: 'OFFICER' },
         { email: { contains: 'teacher' } },
         { name: { startsWith: 'อ.' } },
         { name: { startsWith: 'ผศ.' } },

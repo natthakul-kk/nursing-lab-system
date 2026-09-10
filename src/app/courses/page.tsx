@@ -28,6 +28,8 @@ export default function CoursesPage() {
   const [courses, setCourses] = useState<any[]>([]);
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [instructors, setInstructors] = useState<any[]>([]);
+  const [isCustomInstructor, setIsCustomInstructor] = useState(false);
 
   // New Course Modal State
   const [showNewModal, setShowNewModal] = useState(false);
@@ -44,13 +46,20 @@ export default function CoursesPage() {
 
   const fetchCourses = async () => {
     try {
-      const res = await fetch('/api/courses');
-      if (res.ok) {
-        const data = await res.json();
+      const [coursesRes, usersRes] = await Promise.all([
+        fetch('/api/courses'),
+        fetch('/api/users?role=INSTRUCTOR'),
+      ]);
+      if (coursesRes.ok) {
+        const data = await coursesRes.json();
         setCourses(data);
         if (data.length > 0 && !selectedCourseId) {
           setSelectedCourseId(data[0].id);
         }
+      }
+      if (usersRes.ok) {
+        const uData = await usersRes.json();
+        setInstructors(uData);
       }
     } catch (err) {
       console.error('Failed to fetch courses:', err);
@@ -103,6 +112,7 @@ export default function CoursesPage() {
           description: '',
           allocatedBudget: 50000,
         });
+        setIsCustomInstructor(false);
         fetchCourses();
       } else {
         alert('เกิดข้อผิดพลาดในการบันทึกรายวิชา');
@@ -191,7 +201,10 @@ export default function CoursesPage() {
           </button>
           {(isAdmin || isOfficer || isTeacher) && (
             <button
-              onClick={() => setShowNewModal(true)}
+              onClick={() => {
+                setIsCustomInstructor(false);
+                setShowNewModal(true);
+              }}
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition cursor-pointer"
             >
               <Plus className="w-4 h-4" />
@@ -488,17 +501,54 @@ export default function CoursesPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  อาจารย์ผู้ประสานงานรายวิชา *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="เช่น ผศ.ดร. นภาพร มงคลการ"
-                  value={newCourse.instructorName}
-                  onChange={(e) => setNewCourse({ ...newCourse, instructorName: e.target.value })}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-teal-500/20"
-                />
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                    อาจารย์ผู้ประสานงานรายวิชา *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCustomInstructor(!isCustomInstructor);
+                      setNewCourse({ ...newCourse, instructorName: '' });
+                    }}
+                    className="text-[11px] text-teal-600 hover:text-teal-700 dark:text-teal-400 font-semibold hover:underline cursor-pointer"
+                  >
+                    {isCustomInstructor ? '← เลือกจากรายชื่ออาจารย์' : '✍️ กรอกชื่อเอง'}
+                  </button>
+                </div>
+
+                {!isCustomInstructor ? (
+                  <select
+                    required
+                    value={newCourse.instructorName}
+                    onChange={(e) => {
+                      if (e.target.value === '__CUSTOM__') {
+                        setIsCustomInstructor(true);
+                        setNewCourse({ ...newCourse, instructorName: '' });
+                      } else {
+                        setNewCourse({ ...newCourse, instructorName: e.target.value });
+                      }
+                    }}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-teal-500/20"
+                  >
+                    <option value="">-- กรุณาเลือกอาจารย์ผู้ประสานงาน --</option>
+                    {instructors.map((inst) => (
+                      <option key={inst.id} value={inst.name}>
+                        {inst.name} {inst.department ? `(${inst.department})` : ''}
+                      </option>
+                    ))}
+                    <option value="__CUSTOM__">✍️ ระบุชื่ออื่นด้วยตนเอง...</option>
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    required
+                    placeholder="เช่น ผศ.ดร. นภาพร มงคลการ"
+                    value={newCourse.instructorName}
+                    onChange={(e) => setNewCourse({ ...newCourse, instructorName: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-teal-500/20"
+                  />
+                )}
               </div>
 
               <div>

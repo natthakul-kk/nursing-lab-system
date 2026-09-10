@@ -189,7 +189,7 @@ export default function CoursesPage() {
             <Printer className="w-4 h-4 text-slate-500 dark:text-slate-400" />
             <span>พิมพ์รายงาน</span>
           </button>
-          {(isAdmin || isOfficer) && (
+          {(isAdmin || isOfficer || isTeacher) && (
             <button
               onClick={() => setShowNewModal(true)}
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition cursor-pointer"

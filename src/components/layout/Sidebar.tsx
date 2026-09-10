@@ -21,6 +21,7 @@ import {
   BriefcaseMedical,
   PackageCheck,
   QrCode,
+  BookOpen,
   ChevronDown,
   ChevronsUpDown,
   X,
@@ -176,9 +177,9 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
       groupIcon: BarChart3,
       items: [
         {
-          label: 'ต้นทุนวัสดุตามรายวิชา',
+          label: 'จัดการรายวิชา & ต้นทุน',
           href: '/courses',
-          icon: BarChart3,
+          icon: BookOpen,
           roles: ['ADMIN', 'OFFICER', 'APPROVER', 'TEACHER'],
         },
         {

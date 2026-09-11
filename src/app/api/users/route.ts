@@ -28,6 +28,7 @@ export async function GET(req: Request) {
         { name: { startsWith: 'ดร.' } },
         { name: { startsWith: 'ศ.' } },
         { department: { contains: 'อาจารย์' } },
+        { prefix: { in: ['อ.', 'ผศ.', 'ผศ.ดร.', 'รศ.', 'รศ.ดร.', 'ศ.', 'ศ.ดร.', 'ดร.', 'อาจารย์'] } },
       ];
     } else if (role) {
       whereCondition.role = role;
@@ -37,6 +38,7 @@ export async function GET(req: Request) {
       where: whereCondition,
       select: {
         id: true,
+        prefix: true,
         name: true,
         email: true,
         role: true,
@@ -76,8 +78,11 @@ export async function POST(req: Request) {
       }
     }
 
+    const trimmedPrefix = body.prefix ? String(body.prefix).trim() : null;
+
     const user = await prisma.user.create({
       data: {
+        prefix: trimmedPrefix,
         name: body.name,
         email: body.email,
         password: hashedPassword,

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { hashPassword } from '@/lib/auth-security';
+import { invalidateCache } from '@/lib/cache';
 
 // Map Thai or common role words to valid UserRole
 function normalizeRole(roleInput?: string): string {
@@ -23,8 +24,21 @@ function extractUserFromRow(row: Record<string, any>) {
     map[k.trim()] = typeof v === 'string' ? v.trim() : v;
   }
 
+  // 0. Prefix / Title
+  const prefixInput =
+    map['คำนำหน้า'] ||
+    map['คำนำหน้าชื่อ'] ||
+    map['คำนำหน้านาม'] ||
+    map['prefix'] ||
+    map['title'] ||
+    row['คำนำหน้า'] ||
+    row['คำนำหน้าชื่อ'] ||
+    row['prefix'] ||
+    row['Title'] ||
+    '';
+
   // 1. Name
-  const name =
+  const rawName =
     map['ชื่อนามสกุล'] ||
     map['ชื่อสกุล'] ||
     map['ชื่อ'] ||
@@ -115,8 +129,24 @@ function extractUserFromRow(row: Record<string, any>) {
     row['Phone'] ||
     '';
 
+  let prefix = String(prefixInput || '').trim();
+  let name = String(rawName || '').trim();
+
+  // If no explicit prefix was in column, try detecting from name
+  if (!prefix && name) {
+    const match = name.match(/^(ศ\.ดร\.|ศ\.|รศ\.ดร\.|รศ\.|ผศ\.ดร\.|ผศ\.|ดร\.|อ\.|อาจารย์|ว่าที่\s*ร\.ต\.หญิง|ว่าที่\s*ร\.ต\.|นศ\.พย\.|นาย|นางสาว|นาง)\s*(.*)$/);
+    if (match) {
+      prefix = match[1].trim();
+      name = match[2].trim() || name;
+    }
+  } else if (prefix && name.startsWith(prefix)) {
+    // Clean up if name already starts with prefix
+    name = name.slice(prefix.length).trim() || name;
+  }
+
   return {
-    name: String(name || '').trim(),
+    prefix: prefix || null,
+    name: name,
     email: String(email || '').trim().toLowerCase(),
     studentId: String(studentId || '').trim(),
     role: String(role || '').trim(),
@@ -172,6 +202,7 @@ export async function POST(req: Request) {
       const studentId = u.studentId || null;
       const department = u.department || 'คณะพยาบาลศาสตร์';
       const phone = u.phone || null;
+      const prefix = u.prefix || null;
 
       try {
         // Find existing user by email or studentId
@@ -188,6 +219,7 @@ export async function POST(req: Request) {
           await prisma.user.update({
             where: { id: existing.id },
             data: {
+              ...(prefix ? { prefix } : {}),
               name: u.name,
               role,
               studentId: studentId || existing.studentId,
@@ -200,6 +232,7 @@ export async function POST(req: Request) {
         } else {
           await prisma.user.create({
             data: {
+              prefix,
               name: u.name,
               email,
               password: defaultPassword,
@@ -215,6 +248,8 @@ export async function POST(req: Request) {
         errors.push(`แถวที่ ${rowNum} (${u.name}): ${err.message || 'บันทึกล้มเหลว'}`);
       }
     }
+
+    invalidateCache('users:');
 
     return NextResponse.json({
       success: true,

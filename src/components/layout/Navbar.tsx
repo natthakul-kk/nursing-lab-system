@@ -21,6 +21,7 @@ import {
 import ProfileModal from '@/components/profile/ProfileModal';
 import QrScannerModal from '@/components/qrcode/QrScannerModal';
 import ThemeToggle from '@/components/common/ThemeToggle';
+import { formatUserName } from '@/lib/user-utils';
 
 interface NavbarProps {
   onToggleMobileMenu?: () => void;
@@ -124,7 +125,7 @@ export default function Navbar({ onToggleMobileMenu, isMobileMenuOpen }: NavbarP
         {currentUser ? (
           <div className="flex items-center gap-2 sm:gap-3 pl-2 sm:border-l border-slate-200 dark:border-slate-800">
             <div className="hidden lg:block text-right">
-              <div className="text-xs font-bold text-slate-800 dark:text-slate-100">{currentUser.name}</div>
+              <div className="text-xs font-bold text-slate-800 dark:text-slate-100">{formatUserName(currentUser)}</div>
               <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate max-w-[150px]">
                 {currentUser.department || currentUser.email}
               </div>

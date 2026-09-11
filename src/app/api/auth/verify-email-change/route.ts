@@ -82,6 +82,7 @@ export async function POST(req: Request) {
       message: 'ยืนยันและเปลี่ยนอีเมลสำเร็จเรียบร้อยแล้ว',
       user: {
         id: updatedUser.id,
+        prefix: updatedUser.prefix,
         name: updatedUser.name,
         email: updatedUser.email,
         role: updatedUser.role,

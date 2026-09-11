@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import UnifiedRequestModal from '@/components/requests/UnifiedRequestModal';
+import { formatUserName } from '@/lib/user-utils';
 
 export default function BorrowPage() {
   const { currentUser, isOfficer, isApprover, isAdmin, isTeacher } = useAuth();
@@ -556,7 +557,7 @@ export default function BorrowPage() {
                 <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
                   <div className="flex items-center gap-1.5 font-medium">
                     <User className="w-3.5 h-3.5 text-slate-400" />
-                    <span className="dark:text-slate-200">ผู้ยืม: {req.user?.name}</span>
+                    <span className="dark:text-slate-200">ผู้ยืม: {formatUserName(req.user)}</span>
                     {req.user?.studentId && (
                       <span className="font-mono text-[10px] text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/70 px-1.5 py-0.2 rounded border border-teal-200 dark:border-teal-800">
                         {req.user.studentId}

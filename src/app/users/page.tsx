@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { TableLoadingRow } from '@/components/common/LoadingSpinner';
+import { COMMON_USER_PREFIXES, formatUserName } from '@/lib/user-utils';
 
 export default function UsersPage() {
   const { availableUsers, isAdmin } = useAuth();
@@ -46,6 +47,7 @@ export default function UsersPage() {
   const [bulkSubmitting, setBulkSubmitting] = useState(false);
   const [bulkResult, setBulkResult] = useState<{ created?: number; createdCount?: number; updated?: number; updatedCount?: number; errors?: string[] } | null>(null);
   const [newUser, setNewUser] = useState({
+    prefix: '',
     name: '',
     email: '',
     password: '123456',
@@ -98,6 +100,7 @@ export default function UsersPage() {
       if (res.ok) {
         setShowAddModal(false);
         setNewUser({
+          prefix: '',
           name: '',
           email: '',
           password: '123456',
@@ -187,7 +190,8 @@ export default function UsersPage() {
   const handleDownloadTemplate = () => {
     const sampleData = [
       {
-        'ชื่อ-นามสกุล': 'นายสมชาย พยาบาลดี',
+        'คำนำหน้า': 'นาย',
+        'ชื่อ-นามสกุล': 'สมชาย พยาบาลดี',
         'อีเมล': 'somchai.p@nurse.ac.th',
         'บทบาท': 'USER',
         'ภาควิชา/คณะ': 'การพยาบาลพื้นฐาน',
@@ -195,7 +199,8 @@ export default function UsersPage() {
         'เบอร์โทร': '0812345678',
       },
       {
-        'ชื่อ-นามสกุล': 'ผศ.ดร.สมศรี ใจดี (อาจารย์ผู้สอน)',
+        'คำนำหน้า': 'ผศ.ดร.',
+        'ชื่อ-นามสกุล': 'สมศรี ใจดี (อาจารย์ผู้สอน)',
         'อีเมล': 'somsri.t@nurse.ac.th',
         'บทบาท': 'TEACHER',
         'ภาควิชา/คณะ': 'ภาควิชาการพยาบาลเด็ก',
@@ -203,7 +208,8 @@ export default function UsersPage() {
         'เบอร์โทร': '0861112233',
       },
       {
-        'ชื่อ-นามสกุล': 'รศ.ดร.ประสิทธิ์ รักงาน (หัวหน้าภาค)',
+        'คำนำหน้า': 'รศ.ดร.',
+        'ชื่อ-นามสกุล': 'ประสิทธิ์ รักงาน (หัวหน้าภาค)',
         'อีเมล': 'prasit.h@nurse.ac.th',
         'บทบาท': 'APPROVER',
         'ภาควิชา/คณะ': 'ภาควิชาการพยาบาลเด็ก',
@@ -319,13 +325,17 @@ export default function UsersPage() {
     }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
+      const prefix = (u.prefix || '').toLowerCase();
       const name = (u.name || '').toLowerCase();
+      const fullName = formatUserName(u).toLowerCase();
       const email = (u.email || '').toLowerCase();
       const dept = (u.department || '').toLowerCase();
       const studentId = (u.studentId || '').toLowerCase();
       const phone = (u.phone || '').toLowerCase();
       return (
         name.includes(q) ||
+        fullName.includes(q) ||
+        prefix.includes(q) ||
         email.includes(q) ||
         dept.includes(q) ||
         studentId.includes(q) ||
@@ -600,7 +610,14 @@ export default function UsersPage() {
                 filteredUsers.map((u) => (
                 <tr key={u.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition">
                   <td className="py-3.5 px-4">
-                    <div className="font-bold text-slate-900 dark:text-slate-100 text-xs">{u.name}</div>
+                    <div className="font-bold text-slate-900 dark:text-slate-100 text-xs flex items-center gap-1.5 flex-wrap">
+                      {u.prefix && (
+                        <span className="inline-block px-1.5 py-0.5 rounded bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 font-semibold text-[11px] border border-teal-200/60 dark:border-teal-800/60">
+                          {u.prefix}
+                        </span>
+                      )}
+                      <span>{u.prefix && u.name.startsWith(u.prefix) ? u.name.slice(u.prefix.length).trim() : u.name}</span>
+                    </div>
                   </td>
                   <td className="py-3.5 px-4">
                     <div className="flex items-center gap-1 text-slate-600 dark:text-slate-300">
@@ -671,18 +688,38 @@ export default function UsersPage() {
             </div>
 
             <form onSubmit={handleCreateUser} className="space-y-3">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  ชื่อ - นามสกุล *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="เช่น อ. ดร. วิภาดา สมรรถนะ"
-                  value={newUser.name}
-                  onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-teal-500/20"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    คำนำหน้า
+                  </label>
+                  <input
+                    list="new-user-prefix-list"
+                    type="text"
+                    placeholder="เช่น นาย, ผศ.ดร."
+                    value={newUser.prefix}
+                    onChange={(e) => setNewUser({ ...newUser, prefix: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-teal-500/20"
+                  />
+                  <datalist id="new-user-prefix-list">
+                    {COMMON_USER_PREFIXES.map((p) => (
+                      <option key={p} value={p} />
+                    ))}
+                  </datalist>
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    ชื่อ - นามสกุล *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="เช่น สมชาย พยาบาลดี"
+                    value={newUser.name}
+                    onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-teal-500/20"
+                  />
+                </div>
               </div>
 
               <div>
@@ -814,17 +851,37 @@ export default function UsersPage() {
             </div>
 
             <form onSubmit={handleUpdateUser} className="space-y-3">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  ชื่อ - นามสกุล *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={editingUser.name}
-                  onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-teal-500/20"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    คำนำหน้า
+                  </label>
+                  <input
+                    list="edit-user-prefix-list"
+                    type="text"
+                    placeholder="เช่น นาย, ผศ.ดร."
+                    value={editingUser.prefix || ''}
+                    onChange={(e) => setEditingUser({ ...editingUser, prefix: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-teal-500/20"
+                  />
+                  <datalist id="edit-user-prefix-list">
+                    {COMMON_USER_PREFIXES.map((p) => (
+                      <option key={p} value={p} />
+                    ))}
+                  </datalist>
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    ชื่อ - นามสกุล *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editingUser.name}
+                    onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-teal-500/20"
+                  />
+                </div>
               </div>
 
               <div>
@@ -961,7 +1018,7 @@ export default function UsersPage() {
             <div className="p-6 space-y-4">
               {/* User Info Box */}
               <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-1">
-                <div className="text-xs font-bold text-slate-800 dark:text-slate-100">{resettingUser.name}</div>
+                <div className="text-xs font-bold text-slate-800 dark:text-slate-100">{formatUserName(resettingUser)}</div>
                 <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
                   <Mail className="w-3 h-3" />
                   <span>{resettingUser.email}</span>

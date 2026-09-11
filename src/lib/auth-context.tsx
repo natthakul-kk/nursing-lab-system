@@ -7,6 +7,7 @@ export type UserRole = 'ADMIN' | 'OFFICER' | 'APPROVER' | 'TEACHER' | 'USER';
 
 export interface User {
   id: string;
+  prefix?: string | null;
   name: string;
   email: string;
   role: UserRole;
@@ -277,6 +278,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     currentUser?.role === 'APPROVER' ||
     isAdmin ||
     Boolean(currentUser?.email?.includes('teacher')) ||
+    Boolean(currentUser?.prefix && ['อ.', 'ผศ.', 'ผศ.ดร.', 'รศ.', 'รศ.ดร.', 'ศ.', 'ศ.ดร.', 'ดร.', 'อาจารย์'].includes(currentUser.prefix.trim())) ||
     Boolean(currentUser?.name?.startsWith('อ.')) ||
     Boolean(currentUser?.name?.startsWith('ผศ.')) ||
     Boolean(currentUser?.name?.startsWith('รศ.')) ||

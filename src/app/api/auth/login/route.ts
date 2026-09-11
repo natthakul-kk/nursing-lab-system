@@ -64,6 +64,7 @@ export async function POST(req: Request) {
     // Return sanitized user (exclude password, resetToken)
     const sanitizedUser = {
       id: user.id,
+      prefix: user.prefix,
       name: user.name,
       email: user.email,
       role: user.role,

@@ -20,6 +20,7 @@ import {
   QrCode
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { formatUserName } from '@/lib/user-utils';
 
 export default function StudentDashboard() {
   const { currentUser } = useAuth();
@@ -178,7 +179,7 @@ export default function StudentDashboard() {
             แดชบอร์ดนิสิต & ผู้ใช้งาน | คณะพยาบาลศาสตร์
           </div>
           <h2 className="text-2xl font-black tracking-tight">
-            สวัสดี, {currentUser?.name || 'นิสิตพยาบาล'}
+            สวัสดี, {formatUserName(currentUser) || 'นิสิตพยาบาล'}
           </h2>
           <p className="text-slate-300 text-xs mt-1">
             {currentUser?.studentId ? `รหัสนิสิต: ${currentUser.studentId} | ` : ''}

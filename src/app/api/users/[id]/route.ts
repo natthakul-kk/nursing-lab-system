@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { hashPassword } from '@/lib/auth-security';
+import { invalidateCache } from '@/lib/cache';
 
 export async function PUT(
   req: Request,
@@ -11,6 +12,9 @@ export async function PUT(
     const body = await req.json();
 
     const dataToUpdate: any = {};
+    if (body.prefix !== undefined) {
+      dataToUpdate.prefix = body.prefix ? String(body.prefix).trim() : null;
+    }
     if (body.name !== undefined) dataToUpdate.name = body.name;
     if (body.email !== undefined) {
       const trimmedEmail = body.email ? String(body.email).trim().toLowerCase() : '';
@@ -61,6 +65,7 @@ export async function PUT(
       data: dataToUpdate,
     });
 
+    invalidateCache('users:');
     return NextResponse.json(updatedUser);
   } catch (error: any) {
     console.error('Update user error:', error);
@@ -78,6 +83,7 @@ export async function DELETE(
   try {
     const { id } = await params;
     await prisma.user.delete({ where: { id } });
+    invalidateCache('users:');
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Delete user error:', error);

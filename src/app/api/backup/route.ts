@@ -23,6 +23,7 @@ export async function GET(req: Request) {
       prisma.user.findMany({
         select: {
           id: true,
+          prefix: true,
           name: true,
           email: true,
           role: true,
@@ -58,14 +59,14 @@ export async function GET(req: Request) {
       prisma.borrowRequest.findMany({
         include: {
           items: true,
-          user: { select: { id: true, name: true, studentId: true } },
+          user: { select: { id: true, prefix: true, name: true, studentId: true } },
           course: { select: { id: true, code: true, name: true } },
         },
       }),
       prisma.requisitionRequest.findMany({
         include: {
           items: true,
-          user: { select: { id: true, name: true, studentId: true } },
+          user: { select: { id: true, prefix: true, name: true, studentId: true } },
           course: { select: { id: true, code: true, name: true } },
         },
       }),
@@ -73,7 +74,7 @@ export async function GET(req: Request) {
         include: {
           slot: { include: { room: true } },
           course: { select: { id: true, code: true, name: true } },
-          user: { select: { id: true, name: true, studentId: true } },
+          user: { select: { id: true, prefix: true, name: true, studentId: true } },
         },
       }),
       prisma.maintenanceLog.findMany({

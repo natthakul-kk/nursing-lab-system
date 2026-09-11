@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth-context';
+import { COMMON_USER_PREFIXES } from '@/lib/user-utils';
 import {
   User,
   Mail,
@@ -32,12 +33,14 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
 
   // Profile form state
   const [formData, setFormData] = useState({
+    prefix: '',
     name: '',
     email: '',
     phone: '',
     department: '',
     studentId: '',
   });
+  const [customPrefixMode, setCustomPrefixMode] = useState(false);
 
   // Change password form state
   const [passwordData, setPasswordData] = useState({
@@ -62,13 +65,16 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
 
   useEffect(() => {
     if (currentUser) {
+      const currentPrefix = currentUser.prefix || '';
       setFormData({
+        prefix: currentPrefix,
         name: currentUser.name || '',
         email: currentUser.email || '',
         phone: currentUser.phone || '',
         department: currentUser.department || '',
         studentId: currentUser.studentId || '',
       });
+      setCustomPrefixMode(Boolean(currentPrefix && !COMMON_USER_PREFIXES.includes(currentPrefix)));
       setPasswordData({
         currentPassword: '',
         newPassword: '',
@@ -201,6 +207,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     // Email unchanged: save profile directly
     setSubmitting(true);
     const success = await updateUser({
+      prefix: formData.prefix ? formData.prefix.trim() : null,
       name: formData.name,
       phone: formData.phone,
       department: formData.department,
@@ -349,18 +356,62 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
             /* Tab 1: Profile Details Form */
             <form onSubmit={handleProfileSubmit} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Name */}
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">ชื่อ - สกุล *</label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      required
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-9 pr-3 text-xs font-medium text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
-                    />
-                    <User className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                {/* Prefix & Name */}
+                <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">คำนำหน้า</label>
+                      <button
+                        type="button"
+                        onClick={() => setCustomPrefixMode(!customPrefixMode)}
+                        className="text-[10px] text-teal-600 dark:text-teal-400 hover:underline font-medium cursor-pointer"
+                      >
+                        {customPrefixMode ? 'เลือกจากรายการ' : 'พิมพ์ระบุเอง'}
+                      </button>
+                    </div>
+                    {customPrefixMode ? (
+                      <input
+                        type="text"
+                        placeholder="เช่น นาย, ผศ.ดร."
+                        value={formData.prefix}
+                        onChange={(e) => setFormData({ ...formData, prefix: e.target.value })}
+                        className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-xs font-medium text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
+                      />
+                    ) : (
+                      <select
+                        value={COMMON_USER_PREFIXES.includes(formData.prefix) ? formData.prefix : ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === '__CUSTOM__') {
+                            setCustomPrefixMode(true);
+                          } else {
+                            setFormData({ ...formData, prefix: val });
+                          }
+                        }}
+                        className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-xs font-medium text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition cursor-pointer"
+                      >
+                        <option value="">-- ไม่ระบุ --</option>
+                        {COMMON_USER_PREFIXES.map((p) => (
+                          <option key={p} value={p}>
+                            {p}
+                          </option>
+                        ))}
+                        <option value="__CUSTOM__">+ พิมพ์ระบุเอง...</option>
+                      </select>
+                    )}
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">ชื่อ - สกุล *</label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        required
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-9 pr-3 text-xs font-medium text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
+                      />
+                      <User className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                    </div>
                   </div>
                 </div>
 

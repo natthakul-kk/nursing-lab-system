@@ -33,6 +33,9 @@ export default function StockInPage() {
   const [form, setForm] = useState({
     itemId: '',
     lotNumber: '',
+    brand: '',
+    packSize: '' as any,
+    packageUnit: '',
     quantity: '' as any,
     unitCost: '' as any,
     expiryDate: '',
@@ -118,7 +121,13 @@ export default function StockInPage() {
         location: it.location || prev.location || '',
       }));
     } else {
-      setForm((prev) => ({ ...prev, itemId: selectedId }));
+      setForm((prev) => ({
+        ...prev,
+        itemId: selectedId,
+        brand: prev.brand || it.brand || '',
+        packSize: prev.packSize || it.conversionRatio || 1,
+        packageUnit: prev.packageUnit || it.unit || 'ห่อ',
+      }));
     }
   };
 
@@ -167,6 +176,9 @@ export default function StockInPage() {
         setForm({
           itemId: form.itemId,
           lotNumber: '',
+          brand: '',
+          packSize: selectedItem?.conversionRatio || 1,
+          packageUnit: selectedItem?.unit || 'ห่อ',
           quantity: '' as any,
           unitCost: '' as any,
           expiryDate: '',
@@ -372,6 +384,72 @@ export default function StockInPage() {
                   </div>
                 </div>
 
+                {/* Brand, Package Unit, and Pack Size per Lot */}
+                <div className="bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                      <Tag className="w-3.5 h-3.5 text-teal-600" />
+                      ข้อมูลยี่ห้อและขนาดบรรจุของล็อตนี้ (Multi-Packaging & Brand)
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-teal-100 text-teal-800 dark:bg-teal-900/50 dark:text-teal-300 font-bold">
+                      รองรับขนาด 50 / 100 ชิ้นตามยี่ห้อ
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
+                        ยี่ห้อ / ผู้ผลิต (Brand ของล็อตนี้)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="เช่น Thai Gauze, Lintech, 3M"
+                        value={form.brand}
+                        onChange={(e) => setForm({ ...form, brand: e.target.value })}
+                        className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
+                        หน่วยบรรจุหลัก (Package Unit)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="เช่น ห่อ, กล่อง, แพ็ค"
+                        value={form.packageUnit || selectedItem?.unit || ''}
+                        onChange={(e) => setForm({ ...form, packageUnit: e.target.value })}
+                        className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                      />
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400">
+                          ขนาดบรรจุต่อ{form.packageUnit || selectedItem?.unit || 'หน่วย'} *
+                        </label>
+                        <span className="text-[10px] text-teal-600 dark:text-teal-400 font-semibold">
+                          (เช่น 50 หรือ 100)
+                        </span>
+                      </div>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          min="1"
+                          required
+                          value={form.packSize || ''}
+                          placeholder={String(selectedItem?.conversionRatio || 1)}
+                          onChange={(e) => setForm({ ...form, packSize: e.target.value === '' ? '' : Number(e.target.value) })}
+                          className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-bold text-teal-700 dark:text-teal-400 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                        />
+                        <span className="absolute right-2.5 top-1.5 text-[10px] text-slate-400 pointer-events-none">
+                          {selectedItem?.usageUnit || 'ชิ้น'}/{form.packageUnit || selectedItem?.unit || 'ห่อ'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
@@ -408,21 +486,51 @@ export default function StockInPage() {
                   </div>
                 </div>
 
-                {/* Total Computed Value */}
-                <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-800 flex items-center justify-between">
-                  <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300">
-                    มูลค่ารับเข้ารวมในครั้งนี้:
-                  </span>
-                  <span className="text-base font-black text-emerald-700 dark:text-emerald-400">
-                    {form.quantity && form.unitCost ? (
-                      '฿' + (Number(form.quantity) * Number(form.unitCost)).toLocaleString('th-TH', {
-                        minimumFractionDigits: 2,
-                      }) + ' บาท'
-                    ) : (
-                      <span className="text-xs font-normal text-slate-400 italic">รอระบุจำนวนและราคา...</span>
-                    )}
-                  </span>
-                </div>
+                {/* Total Computed Value & Dual-Unit Breakdown */}
+                {(() => {
+                  const qty = Number(form.quantity) || 0;
+                  const cost = Number(form.unitCost) || 0;
+                  const packSize = Number(form.packSize) > 0 ? Number(form.packSize) : (Number(selectedItem?.conversionRatio) || 1);
+                  const totalPieces = qty * packSize;
+                  const totalValue = qty * cost;
+                  const costPerPiece = totalPieces > 0 ? (totalValue / totalPieces) : 0;
+                  const pkgUnit = form.packageUnit || selectedItem?.unit || 'หน่วย';
+                  const pieceUnit = selectedItem?.usageUnit || 'ชิ้น';
+
+                  return (
+                    <div className="p-3.5 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50/60 dark:from-emerald-950/40 dark:to-teal-950/30 border border-emerald-200/80 dark:border-emerald-800/80 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
+                          <span>📦 สรุปจำนวนชิ้นย่อยและมูลค่ารับเข้า:</span>
+                        </span>
+                        <span className="text-base font-black text-emerald-700 dark:text-emerald-300">
+                          {qty > 0 && cost > 0 ? (
+                            '฿' + totalValue.toLocaleString('th-TH', { minimumFractionDigits: 2 }) + ' บาท'
+                          ) : (
+                            <span className="text-xs font-normal text-slate-400 italic">รอระบุจำนวนและราคา...</span>
+                          )}
+                        </span>
+                      </div>
+
+                      {qty > 0 && (
+                        <div className="grid grid-cols-2 gap-2 pt-1 border-t border-emerald-100 dark:border-emerald-800/50 text-[11px]">
+                          <div className="bg-white/80 dark:bg-slate-900/60 p-2 rounded-lg border border-emerald-100 dark:border-emerald-900/50">
+                            <span className="text-slate-500 dark:text-slate-400 block text-[10px]">จำนวนชิ้นย่อยรวม (Base Units)</span>
+                            <span className="font-extrabold text-teal-800 dark:text-teal-300 text-xs">
+                              {qty.toLocaleString()} {pkgUnit} × {packSize} = {totalPieces.toLocaleString()} {pieceUnit}
+                            </span>
+                          </div>
+                          <div className="bg-white/80 dark:bg-slate-900/60 p-2 rounded-lg border border-emerald-100 dark:border-emerald-900/50">
+                            <span className="text-slate-500 dark:text-slate-400 block text-[10px]">ต้นทุนเฉลี่ยต่อชิ้นย่อย</span>
+                            <span className="font-extrabold text-emerald-800 dark:text-emerald-300 text-xs">
+                              {costPerPiece > 0 ? `฿${costPerPiece.toFixed(2)} บาท / ${pieceUnit}` : '-'}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">

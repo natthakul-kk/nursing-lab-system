@@ -12,6 +12,9 @@ export async function POST(req: Request) {
       note,
       // For Consumable:
       lotNumber,
+      brand,
+      packSize,
+      packageUnit,
       quantity,
       unitCost,
       expiryDate,
@@ -38,6 +41,8 @@ export async function POST(req: Request) {
       }
 
       const qty = Number(quantity);
+      const parsedPackSize = Number(packSize) > 0 ? Number(packSize) : Math.round(Number(item.conversionRatio) || 1);
+      const computedTotalPieces = Math.round(qty * parsedPackSize);
       const cst = Number(unitCost) || 0;
       const total = qty * cst;
       const parsedReceivedDate = receivedDate ? new Date(receivedDate) : new Date();
@@ -46,6 +51,11 @@ export async function POST(req: Request) {
         data: {
           itemId,
           lotNumber,
+          brand: brand ? String(brand).trim() : null,
+          packSize: parsedPackSize,
+          packageUnit: packageUnit ? String(packageUnit).trim() : (item.unit || 'หน่วย'),
+          totalPieces: computedTotalPieces,
+          piecesRemaining: computedTotalPieces,
           quantityInitial: qty,
           quantityRemaining: qty,
           unitCost: cst,
@@ -65,7 +75,7 @@ export async function POST(req: Request) {
           totalCost: total,
           createdById: userId,
           createdAt: parsedReceivedDate,
-          note: note || `รับเข้าสต็อก Lot: ${lotNumber}`,
+          note: note || `รับเข้าสต็อก Lot: ${lotNumber}${brand ? ` (ยี่ห้อ: ${brand})` : ''} ขนาดบรรจุ ${parsedPackSize} ${item.usageUnit || 'ชิ้น'}/${packageUnit || item.unit || 'หน่วย'} (รวม ${computedTotalPieces.toLocaleString()} ${item.usageUnit || 'ชิ้น'})`,
         },
       });
 

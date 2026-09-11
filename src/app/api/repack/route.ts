@@ -209,10 +209,14 @@ export async function POST(req: Request) {
     const unitCostPerPack = totalPacksProduced > 0 ? totalSourceCost / totalPacksProduced : 0;
 
     // 1. Deduct source lot
+    const piecesUsed = sourceQtyUsed * (Number(sourceLot.packSize) || 1);
     await prisma.stockLot.update({
       where: { id: sourceLotId },
       data: {
         quantityRemaining: { decrement: sourceQtyUsed },
+        ...(typeof sourceLot.piecesRemaining === 'number'
+          ? { piecesRemaining: { decrement: piecesUsed } }
+          : {}),
       },
     });
 
@@ -236,12 +240,17 @@ export async function POST(req: Request) {
       data: {
         itemId: finalTargetItemId,
         lotNumber: autoSubLot,
+        brand: sourceLot.brand || null,
+        packSize: effectiveUnitsPerPack,
+        packageUnit: 'ซอง',
+        totalPieces: totalPacksProduced * effectiveUnitsPerPack,
+        piecesRemaining: totalPacksProduced * effectiveUnitsPerPack,
         quantityInitial: totalPacksProduced,
         quantityRemaining: totalPacksProduced,
         unitCost: unitCostPerPack,
         expiryDate: parsedSterileExpiry || sourceLot.expiryDate,
         receivedDate: parsedPackedDate,
-        supplier: `แล็บพยาบาลแบ่งบรรจุสเตอร์ไรด์ (จาก Lot ${sourceLot.lotNumber})`,
+        supplier: `แล็บพยาบาลแบ่งบรรจุสเตอร์ไรด์ (จาก Lot ${sourceLot.lotNumber}${sourceLot.brand ? ` / ${sourceLot.brand}` : ''})`,
       },
     });
 

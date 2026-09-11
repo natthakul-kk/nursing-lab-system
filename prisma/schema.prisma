@@ -157,6 +157,11 @@ model StockLot {
   itemId            String
   item              Item      @relation(fields: [itemId], references: [id])
   lotNumber         String
+  brand             String?   // ยี่ห้อของล็อตนี้ เช่น "Thai Gauze", "Lintech", "3M"
+  packSize          Int       @default(1) // จำนวนชิ้นต่อหน่วยบรรจุในล็อตนี้ (เช่น 50 หรือ 100 แผ่น/ห่อ)
+  packageUnit       String?   // ชื่อหน่วยบรรจุ เช่น "ห่อ", "กล่อง", "แพ็ค"
+  totalPieces       Int?      // จำนวนชิ้นย่อยรวมที่รับเข้า (quantityInitial * packSize)
+  piecesRemaining   Int?      // จำนวนชิ้นย่อยคงเหลือจริงในล็อต
   quantityInitial   Int
   quantityRemaining Int
   openPackRemainder Int       @default(0) // เศษชิ้นที่เหลือในซอง/กล่องที่เปิดใช้แล้ว (Loose pieces in opened pack)

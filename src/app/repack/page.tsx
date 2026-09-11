@@ -168,7 +168,7 @@ export default function RepackPage() {
     threeMonths.setMonth(threeMonths.getMonth() + 3);
     const defaultSterileExpiry = threeMonths.toISOString().split('T')[0];
 
-    const defaultRatio = item?.conversionRatio || 50;
+    const defaultRatio = firstLot?.packSize || item?.conversionRatio || 50;
     const defaultUsageUnit = item?.usageUnit || 'คู่';
     const suggestedUnitsPerPack = Math.max(1, Math.round(defaultRatio / 10) || 2);
     const suggestedTotalPacks = Math.max(1, Math.floor(defaultRatio / suggestedUnitsPerPack));
@@ -729,7 +729,17 @@ export default function RepackPage() {
                     </label>
                     <select
                       value={form.sourceLotId}
-                      onChange={(e) => setForm({ ...form, sourceLotId: e.target.value })}
+                      onChange={(e) => {
+                        const newLotId = e.target.value;
+                        const targetLot = selectedSourceItem?.stockLots?.find((l: any) => l.id === newLotId);
+                        const lotRatio = targetLot?.packSize || form.customRatio || selectedSourceItem?.conversionRatio || 50;
+                        setForm((prev) => ({
+                          ...prev,
+                          sourceLotId: newLotId,
+                          customRatio: lotRatio,
+                        }));
+                        handleCalcPacks(form.sourceQtyUsed, form.unitsPerPack, lotRatio);
+                      }}
                       className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500 font-medium"
                       required
                       disabled={!selectedSourceItem}
@@ -739,7 +749,7 @@ export default function RepackPage() {
                           .filter((l: any) => !l.lotNumber.startsWith('SL-') && !l.lotNumber.startsWith('RP-'))
                           .map((lot: any) => (
                             <option key={lot.id} value={lot.id}>
-                              Lot: {lot.lotNumber} (คงเหลือ: {lot.quantityRemaining} {selectedSourceItem.unit})
+                              Lot: {lot.lotNumber}{lot.brand ? ` (${lot.brand})` : ''} - คงเหลือ {lot.quantityRemaining} {lot.packageUnit || selectedSourceItem.unit} (ห่อละ {lot.packSize || selectedSourceItem.conversionRatio || 1} {selectedSourceItem.usageUnit || 'ชิ้น'})
                             </option>
                           ))
                       ) : (

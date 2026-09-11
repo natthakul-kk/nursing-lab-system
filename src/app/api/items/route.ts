@@ -210,6 +210,15 @@ export async function GET(req: Request) {
           ? item.stockLots.reduce((sum, lot) => sum + (lot.openPackRemainder || 0), 0)
           : 0;
 
+      const totalPiecesRemaining =
+        item.type === 'CONSUMABLE'
+          ? item.stockLots.reduce((sum, lot) => {
+              const pSize = Number(lot.packSize) > 0 ? Number(lot.packSize) : (Number(item.conversionRatio) || 1);
+              const pPieces = typeof lot.piecesRemaining === 'number' ? lot.piecesRemaining : (lot.quantityRemaining * pSize);
+              return sum + pPieces + (lot.openPackRemainder || 0);
+            }, 0)
+          : 0;
+
       return {
         ...item,
         physicalStock,
@@ -217,6 +226,7 @@ export async function GET(req: Request) {
         availableStock,
         currentStock: availableStock,
         openPackRemainder,
+        totalPiecesRemaining,
         totalQuantity,
         isLowStock: availableStock <= item.minStockAlert,
       };

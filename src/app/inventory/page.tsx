@@ -1011,13 +1011,18 @@ export default function InventoryPage() {
                               <div className="flex items-center justify-center gap-1.5">
                                 <span
                                   className={`font-black text-sm ${
-                                    item.isLowStock ? 'text-rose-600' : 'text-slate-900'
+                                    item.isLowStock ? 'text-rose-600' : 'text-slate-900 dark:text-slate-100'
                                   }`}
                                 >
                                   {item.currentStock}
                                 </span>
                                 <span className="text-slate-500 text-xs">{item.unit}</span>
                               </div>
+                              {item.totalPiecesRemaining > 0 && item.usageUnit && (
+                                <div className="text-[10px] text-teal-700 dark:text-teal-400 font-bold mt-0.5">
+                                  รวม ~{item.totalPiecesRemaining.toLocaleString()} {item.usageUnit}
+                                </div>
+                              )}
                               {item.openPackRemainder > 0 && (
                                 <div className="mt-0.5">
                                   <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 font-bold text-[10px] border border-purple-200">
@@ -1361,8 +1366,8 @@ export default function InventoryPage() {
                                     <table className="w-full text-xs text-left">
                                       <thead className="text-[10px] uppercase text-slate-400 border-b border-slate-100 dark:border-slate-800">
                                         <tr>
-                                          <th className="py-2">เลข Lot</th>
-                                          <th className="py-2">จำนวนคงเหลือ</th>
+                                          <th className="py-2">เลข Lot & ยี่ห้อ</th>
+                                          <th className="py-2">จำนวนคงเหลือ (ห่อ/ชิ้นย่อย)</th>
                                           <th className="py-2">ราคาต้นทุน/หน่วย</th>
                                           <th className="py-2">วันหมดอายุ</th>
                                           <th className="py-2">ผู้จัดจำหน่าย</th>
@@ -1379,6 +1384,12 @@ export default function InventoryPage() {
                                             <tr key={lot.id}>
                                               <td className="py-2 font-mono font-bold text-teal-800 dark:text-teal-300">
                                                 <div>{lot.lotNumber}</div>
+                                                {lot.brand && (
+                                                  <div className="font-sans text-[11px] font-semibold text-slate-600 dark:text-slate-400 mt-0.5 flex items-center gap-1">
+                                                    <Tag className="w-3 h-3 text-teal-600" />
+                                                    <span>ยี่ห้อ: {lot.brand}</span>
+                                                  </div>
+                                                )}
                                                 {nextBox && (
                                                   <div className="mt-1">
                                                     <span className="font-sans text-[10px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800 px-1.5 py-0.5 rounded-md inline-flex items-center gap-1">
@@ -1388,12 +1399,20 @@ export default function InventoryPage() {
                                                 )}
                                               </td>
                                               <td className="py-2">
-                                                <span className="font-bold text-slate-900">
-                                                  {lot.quantityRemaining}
-                                                </span>{' '}
-                                                {item.unit}
+                                                <div className="flex items-baseline gap-1">
+                                                  <span className="font-bold text-slate-900 dark:text-slate-100">
+                                                    {lot.quantityRemaining}
+                                                  </span>{' '}
+                                                  <span className="text-slate-500 text-xs">{lot.packageUnit || item.unit}</span>
+                                                </div>
+                                                {(lot.packSize > 1 || (item.conversionRatio && item.conversionRatio > 1)) && (
+                                                  <div className="text-[10px] text-teal-700 dark:text-teal-400 font-bold mt-0.5">
+                                                    {lot.packSize || item.conversionRatio} {item.usageUnit || 'ชิ้น'}/{lot.packageUnit || item.unit}
+                                                    {' '}• รวม {((lot.piecesRemaining ?? (lot.quantityRemaining * (lot.packSize || item.conversionRatio || 1)))).toLocaleString()} {item.usageUnit || 'ชิ้น'}
+                                                  </div>
+                                                )}
                                                 {lot.openPackRemainder > 0 && (
-                                                  <span className="ml-2 px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 font-bold text-[10px] border border-purple-200">
+                                                  <span className="mt-1 inline-block px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 font-bold text-[10px] border border-purple-200">
                                                     + เศษเปิด {lot.openPackRemainder} {item.usageUnit || 'ชิ้น'}
                                                   </span>
                                                 )}

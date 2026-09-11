@@ -1,4 +1,20 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1320" width="100%" height="100%" style="background:#F8FAFC; font-family:'Leelawadee UI', 'Sarabun', 'Tahoma', sans-serif;">
+const fs = require('fs');
+const path = require('path');
+const puppeteer = require('puppeteer-core');
+
+const EDGE_PATH = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
+const ROOT_DIR = 'd:\\LAB-system';
+const SVG_PATH = path.join(ROOT_DIR, 'SYSTEM_FLOW_DIAGRAM.svg');
+const PNG_PATH = path.join(ROOT_DIR, 'SYSTEM_FLOW_DIAGRAM.png');
+const PDF_PATH = path.join(ROOT_DIR, 'SYSTEM_FLOW_DIAGRAM.pdf');
+const HTML_PATH = path.join(ROOT_DIR, 'SYSTEM_FLOW_VIEWER.html');
+
+// Create high-definition standalone SVG
+function buildSVG() {
+  const width = 1600;
+  const height = 1320;
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="100%" height="100%" style="background:#F8FAFC; font-family:'Leelawadee UI', 'Sarabun', 'Tahoma', sans-serif;">
   <defs>
     <linearGradient id="gradHeader" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#0F766E"/>
@@ -249,4 +265,284 @@
   <!-- FOOTER NOTE -->
   <text x="800" y="1260" fill="#64748B" font-size="13.5" font-weight="600" text-anchor="middle">คณะพยาบาลศาสตร์ มหาวิทยาลัยเกษตรศาสตร์ • ระบบบริหารจัดการห้องปฏิบัติการทักษะและสถานการณ์จำลองทางการพยาบาล (NSS-LAB)</text>
   <text x="800" y="1285" fill="#94A3B8" font-size="12" text-anchor="middle">End-to-End Operational Pipeline &amp; Data Synchronization Architecture</text>
-</svg>
+</svg>`;
+}
+
+// Create the interactive HTML wrapper
+function buildHTML(svgContent) {
+  return `<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>แผนภาพความเชื่อมโยงทั้งระบบ (System Flow Diagram) - NSS-LAB</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #0F766E;
+      --primary-dark: #115E59;
+      --secondary: #0E7490;
+      --slate-dark: #0F172A;
+      --slate-muted: #475569;
+      --bg-page: #F1F5F9;
+      --bg-card: #FFFFFF;
+      --border-color: #CBD5E1;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Sarabun', 'Leelawadee UI', Tahoma, sans-serif;
+      background-color: var(--bg-page);
+      color: var(--slate-dark);
+      padding: 24px;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 1650px;
+      margin: 0 auto;
+    }
+    header {
+      background: linear-gradient(135deg, #0F766E 0%, #0E7490 100%);
+      color: white;
+      padding: 28px 36px;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px -5px rgba(15, 118, 110, 0.25);
+      margin-bottom: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+    }
+    .header-content h1 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .header-content p {
+      font-size: 14.5px;
+      color: #CCFBF1;
+    }
+    .action-buttons {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      border: none;
+    }
+    .btn-white {
+      background-color: #FFFFFF;
+      color: var(--primary);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    .btn-white:hover {
+      background-color: #F0FDFA;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+    }
+    .btn-outline {
+      background-color: rgba(255, 255, 255, 0.15);
+      color: #FFFFFF;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+    }
+    .btn-outline:hover {
+      background-color: rgba(255, 255, 255, 0.25);
+      transform: translateY(-2px);
+    }
+    .diagram-card {
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 24px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      margin-bottom: 24px;
+    }
+    .diagram-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .diagram-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+    .zoom-controls {
+      display: flex;
+      gap: 8px;
+    }
+    .zoom-btn {
+      padding: 6px 14px;
+      border: 1px solid var(--border-color);
+      background: #F8FAFC;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--slate-dark);
+      transition: all 0.2s ease;
+    }
+    .zoom-btn:hover { background: #E2E8F0; }
+    .svg-viewport {
+      width: 100%;
+      overflow: auto;
+      border-radius: 10px;
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      padding: 10px;
+      text-align: center;
+    }
+    #svg-wrapper {
+      display: inline-block;
+      transition: transform 0.2s ease;
+      transform-origin: top center;
+      width: 100%;
+      max-width: 1600px;
+    }
+    #svg-wrapper svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    footer {
+      text-align: center;
+      margin-top: 30px;
+      padding: 20px;
+      color: #94A3B8;
+      font-size: 14px;
+    }
+    @media print {
+      body { background: white; padding: 0; }
+      header, .zoom-controls, .action-buttons, footer { display: none; }
+      .diagram-card { border: none; box-shadow: none; padding: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-content">
+        <h1>แผนภาพแสดงความเชื่อมโยงการไหลเวียนข้อมูลและกระบวนการทำงานทั้งระบบ</h1>
+        <p>คณะพยาบาลศาสตร์ มหาวิทยาลัยเกษตรศาสตร์ • Nursing Skills & Simulation Lab System (NSS-LAB)</p>
+      </div>
+      <div class="action-buttons">
+        <a href="./SYSTEM_FLOW_DIAGRAM.png" download="NSS_Lab_System_Flow_Diagram.png" class="btn btn-white">💾 ดาวน์โหลดภาพ PNG</a>
+        <a href="./SYSTEM_FLOW_DIAGRAM.svg" download="NSS_Lab_System_Flow_Diagram.svg" class="btn btn-outline">📐 ดาวน์โหลดไฟล์ SVG</a>
+        <a href="./SYSTEM_FLOW_DIAGRAM.pdf" download="NSS_Lab_System_Flow_Diagram.pdf" class="btn btn-outline">📄 ดาวน์โหลด PDF</a>
+        <button class="btn btn-outline" onclick="window.print()">🖨️ พิมพ์เอกสาร</button>
+      </div>
+    </header>
+
+    <div class="diagram-card">
+      <div class="diagram-toolbar">
+        <div class="diagram-title">🌐 แผนผังกระบวนการทำงาน 4 ลำดับขั้นแบบบูรณาการ (End-to-End Operational Pipeline)</div>
+        <div class="zoom-controls">
+          <button class="zoom-btn" onclick="zoomIn()">🔍 ซูมเข้า (+)</button>
+          <button class="zoom-btn" onclick="zoomOut()">🔍 ซูมออก (-)</button>
+          <button class="zoom-btn" onclick="resetZoom()">↺ รีเซ็ตขนาด</button>
+        </div>
+      </div>
+
+      <div class="svg-viewport">
+        <div id="svg-wrapper">
+          ${svgContent}
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      คณะพยาบาลศาสตร์ มหาวิทยาลัยเกษตรศาสตร์ • ระบบบริหารจัดการห้องปฏิบัติการทักษะและสถานการณ์จำลองทางการพยาบาล (NSS-LAB)
+    </footer>
+  </div>
+
+  <script>
+    let currentScale = 1;
+    const wrapper = document.getElementById('svg-wrapper');
+    function zoomIn() {
+      currentScale += 0.15;
+      wrapper.style.transform = 'scale(' + currentScale + ')';
+    }
+    function zoomOut() {
+      if (currentScale > 0.5) {
+        currentScale -= 0.15;
+        wrapper.style.transform = 'scale(' + currentScale + ')';
+      }
+    }
+    function resetZoom() {
+      currentScale = 1;
+      wrapper.style.transform = 'scale(1)';
+    }
+  </script>
+</body>
+</html>`;
+}
+
+async function run() {
+  console.log('1. Building clean, structured SVG diagram...');
+  const svg = buildSVG();
+  fs.writeFileSync(SVG_PATH, svg, 'utf8');
+  console.log('Saved SVG:', SVG_PATH);
+
+  console.log('2. Building interactive HTML Viewer...');
+  const html = buildHTML(svg);
+  fs.writeFileSync(HTML_PATH, html, 'utf8');
+  console.log('Saved HTML:', HTML_PATH);
+
+  console.log('3. Rendering High-Resolution PNG & Landscape A3 PDF via Edge...');
+  const browser = await puppeteer.launch({
+    executablePath: EDGE_PATH,
+    headless: 'new',
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--allow-file-access-from-files']
+  });
+
+  const page = await browser.newPage();
+  await page.setViewport({ width: 1700, height: 1400, deviceScaleFactor: 2.5 });
+  await page.goto('file:///' + HTML_PATH.replace(/\\\\/g, '/'), { waitUntil: 'networkidle0' });
+
+  // Wait for svg-wrapper
+  await page.waitForSelector('#svg-wrapper svg', { timeout: 10000 });
+
+  // Screenshot pure diagram
+  const svgHandle = await page.$('#svg-wrapper svg');
+  if (svgHandle) {
+    await svgHandle.screenshot({
+      path: PNG_PATH,
+      type: 'png'
+    });
+    console.log('Saved High-Res Clean PNG:', PNG_PATH);
+  }
+
+  // Print PDF
+  await page.pdf({
+    path: PDF_PATH,
+    format: 'A3',
+    landscape: true,
+    printBackground: true,
+    margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' }
+  });
+  console.log('Saved Clean Landscape PDF:', PDF_PATH);
+
+  await browser.close();
+  console.log('ALL ARTIFACTS GENERATED CLEANLY!');
+}
+
+run().catch(err => {
+  console.error('Error:', err);
+  process.exit(1);
+});

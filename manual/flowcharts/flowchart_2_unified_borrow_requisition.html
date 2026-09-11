@@ -87,83 +87,83 @@
     classDef warnProcess fill:#fef2f2,stroke:#dc2626,stroke-width:2px,color:#991b1b;
     classDef doc fill:#fdf4ff,stroke:#a855f7,stroke-width:2px,color:#6b21a8;
 
-    StartReq([🟢 เริ่มต้น: นิสิตกดปุ่มสร้างคำขอยืม-เบิก One-Stop]):::terminator
-    ChooseCourse[/1. เลือกรหัสรายวิชา: ระบบดึงชื่ออาจารย์ผู้รับผิดชอบให้อัตโนมัติ/]:::inputOutput
+    StartReq(["🟢 เริ่มต้น: นิสิตกดปุ่มสร้างคำขอยืม-เบิก One-Stop"]):::terminator
+    ChooseCourse[/"1. เลือกรหัสรายวิชา: ระบบดึงชื่ออาจารย์ผู้รับผิดชอบให้อัตโนมัติ"/]:::inputOutput
     StartReq --> ChooseCourse
 
-    FillDetails[/2. ระบุวันและเวลานัดหมายรับของ-กำหนดส่งคืน และวัตถุประสงค์/]:::inputOutput
+    FillDetails[/"2. ระบุวันและเวลานัดหมายรับของ-กำหนดส่งคืน และวัตถุประสงค์"/]:::inputOutput
     ChooseCourse --> FillDetails
 
-    SelectItems[/3. เลือกรายการครุภัณฑ์ที่ต้องการยืม และระบุเวชภัณฑ์ที่ขอเบิก/]:::inputOutput
+    SelectItems[/"3. เลือกรายการครุภัณฑ์ที่ต้องการยืม และระบุเวชภัณฑ์ที่ขอเบิก"/]:::inputOutput
     FillDetails --> SelectItems
 
-    DecideTarget{4. วัตถุประสงค์การใช้งาน<br/>(Use Target)?}:::decision
+    DecideTarget{"4. วัตถุประสงค์การใช้งาน<br/>(Use Target)?"}:::decision
     SelectItems --> DecideTarget
 
     %% Human Patient Branch
-    HumanPath[/🧑‍⚕️ ใช้งานกับคนจริง / คลินิก Clinical Patient/]:::inputOutput
+    HumanPath[/"🧑‍⚕️ ใช้งานกับคนจริง หรือคลินิก Clinical Patient"/]:::inputOutput
     DecideTarget -->|ใช้กับคนจริง| HumanPath
-    LockSafety[🛡️ เปิดระบบ Patient Safety Lock กรองเฉพาะล็อตที่ยังไม่หมดอายุ 100%]:::process
+    LockSafety["🛡️ เปิดระบบ Patient Safety Lock กรองเฉพาะล็อตที่ยังไม่หมดอายุ 100%"]:::process
     HumanPath --> LockSafety
-    CheckUnexpired{สต็อกล็อตที่ยังไม่หมดอายุ<br/>มีเพียงพอหรือไม่?}:::decision
+    CheckUnexpired{"สต็อกล็อตที่ยังไม่หมดอายุ<br/>มีเพียงพอหรือไม่?"}:::decision
     LockSafety --> CheckUnexpired
-    RejectHuman[❌ ปฏิเสธการขอเบิก: บล็อกล็อตหมดอายุเด็ดขาด เพื่อความปลอดภัยผู้ป่วย]:::warnProcess
-    CheckUnexpired -->|ไม่พอ/หมดอายุ| RejectHuman
-    RejectHuman -.->|ปรับลดจำนวน/เปลี่ยนรายการ| SelectItems
-    PassHuman[✅ ตรวจสอบผ่าน: จัดสรรเฉพาะเวชภัณฑ์ล็อตที่ยังไม่หมดอายุ]:::successProcess
+    RejectHuman["❌ ปฏิเสธการขอเบิก: บล็อกล็อตหมดอายุเด็ดขาด เพื่อความปลอดภัยผู้ป่วย"]:::warnProcess
+    CheckUnexpired -->|ไม่พอ หรือหมดอายุ| RejectHuman
+    RejectHuman -.->|ปรับลดจำนวน หรือเปลี่ยนรายการ| SelectItems
+    PassHuman["✅ ตรวจสอบผ่าน: จัดสรรเฉพาะเวชภัณฑ์ล็อตที่ยังไม่หมดอายุ"]:::successProcess
     CheckUnexpired -->|เพียงพอ| PassHuman
 
     %% Simulation Lab Branch
-    SimPath[/🧪 ฝึกปฏิบัติการกับหุ่นจำลอง Sim-Lab/]:::inputOutput
+    SimPath[/"🧪 ฝึกปฏิบัติการกับหุ่นจำลอง Sim-Lab"/]:::inputOutput
     DecideTarget -->|ฝึกกับหุ่น| SimPath
-    AllowExpired[ระบบอนุญาตให้ใช้เวชภัณฑ์หมดอายุได้ เพื่อประหยัดงบประมาณ]:::process
+    AllowExpired["ระบบอนุญาตให้ใช้เวชภัณฑ์หมดอายุได้ เพื่อประหยัดงบประมาณ"]:::process
     SimPath --> AllowExpired
-    CheckTotalStock{ยอดสต็อกรวมในคลัง<br/>มีเพียงพอหรือไม่?}:::decision
+    CheckTotalStock{"ยอดสต็อกรวมในคลัง<br/>มีเพียงพอหรือไม่?"}:::decision
     AllowExpired --> CheckTotalStock
-    RejectSim[❌ ปฏิเสธการขอเบิก: ยอดพัสดุในคลังไม่เพียงพอ]:::warnProcess
+    RejectSim["❌ ปฏิเสธการขอเบิก: ยอดพัสดุในคลังไม่เพียงพอ"]:::warnProcess
     CheckTotalStock -->|ไม่เพียงพอ| RejectSim
-    RejectSim -.->|ปรับลดจำนวน/เปลี่ยนรายการ| SelectItems
-    PassSim[✅ ตรวจสอบผ่าน: จัดสรรสต็อกและติดป้ายเตือนสำหรับฝึกกับหุ่นเท่านั้น]:::successProcess
+    RejectSim -.->|ปรับลดจำนวน หรือเปลี่ยนรายการ| SelectItems
+    PassSim["✅ ตรวจสอบผ่าน: จัดสรรสต็อกและติดป้ายเตือนสำหรับฝึกกับหุ่นเท่านั้น"]:::successProcess
     CheckTotalStock -->|เพียงพอ| PassSim
 
     %% Equipment Availability Check
-    CheckEqStock{ยอดครุภัณฑ์พร้อมยืม<br/>มีเพียงพอหรือไม่?}:::decision
+    CheckEqStock{"ยอดครุภัณฑ์พร้อมยืม<br/>มีเพียงพอหรือไม่?"}:::decision
     PassHuman --> CheckEqStock
     PassSim --> CheckEqStock
-    RejectEq[❌ ปฏิเสธ: ครุภัณฑ์ถูกจองเต็มแล้วในวันเวลาดังกล่าว]:::warnProcess
+    RejectEq["❌ ปฏิเสธ: ครุภัณฑ์ถูกจองเต็มแล้วในวันเวลาดังกล่าว"]:::warnProcess
     CheckEqStock -->|ไม่เพียงพอ| RejectEq
-    RejectEq -.->|เปลี่ยนรายการ/เปลี่ยนวันนัดหมาย| SelectItems
+    RejectEq -.->|เปลี่ยนรายการ หรือเปลี่ยนวันนัดหมาย| SelectItems
 
     %% Submit Form
-    SubmitForm[5. กดยืนยัน: ส่งคำขอรวม One-Stop เข้าสู่ระบบ]:::process
+    SubmitForm["5. กดยืนยัน: ส่งคำขอรวม One-Stop เข้าสู่ระบบ"]:::process
     CheckEqStock -->|เพียงพอ| SubmitForm
 
     %% Approval Flow
-    NotifyRoles[📄 ระบบส่งคำขอให้อาจารย์ผู้รับผิดชอบ และเจ้าหน้าที่ห้องแล็บ]:::doc
+    NotifyRoles["📄 ระบบส่งคำขอให้อาจารย์ผู้รับผิดชอบ และเจ้าหน้าที่ห้องแล็บ"]:::doc
     SubmitForm --> NotifyRoles
-    StaffApprove{เจ้าหน้าที่ห้องแล็บ<br/>อนุมัติคำขอหรือไม่?}:::decision
+    StaffApprove{"เจ้าหน้าที่ห้องแล็บ<br/>อนุมัติคำขอหรือไม่?"}:::decision
     NotifyRoles --> StaffApprove
-    RejectOfficer[❌ ไม่อนุมัติ: ระบุเหตุผลในระบบ เช่น เกินโควตา/ไม่สอดคล้อง]:::warnProcess
+    RejectOfficer["❌ ไม่อนุมัติ: ระบุเหตุผลในระบบ เช่น เกินโควตา หรือไม่สอดคล้อง"]:::warnProcess
     StaffApprove -->|ไม่อนุมัติ| RejectOfficer
-    ApproveDone[✅ อนุมัติคำขอเรียบร้อย: สถานะ APPROVED พร้อมจ่ายของ]:::successProcess
+    ApproveDone["✅ อนุมัติคำขอเรียบร้อย: สถานะ APPROVED พร้อมจ่ายของ"]:::successProcess
     StaffApprove -->|อนุมัติ| ApproveDone
 
     %% Dispense & Return
-    DispenseItems[นิสิตติดต่อรับพัสดุตามวันนัดหมาย: สถานะ DISPENSED]:::process
+    DispenseItems["นิสิตติดต่อรับพัสดุตามวันนัดหมาย: สถานะ DISPENSED"]:::process
     ApproveDone --> DispenseItems
-    UseItems[นำอุปกรณ์ไปใช้ฝึกปฏิบัติการในคาบเรียน]:::process
+    UseItems["นำอุปกรณ์ไปใช้ฝึกปฏิบัติการในคาบเรียน"]:::process
     DispenseItems --> UseItems
-    ReturnItems[นำครุภัณฑ์ส่งคืน ณ เคาน์เตอร์ห้องแล็บตามกำหนด]:::process
+    ReturnItems["นำครุภัณฑ์ส่งคืน ณ เคาน์เตอร์ห้องแล็บตามกำหนด"]:::process
     UseItems --> ReturnItems
-    CheckCondition{เจ้าหน้าที่ตรวจสภาพครุภัณฑ์<br/>สมบูรณ์ครบถ้วนหรือไม่?}:::decision
+    CheckCondition{"เจ้าหน้าที่ตรวจสภาพครุภัณฑ์<br/>สมบูรณ์ครบถ้วนหรือไม่?"}:::decision
     ReturnItems --> CheckCondition
-    ReturnOk[✅ รับคืนสมบูรณ์: สถานะ RETURNED เสร็จสิ้นขั้นตอน]:::successProcess
+    ReturnOk["✅ รับคืนสมบูรณ์: สถานะ RETURNED เสร็จสิ้นขั้นตอน"]:::successProcess
     CheckCondition -->|สมบูรณ์| ReturnOk
-    ReturnIssue[⚠️ บันทึกอาการชำรุด / ส่งซ่อมบำรุง RETURNED_WITH_ISSUE]:::warnProcess
-    CheckCondition -->|ชำรุด/มีปัญหา| ReturnIssue
+    ReturnIssue["⚠️ บันทึกอาการชำรุด หรือส่งซ่อมบำรุง RETURNED_WITH_ISSUE"]:::warnProcess
+    CheckCondition -->|ชำรุด หรือมีปัญหา| ReturnIssue
 
     %% End
-    EndReq([🔴 สิ้นสุดขั้นตอนการยืม-เบิก]):::terminator
+    EndReq(["🔴 สิ้นสุดขั้นตอนการยืม-เบิก"]):::terminator
     ReturnOk --> EndReq
     ReturnIssue --> EndReq
     

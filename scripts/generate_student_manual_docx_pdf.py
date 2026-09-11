@@ -30,12 +30,12 @@ def set_cell_background(cell, fill_color):
 
 def set_cell_margins(cell, top=100, bottom=100, left=150, right=150):
     tcPr = cell._tc.get_or_add_tcPr()
-    tcMar = parse_xml(f'''<w:tcMar {nsdecls("w")}>
+    tcMar = parse_xml(f"""<w:tcMar {nsdecls("w")}>
         <w:top w:w="{top}" w:type="dxa"/>
         <w:bottom w:w="{bottom}" w:type="dxa"/>
         <w:left w:w="{left}" w:type="dxa"/>
         <w:right w:w="{right}" w:type="dxa"/>
-    </w:tcMar>''')
+    </w:tcMar>""")
     tcPr.append(tcMar)
 
 def apply_thai_font(run, font_name=FONT_NAME, size_pt=FONT_SIZE_BODY, bold=False, italic=False, color_rgb=None):
@@ -296,7 +296,7 @@ def generate_html_manual():
           <span class="step-badge-num">1</span>
           <div class="step-content">
             <h4>ขั้นตอนที่ 1: กรอกรหัสนิสิต / บัญชีผู้ใช้งาน</h4>
-            <p>กรอกรหัสนิสิต (เช่น 6811700661) หรืออีเมลมหาวิทยาลัย (@ku.th)</p>
+            <p>กรอกรหัสนิสิต 10 หลัก (เช่น 6811700661) หรืออีเมลมหาวิทยาลัย (@ku.th)</p>
           </div>
         </div>
         <div class="step-item">
@@ -310,7 +310,7 @@ def generate_html_manual():
           <span class="step-badge-num" style="background: #0284c7;">3</span>
           <div class="step-content">
             <h4 style="color: #0284c7;">ขั้นตอนที่ 3: กดปุ่ม "เข้าสู่ระบบ (Sign In)"</h4>
-            <p>ระบบจะตรวจสอบสิทธิ์และนำเข้าสู่หน้าจอหลักของนิสิตทันที</p>
+            <p>ระบบจะตรวจสอบสิทธิ์และนำเข้าสู่หน้าแดชบอร์ดหลักของนิสิตทันที</p>
           </div>
         </div>
       </div>
@@ -319,7 +319,7 @@ def generate_html_manual():
     <!-- Chapter 2: Standard Flowcharts (Straight Linear Arrows) -->
     <div class="card">
       <h2 class="chapter-title">📊 บทที่ 2: ผังงานขั้นตอนการทำงานมาตรฐาน (Standard Flowcharts)</h2>
-      <p>ผังงานมาตรฐานสากล ISO 5807 เส้นตรงชัดเจน (Linear Flow) ไม่โค้งไปมา เพื่อให้อ่านเข้าใจง่าย:</p>
+      <p>ผังงานมาตรฐานสากล ISO 5807 เส้นตรงชัดเจน (Linear Flow) ไม่โค้งไปมา เพื่อให้อ่านเข้าใจง่ายและเป็นทางการ:</p>
 
       <h3 class="section-title">2.1 ผังงานภาพรวมการใช้งานของนิสิต (Overall Student Lifecycle)</h3>
       <div class="figure-box">
@@ -334,7 +334,7 @@ def generate_html_manual():
       </div>
       <p><b>กระบวนการทำงานของผังงานที่ 2:</b></p>
       <ol>
-        <li><b>เลือกรหัสรายวิชา:</b> นิสิตเลือกรหัสวิชา ระบบจะผูกชื่ออาจารย์ผู้รับผิดชอบให้อัตโนมัติ</li>
+        <li><b>เลือกรหัสรายวิชา:</b> นิสิตเลือกรหัสวิชา ระบบจะผูกและแสดงชื่ออาจารย์ผู้รับผิดชอบรายวิชาให้อัตโนมัติ</li>
         <li><b>ระบุวัน-เวลานัดหมายรับของและส่งคืน:</b> พร้อมระบุวัตถุประสงค์และสถานที่ใช้งาน</li>
         <li><b>เลือกรายการครุภัณฑ์และเวชภัณฑ์:</b> รวมทั้งอุปกรณ์ส่งคืนและวัสดุสิ้นเปลืองในคำขอเดียว</li>
         <li><b>ตรวจสอบเงื่อนไขความปลอดภัย (Patient Safety Lock):</b>
@@ -353,14 +353,62 @@ def generate_html_manual():
       </div>
     </div>
 
-    <!-- Chapter 3: One-Stop Borrowing (Steps 1, 2, 3, 4, 5, 6, 7) -->
+    <!-- Chapter 3: Student Main Dashboard -->
     <div class="card">
-      <h2 class="chapter-title">📑 บทที่ 3: ภาพรวมรายการคำขอและขั้นตอนการยืม-เบิก One-Stop (ภาพจากระบบจริง)</h2>
-      <p>เมื่อนิสิตเข้าสู่เมนู <b>"ยืม-คืนอุปกรณ์"</b> ระบบจะแสดงหน้าจอภาพรวม (Overview Dashboard) แสดงรายการคำขอของนิสิตพร้อมสถานะการดำเนินการแบบเรียลไทม์ ดังรูปที่ 3.1:</p>
+      <h2 class="chapter-title">🖥️ บทที่ 3: หน้าจอแดชบอร์ดหลักของนิสิต (Student Main Dashboard)</h2>
+      <p>เมื่อนิสิตเข้าสู่ระบบ หน้าจอแรกที่ปรากฏคือหน้า <b>"แดชบอร์ดหลักของนิสิต"</b> ซึ่งรวบรวมข้อมูลสถานะการยืม แจ้งเตือนกำหนดวันส่งคืน และชั่วโมงฝึกซ้อมสะสม ดังรูปที่ 3.1:</p>
+
+      <div class="figure-box">
+        <img src="./images/student_main_dashboard_annotated.png" alt="หน้าแดชบอร์ดหลักของนิสิต">
+        <div class="figure-caption">รูปที่ 3.1: ภาพจากระบบจริง - หน้าแดชบอร์ดหลักของนิสิต พร้อมป้ายกำกับจุดสำคัญ 1 ถึง 4</div>
+      </div>
+
+      <div class="step-grid">
+        <div class="step-item">
+          <span class="step-badge-num">1</span>
+          <div class="step-content">
+            <h4>จุดที่ 1: แถบข้อมูลนิสิตและปุ่มทางลัด (Student Header & Quick Actions)</h4>
+            <p>แสดงชื่อ-นามสกุล, รหัสนิสิต, สาขาวิชา, และภาคการศึกษาปัจจุบัน พร้อมปุ่มทางลัด <b>"ยื่นขอยืมอุปกรณ์ฝึกซ้อม"</b> และ <b>"ขอเบิกวัสดุฝึกปฏิบัติ"</b> เพื่อเข้าสู่หน้าทำรายการได้ทันทีในคลิกเดียว</p>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <span class="step-badge-num">2</span>
+          <div class="step-content">
+            <h4>จุดที่ 2: การ์ดสรุปสถานะสำคัญ 4 ด้าน (4 Summary KPI Cards)</h4>
+            <p>• <b>กำลังยืมอยู่ขณะนี้:</b> จำนวนคำขอที่มีอุปกรณ์อยู่ในความดูแลของนิสิต<br>
+               • <b>คำขอที่รออนุมัติ:</b> จำนวนรายการที่ส่งคำขอแล้ว และอยู่ระหว่างรอการตรวจสอบ<br>
+               • <b>ประวัติการคืนแล้ว:</b> จำนวนรายการที่ส่งคืนครุภัณฑ์ครบถ้วนและตรวจรับสภาพสมบูรณ์<br>
+               • <b>ชั่วโมงฝึกด้วยตนเอง:</b> ชั่วโมงสะสมจากการฝึกซ้อมนอกเวลา พร้อมปุ่มกดจองรอบเข้าฝึก</p>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <span class="step-badge-num">3</span>
+          <div class="step-content">
+            <h4>จุดที่ 3: แถบติดตามกำหนดวันส่งคืน (Return Due Date Tracking & Alerts)</h4>
+            <p>ระบบมีกลไกคำนวณวันคงเหลือแบบอัตโนมัติ พร้อมแสดงป้ายสีแจ้งเตือน เช่น สีฟ้า (เหลือเวลาอีก X วัน), สีเหลือง (ครบกำหนดวันนี้), หรือสีแดง (เกินกำหนดส่งคืน) ช่วยป้องกันการลืมส่งคืนอุปกรณ์</p>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <span class="step-badge-num">4</span>
+          <div class="step-content">
+            <h4>จุดที่ 4: การ์ดรายการอุปกรณ์ที่ถือครอง (Active Loan Items)</h4>
+            <p>แสดงรหัสคำขอ (เช่น BR-2026-0038), ชื่อรายวิชา, รายชื่อครุภัณฑ์ที่ยืม (เช่น หุ่นฝึกสวนปัสสาวะ, หูฟัง Littmann), และกำหนดวัน-เวลาที่ต้องนำส่งคืนห้องปฏิบัติการ</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chapter 4: One-Stop Borrowing (Steps 1, 2, 3, 4, 5, 6, 7) -->
+    <div class="card">
+      <h2 class="chapter-title">📑 บทที่ 4: ภาพรวมรายการคำขอและขั้นตอนการยืม-เบิกแบบ One-Stop (ภาพจากระบบจริง)</h2>
+      <p>เมื่อนิสิตเข้าสู่เมนู <b>"ยืม-คืนอุปกรณ์"</b> ระบบจะแสดงหน้าจอภาพรวมรายการคำขอ (Overview Dashboard) แสดงรายการคำขอของนิสิตพร้อมสถานะการดำเนินการแบบเรียลไทม์ ดังรูปที่ 4.1:</p>
 
       <div class="figure-box">
         <img src="./images/overview_student_dashboard_annotated.png" alt="ภาพรวมรายการคำขอยืม-คืนของนิสิต">
-        <div class="figure-caption">รูปที่ 3.1: ภาพจากระบบจริง - ภาพรวมรายการคำขอยืม-คืนของนิสิต (Overview Dashboard พร้อมข้อมูลคำขอจริงและปุ่ม One-Stop)</div>
+        <div class="figure-caption">รูปที่ 4.1: ภาพจากระบบจริง - ภาพรวมรายการคำขอยืม-คืนของนิสิต (Overview Dashboard พร้อมข้อมูลคำขอจริงและปุ่ม One-Stop)</div>
       </div>
 
       <p>จากหน้าจอภาพรวม นิสิตสามารถตรวจสอบประวัติและสถานะคำขอของตนเองได้ 4 สถานะหลัก ได้แก่:</p>
@@ -371,11 +419,11 @@ def generate_html_manual():
         <li><b style="color: #64748b;">คืนแล้ว (RETURNED):</b> นำครุภัณฑ์ส่งคืนเจ้าหน้าที่ตรวจรับความสมบูรณ์และปิดคำขอสมบูรณ์</li>
       </ul>
 
-      <p style="margin-top: 16px;">เมื่อต้องการสร้างคำขอยืม-เบิกใหม่ ให้กดปุ่ม <b>"+ ขอยืม-เบิกอุปกรณ์ (One-Stop)"</b> ที่มุมขวาบน ระบบจะเปิดหน้าต่างฟอร์มรวมดังรูปที่ 3.2 ให้นิสิตกรอกข้อมูลตามหมายเลขกำกับในแต่ละช่องดังนี้:</p>
+      <p style="margin-top: 16px;">เมื่อต้องการสร้างคำขอยืม-เบิกใหม่ ให้กดปุ่ม <b>"+ ขอยืม-เบิกอุปกรณ์ (One-Stop)"</b> ที่มุมขวาบน ระบบจะเปิดหน้าต่างฟอร์มรวมดังรูปที่ 4.2 ให้นิสิตกรอกข้อมูลตามหมายเลขกำกับในแต่ละช่องดังนี้:</p>
 
       <div class="figure-box">
         <img src="./images/step_borrow_one_stop_guide.png" alt="ขั้นตอนการยืม-เบิก One-Stop จากระบบจริง">
-        <div class="figure-caption">รูปที่ 3.2: ภาพจากระบบจริง - ชี้ตำแหน่งที่ต้องกรอกแต่ละช่องอย่างชัดเจน (จุดที่ 1 ถึง 7)</div>
+        <div class="figure-caption">รูปที่ 4.2: ภาพจากระบบจริง - ชี้ตำแหน่งและสิ่งที่ต้องกรอกในแต่ละช่องอย่างชัดเจน (จุดที่ 1 ถึง 7)</div>
       </div>
 
       <div class="step-grid">
@@ -439,14 +487,14 @@ def generate_html_manual():
       </div>
     </div>
 
-    <!-- Chapter 4: Kits -->
+    <!-- Chapter 5: Kits -->
     <div class="card">
-      <h2 class="chapter-title">📦 บทที่ 4: การขอเบิกชุดฝึกปฏิบัติการสำเร็จรูป (Nursing Practice Kits)</h2>
+      <h2 class="chapter-title">📦 บทที่ 5: การขอเบิกชุดฝึกปฏิบัติการสำเร็จรูป (Nursing Practice Kits)</h2>
       <p>ชุด Box Set สำเร็จรูปตามหัตถการทางการพยาบาล สะดวก รวดเร็ว ขอเบิกได้ในคลิกเดียว:</p>
 
       <div class="figure-box">
         <img src="./images/step_kits_guide.png" alt="ชุดฝึกปฏิบัติการสำเร็จรูป">
-        <div class="figure-caption">รูปที่ 4.1: ภาพจากระบบจริง - หน้ารายการชุดฝึกปฏิบัติการสำเร็จรูป (Kits)</div>
+        <div class="figure-caption">รูปที่ 5.1: ภาพจากระบบจริง - หน้ารายการชุดฝึกปฏิบัติการสำเร็จรูป (Kits)</div>
       </div>
 
       <div class="step-grid">
@@ -467,19 +515,19 @@ def generate_html_manual():
       </div>
     </div>
 
-    <!-- Chapter 5: Booking & QR -->
+    <!-- Chapter 6: Booking & QR -->
     <div class="card">
-      <h2 class="chapter-title">📅 บทที่ 5: การขอเข้าฝึกปฏิบัติการด้วยตนเองและการ Check-in</h2>
+      <h2 class="chapter-title">📅 บทที่ 6: การขอเข้าฝึกปฏิบัติการด้วยตนเองและการ Check-in</h2>
       <p>นิสิตสามารถจองห้องแล็บและเตียงฝึกนอกเวลาเรียนเพื่อทบทวนหัตถการก่อนสอบ OSCE:</p>
 
       <div class="figure-box">
         <img src="./images/step_booking_guide.png" alt="การจองห้องปฏิบัติการ">
-        <div class="figure-caption">รูปที่ 5.1: ภาพจากระบบจริง - หน้าจองห้องปฏิบัติการและรอบเวลา (Time Slots)</div>
+        <div class="figure-caption">รูปที่ 6.1: ภาพจากระบบจริง - หน้าจองห้องปฏิบัติการและรอบเวลา (Time Slots)</div>
       </div>
 
       <div class="figure-box">
         <img src="./images/ui_mockup_practice_ticket.png" alt="Digital E-Ticket พร้อม QR Code" style="max-width: 440px;">
-        <div class="figure-caption">รูปที่ 5.2: บัตร Digital E-Ticket พร้อม QR Code Check-in หน้าห้องแล็บ</div>
+        <div class="figure-caption">รูปที่ 6.2: บัตร Digital E-Ticket พร้อม QR Code Check-in หน้าห้องแล็บ</div>
       </div>
 
       <div class="step-grid">
@@ -514,17 +562,18 @@ def generate_html_manual():
       </div>
     </div>
 
-    <!-- Chapter 6: Safety Rules -->
+    <!-- Chapter 7: Safety Rules -->
     <div class="card">
-      <h2 class="chapter-title">🛡️ บทที่ 6: การส่งคืนอุปกรณ์และข้อพึงระวังความปลอดภัย</h2>
+      <h2 class="chapter-title">🛡️ บทที่ 7: การส่งคืนอุปกรณ์และข้อพึงระวังความปลอดภัย</h2>
       <div class="callout callout-warn">
-        <div>⚠️</div>
+        <span style="font-size: 24px;">⚠️</span>
         <div>
-          <b>ข้อพึงระวังด้านความปลอดภัยสูงสุด (Patient Safety Warning):</b>
-          <p>ห้ามนำเวชภัณฑ์ที่มีป้ายกำกับ <b>"สำหรับฝึกกับหุ่นจำลองเท่านั้น (For Simulation Only)"</b> ไปใช้กับผู้ป่วยจริงบนหอผู้ป่วยโดยเด็ดขาด</p>
+          <b>ข้อพึงระวังด้านความปลอดภัยสูงสุด (Patient Safety Warning):</b><br>
+          ห้ามนำเวชภัณฑ์หรืออุปกรณ์ที่มีป้ายเตือน "สำหรับฝึกกับหุ่นจำลองเท่านั้น (For Simulation Only)" ไปใช้กับผู้ป่วยจริงบนหอผู้ป่วยหรือในคลินิกโดยเด็ดขาด เพื่อความปลอดภัยสูงสุดของผู้ป่วย
         </div>
       </div>
-      <p>ขั้นตอนการส่งคืนครุภัณฑ์:</p>
+
+      <h3 class="section-title">ขั้นตอนการส่งคืนครุภัณฑ์:</h3>
       <ul>
         <li>ทำความสะอาดอุปกรณ์และจัดเก็บเข้าชุดให้เรียบร้อยตามตำแหน่งเดิม</li>
         <li>นำส่งคืน ณ เคาน์เตอร์ห้องปฏิบัติการตามกำหนดเวลา</li>
@@ -616,10 +665,11 @@ def generate_docx_manual():
         ("   - 2.1 ผังงานภาพรวมการใช้งานของนิสิต (Overall Student Lifecycle)", "หน้า 5"),
         ("   - 2.2 ผังงานการยืม-เบิก One-Stop และระบบ Patient Safety Lock", "หน้า 6"),
         ("   - 2.3 ผังงานการจองห้องแล็บและ Check-in สแกนเข้าห้อง", "หน้า 7"),
-        ("บทที่ 3: ภาพรวมรายการคำขอและขั้นตอนการยืม-เบิก One-Stop (ชี้จุดที่ 1 ถึง 7)", "หน้า 8"),
-        ("บทที่ 4: การขอเบิกชุดฝึกปฏิบัติการสำเร็จรูป (Nursing Practice Kits)", "หน้า 10"),
-        ("บทที่ 5: การขอเข้าฝึกปฏิบัติการด้วยตนเองและสแกน QR Code Check-in", "หน้า 11"),
-        ("บทที่ 6: การส่งคืนอุปกรณ์และข้อพึงระวังความปลอดภัย (Safety Rules)", "หน้า 13")
+        ("บทที่ 3: หน้าจอแดชบอร์ดหลักของนิสิต (Student Main Dashboard)", "หน้า 8"),
+        ("บทที่ 4: ภาพรวมรายการคำขอและขั้นตอนการยืม-เบิก One-Stop (ชี้จุด 1-7)", "หน้า 10"),
+        ("บทที่ 5: การขอเบิกชุดฝึกปฏิบัติการสำเร็จรูป (Nursing Practice Kits)", "หน้า 12"),
+        ("บทที่ 6: การขอเข้าฝึกปฏิบัติการด้วยตนเองและสแกน QR Code Check-in", "หน้า 13"),
+        ("บทที่ 7: การส่งคืนอุปกรณ์และข้อพึงระวังความปลอดภัย (Safety Rules)", "หน้า 15")
     ]
 
     for title, pg in toc_items:
@@ -744,7 +794,7 @@ def generate_docx_manual():
         ("2. ระบุวัน-เวลานัดหมายรับและส่งคืน:", " กำหนดวันเวลาที่มารับของ และกำหนดส่งคืน พร้อมระบุสถานที่และหัตถการ"),
         ("3. เลือกรายการครุภัณฑ์และเวชภัณฑ์:", " ค้นหาและระบุจำนวนอุปกรณ์ที่ต้องการยืมและเวชภัณฑ์ที่ขอเบิก"),
         ("4. ตรวจสอบเงื่อนไข Patient Safety Lock:",
-         "\n     • กรณีใช้งานกับคนจริง / คลินิก: ระบบจะบล็อกเวชภัณฑ์ล็อตหมดอายุ 100% ตรวจสอบเฉพาะล็อตที่ยังไม่หมดอายุ หากไม่พอจะปฏิเสธคำขอทันทีเพื่อความปลอดภัยของผู้ป่วย"
+         "\n     • กรณีใช้งานกับคนจริง / คลินิก: ระบบจะบล็อกเวชภัณฑ์ล็อตหมดอายุ 100% ตรวจเฉพาะล็อตที่ยังไม่หมดอายุ หากไม่พอจะปฏิเสธคำขอทันทีเพื่อความปลอดภัยของผู้ป่วย"
          "\n     • กรณีฝึกปฏิบัติกับหุ่นจำลอง (Sim-Lab): ระบบอนุญาตให้ใช้เวชภัณฑ์หมดอายุได้เพื่อประหยัดงบประมาณ โดยตรวจสอบยอดสต็อกรวม"),
         ("5. ส่งคำขอและอนุมัติ:", " แจ้งเตือนอาจารย์รับทราบ และส่งให้เจ้าหน้าที่ห้องปฏิบัติการตรวจสอบอนุมัติและจ่ายพัสดุ")
     ]
@@ -772,15 +822,71 @@ def generate_docx_manual():
 
     doc.add_page_break()
 
-    # ---------------- CHAPTER 3: REAL BORROWING (1, 2, 3, 4, 5, 6, 7) ----------------
+    # ---------------- CHAPTER 3: STUDENT MAIN DASHBOARD ----------------
     p_c3 = doc.add_paragraph()
-    r = p_c3.add_run("บทที่ 3: ภาพรวมรายการคำขอและขั้นตอนการยืม-เบิก One-Stop (ภาพจากระบบจริง)")
+    r = p_c3.add_run("บทที่ 3: หน้าจอแดชบอร์ดหลักของนิสิต (Student Main Dashboard)")
+    apply_thai_font(r, size_pt=FONT_SIZE_H1, bold=True, color_rgb=RGBColor(0x0f, 0x76, 0x6e))
+
+    p = doc.add_paragraph()
+    r = p.add_run(
+        "เมื่อนิสิตเข้าสู่ระบบ หน้าจอแรกที่จะปรากฏคือ 'หน้าจอแดชบอร์ดหลักของนิสิต' "
+        "ซึ่งรวบรวมข้อมูลสถานะการยืม แจ้งเตือนกำหนดวันส่งคืน และสถิติชั่วโมงฝึกซ้อมสะสม ดังแสดงในรูปที่ 3.1:"
+    )
+    apply_thai_font(r)
+
+    db_main_img = os.path.join(IMAGES_DIR, 'student_main_dashboard_annotated.png')
+    if os.path.exists(db_main_img):
+        doc.add_picture(db_main_img, width=Inches(5.8))
+        pc = doc.add_paragraph()
+        pc.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        r = pc.add_run("รูปที่ 3.1: ภาพจากระบบจริง - หน้าแดชบอร์ดหลักของนิสิต พร้อมป้ายกำกับจุดสำคัญ (จุดที่ 1 ถึง 4)")
+        apply_thai_font(r, size_pt=14, italic=True, color_rgb=RGBColor(0x64, 0x74, 0x8b))
+
+    doc.add_paragraph()
+    p_db_title = doc.add_paragraph()
+    r = p_db_title.add_run("รายละเอียดองค์ประกอบในหน้าแดชบอร์ดหลัก (อธิบายตามหมายเลข):")
+    apply_thai_font(r, size_pt=FONT_SIZE_H2, bold=True, color_rgb=RGBColor(0x0f, 0x76, 0x6e))
+
+    db_points = [
+        ("จุดที่ 1: แถบข้อมูลนิสิตและปุ่มทางลัด (Student Header & Quick Actions)",
+         "แสดงชื่อ-นามสกุล, รหัสนิสิต (เช่น 6811700661), สาขาวิชาพยาบาลศาสตร์, และภาคเรียนปัจจุบัน "
+         "พร้อมปุ่มทางลัดด่วน 'ยื่นขอยืมอุปกรณ์ฝึกซ้อม' และ 'ขอเบิกวัสดุฝึกปฏิบัติ' ที่ช่วยให้นิสิตเข้าถึงฟอร์มทำรายการได้ทันที"),
+
+        ("จุดที่ 2: การ์ดสรุปสถานะสำคัญ 4 ด้าน (4 Summary KPI Cards)",
+         "  • กำลังยืมอยู่ขณะนี้: แสดงจำนวนคำขอที่มีอุปกรณ์อยู่ในความรับผิดชอบของนิสิตจริง\n"
+         "  • คำขอที่รออนุมัติ: แสดงจำนวนรายการที่นิสิตส่งคำขอแล้ว และกำลังรออาจารย์/เจ้าหน้าที่ตรวจสอบ\n"
+         "  • ประวัติการคืนแล้ว: จำนวนรายการที่ส่งคืนครุภัณฑ์ครบถ้วนและตรวจรับสภาพเรียบร้อยสมบูรณ์\n"
+         "  • ชั่วโมงฝึกด้วยตนเอง: ชั่วโมงฝึกสะสมจากการจองห้องซ้อมนอกเวลา พร้อมปุ่มกดจองรอบเข้าฝึกได้ทันที"),
+
+        ("จุดที่ 3: แถบติดตามกำหนดวันส่งคืน (Return Due Date Tracking & Alerts)",
+         "ระบบจะคำนวณวันคงเหลือจากกำหนดวันคืนจริงแบบอัตโนมัติ โดยแสดงแถบสีแจ้งเตือนอย่างชัดเจน เช่น "
+         "แถบสีฟ้า (เหลือเวลาอีก 2 วัน), แถบสีเหลือง (ครบกำหนดวันนี้), หรือแถบสีแดงกระพริบเตือน (เกินกำหนดส่งคืน) "
+         "เพื่อให้นิสิตไม่พลาดกำหนดเวลาส่งคืนครุภัณฑ์"),
+
+        ("จุดที่ 4: การ์ดรายการอุปกรณ์ที่ถือครอง (Active Loan Items)",
+         "แสดงรายการคำขอที่กำลังยืมอยู่ เช่น รหัส BR-2026-0038 รายวิชา NS201 พร้อมรายชื่ออุปกรณ์การแพทย์ "
+         "(เช่น หุ่นฝึกสวนปัสสาวะ, หูฟัง Littmann Classic III) และวัน-เวลาที่ต้องนำส่งคืนห้องปฏิบัติการ")
+    ]
+
+    for ptitle, pdesc in db_points:
+        ps = doc.add_paragraph()
+        ps.paragraph_format.space_after = Pt(6)
+        r1 = ps.add_run(f"• {ptitle}\n")
+        apply_thai_font(r1, bold=True, color_rgb=RGBColor(0x0f, 0x76, 0x6e))
+        r2 = ps.add_run(pdesc)
+        apply_thai_font(r2)
+
+    doc.add_page_break()
+
+    # ---------------- CHAPTER 4: REAL BORROWING (1, 2, 3, 4, 5, 6, 7) ----------------
+    p_c4 = doc.add_paragraph()
+    r = p_c4.add_run("บทที่ 4: ภาพรวมรายการคำขอและขั้นตอนการยืม-เบิก One-Stop (ภาพจากระบบจริง)")
     apply_thai_font(r, size_pt=FONT_SIZE_H1, bold=True, color_rgb=RGBColor(0x0f, 0x76, 0x6e))
 
     p = doc.add_paragraph()
     r = p.add_run(
         "เมื่อนิสิตเข้าสู่เมนู 'ยืม-คืนอุปกรณ์' ระบบจะแสดงหน้าจอภาพรวม (Overview Dashboard) "
-        "แสดงรายการประวัติคำขอของนิสิตพร้อมสถานะแบบเรียลไทม์ ดังแสดงในรูปที่ 3.1:"
+        "แสดงรายการประวัติคำขอของนิสิตพร้อมสถานะแบบเรียลไทม์ ดังแสดงในรูปที่ 4.1:"
     )
     apply_thai_font(r)
 
@@ -789,7 +895,7 @@ def generate_docx_manual():
         doc.add_picture(overview_img, width=Inches(5.8))
         pc = doc.add_paragraph()
         pc.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        r = pc.add_run("รูปที่ 3.1: ภาพจากระบบจริง - ภาพรวมรายการคำขอยืม-คืนของนิสิต (Overview Dashboard พร้อมข้อมูลคำขอจริงและปุ่ม One-Stop)")
+        r = pc.add_run("รูปที่ 4.1: ภาพจากระบบจริง - ภาพรวมรายการคำขอยืม-คืนของนิสิต (Overview Dashboard พร้อมข้อมูลคำขอจริงและปุ่ม One-Stop)")
         apply_thai_font(r, size_pt=14, italic=True, color_rgb=RGBColor(0x64, 0x74, 0x8b))
 
     doc.add_paragraph()
@@ -815,7 +921,7 @@ def generate_docx_manual():
     p = doc.add_paragraph()
     r = p.add_run(
         "เมื่อต้องการยืม-เบิกอุปกรณ์ ให้กดปุ่ม '+ ขอยืม-เบิกอุปกรณ์ (One-Stop)' ที่มุมขวาบนของหน้าจอ "
-        "ระบบจะเปิดหน้าต่างฟอร์มรวม ดังแสดงในรูปที่ 3.2 ให้นิสิตกรอกข้อมูลตามหมายเลขกำกับจุดที่ 1 ถึง 7:"
+        "ระบบจะเปิดหน้าต่างฟอร์มรวม ดังแสดงในรูปที่ 4.2 ให้นิสิตกรอกข้อมูลตามหมายเลขกำกับจุดที่ 1 ถึง 7:"
     )
     apply_thai_font(r)
 
@@ -824,7 +930,7 @@ def generate_docx_manual():
         doc.add_picture(borrow_img, width=Inches(5.8))
         pc = doc.add_paragraph()
         pc.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        r = pc.add_run("รูปที่ 3.2: ภาพจากระบบจริง - ชี้ตำแหน่งและสิ่งที่ต้องกรอกในแต่ละช่อง (จุดที่ 1 ถึง 7)")
+        r = pc.add_run("รูปที่ 4.2: ภาพจากระบบจริง - ชี้ตำแหน่งและสิ่งที่ต้องกรอกในแต่ละช่อง (จุดที่ 1 ถึง 7)")
         apply_thai_font(r, size_pt=14, italic=True, color_rgb=RGBColor(0x64, 0x74, 0x8b))
 
     doc.add_paragraph()
@@ -868,9 +974,9 @@ def generate_docx_manual():
 
     doc.add_page_break()
 
-    # ---------------- CHAPTER 4: KITS ----------------
-    p_c4 = doc.add_paragraph()
-    r = p_c4.add_run("บทที่ 4: การขอเบิกชุดฝึกปฏิบัติการสำเร็จรูป (Nursing Practice Kits)")
+    # ---------------- CHAPTER 5: KITS ----------------
+    p_c5 = doc.add_paragraph()
+    r = p_c5.add_run("บทที่ 5: การขอเบิกชุดฝึกปฏิบัติการสำเร็จรูป (Nursing Practice Kits)")
     apply_thai_font(r, size_pt=FONT_SIZE_H1, bold=True, color_rgb=RGBColor(0x0f, 0x76, 0x6e))
 
     p = doc.add_paragraph()
@@ -884,7 +990,7 @@ def generate_docx_manual():
         doc.add_picture(kits_img, width=Inches(5.8))
         pc = doc.add_paragraph()
         pc.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        r = pc.add_run("รูปที่ 4.1: ภาพจากระบบจริง - หน้ารายการชุดฝึกสำเร็จรูป พร้อมขั้นตอน 1-2")
+        r = pc.add_run("รูปที่ 5.1: ภาพจากระบบจริง - หน้ารายการชุดฝึกสำเร็จรูป พร้อมขั้นตอน 1-2")
         apply_thai_font(r, size_pt=14, italic=True, color_rgb=RGBColor(0x64, 0x74, 0x8b))
 
     steps_kits = [
@@ -901,9 +1007,9 @@ def generate_docx_manual():
 
     doc.add_page_break()
 
-    # ---------------- CHAPTER 5: BOOKING & QR ----------------
-    p_c5 = doc.add_paragraph()
-    r = p_c5.add_run("บทที่ 5: การขอเข้าฝึกปฏิบัติการด้วยตนเองและการ Check-in")
+    # ---------------- CHAPTER 6: BOOKING & QR ----------------
+    p_c6 = doc.add_paragraph()
+    r = p_c6.add_run("บทที่ 6: การขอเข้าฝึกปฏิบัติการด้วยตนเองและการ Check-in")
     apply_thai_font(r, size_pt=FONT_SIZE_H1, bold=True, color_rgb=RGBColor(0x0f, 0x76, 0x6e))
 
     p = doc.add_paragraph()
@@ -918,7 +1024,7 @@ def generate_docx_manual():
         doc.add_picture(bk_img, width=Inches(5.8))
         pc = doc.add_paragraph()
         pc.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        r = pc.add_run("รูปที่ 5.1: ภาพจากระบบจริง - หน้าจองห้องปฏิบัติการและรอบเวลา (Time Slots)")
+        r = pc.add_run("รูปที่ 6.1: ภาพจากระบบจริง - หน้าจองห้องปฏิบัติการและรอบเวลา (Time Slots)")
         apply_thai_font(r, size_pt=14, italic=True, color_rgb=RGBColor(0x64, 0x74, 0x8b))
 
     tk_img = os.path.join(IMAGES_DIR, 'ui_mockup_practice_ticket.png')
@@ -926,7 +1032,7 @@ def generate_docx_manual():
         doc.add_picture(tk_img, width=Inches(3.8))
         pc = doc.add_paragraph()
         pc.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        r = pc.add_run("รูปที่ 5.2: บัตรเข้าห้องปฏิบัติการ Digital E-Ticket พร้อม QR Code สำหรับสแกน Check-in")
+        r = pc.add_run("รูปที่ 6.2: บัตรเข้าห้องปฏิบัติการ Digital E-Ticket พร้อม QR Code สำหรับสแกน Check-in")
         apply_thai_font(r, size_pt=14, italic=True, color_rgb=RGBColor(0x64, 0x74, 0x8b))
 
     steps_bk = [
@@ -945,9 +1051,9 @@ def generate_docx_manual():
 
     doc.add_page_break()
 
-    # ---------------- CHAPTER 6: SAFETY ----------------
-    p_c6 = doc.add_paragraph()
-    r = p_c6.add_run("บทที่ 6: การส่งคืนอุปกรณ์และข้อพึงระวังความปลอดภัย")
+    # ---------------- CHAPTER 7: SAFETY ----------------
+    p_c7 = doc.add_paragraph()
+    r = p_c7.add_run("บทที่ 7: การส่งคืนอุปกรณ์และข้อพึงระวังความปลอดภัย")
     apply_thai_font(r, size_pt=FONT_SIZE_H1, bold=True, color_rgb=RGBColor(0x0f, 0x76, 0x6e))
 
     tbl_warn = doc.add_table(rows=1, cols=1)

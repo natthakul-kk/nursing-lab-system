@@ -23,24 +23,20 @@ try {
     Write-Host "Exporting to $pdfAscii..."
     $doc.ExportAsFixedFormat($pdfAscii, 17)
     $doc.Close([ref]$false)
-    Write-Host "DOCX_EXPORTED_TO_PDF_SUCCESS"
+    $targets = @(
+        "d:\\LAB-system\\manual\\คู่มือการใช้งานระบบสำหรับนิสิตพยาบาล_ฉบับสมบูรณ์_ระบบจริง.pdf",
+        "d:\\LAB-system\\manual\\คู่มือการใช้งานระบบสำหรับนิสิตพยาบาล_ฉบับล่าสุด_ระบบจริง.pdf",
+        "d:\\LAB-system\\manual\\คู่มือการใช้งานระบบสำหรับนิสิตพยาบาล_ฉบับปรับปรุง_ระบบจริง.pdf",
+        "d:\\LAB-system\\manual\\คู่มือการใช้งานระบบสำหรับนิสิตพยาบาล.pdf"
+    )
 
-    $pdfLatestThai = "d:\\LAB-system\\manual\\คู่มือการใช้งานระบบสำหรับนิสิตพยาบาล_ฉบับล่าสุด_ระบบจริง.pdf"
-    Copy-Item $pdfAscii $pdfLatestThai -Force
-    Write-Host "Copied to $pdfLatestThai successfully!"
-
-    try {
-        Copy-Item $pdfAscii $pdfThaiV2 -Force
-        Write-Host "Copied to $pdfThaiV2 successfully!"
-    } catch {
-        Write-Host "Notice: ThaiV2 PDF is open by user reader."
-    }
-
-    try {
-        Copy-Item $pdfAscii $pdfThai -Force
-        Write-Host "Copied to $pdfThai successfully!"
-    } catch {
-        Write-Host "Notice: Original Thai PDF is open by user reader."
+    foreach ($t in $targets) {
+        try {
+            Copy-Item $pdfAscii $t -Force
+            Write-Host "Copied to $t successfully!"
+        } catch {
+            Write-Host "Notice: $t is open by user reader, skipped overwrite."
+        }
     }
 
     Write-Host "ALL_PDF_CONVERSION_SUCCESS"

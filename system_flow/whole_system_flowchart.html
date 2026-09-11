@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ผังขั้นตอนการทำงานเชื่อมโยงทั้งระบบ (Whole-System Operational Flowchart)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Prompt:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Sarabun', 'Leelawadee UI', sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+      padding: 30px 15px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .container {
+      max-width: 1280px;
+      width: 100%;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+      padding: 40px 30px;
+      border: 1px solid #e2e8f0;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding-bottom: 25px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    .badge {
+      display: inline-block;
+      background: #e0f2fe;
+      color: #0369a1;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 5px 14px;
+      border-radius: 9999px;
+      margin-bottom: 12px;
+      letter-spacing: 0.5px;
+    }
+    h1 {
+      font-family: 'Prompt', 'Sarabun', sans-serif;
+      font-size: 26px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 10px;
+    }
+    p.subtitle {
+      font-size: 15px;
+      color: #64748b;
+      max-width: 900px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+    .modules-badge-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 15px;
+    }
+    .mod-tag {
+      background: #f1f5f9;
+      color: #334155;
+      font-size: 12px;
+      padding: 3px 10px;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      font-weight: 500;
+    }
+    .diagram-wrapper {
+      display: flex;
+      justify-content: center;
+      background: #ffffff;
+      padding: 25px 10px;
+      overflow-x: auto;
+    }
+    .mermaid {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+    }
+    .mermaid svg {
+      max-width: 100%;
+      height: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <span class="badge">WHOLE-SYSTEM OPERATIONAL ARCHITECTURE &amp; FLOWCHART</span>
+      <h1>ผังขั้นตอนการทำงานเชื่อมโยงทั้งระบบแบบบูรณาการ (Vertical Flowchart)</h1>
+      <p class="subtitle">บูรณาการฟังก์ชันการทำงานครบทั้ง 15 โมดูลของระบบห้องปฏิบัติการพยาบาล ตั้งแต่การรับเข้าพัสดุ การจัดการสต็อก การแบ่งบรรจุสเตอร์ไรด์ การจัดชุดฝึก การจัดการรายวิชา ตารางห้องแลป การจองฝึกปฏิบัติ การยืม-คืน การพิจารณาอนุมัติ การตรวจรับความเสียหาย จนถึงการวิเคราะห์ต้นทุนและดัชนีชี้วัดผู้บริหาร</p>
+      
+      <div class="modules-badge-container">
+        <span class="mod-tag">🔑 login &amp; auth</span>
+        <span class="mod-tag">📦 stock-in</span>
+        <span class="mod-tag">📋 inventory</span>
+        <span class="mod-tag">🏷️ asset (QR Code)</span>
+        <span class="mod-tag">💊 consumable (Lots)</span>
+        <span class="mod-tag">✂️ repack (Sterile)</span>
+        <span class="mod-tag">🧰 kits</span>
+        <span class="mod-tag">📚 courses</span>
+        <span class="mod-tag">🗓️ schedule</span>
+        <span class="mod-tag">🩺 practice</span>
+        <span class="mod-tag">🔄 borrow</span>
+        <span class="mod-tag">📝 requisitions</span>
+        <span class="mod-tag">⚖️ approvals</span>
+        <span class="mod-tag">🛠️ maintenance</span>
+        <span class="mod-tag">📊 reports &amp; KPIs</span>
+      </div>
+    </div>
+
+    <div class="diagram-wrapper">
+      <div class="mermaid">
+flowchart TD
+    %% Standard Flowchart Styles
+    classDef terminator fill:#0f172a,stroke:#334155,stroke-width:2.5px,color:#ffffff,font-weight:bold;
+    classDef process fill:#ffffff,stroke:#0284c7,stroke-width:2px,color:#0f172a;
+    classDef subroutine fill:#f8fafc,stroke:#0284c7,stroke-width:2.5px,color:#0369a1,font-weight:600;
+    classDef inputOutput fill:#eff6ff,stroke:#2563eb,stroke-width:2px,color:#1e40af;
+    classDef decision fill:#fef3c7,stroke:#d97706,stroke-width:2.5px,color:#92400e,font-weight:bold;
+    classDef database fill:#f1f5f9,stroke:#475569,stroke-width:2px,color:#1e293b;
+    classDef warnProcess fill:#fef2f2,stroke:#dc2626,stroke-width:2px,color:#991b1b;
+    classDef successProcess fill:#f0fdf4,stroke:#16a34a,stroke-width:2px,color:#14532d;
+    classDef connector fill:#f8fafc,stroke:#64748b,stroke-width:2px,color:#334155,font-weight:bold;
+
+    %% 1. SYSTEM INGRESS & AUTH
+    Start([🔵 เริ่มต้น: เข้าสู่ระบบ Nursing Lab System]):::terminator
+    Auth[[ระบบตรวจสอบสิทธิ์และบทบาทผู้ใช้ Supabase Auth & RLS]]:::subroutine
+    Start --> Auth
+
+    %% 2. MASTER DATA & INVENTORY SETUP
+    subgraph S1 ["มิติที่ 1: คลังพัสดุและแม่แบบรายวิชา (Inventory, Kits & Courses)"]
+        direction TB
+        StockInProc[รับเข้าพัสดุใหม่จาก ERP / ฝ่ายจัดซื้อ Stock-In]:::process
+        ItemDB[(ทะเบียนพัสดุหลัก Item Master)]:::database
+        StockInProc --> ItemDB
+
+        AssetProc[ขึ้นทะเบียนครุภัณฑ์รายชิ้น ติดป้าย QR Code Asset]:::process
+        LotProc[บันทึกล็อตเวชภัณฑ์ ระบุ Lot No. และวันหมดอายุ Consumables]:::process
+        ItemDB --> AssetProc
+        ItemDB --> LotProc
+
+        RepackProc[ระบบแบ่งบรรจุซองย่อยปลอดเชื้อและสเตอร์ไรด์ Repack]:::process
+        LotProc --> RepackProc
+
+        KitsProc[ประกอบชุดฝึกปฏิบัติการพยาบาล Practice Kits]:::process
+        AssetProc --> KitsProc
+        RepackProc --> KitsProc
+
+        CourseProc[จัดการรายวิชา ผูกชุดแม่แบบและจัดสรรงบประมาณ Courses]:::process
+        KitsProc --> CourseProc
+    end
+    Auth --> S1
+
+    %% 3. OPERATIONAL CHANNELS (PARALLEL REQUEST TRACKS)
+    subgraph S2 ["มิติที่ 2: ช่องทางการยื่นคำขอใช้งาน 2 ช่องทางหลัก (Dual Ingress Tracks)"]
+        direction TB
+        subgraph TrackA ["ช่องทาง A: การจองฝึกหัตถการอิสระ (Practice & Schedule)"]
+            ScheduleCheck[/ตรวจสอบตารางการใช้ห้องปฏิบัติการพยาบาล Room Schedule/]:::inputOutput
+            PracticeBooking[/นศ. จองรอบเวลา ระบุรายวิชา และเลือกชุดฝึก Kits/]:::inputOutput
+            ScheduleCheck --> PracticeBooking
+        end
+
+        subgraph TrackB ["ช่องทาง B: การยืม-คืนและเบิกพัสดุรายชิ้น (Borrow & Requisitions)"]
+            DirectRequest[/ผู้ขอยื่นขอยืมครุภัณฑ์ หรือขอเบิกเวชภัณฑ์สิ้นเปลือง/]:::inputOutput
+        end
+    end
+    CourseProc --> TrackA
+    ItemDB --> TrackB
+
+    %% 4. PENDING QUEUE & APPROVALS
+    PendingDB[(บันทึกคำร้องลงฐานข้อมูลกลาง: สถานะ รอดำเนินการ PENDING)]:::database
+    PracticeBooking --> PendingDB
+    DirectRequest --> PendingDB
+
+    subgraph S3 ["มิติที่ 3: ศูนย์การตรวจสอบและพิจารณาอนุมัติ (Approvals Center)"]
+        ReviewReq[อาจารย์ผู้สอนหรือเจ้าหน้าที่แลป ตรวจสอบคำขอและตารางห้อง]:::process
+        DecideApprove{ผลการพิจารณา<br/>อนุมัติหรือไม่?}:::decision
+        ReviewReq --> DecideApprove
+
+        RejectNotice[/แจ้งผลไม่อนุมัติ พร้อมระบุเหตุผลและข้อแก้ไข/]:::inputOutput
+        ConnRevise((A)):::connector
+        DecideApprove -- ❌ ไม่อนุมัติ --> RejectNotice
+        RejectNotice --> ConnRevise
+
+        ApproveProc[อนุมัติคำขอ: ระบบล็อกยอดพัสดุและจองคิวห้องแลปทันที]:::successProcess
+        DecideApprove --  อนุมัติ --> ApproveProc
+    end
+    PendingDB --> ReviewReq
+    ConnRevise -.->|แก้ไขข้อมูลยื่นใหม่| S2
+
+    %% 5. FULFILLMENT & LAB PRACTICE
+    subgraph S4 ["มิติที่ 4: การจัดเตรียม ส่งมอบ และการฝึกปฏิบัติ (Fulfillment & Lab Practice)"]
+        PickOrder[เจ้าหน้าที่จัดของตามใบงาน หยิบชุด Kits หรือพัสดุตามรายการ]:::process
+        ScanVerify[สแกน QR Code ประจำตัวเครื่องเพื่อยืนยันความถูกต้องรายชิ้น]:::process
+        HandoverSign[/ผู้ขอและเจ้าหน้าที่ตรวจรับของร่วมกัน ลงชื่อรับมอบในระบบ/]:::inputOutput
+        InUseState[(ปรับปรุงสถานะคำร้องเป็น: อยู่ระหว่างใช้งาน IN_USE)]:::database
+        ActivePractice[ดำเนินการเรียนการสอน หรือฝึกทักษะการพยาบาลตามกำหนดเวลา]:::process
+
+        ApproveProc --> PickOrder
+        PickOrder --> ScanVerify
+        ScanVerify --> HandoverSign
+        HandoverSign --> InUseState
+        InUseState --> ActivePractice
+    end
+
+    %% 6. RETURN INSPECTION & CONDITION BRANCHING
+    subgraph S5 ["มิติที่ 5: การตรวจรับคืนและประเมินสภาพ (Return & Inspection)"]
+        ReturnHandover[/ผู้ขอนำอุปกรณ์และเวชภัณฑ์คงเหลือมาส่งคืนห้องแลป/]:::inputOutput
+        StaffInspect[เจ้าหน้าที่ตรวจนับจำนวน ตรวจสภาพการทำงาน และความสะอาด]:::process
+        DecideCondition{พบการชำรุด<br/>เสียหาย หรือสูญหาย?}:::decision
+
+        ReturnHandover --> StaffInspect
+        StaffInspect --> DecideCondition
+
+        subgraph DamageBranch ["⚠️ กรณีพบความเสียหายหรือสูญหาย (Damage & Maintenance)"]
+            DamageAssessment[/บันทึกใบรายงานประเมินความเสียหาย Damage Assessment/]:::inputOutput
+            FineCompensation[คำนวณค่าปรับ/ชดใช้ตามระเบียบคณะ และส่งแจ้งซ่อม MAINTENANCE]:::warnProcess
+            DamageAssessment --> FineCompensation
+        end
+
+        subgraph NormalBranch [" กรณีสภาพปกติสมบูรณ์ (Normal Return)"]
+            ReturnComplete[รับคืนสำเร็จ: ปรับสถานะครุภัณฑ์เป็นพร้อมใช้ AVAILABLE]:::successProcess
+            CutLotStock[บันทึกตัดลดยอดเวชภัณฑ์ที่ใช้ไปตามจริง Consumed Stock]:::process
+            ReturnComplete --> CutLotStock
+        end
+
+        DecideCondition -- ⚠️ พบชำรุด/สูญหาย --> DamageAssessment
+        DecideCondition --  ปกติสมบูรณ์ --> ReturnComplete
+    end
+    ActivePractice --> ReturnHandover
+
+    %% 7. CLOSING, AUDIT & EXECUTIVE REPORTS
+    subgraph S6 ["มิติที่ 6: การปิดวงจร บันทึกประวัติ และรายงานผู้บริหาร (Reports & Analytics)"]
+        FinalizeReq[(ปรับปรุงสถานะคำร้องเป็น: เสร็จสิ้นสมบูรณ์ COMPLETED)]:::database
+        FineCompensation --> FinalizeReq
+        CutLotStock --> FinalizeReq
+
+        AuditTrail[(บันทึกประวัติการทำรายการทุกขั้นตอนลง Audit Trail Log)]:::database
+        FinalizeReq --> AuditTrail
+
+        KPICalculation[[ประมวลผลคำนวณสถิติ: อัตราการใช้ห้อง อุปกรณ์ยอดนิยม และต้นทุนวิชา]]:::subroutine
+        AuditTrail --> KPICalculation
+
+        ExecReports[/นำเสนอผลวิเคราะห์เชิงยุทธศาสตร์บน Reports & Executive Dashboard/]:::inputOutput
+        KPICalculation --> ExecReports
+
+        EndSystem([🔴 สิ้นสุด: ปิดวงจรการทำงานทั้งระบบสมบูรณ์]):::terminator
+        ExecReports --> EndSystem
+    end
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+      themeVariables: {
+        fontFamily: "'Sarabun', 'Leelawadee UI', sans-serif",
+        fontSize: '13px',
+        primaryColor: '#ffffff',
+        primaryTextColor: '#0f172a',
+        primaryBorderColor: '#0284c7',
+        lineColor: '#475569',
+        secondaryColor: '#eff6ff',
+        tertiaryColor: '#fef3c7',
+        edgeLabelBackground: '#ffffff'
+      },
+      flowchart: {
+        curve: 'basis',
+        htmlLabels: true,
+        useMaxWidth: false,
+        nodeSpacing: 35,
+        rankSpacing: 42
+      }
+    });
+  </script>
+</body>
+</html>

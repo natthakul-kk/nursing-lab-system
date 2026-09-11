@@ -19,6 +19,7 @@ import {
   HelpCircle,
   GraduationCap,
   CheckCircle2,
+  Edit3,
 } from 'lucide-react';
 
 interface UnifiedRequestModalProps {
@@ -42,6 +43,7 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
   // Form State
   const [courseId, setCourseId] = useState('');
   const [advisorName, setAdvisorName] = useState('');
+  const [isEditingAdvisor, setIsEditingAdvisor] = useState(false);
   const [purpose, setPurpose] = useState('');
   const [useTarget, setUseTarget] = useState<'SIMULATION' | 'HUMAN'>('SIMULATION');
   const [borrowDate, setBorrowDate] = useState('');
@@ -85,17 +87,7 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
 
     fetchData();
 
-    // Set default borrow date to tomorrow morning if empty
-    if (!borrowDate) {
-      const tomorrow = new Date(Date.now() + 24 * 3600 * 1000);
-      tomorrow.setHours(9, 0, 0, 0);
-      const isoTomorrow = tomorrow.toISOString().slice(0, 16);
-      setBorrowDate(isoTomorrow);
 
-      const tomorrowEnd = new Date(tomorrow);
-      tomorrowEnd.setHours(16, 0, 0, 0);
-      setExpectedReturnDate(tomorrowEnd.toISOString().slice(0, 16));
-    }
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -325,84 +317,113 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
               1. ข้อมูลรายวิชาและวันเวลาที่ใช้งาน
             </h3>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  รายวิชาทางการพยาบาล
-                </label>
-                <select
-                  value={courseId}
-                  onChange={(e) => {
-                    const cId = e.target.value;
-                    setCourseId(cId);
-                    const selectedCourse = courses.find((c) => c.id === cId);
-                    if (selectedCourse?.instructorName) {
-                      const cleanTarget = selectedCourse.instructorName.trim();
-                      const matched = instructors.find((ins) => {
-                        const cleanIns = ins.name.trim();
-                        return (
-                          cleanIns === cleanTarget ||
-                          cleanIns.includes(cleanTarget) ||
-                          cleanTarget.includes(cleanIns)
-                        );
-                      });
-                      setAdvisorName(matched ? matched.name : selectedCourse.instructorName);
-                    } else if (!cId) {
-                      setAdvisorName('');
-                    }
-                  }}
-                  className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20"
-                >
-                  <option value="">-- ไม่ระบุรายวิชา (ฝึกปฏิบัติส่วนบุคคล/กิจกรรมอื่น) --</option>
-                  {courses.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.code} {c.name} ({c.instructorName || 'อ.ผู้รับผิดชอบ'})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  อาจารย์ผู้รับทราบ / อาจารย์ที่ปรึกษา {isStudent && <span className="text-rose-600 dark:text-rose-400 font-extrabold">* (นิสิตจำเป็นต้องระบุ)</span>}
-                </label>
-                <select
-                  required={isStudent}
-                  value={advisorName}
-                  onChange={(e) => setAdvisorName(e.target.value)}
-                  className={`w-full bg-white dark:bg-slate-900 border rounded-xl px-3 py-2 text-xs font-medium text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20 ${
-                    isStudent && !advisorName ? 'border-amber-300 dark:border-amber-500 ring-1 ring-amber-200 dark:ring-amber-900/50' : 'border-slate-300 dark:border-slate-700'
-                  }`}
-                >
-                  <option value="">-- เลือกอาจารย์ในระบบ --</option>
-                  {advisorName && !instructors.some((ins) => ins.name === advisorName) && (
-                    <option value={advisorName}>
-                      {advisorName} (อาจารย์ประจำรายวิชา)
-                    </option>
-                  )}
-                  {instructors.map((ins) => (
-                    <option key={ins.id} value={ins.name}>
-                      {ins.name} ({ins.department || 'อาจารย์พยาบาล'})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {courseId && (
-                <div className="sm:col-span-2 p-2.5 rounded-xl bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 text-xs flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <GraduationCap className="w-4 h-4 text-teal-700 dark:text-teal-400 shrink-0" />
-                    <span className="text-slate-600 dark:text-slate-400">อาจารย์ประจำรายวิชา:</span>
-                    <span className="font-bold text-teal-900 dark:text-teal-200">
-                      {courses.find((c) => c.id === courseId)?.instructorName || advisorName || 'อาจารย์ผู้รับผิดชอบ'}
-                    </span>
-                  </div>
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-teal-700 dark:text-teal-300 bg-white dark:bg-slate-900 px-2 py-0.5 rounded-md border border-teal-200 dark:border-teal-800 shadow-xs">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-                    <span>ขึ้นให้อัตโนมัติ</span>
-                  </span>
+            <div className="space-y-2 bg-slate-50 dark:bg-slate-800/40 p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    รายวิชาทางการพยาบาล
+                  </label>
+                  <select
+                    value={courseId}
+                    onChange={(e) => {
+                      const cId = e.target.value;
+                      setCourseId(cId);
+                      const selectedCourse = courses.find((c) => c.id === cId);
+                      if (selectedCourse?.instructorName) {
+                        setAdvisorName(selectedCourse.instructorName);
+                        setIsEditingAdvisor(false);
+                      } else if (!cId) {
+                        setAdvisorName('');
+                      }
+                    }}
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20"
+                  >
+                    <option value="">-- ไม่ระบุรายวิชา (ฝึกปฏิบัติส่วนบุคคล/กิจกรรมอื่น) --</option>
+                    {courses.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.code} {c.name} ({c.instructorName || 'อ.ผู้รับผิดชอบ'})
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              )}
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                      อาจารย์ผู้รับทราบ / ที่ปรึกษา {isStudent && <span className="text-rose-600 dark:text-rose-400 font-extrabold">*</span>}
+                    </label>
+                    {courseId && (
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingAdvisor(!isEditingAdvisor)}
+                        className="text-[11px] font-bold text-teal-600 hover:text-teal-700 dark:text-teal-400 flex items-center gap-1 cursor-pointer"
+                      >
+                        <Edit3 className="w-3 h-3" />
+                        <span>{isEditingAdvisor ? 'ซ่อนตัวเลือก' : 'แก้ไขอาจารย์'}</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {courseId && !isEditingAdvisor ? (
+                    <div className="flex items-center justify-between bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 rounded-xl px-3 py-2 text-xs">
+                      <div className="flex items-center gap-2">
+                        <GraduationCap className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" />
+                        <span className="font-bold text-teal-900 dark:text-teal-200">
+                          {advisorName || courses.find((c) => c.id === courseId)?.instructorName || 'อาจารย์ผู้รับผิดชอบ'}
+                        </span>
+                        <span className="text-[10px] bg-teal-200/60 dark:bg-teal-900/60 text-teal-800 dark:text-teal-300 px-1.5 py-0.5 rounded-md font-bold">
+                          ขึ้นให้อัตโนมัติ
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingAdvisor(true)}
+                        className="text-[11px] font-bold text-teal-700 dark:text-teal-300 hover:underline cursor-pointer"
+                      >
+                        แก้ไขอาจารย์
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <select
+                        required={isStudent}
+                        value={advisorName}
+                        onChange={(e) => setAdvisorName(e.target.value)}
+                        className={`w-full bg-white dark:bg-slate-900 border rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20 ${
+                          isStudent && !advisorName ? 'border-amber-300 dark:border-amber-500 ring-1 ring-amber-200 dark:ring-amber-900/50' : 'border-slate-300 dark:border-slate-700'
+                        }`}
+                      >
+                        <option value="">-- กรุณาเลือกอาจารย์จากรายชื่อ --</option>
+                        {advisorName && !instructors.some((ins) => ins.name === advisorName) && (
+                          <option value={advisorName}>
+                            {advisorName} (อาจารย์ประจำรายวิชา)
+                          </option>
+                        )}
+                        {instructors.map((ins) => (
+                          <option key={ins.id} value={ins.name}>
+                            {ins.name} ({ins.department || 'อาจารย์พยาบาล'})
+                          </option>
+                        ))}
+                      </select>
+                      {courseId && (
+                        <div className="flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const sc = courses.find((c) => c.id === courseId);
+                              if (sc?.instructorName) setAdvisorName(sc.instructorName);
+                              setIsEditingAdvisor(false);
+                            }}
+                            className="text-[10px] text-slate-500 hover:text-slate-700 underline cursor-pointer"
+                          >
+                            ↺ กลับไปใช้อาจารย์ประจำวิชา ({courses.find((c) => c.id === courseId)?.instructorName})
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -554,7 +575,7 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
                           className={`w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-lg px-2 py-1.5 text-xs font-bold text-center ${
                             isOverStock || isOutOfStock ? 'border-rose-500 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300' : ''
                           }`}
-                          placeholder="ระบุจำนวน"
+                          placeholder="กรุณากรอกจำนวน"
                         />
                         {borrowItems.length > 1 && (
                           <button
@@ -707,7 +728,7 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
                           className={`w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-lg px-2 py-1.5 text-xs font-bold text-center ${
                             isOverStock || isOutOfStock ? 'border-rose-500 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300' : ''
                           }`}
-                          placeholder="ระบุจำนวน"
+                          placeholder="กรุณากรอกจำนวน"
                         />
                         {requisitionItems.length > 1 && (
                           <button

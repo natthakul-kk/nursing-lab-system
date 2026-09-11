@@ -36,6 +36,7 @@ import {
   LayoutGrid,
   CalendarRange,
   Edit,
+  Edit3,
   Trash2,
   Package,
   Building,
@@ -110,6 +111,7 @@ export default function PracticePage() {
 
   // Booking Modal State
   const [showBookingModal, setShowBookingModal] = useState(false);
+  const [isEditingAdvisor, setIsEditingAdvisor] = useState(false);
   const [slotForBooking, setSlotForBooking] = useState<any>(null);
   const [bookingForm, setBookingForm] = useState({
     skillTopic: '',
@@ -459,6 +461,7 @@ export default function PracticePage() {
       practiceKitId: matchedKit ? matchedKit.id : '',
       additionalEquipment: '',
     });
+    setIsEditingAdvisor(false);
     setShowBookingModal(true);
   };
 
@@ -2417,6 +2420,7 @@ export default function PracticePage() {
                   onChange={(e) => setCreateSlotForm({ ...createSlotForm, roomId: e.target.value })}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                 >
+                  <option value="">-- กรุณาเลือกห้องปฏิบัติการ --</option>
                   {rooms.length === 0 && (
                     <option value="">-- ยังไม่มีห้องปฏิบัติการ กรุณากดปุ่มเพิ่มห้องใหม่ --</option>
                   )}
@@ -3115,28 +3119,75 @@ export default function PracticePage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    {bookingForm.courseId ? 'อาจารย์ผู้สอนประจำวิชา' : 'อาจารย์ที่ปรึกษาที่ให้คำรับรอง'} <span className="text-rose-500">*</span>
-                  </label>
-                  {bookingForm.courseId ? (
-                    <div className="p-2.5 bg-slate-100 rounded-xl border border-slate-200 text-xs font-bold text-teal-800 flex items-center gap-1.5">
-                      <GraduationCap className="w-4 h-4 text-teal-600" />
-                      <span>{bookingForm.advisorName || 'อาจารย์ประจำวิชา'}</span>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-700">
+                      {bookingForm.courseId ? 'อาจารย์ผู้รับทราบ / ที่ปรึกษา' : 'อาจารย์ที่ปรึกษาที่ให้คำรับรอง'} <span className="text-rose-500">*</span>
+                    </label>
+                    {bookingForm.courseId && (
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingAdvisor(!isEditingAdvisor)}
+                        className="text-[11px] font-bold text-teal-600 hover:text-teal-700 flex items-center gap-1 cursor-pointer"
+                      >
+                        <Edit3 className="w-3 h-3" />
+                        <span>{isEditingAdvisor ? 'ซ่อนตัวเลือก' : 'แก้ไขอาจารย์'}</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {bookingForm.courseId && !isEditingAdvisor ? (
+                    <div className="p-2.5 bg-teal-50 border border-teal-200 rounded-xl text-xs flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <GraduationCap className="w-4 h-4 text-teal-600" />
+                        <span className="font-bold text-teal-900">{bookingForm.advisorName || 'อาจารย์ประจำวิชา'}</span>
+                        <span className="text-[10px] bg-teal-200/70 text-teal-800 px-1.5 py-0.5 rounded-md font-bold">
+                          ขึ้นให้อัตโนมัติ
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingAdvisor(true)}
+                        className="text-[11px] font-bold text-teal-700 hover:underline cursor-pointer"
+                      >
+                        แก้ไขอาจารย์
+                      </button>
                     </div>
                   ) : (
-                    <select
-                      required
-                      value={bookingForm.advisorName}
-                      onChange={(e) => setBookingForm({ ...bookingForm, advisorName: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
-                    >
-                      <option value="">-- กรุณาเลือกอาจารย์ผู้รับรอง --</option>
-                      {teachers.map((t) => (
-                        <option key={t.id} value={t.name}>
-                          {t.name} ({t.department || 'คณะพยาบาลศาสตร์'})
-                        </option>
-                      ))}
-                    </select>
+                    <div className="space-y-1">
+                      <select
+                        required
+                        value={bookingForm.advisorName}
+                        onChange={(e) => setBookingForm({ ...bookingForm, advisorName: e.target.value })}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                      >
+                        <option value="">-- กรุณาเลือกอาจารย์ผู้รับรองจากรายชื่อ --</option>
+                        {bookingForm.advisorName && !teachers.some((t) => t.name === bookingForm.advisorName) && (
+                          <option value={bookingForm.advisorName}>
+                            {bookingForm.advisorName} (อาจารย์ประจำวิชา)
+                          </option>
+                        )}
+                        {teachers.map((t) => (
+                          <option key={t.id} value={t.name}>
+                            {t.name} ({t.department || 'คณะพยาบาลศาสตร์'})
+                          </option>
+                        ))}
+                      </select>
+                      {bookingForm.courseId && (
+                        <div className="flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const c = courses.find((x) => x.id === bookingForm.courseId);
+                              setBookingForm({ ...bookingForm, advisorName: c?.instructorName || '' });
+                              setIsEditingAdvisor(false);
+                            }}
+                            className="text-[10px] text-teal-700 hover:underline cursor-pointer"
+                          >
+                            ↺ กลับไปใช้อาจารย์ประจำวิชา ({courses.find((x) => x.id === bookingForm.courseId)?.instructorName})
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>

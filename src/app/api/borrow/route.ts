@@ -77,9 +77,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'กรุณากรอกข้อมูลให้ครบถ้วน' }, { status: 400 });
     }
 
-    // Determine final advisorName: from course if provided, otherwise from user selection
+    // Determine final advisorName: use provided advisorName, or fallback to course instructor
     let finalAdvisorName = advisorName || null;
-    if (courseId) {
+    if (!finalAdvisorName && courseId) {
       const course = await prisma.course.findUnique({
         where: { id: courseId },
         select: { instructorName: true },

@@ -109,9 +109,9 @@ export async function POST(req: Request) {
       userId,
     } = body;
 
-    if (!roomId || !bookingDate || !startTime || !endTime || !title || !purpose || !userId) {
+    if (!roomId || !bookingDate || !startTime || !endTime || !title || !purpose || !userId || !attendeesCount || Number(attendeesCount) <= 0) {
       return NextResponse.json(
-        { error: 'กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน (ห้อง, วันที่, เวลา, ชื่องาน, วัตถุประสงค์, ผู้จอง)' },
+        { error: 'กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน (ห้อง, วันที่, เวลา, ชื่องาน, วัตถุประสงค์, จำนวนผู้เข้าใช้งาน, ผู้จอง)' },
         { status: 400 }
       );
     }

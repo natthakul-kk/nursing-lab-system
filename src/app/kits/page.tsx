@@ -8,6 +8,7 @@ import {
   Search,
   Filter,
   CheckCircle2,
+  GraduationCap,
   AlertTriangle,
   Boxes,
   Package,
@@ -39,6 +40,9 @@ export default function PracticeKitsPage() {
   const [kits, setKits] = useState<any[]>([]);
   const [allItems, setAllItems] = useState<any[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
+  const [instructors, setInstructors] = useState<any[]>([]);
+  const [isEditingPrepareInstructor, setIsEditingPrepareInstructor] = useState(false);
+  const [isEditingRequestAdvisor, setIsEditingRequestAdvisor] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
@@ -83,11 +87,19 @@ export default function PracticeKitsPage() {
 
   // Prepare Kit for Class Modal State (Direct Dispense by Staff/Officer)
   const [prepareTargetKit, setPrepareTargetKit] = useState<any | null>(null);
-  const [prepareForm, setPrepareForm] = useState({
-    setsToPrepare: 5,
+  const [prepareForm, setPrepareForm] = useState<{
+    setsToPrepare: number | string;
+    courseId: string;
+    instructorName: string;
+    roomOrLocation: string;
+    note: string;
+    useOpenPackFirst: boolean;
+    giveRemainderAsBonus: boolean;
+  }>({
+    setsToPrepare: '',
     courseId: '',
     instructorName: '',
-    roomOrLocation: 'ห้องปฏิบัติการพยาบาล 1 (Lab 1)',
+    roomOrLocation: '',
     note: '',
     useOpenPackFirst: true,
     giveRemainderAsBonus: false,
@@ -100,10 +112,11 @@ export default function PracticeKitsPage() {
   const fetchKitsAndItems = async () => {
     setLoading(true);
     try {
-      const [kitsRes, itemsRes, coursesRes] = await Promise.all([
+      const [kitsRes, itemsRes, coursesRes, usersRes] = await Promise.all([
         fetch('/api/kits'),
         fetch('/api/items?compact=true'),
         fetch('/api/courses?compact=true'),
+        fetch('/api/users?role=INSTRUCTOR'),
       ]);
 
       if (kitsRes.ok) {
@@ -117,6 +130,10 @@ export default function PracticeKitsPage() {
       if (coursesRes.ok) {
         const cData = await coursesRes.json();
         setCourses(cData);
+      }
+      if (usersRes.ok) {
+        const uData = await usersRes.json();
+        setInstructors(Array.isArray(uData) ? uData : []);
       }
     } catch (err) {
       console.error(err);
@@ -194,11 +211,12 @@ export default function PracticeKitsPage() {
   // Open Prepare for Class Modal
   const handleOpenPrepare = (kit: any) => {
     setPrepareTargetKit(kit);
+    setIsEditingPrepareInstructor(false);
     setPrepareForm({
-      setsToPrepare: Math.min(kit.maxAvailableKits || 1, 5) || 1,
-      courseId: courses[0]?.id || '',
+      setsToPrepare: '',
+      courseId: '',
       instructorName: '',
-      roomOrLocation: 'ห้องปฏิบัติการพยาบาล 1 (Lab 1)',
+      roomOrLocation: '',
       note: 'จัดเตรียมชุดฝึกหัตถการประจำคาบเรียน',
       useOpenPackFirst: true,
       giveRemainderAsBonus: false,
@@ -732,14 +750,25 @@ export default function PracticeKitsPage() {
                   </label>
                   <select
                     value={prepareForm.courseId}
-                    onChange={(e) => setPrepareForm({ ...prepareForm, courseId: e.target.value })}
+                    onChange={(e) => {
+                      const cid = e.target.value;
+                      const c = courses.find((x) => x.id === cid);
+                      setPrepareForm({
+                        ...prepareForm,
+                        courseId: cid,
+                        instructorName: c?.instructorName || (cid ? prepareForm.instructorName : ''),
+                      });
+                      if (c?.instructorName) {
+                        setIsEditingPrepareInstructor(false);
+                      }
+                    }}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500"
                     required
                   >
                     <option value="">-- กรุณาเลือกรายวิชาที่จัดเตรียม --</option>
                     {courses.map((c) => (
                       <option key={c.id} value={c.id}>
-                        [{c.code}] {c.name}
+                        [{c.code}] {c.name} ({c.instructorName || 'อาจารย์ผู้รับผิดชอบ'})
                       </option>
                     ))}
                   </select>
@@ -749,18 +778,75 @@ export default function PracticeKitsPage() {
               {/* Instructor & Location */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    อาจารย์ผู้สอนประจำคาบ
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="เช่น อ. ดร. วิมลรัตน์"
-                    value={prepareForm.instructorName}
-                    onChange={(e) =>
-                      setPrepareForm({ ...prepareForm, instructorName: e.target.value })
-                    }
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500"
-                  />
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-700">
+                      อาจารย์ผู้สอนประจำคาบ
+                    </label>
+                    {prepareForm.courseId && (
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingPrepareInstructor(!isEditingPrepareInstructor)}
+                        className="text-[11px] font-bold text-teal-600 hover:text-teal-700 flex items-center gap-1 cursor-pointer"
+                      >
+                        <Edit3 className="w-3 h-3" />
+                        <span>{isEditingPrepareInstructor ? 'ซ่อนตัวเลือก' : 'แก้ไขอาจารย์'}</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {prepareForm.courseId && !isEditingPrepareInstructor ? (
+                    <div className="p-2.5 bg-teal-50 border border-teal-200 rounded-xl text-xs flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <GraduationCap className="w-4 h-4 text-teal-600" />
+                        <span className="font-bold text-teal-900">{prepareForm.instructorName || 'อาจารย์ประจำวิชา'}</span>
+                        <span className="text-[10px] bg-teal-200/70 text-teal-800 px-1.5 py-0.5 rounded-md font-bold">
+                          ขึ้นให้อัตโนมัติ
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingPrepareInstructor(true)}
+                        className="text-[11px] font-bold text-teal-700 hover:underline cursor-pointer"
+                      >
+                        แก้ไขอาจารย์
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <select
+                        value={prepareForm.instructorName}
+                        onChange={(e) => setPrepareForm({ ...prepareForm, instructorName: e.target.value })}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500"
+                      >
+                        <option value="">-- กรุณาเลือกอาจารย์ผู้สอนจากรายชื่อ --</option>
+                        {prepareForm.instructorName && !instructors.some((t) => t.name === prepareForm.instructorName) && (
+                          <option value={prepareForm.instructorName}>
+                            {prepareForm.instructorName} (อาจารย์ประจำวิชา)
+                          </option>
+                        )}
+                        {instructors.map((t) => (
+                          <option key={t.id} value={t.name}>
+                            {t.name} ({t.department || 'คณะพยาบาลศาสตร์'})
+                          </option>
+                        ))}
+                      </select>
+                      {prepareForm.courseId && (
+                        <div className="flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const c = courses.find((x) => x.id === prepareForm.courseId);
+                              setPrepareForm({ ...prepareForm, instructorName: c?.instructorName || '' });
+                              setIsEditingPrepareInstructor(false);
+                            }}
+                            className="text-[10px] text-teal-700 hover:underline cursor-pointer"
+                          >
+                            ↺ กลับไปใช้อาจารย์ประจำวิชา ({courses.find((x) => x.id === prepareForm.courseId)?.instructorName})
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -850,7 +936,7 @@ export default function PracticeKitsPage() {
 
                 <div className="max-h-36 overflow-y-auto space-y-1 pr-1">
                   {prepareTargetKit.components?.map((c: any) => {
-                    const totalNeeded = c.quantityPerKit * prepareForm.setsToPrepare;
+                    const totalNeeded = c.quantityPerKit * (Number(prepareForm.setsToPrepare) || 0);
                     const isEnough = c.currentStock >= totalNeeded;
                     const isRepack = c.code?.startsWith('RP-') || c.name?.includes('ซองละ');
 
@@ -1341,7 +1427,7 @@ export default function PracticeKitsPage() {
                     type="number"
                     min="1"
                     max={requestTargetKit.maxAvailableKits || 100}
-                    value={requestForm.setsRequested}
+                    placeholder="กรุณากรอกจำนวนชุด" value={requestForm.setsRequested}
                     onChange={(e) =>
                       setRequestForm({
                         ...requestForm,
@@ -1362,30 +1448,102 @@ export default function PracticeKitsPage() {
                   </label>
                   <select
                     value={requestForm.courseId}
-                    onChange={(e) => setRequestForm({ ...requestForm, courseId: e.target.value })}
+                    onChange={(e) => {
+                      const cid = e.target.value;
+                      const c = courses.find((x) => x.id === cid);
+                      setRequestForm({
+                        ...requestForm,
+                        courseId: cid,
+                        advisorName: c?.instructorName || (cid ? requestForm.advisorName : ''),
+                      });
+                      if (c?.instructorName) {
+                        setIsEditingRequestAdvisor(false);
+                      }
+                    }}
                     className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-teal-500"
                     required
                   >
                     <option value="">-- กรุณาเลือกรายวิชาที่นำชุดไปใช้ --</option>
                     {courses.map((c) => (
                       <option key={c.id} value={c.id}>
-                        [{c.code}] {c.name}
+                        [{c.code}] {c.name} ({c.instructorName || 'อาจารย์ผู้รับผิดชอบ'})
                       </option>
                     ))}
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    อาจารย์ผู้สอน / ที่ปรึกษา
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="ระบุชื่ออาจารย์ที่รับทราบ"
-                    value={requestForm.advisorName}
-                    onChange={(e) => setRequestForm({ ...requestForm, advisorName: e.target.value })}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-teal-500"
-                  />
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                      อาจารย์ผู้สอน / ที่ปรึกษา
+                    </label>
+                    {requestForm.courseId && (
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingRequestAdvisor(!isEditingRequestAdvisor)}
+                        className="text-[11px] font-bold text-teal-600 hover:text-teal-700 dark:text-teal-400 flex items-center gap-1 cursor-pointer"
+                      >
+                        <Edit3 className="w-3 h-3" />
+                        <span>{isEditingRequestAdvisor ? 'ซ่อนตัวเลือก' : 'แก้ไขอาจารย์'}</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {requestForm.courseId && !isEditingRequestAdvisor ? (
+                    <div className="p-2.5 bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 rounded-xl text-xs flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <GraduationCap className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                        <span className="font-bold text-teal-900 dark:text-teal-200">
+                          {requestForm.advisorName || 'อาจารย์ประจำวิชา'}
+                        </span>
+                        <span className="text-[10px] bg-teal-200/70 dark:bg-teal-900/60 text-teal-800 dark:text-teal-300 px-1.5 py-0.5 rounded-md font-bold">
+                          ขึ้นให้อัตโนมัติ
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingRequestAdvisor(true)}
+                        className="text-[11px] font-bold text-teal-700 dark:text-teal-300 hover:underline cursor-pointer"
+                      >
+                        แก้ไขอาจารย์
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <select
+                        value={requestForm.advisorName}
+                        onChange={(e) => setRequestForm({ ...requestForm, advisorName: e.target.value })}
+                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-teal-500"
+                      >
+                        <option value="">-- กรุณาเลือกอาจารย์จากรายชื่อ --</option>
+                        {requestForm.advisorName && !instructors.some((t) => t.name === requestForm.advisorName) && (
+                          <option value={requestForm.advisorName}>
+                            {requestForm.advisorName} (อาจารย์ประจำวิชา)
+                          </option>
+                        )}
+                        {instructors.map((t) => (
+                          <option key={t.id} value={t.name}>
+                            {t.name} ({t.department || 'คณะพยาบาลศาสตร์'})
+                          </option>
+                        ))}
+                      </select>
+                      {requestForm.courseId && (
+                        <div className="flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const c = courses.find((x) => x.id === requestForm.courseId);
+                              setRequestForm({ ...requestForm, advisorName: c?.instructorName || '' });
+                              setIsEditingRequestAdvisor(false);
+                            }}
+                            className="text-[10px] text-teal-700 dark:text-teal-400 hover:underline cursor-pointer"
+                          >
+                            ↺ กลับไปใช้อาจารย์ประจำวิชา ({courses.find((x) => x.id === requestForm.courseId)?.instructorName})
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 

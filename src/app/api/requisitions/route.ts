@@ -79,7 +79,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { userId, courseId, purpose, dateNeeded, items } = body;
+    const { userId, courseId, advisorName: customAdvisorName, purpose, dateNeeded, items } = body;
 
     if (!userId || !courseId || !purpose || !dateNeeded || !items || items.length === 0) {
       return NextResponse.json({ error: 'กรุณากรอกข้อมูลให้ครบถ้วน' }, { status: 400 });
@@ -155,9 +155,9 @@ export async function POST(req: Request) {
       });
     }
 
-    // Find course instructor name
-    let advisorName = null;
-    if (courseId) {
+    // Find course instructor name if not provided
+    let advisorName = customAdvisorName || null;
+    if (!advisorName && courseId) {
       const course = await prisma.course.findUnique({
         where: { id: courseId },
         select: { instructorName: true },

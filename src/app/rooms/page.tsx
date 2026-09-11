@@ -30,6 +30,7 @@ import {
   ChevronRight,
   LayoutGrid,
   Check,
+  Edit3,
   ShieldCheck,
   DoorOpen,
   DoorClosed,
@@ -72,14 +73,28 @@ export default function RoomsPage() {
 
   // Modal: Booking Form
   const [showBookingModal, setShowBookingModal] = useState(false);
-  const [bookingForm, setBookingForm] = useState({
+  const [isEditingAdvisor, setIsEditingAdvisor] = useState(false);
+  const [bookingForm, setBookingForm] = useState<{
+    roomId: string;
+    bookingDate: string;
+    startTime: string;
+    endTime: string;
+    title: string;
+    purpose: string;
+    attendeesCount: number | string;
+    courseId: string;
+    advisorName: string;
+    contactPhone: string;
+    equipmentNeeded: string;
+    note: string;
+  }>({
     roomId: '',
-    bookingDate: new Date().toISOString().slice(0, 10),
-    startTime: '09:00',
-    endTime: '12:00',
+    bookingDate: '',
+    startTime: '',
+    endTime: '',
     title: '',
-    purpose: 'การเรียนการสอน',
-    attendeesCount: 10,
+    purpose: '',
+    attendeesCount: '',
     courseId: '',
     advisorName: '',
     contactPhone: '',
@@ -90,11 +105,18 @@ export default function RoomsPage() {
   // Modal: Add / Edit Room
   const [showRoomModal, setShowRoomModal] = useState(false);
   const [roomToEdit, setRoomToEdit] = useState<any>(null);
-  const [roomForm, setRoomForm] = useState({
+  const [roomForm, setRoomForm] = useState<{
+    code: string;
+    name: string;
+    location: string;
+    capacity: number | string;
+    description: string;
+    closeReason: string;
+  }>({
     code: '',
     name: '',
     location: '',
-    capacity: 10,
+    capacity: '',
     description: '',
     closeReason: '',
   });
@@ -127,16 +149,12 @@ export default function RoomsPage() {
         fetch('/api/rooms?includeInactive=true'),
         fetch(`/api/room-bookings?year=${year}&month=${month}`),
         fetch('/api/courses?compact=true'),
-        fetch('/api/users?role=APPROVER'),
+        fetch('/api/users?role=INSTRUCTOR'),
       ]);
 
       if (roomsRes.ok) {
         const rList = await roomsRes.json();
         setRooms(rList);
-        if (rList.length > 0 && !bookingForm.roomId) {
-          const activeRoom = rList.find((r: any) => r.isActive !== false) || rList[0];
-          setBookingForm((prev) => ({ ...prev, roomId: activeRoom.id }));
-        }
       }
 
       if (bookingsRes.ok) {
@@ -173,13 +191,32 @@ export default function RoomsPage() {
   // Actions: Submit Booking Request
   const handleSubmitBooking = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!bookingForm.roomId || !bookingForm.bookingDate || !bookingForm.title) {
-      alert('กรุณากรอกข้อมูลห้อง, วันที่, และชื่องานที่ขอใช้ห้อง');
+    if (!bookingForm.roomId) {
+      alert('กรุณาเลือกห้องปฏิบัติการที่ต้องการขอใช้');
       return;
     }
-
+    if (!bookingForm.bookingDate) {
+      alert('กรุณาระบุวันที่ต้องการใช้งานห้อง');
+      return;
+    }
+    if (!bookingForm.startTime || !bookingForm.endTime) {
+      alert('กรุณาระบุช่วงเวลาเริ่มต้นและสิ้นสุด');
+      return;
+    }
     if (bookingForm.startTime >= bookingForm.endTime) {
       alert('เวลาเริ่มต้นต้องมาก่อนเวลาสิ้นสุด');
+      return;
+    }
+    if (!bookingForm.title?.trim()) {
+      alert('กรุณากรอกหัวข้อ / ชื่องานที่ขอใช้งานห้อง');
+      return;
+    }
+    if (!bookingForm.purpose) {
+      alert('กรุณาเลือกวัตถุประสงค์การใช้งานห้อง');
+      return;
+    }
+    if (!bookingForm.attendeesCount || Number(bookingForm.attendeesCount) <= 0) {
+      alert('กรุณากรอกจำนวนผู้เข้าใช้งาน (คน) ให้ถูกต้อง');
       return;
     }
 
@@ -477,19 +514,20 @@ export default function RoomsPage() {
             <button
               onClick={() => {
                 setBookingForm({
-                  roomId: rooms.find((r) => r.isActive !== false)?.id || '',
-                  bookingDate: selectedDate || new Date().toISOString().slice(0, 10),
-                  startTime: '09:00',
-                  endTime: '12:00',
+                  roomId: '',
+                  bookingDate: selectedDate || '',
+                  startTime: '',
+                  endTime: '',
                   title: '',
-                  purpose: 'การเรียนการสอน',
-                  attendeesCount: 10,
+                  purpose: '',
+                  attendeesCount: '',
                   courseId: '',
                   advisorName: '',
                   contactPhone: currentUser?.phone || '',
                   equipmentNeeded: '',
                   note: '',
                 });
+                setIsEditingAdvisor(false);
                 setShowBookingModal(true);
               }}
               className="px-5 py-3 rounded-2xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white font-bold text-sm shadow-lg shadow-teal-500/30 transition cursor-pointer flex items-center gap-2"
@@ -918,7 +956,21 @@ export default function RoomsPage() {
 
                     <button
                       onClick={() => {
-                        setBookingForm((prev) => ({ ...prev, bookingDate: selectedDate }));
+                        setBookingForm({
+                          roomId: '',
+                          bookingDate: selectedDate || '',
+                          startTime: '',
+                          endTime: '',
+                          title: '',
+                          purpose: '',
+                          attendeesCount: '',
+                          courseId: '',
+                          advisorName: '',
+                          contactPhone: currentUser?.phone || '',
+                          equipmentNeeded: '',
+                          note: '',
+                        });
+                        setIsEditingAdvisor(false);
                         setShowBookingModal(true);
                       }}
                       className="px-3 py-1.5 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5"
@@ -1335,6 +1387,7 @@ export default function RoomsPage() {
                   onChange={(e) => setBookingForm({ ...bookingForm, roomId: e.target.value })}
                   className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs font-medium text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20"
                 >
+                  <option value="">-- กรุณาเลือกห้องปฏิบัติการ --</option>
                   {rooms.map((r) => (
                     <option key={r.id} value={r.id} disabled={!r.isActive}>
                       {r.name} ({r.code}) {r.location ? `- ${r.location}` : ''} {!r.isActive ? '(ปิดปรับปรุง)' : ''}
@@ -1425,10 +1478,12 @@ export default function RoomsPage() {
                     วัตถุประสงค์การใช้งาน <span className="text-rose-500">*</span>
                   </label>
                   <select
+                    required
                     value={bookingForm.purpose}
                     onChange={(e) => setBookingForm({ ...bookingForm, purpose: e.target.value })}
                     className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-medium text-slate-900 dark:text-slate-100"
                   >
+                    <option value="">-- กรุณาเลือกวัตถุประสงค์การใช้งาน --</option>
                     <option value="การเรียนการสอน">การเรียนการสอนภาคปฏิบัติ</option>
                     <option value="สอบประเมินทักษะ / OSCE">สอบประเมินทักษะ / OSCE</option>
                     <option value="ติว / ทบทวนบทเรียนกลุ่ม">ติว / ทบทวนบทเรียนกลุ่ม</option>
@@ -1441,51 +1496,126 @@ export default function RoomsPage() {
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    จำนวนผู้เข้าใช้งาน (คน) *
+                    จำนวนผู้เข้าใช้งาน (คน) <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="number"
                     min="1"
-                    max="100"
+                    max="150"
                     required
+                    placeholder="กรุณากรอกจำนวนผู้เข้าใช้งาน (คน)"
                     value={bookingForm.attendeesCount}
-                    onChange={(e) => setBookingForm({ ...bookingForm, attendeesCount: Number(e.target.value) })}
+                    onChange={(e) => setBookingForm({ ...bookingForm, attendeesCount: e.target.value === '' ? '' : Math.max(1, parseInt(e.target.value, 10)) })}
                     className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100"
                   />
                 </div>
               </div>
 
-              {/* Course & Advisor */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    รายวิชาที่เกี่ยวข้อง (ถ้ามี)
-                  </label>
-                  <select
-                    value={bookingForm.courseId}
-                    onChange={(e) => setBookingForm({ ...bookingForm, courseId: e.target.value })}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100"
-                  >
-                    <option value="">-- ไม่ระบุรายวิชา (ฝึกอิสระ/กิจกรรม) --</option>
-                    {courses.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        [{c.code}] {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              {/* Course & Advisor with Auto-fill & Edit Dropdown */}
+              <div className="space-y-2 bg-slate-50 dark:bg-slate-800/40 p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      รายวิชาที่เกี่ยวข้อง (ถ้ามี)
+                    </label>
+                    <select
+                      value={bookingForm.courseId}
+                      onChange={(e) => {
+                        const cId = e.target.value;
+                        const selectedC = courses.find((c) => c.id === cId);
+                        setBookingForm((prev) => ({
+                          ...prev,
+                          courseId: cId,
+                          advisorName: selectedC?.instructorName || (cId ? prev.advisorName : ''),
+                        }));
+                        if (selectedC?.instructorName) {
+                          setIsEditingAdvisor(false);
+                        }
+                      }}
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-medium text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20"
+                    >
+                      <option value="">-- ไม่ระบุรายวิชา (ฝึกอิสระ/กิจกรรม) --</option>
+                      {courses.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          [{c.code}] {c.name} ({c.instructorName || 'อาจารย์ผู้รับผิดชอบ'})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    อาจารย์ผู้รับผิดชอบ / ที่ปรึกษา
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="เช่น อ.กิตติยา, ผศ.ดร.สมชาย"
-                    value={bookingForm.advisorName}
-                    onChange={(e) => setBookingForm({ ...bookingForm, advisorName: e.target.value })}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100"
-                  />
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                        อาจารย์ผู้รับผิดชอบ / ที่ปรึกษา
+                      </label>
+                      {bookingForm.courseId && (
+                        <button
+                          type="button"
+                          onClick={() => setIsEditingAdvisor(!isEditingAdvisor)}
+                          className="text-[11px] font-bold text-teal-600 hover:text-teal-700 dark:text-teal-400 flex items-center gap-1 cursor-pointer"
+                        >
+                          <Edit3 className="w-3 h-3" />
+                          <span>{isEditingAdvisor ? 'ซ่อนตัวเลือก' : 'แก้ไขอาจารย์'}</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {bookingForm.courseId && !isEditingAdvisor ? (
+                      <div className="flex items-center justify-between bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 rounded-xl px-3 py-2 text-xs">
+                        <div className="flex items-center gap-2">
+                          <GraduationCap className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" />
+                          <span className="font-bold text-teal-900 dark:text-teal-200">
+                            {bookingForm.advisorName || 'อาจารย์ประจำรายวิชา'}
+                          </span>
+                          <span className="text-[10px] bg-teal-200/60 dark:bg-teal-900/60 text-teal-800 dark:text-teal-300 px-1.5 py-0.5 rounded-md font-bold">
+                            ขึ้นให้อัตโนมัติ
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setIsEditingAdvisor(true)}
+                          className="text-[11px] font-bold text-teal-700 dark:text-teal-300 hover:underline cursor-pointer"
+                        >
+                          แก้ไขอาจารย์
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <select
+                          value={bookingForm.advisorName}
+                          onChange={(e) => setBookingForm((prev) => ({ ...prev, advisorName: e.target.value }))}
+                          className="w-full bg-white dark:bg-slate-900 border border-teal-300 dark:border-teal-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20"
+                        >
+                          <option value="">-- กรุณาเลือกอาจารย์ผู้รับผิดชอบจากรายชื่อ --</option>
+                          {bookingForm.advisorName && !teachers.some((t) => t.name === bookingForm.advisorName) && (
+                            <option value={bookingForm.advisorName}>
+                              {bookingForm.advisorName} (อาจารย์ประจำวิชา)
+                            </option>
+                          )}
+                          {teachers.map((t) => (
+                            <option key={t.id} value={t.name}>
+                              {t.name} ({t.department || 'คณะพยาบาลศาสตร์'})
+                            </option>
+                          ))}
+                        </select>
+                        {bookingForm.courseId && (
+                          <div className="flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const c = courses.find((x) => x.id === bookingForm.courseId);
+                                setBookingForm((prev) => ({ ...prev, advisorName: c?.instructorName || '' }));
+                                setIsEditingAdvisor(false);
+                              }}
+                              className="text-[10px] text-slate-500 hover:text-slate-700 underline cursor-pointer"
+                            >
+                              ↺ กลับไปใช้อาจารย์ประจำวิชา ({courses.find((x) => x.id === bookingForm.courseId)?.instructorName})
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 

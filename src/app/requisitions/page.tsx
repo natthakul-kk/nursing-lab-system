@@ -9,6 +9,7 @@ import {
   Plus,
   Clock,
   CheckCircle2,
+  Edit3,
   XCircle,
   Coins,
   Calendar,
@@ -32,6 +33,8 @@ export default function RequisitionsPage() {
   const [requisitions, setRequisitions] = useState<any[]>([]);
   const [consumables, setConsumables] = useState<any[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
+  const [instructors, setInstructors] = useState<any[]>([]);
+  const [isEditingAdvisor, setIsEditingAdvisor] = useState(false);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
 
@@ -40,11 +43,13 @@ export default function RequisitionsPage() {
   const [showUnifiedModal, setShowUnifiedModal] = useState(false);
   const [newReq, setNewReq] = useState<{
     courseId: string;
+    advisorName: string;
     purpose: string;
     dateNeeded: string;
     items: { itemId: string; quantity: number | string; categoryId?: string }[];
   }>({
     courseId: '',
+    advisorName: '',
     purpose: '',
     dateNeeded: '',
     items: [{ itemId: '', quantity: '' }],
@@ -68,10 +73,11 @@ export default function RequisitionsPage() {
 
   const fetchRequisitions = async () => {
     try {
-      const [reqRes, itemsRes, coursesRes] = await Promise.all([
+      const [reqRes, itemsRes, coursesRes, usersRes] = await Promise.all([
         fetch('/api/requisitions'),
         fetch('/api/items?type=CONSUMABLE&compact=true'),
         fetch('/api/courses?compact=true'),
+        fetch('/api/users?role=INSTRUCTOR'),
       ]);
 
       if (reqRes.ok) {
@@ -85,6 +91,10 @@ export default function RequisitionsPage() {
       if (coursesRes.ok) {
         const cData = await coursesRes.json();
         setCourses(cData);
+      }
+      if (usersRes.ok) {
+        const uData = await usersRes.json();
+        setInstructors(Array.isArray(uData) ? uData : []);
       }
     } catch (err) {
       console.error(err);
@@ -176,6 +186,7 @@ export default function RequisitionsPage() {
         setShowNewModal(false);
         setNewReq({
           courseId: '',
+          advisorName: '',
           purpose: '',
           dateNeeded: '',
           items: [{ itemId: '', quantity: '' }],
@@ -596,19 +607,86 @@ export default function RequisitionsPage() {
                 </div>
               </div>
 
-              {newReq.courseId && (
-                <div className="p-2.5 rounded-xl bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800/60 text-xs flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <GraduationCap className="w-4 h-4 text-teal-700 dark:text-teal-400 shrink-0" />
-                    <span className="text-slate-600 dark:text-slate-300">อาจารย์ประจำรายวิชา:</span>
-                    <span className="font-bold text-teal-900 dark:text-teal-200">
-                      {courses.find((c) => c.id === newReq.courseId)?.instructorName || 'อาจารย์ผู้รับผิดชอบ'}
-                    </span>
+              {newReq.courseId ? (
+                <div className="p-3 rounded-xl bg-teal-50/80 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 text-xs space-y-2">
+                  <div className="flex items-center justify-between font-bold text-teal-900 dark:text-teal-200">
+                    <div className="flex items-center gap-1.5">
+                      <GraduationCap className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                      <span>อาจารย์ผู้รับทราบ / ที่ปรึกษา:</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-teal-700 dark:text-teal-300 bg-white dark:bg-slate-900 px-2 py-0.5 rounded-md border border-teal-200 dark:border-teal-800 shadow-xs">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                        <span>ขึ้นให้อัตโนมัติ</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingAdvisor(!isEditingAdvisor)}
+                        className="text-[11px] font-bold text-teal-700 hover:text-teal-800 dark:text-teal-300 flex items-center gap-1 cursor-pointer bg-white dark:bg-slate-900 px-2 py-0.5 rounded-md border border-teal-200 dark:border-teal-800 shadow-xs"
+                      >
+                        <Edit3 className="w-3 h-3" />
+                        <span>{isEditingAdvisor ? 'ซ่อนตัวเลือก' : 'แก้ไขอาจารย์'}</span>
+                      </button>
+                    </div>
                   </div>
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-teal-700 dark:text-teal-300 bg-white dark:bg-slate-900 px-2 py-0.5 rounded-md border border-teal-200 dark:border-teal-800/60 shadow-xs">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-                    <span>ขึ้นให้อัตโนมัติ</span>
-                  </span>
+
+                  {!isEditingAdvisor ? (
+                    <div className="text-teal-900 dark:text-teal-200 font-bold pl-5 text-sm">
+                      {newReq.advisorName || courses.find((c) => c.id === newReq.courseId)?.instructorName || 'อาจารย์ผู้รับผิดชอบ'}
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5 pl-1 pt-1">
+                      <select
+                        value={newReq.advisorName}
+                        onChange={(e) => setNewReq({ ...newReq, advisorName: e.target.value })}
+                        className="w-full bg-white dark:bg-slate-950 border border-teal-400 dark:border-teal-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-teal-500/20"
+                      >
+                        <option value="">-- กรุณาเลือกอาจารย์ผู้รับทราบจากรายชื่อ --</option>
+                        {newReq.advisorName && !instructors.some((ins) => ins.name === newReq.advisorName) && (
+                          <option value={newReq.advisorName}>
+                            {newReq.advisorName} (อาจารย์ประจำรายวิชา)
+                          </option>
+                        )}
+                        {instructors.map((ins) => (
+                          <option key={ins.id} value={ins.name}>
+                            {ins.name} ({ins.department || 'อาจารย์พยาบาล'})
+                          </option>
+                        ))}
+                      </select>
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const c = courses.find((x) => x.id === newReq.courseId);
+                            setNewReq({ ...newReq, advisorName: c?.instructorName || '' });
+                            setIsEditingAdvisor(false);
+                          }}
+                          className="text-[10px] text-teal-700 dark:text-teal-300 hover:underline cursor-pointer"
+                        >
+                          ↺ กลับไปใช้อาจารย์ประจำวิชา ({courses.find((x) => x.id === newReq.courseId)?.instructorName})
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="p-3 rounded-xl bg-amber-50/70 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-xs space-y-2">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-900 dark:text-amber-200">
+                    <GraduationCap className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                    <span>อาจารย์ผู้รับทราบ / อาจารย์ที่ปรึกษา</span>
+                  </div>
+                  <select
+                    value={newReq.advisorName}
+                    onChange={(e) => setNewReq({ ...newReq, advisorName: e.target.value })}
+                    className="w-full bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-amber-500/20"
+                  >
+                    <option value="">-- กรุณาเลือกอาจารย์ผู้รับทราบในระบบ --</option>
+                    {instructors.map((ins) => (
+                      <option key={ins.id} value={ins.name}>
+                        {ins.name} ({ins.department || 'อาจารย์พยาบาล'})
+                      </option>
+                    ))}
+                  </select>
                 </div>
               )}
 
@@ -755,7 +833,7 @@ export default function RequisitionsPage() {
                                   ? 'border-rose-500 bg-rose-50 text-rose-700'
                                   : 'border-slate-300'
                               }`}
-                              placeholder="ระบุจำนวน"
+                              placeholder="กรุณากรอกจำนวน"
                             />
                             {newReq.items.length > 1 && (
                               <button

@@ -25,6 +25,7 @@ import {
   X,
   QrCode,
   Tag,
+  Edit3,
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import UnifiedRequestModal from '@/components/requests/UnifiedRequestModal';
@@ -41,6 +42,7 @@ export default function BorrowPage() {
 
   // New Request Modal
   const [showNewModal, setShowNewModal] = useState(false);
+  const [isEditingAdvisor, setIsEditingAdvisor] = useState(false);
   const [showUnifiedModal, setShowUnifiedModal] = useState(false);
   const [instructors, setInstructors] = useState<any[]>([]);
   const [newRequest, setNewRequest] = useState<{
@@ -885,24 +887,71 @@ export default function BorrowPage() {
                 </select>
               </div>
 
-              {/* Instructor / Advisor notification box for students */}
+              {/* Instructor / Advisor notification box for students with Edit Dropdown */}
               {newRequest.courseId ? (
-                <div className="p-3 rounded-xl bg-teal-50/80 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 text-xs space-y-1">
+                <div className="p-3 rounded-xl bg-teal-50/80 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 text-xs space-y-2">
                   <div className="flex items-center justify-between font-bold text-teal-900 dark:text-teal-200">
                     <div className="flex items-center gap-1.5">
                       <GraduationCap className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-                      <span>อาจารย์ประจำรายวิชา (ผู้รับทราบการยืม):</span>
+                      <span>อาจารย์ผู้รับทราบ / ที่ปรึกษา:</span>
                     </div>
-                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-teal-700 dark:text-teal-300 bg-white dark:bg-slate-900 px-2 py-0.5 rounded-md border border-teal-200 dark:border-teal-800 shadow-xs">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-                      <span>ขึ้นให้อัตโนมัติ</span>
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-teal-700 dark:text-teal-300 bg-white dark:bg-slate-900 px-2 py-0.5 rounded-md border border-teal-200 dark:border-teal-800 shadow-xs">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                        <span>ขึ้นให้อัตโนมัติ</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingAdvisor(!isEditingAdvisor)}
+                        className="text-[11px] font-bold text-teal-700 hover:text-teal-800 dark:text-teal-300 flex items-center gap-1 cursor-pointer bg-white dark:bg-slate-900 px-2 py-0.5 rounded-md border border-teal-200 dark:border-teal-800 shadow-xs"
+                      >
+                        <Edit3 className="w-3 h-3" />
+                        <span>{isEditingAdvisor ? 'ซ่อนตัวเลือก' : 'แก้ไขอาจารย์'}</span>
+                      </button>
+                    </div>
                   </div>
-                  <div className="text-teal-900 dark:text-teal-200 font-bold pl-5 text-sm">
-                    {courses.find((c) => c.id === newRequest.courseId)?.instructorName || 'อาจารย์ผู้รับผิดชอบรายวิชา'}
-                  </div>
+
+                  {!isEditingAdvisor ? (
+                    <div className="text-teal-900 dark:text-teal-200 font-bold pl-5 text-sm flex items-center justify-between">
+                      <span>{newRequest.advisorName || courses.find((c) => c.id === newRequest.courseId)?.instructorName || 'อาจารย์ผู้รับผิดชอบรายวิชา'}</span>
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5 pl-1 pt-1">
+                      <select
+                        value={newRequest.advisorName}
+                        onChange={(e) => setNewRequest({ ...newRequest, advisorName: e.target.value })}
+                        className="w-full bg-white dark:bg-slate-950 border border-teal-400 dark:border-teal-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-teal-500/20"
+                      >
+                        <option value="">-- กรุณาเลือกอาจารย์ผู้รับทราบจากรายชื่อ --</option>
+                        {newRequest.advisorName && !instructors.some((ins) => ins.name === newRequest.advisorName) && (
+                          <option value={newRequest.advisorName}>
+                            {newRequest.advisorName} (อาจารย์ประจำรายวิชา)
+                          </option>
+                        )}
+                        {instructors.map((ins) => (
+                          <option key={ins.id} value={ins.name}>
+                            {ins.name} ({ins.department || 'อาจารย์พยาบาล'})
+                          </option>
+                        ))}
+                      </select>
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const c = courses.find((x) => x.id === newRequest.courseId);
+                            setNewRequest({ ...newRequest, advisorName: c?.instructorName || '' });
+                            setIsEditingAdvisor(false);
+                          }}
+                          className="text-[10px] text-teal-700 dark:text-teal-300 hover:underline cursor-pointer"
+                        >
+                          ↺ กลับไปใช้อาจารย์ประจำวิชา ({courses.find((x) => x.id === newRequest.courseId)?.instructorName})
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   <p className="text-[11px] text-teal-700 dark:text-teal-400 pl-5">
-                    ✓ ระบบจะแจ้งให้อาจารย์ประจำวิชาทราบโดยอัตโนมัติสำหรับการฝึกปฏิบัติตามหลักสูตร
+                    ✓ ระบบจะแจ้งให้อาจารย์ผู้รับทราบตรวจสอบสำหรับการฝึกปฏิบัติตามหลักสูตร
                   </p>
                 </div>
               ) : (
@@ -921,20 +970,13 @@ export default function BorrowPage() {
                       onChange={(e) => setNewRequest({ ...newRequest, advisorName: e.target.value })}
                       className="w-full bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-amber-500/20"
                     >
-                      <option value="">-- เลือกอาจารย์ผู้รับทราบในระบบ --</option>
+                      <option value="">-- กรุณาเลือกอาจารย์ผู้รับทราบในระบบ --</option>
                       {instructors.map((ins) => (
                         <option key={ins.id} value={ins.name}>
                           {ins.name} ({ins.department || 'อาจารย์พยาบาล'})
                         </option>
                       ))}
                     </select>
-                    <input
-                      type="text"
-                      placeholder="หรือพิมพ์ระบุชื่ออาจารย์ด้วยตนเอง (หากไม่มีในรายชื่อ)"
-                      value={newRequest.advisorName}
-                      onChange={(e) => setNewRequest({ ...newRequest, advisorName: e.target.value })}
-                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-700 dark:text-slate-300"
-                    />
                   </div>
                 </div>
               )}
@@ -1120,7 +1162,7 @@ export default function BorrowPage() {
                                   ? 'border-rose-500 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300'
                                   : 'border-slate-300 dark:border-slate-700'
                               }`}
-                              placeholder="ระบุจำนวน"
+                              placeholder="กรุณากรอกจำนวน"
                             />
                             {newRequest.selectedItems.length > 1 && (
                               <button

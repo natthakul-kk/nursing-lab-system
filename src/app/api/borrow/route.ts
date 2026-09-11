@@ -1,12 +1,19 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendApprovalRequestEmail } from '@/lib/email';
+import { getCached, setCached, invalidateCache } from '@/lib/cache';
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status');
     const userId = searchParams.get('userId');
+
+    const cacheKey = `borrow:list:${status || 'ALL'}:${userId || 'ALL'}`;
+    const cached = getCached(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached);
+    }
 
     const where: any = {};
     if (status) where.status = status;
@@ -53,6 +60,7 @@ export async function GET(req: Request) {
       officer: r.officerId ? officerMap.get(r.officerId) || null : null,
     }));
 
+    setCached(cacheKey, requestsWithOfficer, 15); // 15s cache
     return NextResponse.json(requestsWithOfficer);
   } catch (error) {
     console.error('Failed to get borrow requests:', error);
@@ -210,6 +218,8 @@ export async function POST(req: Request) {
       console.error('Failed to trigger borrow email:', emailErr);
     }
 
+    invalidateCache('borrow:');
+    invalidateCache('dashboard:');
     return NextResponse.json(borrow, { status: 201 });
   } catch (error: any) {
     console.error('Create borrow error:', error);

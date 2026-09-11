@@ -22,6 +22,14 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       return NextResponse.json({ error: 'ไม่พบรายการคำขอเบิก' }, { status: 404 });
     }
 
+    const respondUpdated = (data: any) => {
+      invalidateCache('requisitions:');
+      invalidateCache('borrow:');
+      invalidateCache('items:');
+      invalidateCache('dashboard:');
+      return NextResponse.json(data);
+    };
+
     if (action === 'ACKNOWLEDGE') {
       const updated = await prisma.requisitionRequest.update({
         where: { id },
@@ -44,7 +52,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         }).catch((e) => console.error('Failed to sync linked borrow acknowledge:', e));
       }
 
-      return NextResponse.json(updated);
+      return respondUpdated(updated);
     }
 
     if (action === 'APPROVE') {
@@ -73,7 +81,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         }).catch((e) => console.error('Failed to sync linked borrow approve:', e));
       }
 
-      return NextResponse.json(updated);
+      return respondUpdated(updated);
     }
 
     if (action === 'REJECT') {
@@ -98,7 +106,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         }).catch((e) => console.error('Failed to sync linked borrow reject:', e));
       }
 
-      return NextResponse.json(updated);
+      return respondUpdated(updated);
     }
     if (action === 'UPDATE_DATES') {
       const { dateNeeded } = body;
@@ -109,7 +117,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         where: { id },
         data: dataToUpdate,
       });
-      return NextResponse.json(updated);
+      return respondUpdated(updated);
     }
 
     if (action === 'DISPENSE') {
@@ -246,7 +254,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
       invalidateCache('items:');
       invalidateCache('dashboard:');
-      return NextResponse.json(updated);
+      return respondUpdated(updated);
     }
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });

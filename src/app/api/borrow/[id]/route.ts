@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { invalidateCache } from '@/lib/cache';
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -25,6 +26,14 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       return NextResponse.json({ error: 'ไม่พบคำขอยืม' }, { status: 404 });
     }
 
+    const respondUpdated = (data: any) => {
+      invalidateCache('borrow:');
+      invalidateCache('requisitions:');
+      invalidateCache('items:');
+      invalidateCache('dashboard:');
+      return NextResponse.json(data);
+    };
+
     if (action === 'ACKNOWLEDGE') {
       const updated = await prisma.borrowRequest.update({
         where: { id },
@@ -47,7 +56,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         }).catch((e) => console.error('Failed to sync linked requisition acknowledge:', e));
       }
 
-      return NextResponse.json(updated);
+      return respondUpdated(updated);
     }
 
     if (action === 'APPROVE') {
@@ -76,7 +85,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         }).catch((e) => console.error('Failed to sync linked requisition approve:', e));
       }
 
-      return NextResponse.json(updated);
+      return respondUpdated(updated);
     }
 
     if (action === 'REJECT') {
@@ -101,7 +110,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         }).catch((e) => console.error('Failed to sync linked requisition reject:', e));
       }
 
-      return NextResponse.json(updated);
+      return respondUpdated(updated);
     }
     if (action === 'UPDATE_DATES') {
       const { borrowDate, expectedReturnDate } = body;
@@ -113,7 +122,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         where: { id },
         data: dataToUpdate,
       });
-      return NextResponse.json(updated);
+      return respondUpdated(updated);
     }
 
     if (action === 'CHECKOUT') {
@@ -305,7 +314,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           checkedOutAt: new Date(),
         },
       });
-      return NextResponse.json(updated);
+      return respondUpdated(updated);
     }
 
     if (action === 'RETURN') {
@@ -405,7 +414,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           returnNote: returnNote || null,
         },
       });
-      return NextResponse.json(updated);
+      return respondUpdated(updated);
     }
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });

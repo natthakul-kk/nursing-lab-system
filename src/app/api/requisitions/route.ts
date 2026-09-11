@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getCached, setCached, invalidateCache } from '@/lib/cache';
 
 export async function GET(req: Request) {
   try {
@@ -7,6 +8,12 @@ export async function GET(req: Request) {
     const status = searchParams.get('status');
     const courseId = searchParams.get('courseId');
     const userId = searchParams.get('userId');
+
+    const cacheKey = `requisitions:list:${status || 'ALL'}:${courseId || 'ALL'}:${userId || 'ALL'}`;
+    const cached = getCached(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached);
+    }
 
     const where: any = {};
     if (status) where.status = status;
@@ -61,6 +68,7 @@ export async function GET(req: Request) {
       officer: r.officerId ? officerMap.get(r.officerId) || null : null,
     }));
 
+    setCached(cacheKey, requisitionsWithOfficer, 15); // 15s cache
     return NextResponse.json(requisitionsWithOfficer);
   } catch (error) {
     console.error('Failed to get requisitions:', error);
@@ -180,6 +188,9 @@ export async function POST(req: Request) {
       },
     });
 
+    invalidateCache('requisitions:');
+    invalidateCache('dashboard:');
+    invalidateCache('items:');
     return NextResponse.json(reqRecord, { status: 201 });
   } catch (error: any) {
     console.error('Create requisition error:', error);

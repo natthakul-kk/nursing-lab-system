@@ -2,6 +2,7 @@ import { verifySignedApprovalToken } from '@/lib/token';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendApprovalNotificationWithQrEmail } from '@/lib/email';
+import { invalidateCache } from '@/lib/cache';
 
 export async function GET(req: Request) {
   try {
@@ -157,6 +158,10 @@ export async function GET(req: Request) {
           }).catch((err) => console.error('Failed to sync linked requisition in email quick action:', err));
         }
 
+        invalidateCache('borrow:');
+        invalidateCache('requisitions:');
+        invalidateCache('dashboard:');
+
         return renderResponseHtml({
           success: true,
           title: 'อนุมัติคำขอเบิก-ยืมพัสดุสำเร็จ',
@@ -182,6 +187,10 @@ export async function GET(req: Request) {
             },
           }).catch((err) => console.error('Failed to sync linked requisition in email quick action:', err));
         }
+
+        invalidateCache('borrow:');
+        invalidateCache('requisitions:');
+        invalidateCache('dashboard:');
 
         return renderResponseHtml({
           success: true,

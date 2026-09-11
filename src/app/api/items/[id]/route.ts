@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { invalidateCache } from '@/lib/cache';
 
 // PUT: Update an item (name, code, category, etc.)
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -59,6 +60,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       },
     });
 
+    invalidateCache('items:');
+    invalidateCache('dashboard:');
     return NextResponse.json({ success: true, item: updated });
   } catch (error: any) {
     console.error('Update item error:', error);
@@ -109,6 +112,8 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     await prisma.stockTransaction.deleteMany({ where: { itemId: id } });
     await prisma.item.delete({ where: { id } });
 
+    invalidateCache('items:');
+    invalidateCache('dashboard:');
     return NextResponse.json({ success: true, message: 'ลบรายการพัสดุเรียบร้อยแล้ว' });
   } catch (error: any) {
     console.error('Delete item error:', error);

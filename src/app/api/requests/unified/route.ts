@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendApprovalRequestEmail } from '@/lib/email';
+import { invalidateCache } from '@/lib/cache';
 
 export async function POST(req: Request) {
   try {
@@ -56,13 +57,24 @@ export async function POST(req: Request) {
     const borrowSummaryList: { name: string; quantity: number; unit: string }[] = [];
     if (hasBorrow) {
       const borrowItemIds = validBorrowItems.map((it: any) => it.itemId);
-      const equipmentRecords = await prisma.item.findMany({
-        where: { id: { in: borrowItemIds } },
-        include: {
-          assets: { where: { status: 'AVAILABLE' } },
-        },
-      });
+      const [equipmentRecords, pendingBorrowList] = await Promise.all([
+        prisma.item.findMany({
+          where: { id: { in: borrowItemIds } },
+          include: {
+            assets: { where: { status: 'AVAILABLE' } },
+          },
+        }),
+        prisma.borrowItem.groupBy({
+          by: ['itemId'],
+          where: {
+            itemId: { in: borrowItemIds },
+            borrowRequest: { status: { in: ['PENDING', 'APPROVED'] } },
+          },
+          _sum: { quantity: true },
+        }),
+      ]);
       const eqMap = new Map(equipmentRecords.map((r) => [r.id, r]));
+      const pendingBrwMap = new Map(pendingBorrowList.map((b) => [b.itemId, b._sum.quantity || 0]));
 
       for (const it of validBorrowItems) {
         const qty = Number(it.quantity) || 1;
@@ -72,14 +84,7 @@ export async function POST(req: Request) {
           return NextResponse.json({ error: 'ไม่พบข้อมูลครุภัณฑ์ในระบบ' }, { status: 400 });
         }
 
-        const pendingBrw = await prisma.borrowItem.aggregate({
-          where: {
-            itemId: it.itemId,
-            borrowRequest: { status: { in: ['PENDING', 'APPROVED'] } },
-          },
-          _sum: { quantity: true },
-        });
-        const reservedCount = pendingBrw._sum.quantity || 0;
+        const reservedCount = pendingBrwMap.get(it.itemId) || 0;
         const availableEquipment = Math.max(0, itemRecord.assets.length - reservedCount);
 
         if (availableEquipment <= 0) {
@@ -114,16 +119,27 @@ export async function POST(req: Request) {
 
     if (hasRequisition) {
       const reqItemIds = validRequisitionItems.map((it: any) => it.itemId);
-      const reqRecords = await prisma.item.findMany({
-        where: { id: { in: reqItemIds } },
-        include: {
-          stockLots: {
-            where: { quantityRemaining: { gt: 0 } },
-            orderBy: { expiryDate: 'asc' },
+      const [reqRecords, pendingReqList] = await Promise.all([
+        prisma.item.findMany({
+          where: { id: { in: reqItemIds } },
+          include: {
+            stockLots: {
+              where: { quantityRemaining: { gt: 0 } },
+              orderBy: { expiryDate: 'asc' },
+            },
           },
-        },
-      });
+        }),
+        prisma.requisitionItem.groupBy({
+          by: ['itemId'],
+          where: {
+            itemId: { in: reqItemIds },
+            requisitionRequest: { status: { in: ['PENDING', 'APPROVED'] } },
+          },
+          _sum: { quantityRequested: true },
+        }),
+      ]);
       const reqMap = new Map(reqRecords.map((r) => [r.id, r]));
+      const pendingReqMap = new Map(pendingReqList.map((r) => [r.itemId, r._sum.quantityRequested || 0]));
 
       for (const it of validRequisitionItems) {
         const qty = Number(it.quantity) || 1;
@@ -139,14 +155,7 @@ export async function POST(req: Request) {
           : itemRecord.stockLots;
 
         const totalStockRemaining = validLots.reduce((sum: number, lot: any) => sum + lot.quantityRemaining, 0);
-        const pendingReq = await prisma.requisitionItem.aggregate({
-          where: {
-            itemId: it.itemId,
-            requisitionRequest: { status: { in: ['PENDING', 'APPROVED'] } },
-          },
-          _sum: { quantityRequested: true },
-        });
-        const reservedReq = pendingReq._sum.quantityRequested || 0;
+        const reservedReq = pendingReqMap.get(it.itemId) || 0;
         const availableStock = Math.max(0, totalStockRemaining - reservedReq);
 
         if (useTarget === 'HUMAN' && totalStockRemaining <= 0) {
@@ -372,6 +381,12 @@ export async function POST(req: Request) {
     } catch (e) {
       console.error('Email notification error:', e);
     }
+
+    // Invalidate caches so other screens immediately reflect updated reservations
+    invalidateCache('borrow:');
+    invalidateCache('requisitions:');
+    invalidateCache('items:');
+    invalidateCache('dashboard:');
 
     return NextResponse.json({
       success: true,

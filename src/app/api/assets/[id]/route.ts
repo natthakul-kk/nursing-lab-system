@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { invalidateCache } from '@/lib/cache';
 
 // PUT: Update an individual asset
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -69,6 +70,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       },
     });
 
+    invalidateCache('items:');
+    invalidateCache('dashboard:');
     return NextResponse.json({ success: true, asset: updated });
   } catch (error: any) {
     console.error('Update asset error:', error);
@@ -122,6 +125,8 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
       where: { id },
     });
 
+    invalidateCache('items:');
+    invalidateCache('dashboard:');
     return NextResponse.json({ success: true, message: 'ลบข้อมูลอุปกรณ์เรียบร้อยแล้ว' });
   } catch (error: any) {
     console.error('Delete asset error:', error);

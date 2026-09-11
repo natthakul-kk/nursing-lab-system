@@ -392,7 +392,7 @@ export default function StockInPage() {
                       ข้อมูลยี่ห้อและขนาดบรรจุของล็อตนี้ (Multi-Packaging & Brand)
                     </span>
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-teal-100 text-teal-800 dark:bg-teal-900/50 dark:text-teal-300 font-bold">
-                      รองรับขนาด 50 / 100 ชิ้นตามยี่ห้อ
+                      ระบุขนาดบรรจุ
                     </span>
                   </div>
 
@@ -429,7 +429,7 @@ export default function StockInPage() {
                           ขนาดบรรจุต่อ{form.packageUnit || selectedItem?.unit || 'หน่วย'} *
                         </label>
                         <span className="text-[10px] text-teal-600 dark:text-teal-400 font-semibold">
-                          (เช่น 50 หรือ 100)
+                          (ชิ้นย่อยต่อหน่วย)
                         </span>
                       </div>
                       <div className="relative">

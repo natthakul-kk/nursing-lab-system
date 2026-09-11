@@ -22,19 +22,27 @@ try {
     
     Write-Host "Exporting to $pdfAscii..."
     $doc.ExportAsFixedFormat($pdfAscii, 17)
+    $doc.Close([ref]$false)
+    Write-Host "DOCX_EXPORTED_TO_PDF_SUCCESS"
 
-    Write-Host "Exporting to $pdfThaiV2..."
-    $doc.ExportAsFixedFormat($pdfThaiV2, 17)
+    $pdfLatestThai = "d:\\LAB-system\\manual\\คู่มือการใช้งานระบบสำหรับนิสิตพยาบาล_ฉบับล่าสุด_ระบบจริง.pdf"
+    Copy-Item $pdfAscii $pdfLatestThai -Force
+    Write-Host "Copied to $pdfLatestThai successfully!"
 
     try {
-        Write-Host "Attempting export to $pdfThai..."
-        $doc.ExportAsFixedFormat($pdfThai, 17)
-        Write-Host "Exported to original Thai filename successfully!"
+        Copy-Item $pdfAscii $pdfThaiV2 -Force
+        Write-Host "Copied to $pdfThaiV2 successfully!"
     } catch {
-        Write-Host "Notice: Original Thai PDF is open by user, exported to ThaiV2 successfully."
+        Write-Host "Notice: ThaiV2 PDF is open by user reader."
     }
 
-    $doc.Close([ref]$false)
+    try {
+        Copy-Item $pdfAscii $pdfThai -Force
+        Write-Host "Copied to $pdfThai successfully!"
+    } catch {
+        Write-Host "Notice: Original Thai PDF is open by user reader."
+    }
+
     Write-Host "ALL_PDF_CONVERSION_SUCCESS"
 } catch {
     Write-Host "FATAL_ERROR: $($_.Exception.Message)"

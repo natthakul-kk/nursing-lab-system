@@ -330,24 +330,52 @@ def generate_html_manual():
       <h3 class="section-title">2.2 ผังงานการยืม-เบิก One-Stop และระบบ Patient Safety Lock</h3>
       <div class="figure-box">
         <img src="./flowcharts/flowchart_2_unified_borrow_requisition.png" alt="ผังงาน One-Stop">
-        <div class="figure-caption">ผังงานที่ 2: ขั้นตอนการยืม-เบิก One-Stop พร้อมเงื่อนไขตรวจสอบความปลอดภัยคนจริง/หุ่น</div>
+        <div class="figure-caption">ผังงานที่ 2: ขั้นตอนการยืม-เบิก One-Stop พร้อมเงื่อนไขตรวจสอบความปลอดภัยคนจริง/หุ่น (เส้นตรงมาตรฐาน)</div>
       </div>
+      <p><b>กระบวนการทำงานของผังงานที่ 2:</b></p>
+      <ol>
+        <li><b>เลือกรหัสรายวิชา:</b> นิสิตเลือกรหัสวิชา ระบบจะผูกชื่ออาจารย์ผู้รับผิดชอบให้อัตโนมัติ</li>
+        <li><b>ระบุวัน-เวลานัดหมายรับของและส่งคืน:</b> พร้อมระบุวัตถุประสงค์และสถานที่ใช้งาน</li>
+        <li><b>เลือกรายการครุภัณฑ์และเวชภัณฑ์:</b> รวมทั้งอุปกรณ์ส่งคืนและวัสดุสิ้นเปลืองในคำขอเดียว</li>
+        <li><b>ตรวจสอบเงื่อนไขความปลอดภัย (Patient Safety Lock):</b>
+          <ul>
+            <li><b>กรณีใช้งานกับคนจริง / คลินิก (Clinical Patient):</b> ระบบจะล็อกความปลอดภัย กรองเฉพาะล็อตที่ยังไม่หมดอายุ 100% หากไม่พอยอดจะถูกปฏิเสธทันทีเพื่อความปลอดภัยของผู้ป่วย</li>
+            <li><b>กรณีฝึกปฏิบัติกับหุ่นจำลอง (Sim-Lab):</b> ระบบอนุญาตให้เบิกเวชภัณฑ์หมดอายุได้เพื่อประหยัดงบประมาณของคณะ</li>
+          </ul>
+        </li>
+        <li><b>ส่งคำขอและอนุมัติ:</b> แจ้งเตือนอาจารย์รับทราบ และส่งให้เจ้าหน้าที่แล็บตรวจจ่ายอุปกรณ์</li>
+      </ol>
 
       <h3 class="section-title">2.3 ผังงานการจองห้องแล็บและ Check-in สแกนเข้าห้อง</h3>
       <div class="figure-box">
         <img src="./flowcharts/flowchart_3_practice_booking.png" alt="ผังงานการจองแล็บ">
-        <div class="figure-caption">ผังงานที่ 3: ขั้นตอนการจองห้องปฏิบัติการและสแกน QR Code Check-in</div>
+        <div class="figure-caption">ผังงานที่ 3: ขั้นตอนการจองห้องปฏิบัติการและสแกน QR Code Check-in (เส้นตรงมาตรฐาน)</div>
       </div>
     </div>
 
     <!-- Chapter 3: One-Stop Borrowing (Steps 1, 2, 3, 4, 5, 6, 7) -->
     <div class="card">
-      <h2 class="chapter-title">📑 บทที่ 3: ขั้นตอนการยืม-เบิกอุปกรณ์แบบ One-Stop (ภาพจากระบบจริง)</h2>
-      <p>การขออุปกรณ์ทำได้ในฟอร์มเดียว ทั้งครุภัณฑ์ที่ต้องส่งคืน และเวชภัณฑ์สิ้นเปลือง โดยมีขั้นตอนการกรอกแต่ละช่องดังนี้:</p>
+      <h2 class="chapter-title">📑 บทที่ 3: ภาพรวมรายการคำขอและขั้นตอนการยืม-เบิก One-Stop (ภาพจากระบบจริง)</h2>
+      <p>เมื่อนิสิตเข้าสู่เมนู <b>"ยืม-คืนอุปกรณ์"</b> ระบบจะแสดงหน้าจอภาพรวม (Overview Dashboard) แสดงรายการคำขอของนิสิตพร้อมสถานะการดำเนินการแบบเรียลไทม์ ดังรูปที่ 3.1:</p>
+
+      <div class="figure-box">
+        <img src="./images/overview_student_dashboard_annotated.png" alt="ภาพรวมรายการคำขอยืม-คืนของนิสิต">
+        <div class="figure-caption">รูปที่ 3.1: ภาพจากระบบจริง - ภาพรวมรายการคำขอยืม-คืนของนิสิต (Overview Dashboard พร้อมข้อมูลคำขอจริงและปุ่ม One-Stop)</div>
+      </div>
+
+      <p>จากหน้าจอภาพรวม นิสิตสามารถตรวจสอบประวัติและสถานะคำขอของตนเองได้ 4 สถานะหลัก ได้แก่:</p>
+      <ul>
+        <li><b style="color: #d97706;">รออนุมัติ (PENDING):</b> คำขอถูกส่งเข้าระบบแล้ว อยู่ระหว่างรออาจารย์ผู้รับผิดชอบรายวิชารับทราบ และเจ้าหน้าที่ห้องปฏิบัติการตรวจสอบความถูกต้อง</li>
+        <li><b style="color: #0284c7;">อนุมัติแล้ว (APPROVED):</b> คำขอได้รับการอนุมัติเรียบร้อยแล้ว นิสิตสามารถมารับอุปกรณ์ได้ตามวัน-เวลาที่ระบุ</li>
+        <li><b style="color: #16a34a;">รับอุปกรณ์แล้ว (DISPENSED):</b> นิสิตมาติดต่อรับอุปกรณ์และเวชภัณฑ์ไปใช้งานแล้ว โดยต้องนำครุภัณฑ์มาส่งคืนตามกำหนดเวลา</li>
+        <li><b style="color: #64748b;">คืนแล้ว (RETURNED):</b> นำครุภัณฑ์ส่งคืนเจ้าหน้าที่ตรวจรับความสมบูรณ์และปิดคำขอสมบูรณ์</li>
+      </ul>
+
+      <p style="margin-top: 16px;">เมื่อต้องการสร้างคำขอยืม-เบิกใหม่ ให้กดปุ่ม <b>"+ ขอยืม-เบิกอุปกรณ์ (One-Stop)"</b> ที่มุมขวาบน ระบบจะเปิดหน้าต่างฟอร์มรวมดังรูปที่ 3.2 ให้นิสิตกรอกข้อมูลตามหมายเลขกำกับในแต่ละช่องดังนี้:</p>
 
       <div class="figure-box">
         <img src="./images/step_borrow_one_stop_guide.png" alt="ขั้นตอนการยืม-เบิก One-Stop จากระบบจริง">
-        <div class="figure-caption">รูปที่ 3.1: ภาพจากระบบจริง - ชี้ตำแหน่งที่ต้องกรอกแต่ละช่องอย่างชัดเจน (จุดที่ 1 ถึง 7)</div>
+        <div class="figure-caption">รูปที่ 3.2: ภาพจากระบบจริง - ชี้ตำแหน่งที่ต้องกรอกแต่ละช่องอย่างชัดเจน (จุดที่ 1 ถึง 7)</div>
       </div>
 
       <div class="step-grid">
@@ -588,7 +616,7 @@ def generate_docx_manual():
         ("   - 2.1 ผังงานภาพรวมการใช้งานของนิสิต (Overall Student Lifecycle)", "หน้า 5"),
         ("   - 2.2 ผังงานการยืม-เบิก One-Stop และระบบ Patient Safety Lock", "หน้า 6"),
         ("   - 2.3 ผังงานการจองห้องแล็บและ Check-in สแกนเข้าห้อง", "หน้า 7"),
-        ("บทที่ 3: ขั้นตอนการยืม-เบิก One-Stop จากระบบจริง (ชี้จุดที่ 1 ถึง 7)", "หน้า 8"),
+        ("บทที่ 3: ภาพรวมรายการคำขอและขั้นตอนการยืม-เบิก One-Stop (ชี้จุดที่ 1 ถึง 7)", "หน้า 8"),
         ("บทที่ 4: การขอเบิกชุดฝึกปฏิบัติการสำเร็จรูป (Nursing Practice Kits)", "หน้า 10"),
         ("บทที่ 5: การขอเข้าฝึกปฏิบัติการด้วยตนเองและสแกน QR Code Check-in", "หน้า 11"),
         ("บทที่ 6: การส่งคืนอุปกรณ์และข้อพึงระวังความปลอดภัย (Safety Rules)", "หน้า 13")
@@ -703,8 +731,30 @@ def generate_docx_manual():
         doc.add_picture(fc2, width=Inches(5.8))
         pc = doc.add_paragraph()
         pc.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        r = pc.add_run("ผังงานที่ 2: ขั้นตอนการยืม-เบิก One-Stop พร้อมเงื่อนไขตรวจสอบความปลอดภัย (เส้นตรงมาตรฐาน)")
+        r = pc.add_run("ผังงานที่ 2: ขั้นตอนการยืม-เบิก One-Stop พร้อมเงื่อนไขตรวจสอบความปลอดภัยคนจริง/หุ่น (เส้นตรงมาตรฐาน ISO 5807)")
         apply_thai_font(r, size_pt=14, italic=True, color_rgb=RGBColor(0x64, 0x74, 0x8b))
+
+    doc.add_paragraph()
+    p_f2_desc = doc.add_paragraph()
+    r = p_f2_desc.add_run("คำอธิบายขั้นตอนการทำงานของผังงานที่ 2:")
+    apply_thai_font(r, size_pt=FONT_SIZE_H3, bold=True, color_rgb=RGBColor(0x0f, 0x76, 0x6e))
+
+    f2_steps = [
+        ("1. เลือกรหัสรายวิชา:", " เลือกรหัสวิชา ระบบจะดึงชื่ออาจารย์ผู้รับผิดชอบรายวิชาให้อัตโนมัติทันที"),
+        ("2. ระบุวัน-เวลานัดหมายรับและส่งคืน:", " กำหนดวันเวลาที่มารับของ และกำหนดส่งคืน พร้อมระบุสถานที่และหัตถการ"),
+        ("3. เลือกรายการครุภัณฑ์และเวชภัณฑ์:", " ค้นหาและระบุจำนวนอุปกรณ์ที่ต้องการยืมและเวชภัณฑ์ที่ขอเบิก"),
+        ("4. ตรวจสอบเงื่อนไข Patient Safety Lock:",
+         "\n     • กรณีใช้งานกับคนจริง / คลินิก: ระบบจะบล็อกเวชภัณฑ์ล็อตหมดอายุ 100% ตรวจสอบเฉพาะล็อตที่ยังไม่หมดอายุ หากไม่พอจะปฏิเสธคำขอทันทีเพื่อความปลอดภัยของผู้ป่วย"
+         "\n     • กรณีฝึกปฏิบัติกับหุ่นจำลอง (Sim-Lab): ระบบอนุญาตให้ใช้เวชภัณฑ์หมดอายุได้เพื่อประหยัดงบประมาณ โดยตรวจสอบยอดสต็อกรวม"),
+        ("5. ส่งคำขอและอนุมัติ:", " แจ้งเตือนอาจารย์รับทราบ และส่งให้เจ้าหน้าที่ห้องปฏิบัติการตรวจสอบอนุมัติและจ่ายพัสดุ")
+    ]
+    for stitle, sdesc in f2_steps:
+        ps = doc.add_paragraph()
+        ps.paragraph_format.space_after = Pt(4)
+        r1 = ps.add_run(f"  • {stitle}")
+        apply_thai_font(r1, bold=True, color_rgb=RGBColor(0x02, 0x84, 0xc7))
+        r2 = ps.add_run(sdesc)
+        apply_thai_font(r2)
 
     doc.add_page_break()
 
@@ -724,13 +774,48 @@ def generate_docx_manual():
 
     # ---------------- CHAPTER 3: REAL BORROWING (1, 2, 3, 4, 5, 6, 7) ----------------
     p_c3 = doc.add_paragraph()
-    r = p_c3.add_run("บทที่ 3: ขั้นตอนการยืม-เบิกอุปกรณ์แบบ One-Stop (ภาพจากระบบจริง)")
+    r = p_c3.add_run("บทที่ 3: ภาพรวมรายการคำขอและขั้นตอนการยืม-เบิก One-Stop (ภาพจากระบบจริง)")
     apply_thai_font(r, size_pt=FONT_SIZE_H1, bold=True, color_rgb=RGBColor(0x0f, 0x76, 0x6e))
 
     p = doc.add_paragraph()
     r = p.add_run(
-        "เมื่อกดปุ่ม '+ ขอยืม-เบิกอุปกรณ์ (One-Stop)' ระบบจะเปิดหน้าต่างฟอร์มรวมดังรูปที่ 3.1 "
-        "ให้นิสิตกรอกข้อมูลตามหมายเลขกำกับในแต่ละช่องดังนี้:"
+        "เมื่อนิสิตเข้าสู่เมนู 'ยืม-คืนอุปกรณ์' ระบบจะแสดงหน้าจอภาพรวม (Overview Dashboard) "
+        "แสดงรายการประวัติคำขอของนิสิตพร้อมสถานะแบบเรียลไทม์ ดังแสดงในรูปที่ 3.1:"
+    )
+    apply_thai_font(r)
+
+    overview_img = os.path.join(IMAGES_DIR, 'overview_student_dashboard_annotated.png')
+    if os.path.exists(overview_img):
+        doc.add_picture(overview_img, width=Inches(5.8))
+        pc = doc.add_paragraph()
+        pc.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        r = pc.add_run("รูปที่ 3.1: ภาพจากระบบจริง - ภาพรวมรายการคำขอยืม-คืนของนิสิต (Overview Dashboard พร้อมข้อมูลคำขอจริงและปุ่ม One-Stop)")
+        apply_thai_font(r, size_pt=14, italic=True, color_rgb=RGBColor(0x64, 0x74, 0x8b))
+
+    doc.add_paragraph()
+    p_status = doc.add_paragraph()
+    r = p_status.add_run("สถานะของคำขอในหน้าภาพรวม ประกอบด้วย 4 สถานะหลัก:")
+    apply_thai_font(r, size_pt=FONT_SIZE_H3, bold=True, color_rgb=RGBColor(0x0f, 0x76, 0x6e))
+
+    statuses = [
+        ("รออนุมัติ (PENDING):", " คำขอถูกส่งแล้ว อยู่ระหว่างรออาจารย์ประจำวิชารับทราบ และเจ้าหน้าที่ตรวจสอบความถูกต้อง"),
+        ("อนุมัติแล้ว (APPROVED):", " คำขอผ่านการอนุมัติแล้ว นิสิตสามารถเดินทางมารับอุปกรณ์ได้ตามวัน-เวลาที่นัดหมาย"),
+        ("รับอุปกรณ์แล้ว (DISPENSED):", " นิสิตรับอุปกรณ์ไปใช้งานในการเรียนการสอนแล้ว โดยต้องนำมาส่งคืนตามกำหนด"),
+        ("คืนแล้ว (RETURNED):", " ครุภัณฑ์ได้รับการส่งคืนและเจ้าหน้าที่ตรวจรับความเรียบร้อยสมบูรณ์แล้ว")
+    ]
+    for stitle, sdesc in statuses:
+        ps = doc.add_paragraph()
+        ps.paragraph_format.space_after = Pt(4)
+        r1 = ps.add_run(f"  • {stitle}")
+        apply_thai_font(r1, bold=True, color_rgb=RGBColor(0x02, 0x84, 0xc7))
+        r2 = ps.add_run(sdesc)
+        apply_thai_font(r2)
+
+    doc.add_paragraph()
+    p = doc.add_paragraph()
+    r = p.add_run(
+        "เมื่อต้องการยืม-เบิกอุปกรณ์ ให้กดปุ่ม '+ ขอยืม-เบิกอุปกรณ์ (One-Stop)' ที่มุมขวาบนของหน้าจอ "
+        "ระบบจะเปิดหน้าต่างฟอร์มรวม ดังแสดงในรูปที่ 3.2 ให้นิสิตกรอกข้อมูลตามหมายเลขกำกับจุดที่ 1 ถึง 7:"
     )
     apply_thai_font(r)
 
@@ -739,7 +824,7 @@ def generate_docx_manual():
         doc.add_picture(borrow_img, width=Inches(5.8))
         pc = doc.add_paragraph()
         pc.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        r = pc.add_run("รูปที่ 3.1: ภาพจากระบบจริง - ชี้ตำแหน่งและสิ่งที่ต้องกรอกในแต่ละช่อง (จุดที่ 1 ถึง 7)")
+        r = pc.add_run("รูปที่ 3.2: ภาพจากระบบจริง - ชี้ตำแหน่งและสิ่งที่ต้องกรอกในแต่ละช่อง (จุดที่ 1 ถึง 7)")
         apply_thai_font(r, size_pt=14, italic=True, color_rgb=RGBColor(0x64, 0x74, 0x8b))
 
     doc.add_paragraph()

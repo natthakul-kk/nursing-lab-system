@@ -43,6 +43,7 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
   const [courseId, setCourseId] = useState('');
   const [advisorName, setAdvisorName] = useState('');
   const [purpose, setPurpose] = useState('');
+  const [useTarget, setUseTarget] = useState<'SIMULATION' | 'HUMAN'>('SIMULATION');
   const [borrowDate, setBorrowDate] = useState('');
   const [expectedReturnDate, setExpectedReturnDate] = useState('');
 
@@ -262,6 +263,63 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-3.5 sm:p-6 space-y-4 sm:space-y-6">
           {/* Section 1: Course & Purpose */}
           <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-4 space-y-4">
+            {/* Selector: วัตถุประสงค์ความปลอดภัย (ฝึกกับหุ่น vs ใช้กับคนจริง) */}
+            <div className="space-y-2 pt-1 border-t border-slate-200/80 dark:border-slate-700/80">
+              <label className="block text-xs font-black text-slate-800 dark:text-slate-200">
+                เป้าหมายการนำไปใช้งาน (Safety & Clinical Target) <span className="text-rose-500">*</span>
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setUseTarget('SIMULATION')}
+                  className={`p-3 rounded-xl border text-left transition flex items-start gap-2.5 cursor-pointer ${
+                    useTarget === 'SIMULATION'
+                      ? 'bg-teal-50/90 dark:bg-teal-950/50 border-teal-500 ring-2 ring-teal-500/20 text-teal-900 dark:text-teal-200 shadow-sm'
+                      : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:bg-slate-50 text-slate-600 dark:text-slate-300'
+                  }`}
+                >
+                  <span className="text-2xl">🧪</span>
+                  <div className="space-y-0.5">
+                    <div className="font-bold text-xs flex items-center gap-1.5">
+                      <span>ฝึกปฏิบัติการกับหุ่นจำลอง</span>
+                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-teal-100 text-teal-800 font-bold">Sim-Lab</span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+                      สำหรับฝึกหัตถการกับหุ่นพยาบาล (อนุญาตให้เบิกของหมดอายุเพื่อฝึกซ้ำได้)
+                    </p>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setUseTarget('HUMAN')}
+                  className={`p-3 rounded-xl border text-left transition flex items-start gap-2.5 cursor-pointer ${
+                    useTarget === 'HUMAN'
+                      ? 'bg-rose-50/90 dark:bg-rose-950/50 border-rose-500 ring-2 ring-rose-500/20 text-rose-900 dark:text-rose-200 shadow-sm'
+                      : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:bg-slate-50 text-slate-600 dark:text-slate-300'
+                  }`}
+                >
+                  <span className="text-2xl">🧑‍⚕️</span>
+                  <div className="space-y-0.5">
+                    <div className="font-bold text-xs flex items-center gap-1.5">
+                      <span className="text-rose-700 dark:text-rose-400">ใช้งานกับคนจริง / คลินิก</span>
+                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-rose-100 text-rose-800 font-black">คนจริง</span>
+                    </div>
+                    <p className="text-[11px] text-rose-600/80 dark:text-rose-400/80 leading-tight">
+                      สำหรับใช้กับผู้ป่วยจริง (ระบบจะบล็อกและห้ามเบิกล็อตที่หมดอายุเด็ดขาด 100%)
+                    </p>
+                  </div>
+                </button>
+              </div>
+
+              {useTarget === 'HUMAN' && (
+                <div className="p-2.5 bg-rose-100/70 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900/60 rounded-xl text-rose-800 dark:text-rose-300 text-xs font-bold flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+                  <span>มาตรการความปลอดภัยผู้ป่วย: ระบบจะจ่ายเฉพาะเวชภัณฑ์ที่ยังไม่หมดอายุเท่านั้น หากรายการใดหมดอายุแล้วจะไม่สามารถเบิกได้</span>
+                </div>
+              )}
+            </div>
+
             <h3 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
               <BookOpen className="w-4 h-4 text-teal-600 dark:text-teal-400" />
               1. ข้อมูลรายวิชาและวันเวลาที่ใช้งาน

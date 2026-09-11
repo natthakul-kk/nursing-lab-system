@@ -682,9 +682,18 @@ export default function ApprovalsPage() {
                   </div>
 
                   <div className="text-xs space-y-2">
-                    <div>
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-slate-400 font-bold">วัตถุประสงค์: </span>
                       <span className="text-slate-800 font-medium">{req.purpose}</span>
+                      {req.useTarget === 'HUMAN' ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-300 shadow-sm">
+                          🚨 ใช้กับคนจริง
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 text-teal-700 border border-teal-200">
+                          🧪 ฝึกกับหุ่นจำลอง
+                        </span>
+                      )}
                     </div>
 
                     <div className="text-xs text-slate-500 flex items-center gap-2">
@@ -886,9 +895,18 @@ export default function ApprovalsPage() {
                   </div>
 
                   <div className="text-xs space-y-2">
-                    <div>
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-slate-400 font-bold">วัตถุประสงค์: </span>
                       <span className="text-slate-800 font-medium">{req.purpose}</span>
+                      {req.useTarget === 'HUMAN' ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-300 shadow-sm">
+                          🚨 ใช้กับคนจริง (ห้ามของหมดอายุ)
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 text-teal-700 border border-teal-200">
+                          🧪 ฝึกกับหุ่นจำลอง
+                        </span>
+                      )}
                     </div>
 
                     <div className="flex items-center justify-between text-slate-600">

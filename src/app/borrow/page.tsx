@@ -560,7 +560,18 @@ export default function BorrowPage() {
               {/* Purpose & Detailed Timeline */}
               <div className="grid grid-cols-1 md:grid-cols-12 gap-4 text-xs">
                 <div className="md:col-span-6">
-                  <span className="text-slate-400 dark:text-slate-500 font-bold block mb-1">วัตถุประสงค์การใช้งาน & สถานที่:</span>
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span className="text-slate-400 dark:text-slate-500 font-bold">วัตถุประสงค์การใช้งาน & สถานที่:</span>
+                    {req.useTarget === 'HUMAN' ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-300">
+                        🚨 ใช้กับคนจริง (ห้ามของหมดอายุ)
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 text-teal-700 border border-teal-200">
+                        🧪 ฝึกกับหุ่นจำลอง
+                      </span>
+                    )}
+                  </div>
                   <p className="text-slate-800 dark:text-slate-200 font-medium leading-relaxed">{req.purpose}</p>
                 </div>
 

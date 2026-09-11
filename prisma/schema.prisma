@@ -200,6 +200,7 @@ model BorrowRequest {
   courseId           String?
   course             Course?   @relation(fields: [courseId], references: [id])
   purpose            String
+  useTarget          String    @default("SIMULATION") // "SIMULATION" (ฝึกกับหุ่น), "HUMAN" (ใช้กับคนจริง)
   borrowDate         DateTime
   expectedReturnDate DateTime
   actualReturnDate   DateTime?
@@ -251,6 +252,7 @@ model RequisitionRequest {
   courseId        String?
   course          Course?   @relation(fields: [courseId], references: [id])
   purpose         String
+  useTarget       String    @default("SIMULATION") // "SIMULATION" (ฝึกกับหุ่น), "HUMAN" (ใช้กับคนจริง)
   dateNeeded      DateTime
   status          String    @default("PENDING") // "PENDING", "APPROVED", "REJECTED", "DISPENSED", "CANCELLED"
 

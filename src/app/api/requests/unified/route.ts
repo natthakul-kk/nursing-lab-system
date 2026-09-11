@@ -10,6 +10,7 @@ export async function POST(req: Request) {
       courseId,
       advisorName,
       purpose,
+      useTarget = 'SIMULATION',
       borrowDate,
       expectedReturnDate,
       borrowItems = [],
@@ -132,7 +133,12 @@ export async function POST(req: Request) {
           return NextResponse.json({ error: 'ไม่พบข้อมูลวัสดุในระบบ' }, { status: 400 });
         }
 
-        const totalStockRemaining = itemRecord.stockLots.reduce((sum, lot) => sum + lot.quantityRemaining, 0);
+        // Check expiration if requested for real human patients
+        const validLots = useTarget === 'HUMAN'
+          ? itemRecord.stockLots.filter((lot: any) => !lot.expiryDate || new Date(lot.expiryDate) >= new Date())
+          : itemRecord.stockLots;
+
+        const totalStockRemaining = validLots.reduce((sum: number, lot: any) => sum + lot.quantityRemaining, 0);
         const pendingReq = await prisma.requisitionItem.aggregate({
           where: {
             itemId: it.itemId,
@@ -143,10 +149,21 @@ export async function POST(req: Request) {
         const reservedReq = pendingReq._sum.quantityRequested || 0;
         const availableStock = Math.max(0, totalStockRemaining - reservedReq);
 
+        if (useTarget === 'HUMAN' && totalStockRemaining <= 0) {
+          return NextResponse.json(
+            {
+              error: `ไม่สามารถขอเบิกสำหรับใช้กับคนจริงได้: วัสดุ "${itemRecord.name}" ไม่มีสต็อกที่ยังไม่หมดอายุคงเหลือในคลัง (พบเฉพาะสต็อกหมดอายุที่อนุญาตให้ใช้ฝึกกับหุ่นเท่านั้น)`,
+            },
+            { status: 400 }
+          );
+        }
+
         if (availableStock <= 0) {
           return NextResponse.json(
             {
-              error: `ไม่สามารถขอเบิกได้: วัสดุ "${itemRecord.name}" มีคงคลัง ${totalStockRemaining} ${itemRecord.unit} แต่มีคำขอรอจ่ายอยู่ ${reservedReq} ${itemRecord.unit} (คงเหลือพร้อมให้ขอได้ 0 ${itemRecord.unit})`,
+              error: useTarget === 'HUMAN'
+                ? `ไม่สามารถขอเบิกสำหรับใช้กับคนจริงได้: วัสดุ "${itemRecord.name}" มีสต็อกที่ยังไม่หมดอายุคงเหลือ 0 ${itemRecord.unit}`
+                : `ไม่สามารถขอเบิกได้: วัสดุ "${itemRecord.name}" มีคงคลัง ${totalStockRemaining} ${itemRecord.unit} แต่มีคำขอรอจ่ายอยู่ ${reservedReq} ${itemRecord.unit} (คงเหลือพร้อมให้ขอได้ 0 ${itemRecord.unit})`,
             },
             { status: 400 }
           );
@@ -154,7 +171,9 @@ export async function POST(req: Request) {
         if (qty > availableStock) {
           return NextResponse.json(
             {
-              error: `ไม่สามารถขอเบิกเกินสต็อกพร้อมใช้ได้: วัสดุ "${itemRecord.name}" มีในคลัง ${totalStockRemaining} ${itemRecord.unit} (มีคำขอรอจ่ายค้างอยู่ ${reservedReq} ${itemRecord.unit}) จึงพร้อมให้ขอได้เพียง ${availableStock} ${itemRecord.unit} (ท่านระบุ ${qty})`,
+              error: useTarget === 'HUMAN'
+                ? `ไม่สามารถขอเบิกเกินจำนวนที่ยังไม่หมดอายุได้: วัสดุ "${itemRecord.name}" มีสต็อกยังไม่หมดอายุพร้อมใช้เพียง ${availableStock} ${itemRecord.unit} (ท่านระบุ ${qty})`
+                : `ไม่สามารถขอเบิกเกินสต็อกพร้อมใช้ได้: วัสดุ "${itemRecord.name}" มีในคลัง ${totalStockRemaining} ${itemRecord.unit} (มีคำขอรอจ่ายค้างอยู่ ${reservedReq} ${itemRecord.unit}) จึงพร้อมให้ขอได้เพียง ${availableStock} ${itemRecord.unit} (ท่านระบุ ${qty})`,
             },
             { status: 400 }
           );
@@ -208,6 +227,7 @@ export async function POST(req: Request) {
               courseId: courseId || null,
               advisorName: finalAdvisorName,
               purpose,
+              useTarget,
               dateNeeded: dateNeededVal,
               status: 'PENDING',
               totalCost: estimatedReqTotalCost,
@@ -232,6 +252,7 @@ export async function POST(req: Request) {
               courseId: courseId || null,
               advisorName: finalAdvisorName,
               purpose,
+              useTarget,
               borrowDate: bDateVal,
               expectedReturnDate: retDateVal,
               status: 'PENDING',

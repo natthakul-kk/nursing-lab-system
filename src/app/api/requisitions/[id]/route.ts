@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { invalidateCache } from '@/lib/cache';
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -142,11 +143,20 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         let itemTotalCost = 0;
 
         // Fetch lots FIFO: sorted by expiryDate ascending
+        const whereLots: any = {
+          itemId: reqItem.itemId,
+          quantityRemaining: { gt: 0 },
+        };
+        // Strict safety lock: if requested for human use, NEVER deduct expired lots
+        if (requisition.useTarget === 'HUMAN') {
+          whereLots.OR = [
+            { expiryDate: null },
+            { expiryDate: { gte: new Date() } },
+          ];
+        }
+
         const availableLots = await prisma.stockLot.findMany({
-          where: {
-            itemId: reqItem.itemId,
-            quantityRemaining: { gt: 0 },
-          },
+          where: whereLots,
           orderBy: [{ expiryDate: 'asc' }, { receivedDate: 'asc' }],
         });
 
@@ -234,6 +244,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         },
       });
 
+      invalidateCache('items:');
+      invalidateCache('dashboard:');
       return NextResponse.json(updated);
     }
 

@@ -323,7 +323,7 @@ function generateHtmlPage(fc) {
       flowchart: {
         useMaxWidth: false,
         htmlLabels: true,
-        curve: 'basis'
+        curve: 'linear'
       }
     });
   </script>

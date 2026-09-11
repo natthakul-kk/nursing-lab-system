@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>ผังงานที่ 1: ภาพรวมขั้นตอนการใช้งานของนิสิต (Overall Student Lifecycle)</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=Prompt:wght@400;600;700&display=swap');
+    body {
+      margin: 0;
+      padding: 30px;
+      background: #ffffff;
+      font-family: 'Sarabun', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .header-box {
+      text-align: center;
+      margin-bottom: 20px;
+      padding-bottom: 14px;
+      border-bottom: 2px solid #0d9488;
+      width: 100%;
+      max-width: 950px;
+    }
+    .header-box h1 {
+      font-family: 'Prompt', sans-serif;
+      font-size: 20px;
+      color: #0f766e;
+      margin: 0 0 6px 0;
+    }
+    .header-box p {
+      font-size: 13px;
+      color: #64748b;
+      margin: 0;
+    }
+    .legend {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 10px;
+      font-size: 11px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .legend-box {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+    }
+    .mermaid {
+      background: #ffffff;
+      display: flex;
+      justify-content: center;
+    }
+    .mermaid svg {
+      max-width: 100%;
+      height: auto;
+      font-family: 'Sarabun', sans-serif !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="header-box">
+    <h1>ผังงานที่ 1: ภาพรวมขั้นตอนการใช้งานของนิสิต (Overall Student Lifecycle)</h1>
+    <p>คู่มือการใช้งานระบบห้องปฏิบัติการพยาบาลศาสตร์ สำหรับนิสิต (Student User Manual)</p>
+    <div class="legend">
+      <div class="legend-item"><span class="legend-box" style="background:#047857;"></span><span>จุดเริ่มต้น/สิ้นสุด (Terminal)</span></div>
+      <div class="legend-item"><span class="legend-box" style="background:#ffffff;border:1.5px solid #0284c7;"></span><span>ขั้นตอนการทำงาน (Process)</span></div>
+      <div class="legend-item"><span class="legend-box" style="background:#fef3c7;border:1.5px solid #d97706;"></span><span>จุดตัดสินใจเงื่อนไข (Decision)</span></div>
+      <div class="legend-item"><span class="legend-box" style="background:#eff6ff;border:1.5px solid #2563eb;"></span><span>การรับ-แสดงข้อมูล (Input/Output)</span></div>
+      <div class="legend-item"><span class="legend-box" style="background:#f0fdf4;border:1.5px solid #16a34a;"></span><span>สำเร็จ/อนุมัติ (Approved)</span></div>
+      <div class="legend-item"><span class="legend-box" style="background:#fef2f2;border:1.5px solid #dc2626;"></span><span>ไม่อนุมัติ/ข้อผิดพลาด (Rejected)</span></div>
+    </div>
+  </div>
+  <div class="mermaid">
+    flowchart TD
+    classDef terminator fill:#047857,stroke:#065f46,stroke-width:2.5px,color:#ffffff,font-weight:bold;
+    classDef process fill:#ffffff,stroke:#0284c7,stroke-width:2px,color:#0f172a;
+    classDef inputOutput fill:#eff6ff,stroke:#2563eb,stroke-width:2px,color:#1e40af;
+    classDef decision fill:#fef3c7,stroke:#d97706,stroke-width:2.5px,color:#92400e,font-weight:bold;
+    classDef successProcess fill:#f0fdf4,stroke:#16a34a,stroke-width:2px,color:#14532d,font-weight:bold;
+    classDef warnProcess fill:#fef2f2,stroke:#dc2626,stroke-width:2px,color:#991b1b;
+    classDef doc fill:#fdf4ff,stroke:#a855f7,stroke-width:2px,color:#6b21a8;
+
+    Start([🟢 เริ่มต้น: นิสิตล็อกอินเข้าระบบด้วยรหัสนิสิต]):::terminator
+    SelectService{เลือกบริการ<br/>ที่ต้องการใช้งาน?}:::decision
+    Start --> SelectService
+
+    %% Branch 1: Borrow & Requisition
+    ReqService[/1. ยืม-คืนครุภัณฑ์ และเบิกพัสดุสิ้นเปลือง/]:::inputOutput
+    SelectService -->|ต้องการอุปกรณ์รายวิชา| ReqService
+    FillUnifiedForm[กรอกฟอร์ม One-Stop: เลือกวิชา, กำหนดวัตถุประสงค์, เลือกของ]:::process
+    ReqService --> FillUnifiedForm
+    WaitApproval{อาจารย์และเจ้าหน้าที่<br/>อนุมัติคำขอหรือไม่?}:::decision
+    FillUnifiedForm --> WaitApproval
+    RejectReq[❌ ไม่อนุมัติ: ดูเหตุผลและแก้ไขส่งใหม่]:::warnProcess
+    WaitApproval -->|ไม่อนุมัติ| RejectReq
+    RejectReq -.->|ปรับแก้| FillUnifiedForm
+    ApproveReq[✅ อนุมัติคำขอ: สถานะ APPROVED พร้อมรับของ]:::successProcess
+    WaitApproval -->|อนุมัติ| ApproveReq
+    PickItems[ติดต่อรับของที่ห้องแล็บพยาบาล ณ วันนัดหมาย]:::process
+    ApproveReq --> PickItems
+    UseItems[นำอุปกรณ์ไปใช้ฝึกปฏิบัติการในคาบเรียน]:::process
+    PickItems --> UseItems
+    ReturnItems[นำครุภัณฑ์ส่งคืน ณ เคาน์เตอร์แล็บตามกำหนด]:::process
+    UseItems --> ReturnItems
+    CheckCondition{สภาพครุภัณฑ์<br/>สมบูรณ์หรือไม่?}:::decision
+    ReturnItems --> CheckCondition
+    ReturnOk[เจ้าหน้าที่ตรวจรับครบถ้วน: คืนเสร็จสมบูรณ์ RETURNED]:::successProcess
+    CheckCondition -->|สมบูรณ์| ReturnOk
+    ReturnIssue[บันทึกอาการชำรุด / ส่งซ่อมบำรุง RETURNED_WITH_ISSUE]:::warnProcess
+    CheckCondition -->|ชำรุด/มีปัญหา| ReturnIssue
+
+    %% Branch 2: Practice Kits
+    KitService[/2. ชุดฝึกปฏิบัติการสำเร็จรูป Kits/]:::inputOutput
+    SelectService -->|ต้องการชุด Box Set| KitService
+    SelectKit[เลือกชุดตามหัตถการ เช่น ชุดทำแผล, ชุดสวนปัสสาวะ]:::process
+    KitService --> SelectKit
+    OneClickReq[กดขอเบิกแบบ One-Click: ระบบดึงพัสดุทั้งชุดอัตโนมัติ]:::process
+    SelectKit --> OneClickReq
+    OneClickReq --> WaitApproval
+
+    %% Branch 3: Practice Booking
+    BookingService[/3. ขอเข้าฝึกปฏิบัติด้วยตนเอง จองห้องแล็บ/]:::inputOutput
+    SelectService -->|ต้องการซ้อมนอกเวลา| BookingService
+    SelectSlot[เลือกห้องแล็บ วันที่ และรอบเวลาที่เปิดบริการ]:::process
+    BookingService --> SelectSlot
+    CheckSlot{รอบเวลาดังกล่าว<br/>มีที่ว่างหรือไม่?}:::decision
+    SelectSlot --> CheckSlot
+    SlotFull[❌ รอบเต็ม: กรุณาเลือกรอบอื่นหรือห้องอื่น]:::warnProcess
+    CheckSlot -->|รอบเต็ม| SlotFull
+    SlotFull -.-> SelectSlot
+    ConfirmBooking[ยืนยันการจอง: ระบุวิชา และอาจารย์ที่ปรึกษา]:::process
+    CheckSlot -->|มีที่ว่าง| ConfirmBooking
+    GetTicket[📄 ได้รับ E-Ticket พร้อม QR Code ประจำการจอง]:::doc
+    ConfirmBooking --> GetTicket
+    ArriveLab[เดินทางมาถึงหน้าห้องแล็บตามวัน-เวลาที่จอง]:::process
+    GetTicket --> ArriveLab
+    ScanQR[สแกน QR Code Check-in เพื่อเข้าห้องปฏิบัติการ]:::process
+    ArriveLab --> ScanQR
+    CompletePractice[เสร็จสิ้นการฝึกซ้อม บันทึกสถิติชั่วโมงฝึก COMPLETED]:::successProcess
+    ScanQR --> CompletePractice
+
+    %% End
+    EndSuccess([🔴 สิ้นสุด: การใช้งานระบบสมบูรณ์]):::terminator
+    ReturnOk --> EndSuccess
+    ReturnIssue --> EndSuccess
+    CompletePractice --> EndSuccess
+    
+  </div>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'default',
+      flowchart: {
+        useMaxWidth: false,
+        htmlLabels: true,
+        curve: 'basis'
+      }
+    });
+  </script>
+</body>
+</html>

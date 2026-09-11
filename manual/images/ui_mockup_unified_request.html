@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=Prompt:wght@400;600;700;800&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Sarabun', sans-serif; }
+    body { background: #f1f5f9; padding: 24px; display: flex; justify-content: center; }
+    .modal {
+      background: #ffffff; width: 100%; max-width: 860px; border-radius: 20px;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.15); border: 1px solid #e2e8f0; overflow: hidden;
+    }
+    .modal-header {
+      background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+      color: white; padding: 20px 24px; display: flex; justify-content: space-between; align-items: center;
+    }
+    .modal-title { font-family: 'Prompt', sans-serif; font-size: 18px; font-weight: 700; }
+    .modal-subtitle { font-size: 12px; opacity: 0.9; margin-top: 2px; }
+    .badge-onestop {
+      background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);
+      padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+    }
+    .modal-body { padding: 24px; }
+    .section-title {
+      font-family: 'Prompt', sans-serif; font-size: 13px; font-weight: 700; color: #0f766e;
+      text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; display: flex;
+      align-items: center; gap: 8px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px;
+    }
+    .toggle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px; }
+    .toggle-card {
+      border: 2px solid #e2e8f0; border-radius: 14px; padding: 12px 14px;
+      display: flex; gap: 12px; align-items: flex-start; background: #f8fafc;
+    }
+    .toggle-card.active-sim {
+      border-color: #0d9488; background: #f0fdfa; box-shadow: 0 4px 12px -2px rgba(13, 148, 136, 0.15);
+    }
+    .toggle-card.inactive-human { border-color: #fecdd3; background: #fff1f2; opacity: 0.75; }
+    .toggle-icon { font-size: 24px; }
+    .toggle-content h4 { font-size: 12.5px; font-weight: 700; color: #0f172a; }
+    .toggle-content p { font-size: 11px; color: #64748b; margin-top: 2px; line-height: 1.3; }
+    .sim-tag { background: #ccfbf1; color: #0f766e; font-size: 10px; padding: 2px 6px; border-radius: 6px; font-weight: 700; display: inline-block; margin-left: 6px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+    .field label { display: block; font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 5px; }
+    .field input, .field select, .field textarea {
+      width: 100%; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 10px;
+      font-size: 12px; background: #ffffff; color: #1e293b;
+    }
+    .auto-fill-bar {
+      grid-column: span 2; background: #f0fdfa; border: 1px solid #99f6e4;
+      border-radius: 10px; padding: 8px 12px; display: flex; justify-content: space-between;
+      align-items: center; font-size: 11.5px; color: #0f766e;
+    }
+    .table-container { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin-bottom: 16px; }
+    table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+    th { background: #f1f5f9; padding: 8px 12px; text-align: left; font-weight: 700; color: #475569; border-bottom: 1px solid #e2e8f0; }
+    td { padding: 8px 12px; border-bottom: 1px solid #f1f5f9; color: #1e293b; }
+    .badge-item-type { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; }
+    .type-eq { background: #dbeafe; color: #1e40af; }
+    .type-con { background: #ffedd5; color: #9a3412; }
+    .modal-footer {
+      display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px;
+      padding-top: 14px; border-top: 1px solid #e2e8f0;
+    }
+    .btn-cancel {
+      padding: 9px 18px; border-radius: 10px; border: 1px solid #cbd5e1;
+      background: #ffffff; color: #64748b; font-size: 12.5px; font-weight: 600;
+    }
+    .btn-submit {
+      padding: 9px 22px; border-radius: 10px; border: none; background: #0d9488;
+      color: white; font-size: 12.5px; font-weight: 700; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">📑 ฟอร์มสร้างคำขอยืม-เบิกพัสดุและครุภัณฑ์ One-Stop</div>
+        <div class="modal-subtitle">คณะพยาบาลศาสตร์ มหาวิทยาลัย (ผู้ยื่น: น.ส. นภัสสร ใจดี - รหัส 66010023)</div>
+      </div>
+      <div class="badge-onestop">One-Stop Requisition</div>
+    </div>
+
+    <div class="modal-body">
+      <div class="section-title">1. วัตถุประสงค์การใช้งาน (Use Target & Safety Lock)</div>
+      <div class="toggle-grid">
+        <div class="toggle-card active-sim">
+          <div class="toggle-icon">🧪</div>
+          <div class="toggle-content">
+            <h4>ฝึกปฏิบัติการกับหุ่นจำลอง <span class="sim-tag">Sim-Lab (แนะนำ)</span></h4>
+            <p>สำหรับซ้อมในห้องปฏิบัติการ อนุญาตให้ใช้เวชภัณฑ์หมดอายุได้เพื่อประหยัดงบประมาณ</p>
+          </div>
+        </div>
+
+        <div class="toggle-card inactive-human">
+          <div class="toggle-icon">🧑‍⚕️</div>
+          <div class="toggle-content">
+            <h4 style="color: #9f1239;">ใช้งานกับคนจริง / คลินิก (Clinical Patient)</h4>
+            <p style="color: #be123c;">สำหรับผู้ป่วยจริง มีระบบล็อคความปลอดภัย (บล็อกล็อตหมดอายุ 100%)</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-title">2. ข้อมูลรายวิชาและวันเวลานัดหมาย</div>
+      <div class="form-row">
+        <div class="field">
+          <label>รายวิชาทางการพยาบาล *</label>
+          <input type="text" value="NS201 การพยาบาลพื้นฐาน (Fundamental of Nursing)" readonly>
+        </div>
+        <div class="field">
+          <label>อาจารย์ผู้รับผิดชอบรายวิชา / ที่ปรึกษา *</label>
+          <input type="text" value="ผศ.ดร.พิมพา สุขเกษม (ภาควิชาการพยาบาลพื้นฐาน)" readonly>
+        </div>
+        <div class="auto-fill-bar">
+          <span>🎓 <b>ระบบค้นหาอัตโนมัติ:</b> ตรวจพบรายวิชา NS201 กำหนดอาจารย์ผู้สอนให้อัตโนมัติ</span>
+          <span style="background: white; border: 1px solid #5eead4; padding: 2px 8px; border-radius: 6px; font-weight: bold;">✓ ตรวจสอบแล้ว</span>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="field">
+          <label>วัน-เวลาที่ต้องการรับของ *</label>
+          <input type="text" value="12 ก.ย. 2569 เวลา 09:00 น." readonly>
+        </div>
+        <div class="field">
+          <label>กำหนดวันส่งคืนครุภัณฑ์ *</label>
+          <input type="text" value="12 ก.ย. 2569 เวลา 16:30 น." readonly>
+        </div>
+      </div>
+
+      <div class="section-title">3. รายการพัสดุและครุภัณฑ์ที่ต้องการขอรับ</div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 15%;">ประเภท</th>
+              <th>ชื่อรายการอุปกรณ์ / เวชภัณฑ์</th>
+              <th style="width: 15%;">จำนวนขอ</th>
+              <th style="width: 25%;">ล็อต / หมายเหตุความปลอดภัย</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="badge-item-type type-eq">ยืมครุภัณฑ์</span></td>
+              <td><b>หุ่นฝึกทำแผลจำลองเสมือนจริง (Adult Wound Care Manikin)</b></td>
+              <td>1 ตัว</td>
+              <td>พร้อมกล่องใส่อุปกรณ์ครบชุด</td>
+            </tr>
+            <tr>
+              <td><span class="badge-item-type type-eq">ยืมครุภัณฑ์</span></td>
+              <td><b>เครื่องวัดความดันโลหิตแบบดิจิทัล (Digital Sphygmomanometer)</b></td>
+              <td>1 เครื่อง</td>
+              <td>ผ่านการสอบเทียบมาตรฐาน</td>
+            </tr>
+            <tr>
+              <td><span class="badge-item-type type-con">เบิกสิ้นเปลือง</span></td>
+              <td><b>ถุงมือยางสังเคราะห์ตรวจโรค ไซส์ M (Nitrile Gloves M)</b></td>
+              <td>2 คู่</td>
+              <td>จัดสรรจากสต็อกฝึกแล็บ</td>
+            </tr>
+            <tr>
+              <td><span class="badge-item-type type-con">เบิกสิ้นเปลือง</span></td>
+              <td><b>ผ้ากอซสเตอไรล์ (Sterile Gauze 3x3 นิ้ว)</b></td>
+              <td>1 แพ็ค (5 ชิ้น)</td>
+              <td>ล็อตสำหรับหุ่น (Expired for Sim OK)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancel">ยกเลิก</button>
+        <button class="btn-submit">🚀 ยืนยันและส่งคำขอ One-Stop</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

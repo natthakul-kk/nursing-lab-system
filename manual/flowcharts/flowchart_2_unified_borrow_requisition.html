@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>ผังงานที่ 2: ขั้นตอนการยืม-เบิกแบบ One-Stop พร้อมเงื่อนไขตรวจสอบความปลอดภัย (Unified Request Flow)</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=Prompt:wght@400;600;700&display=swap');
+    body {
+      margin: 0;
+      padding: 30px;
+      background: #ffffff;
+      font-family: 'Sarabun', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .header-box {
+      text-align: center;
+      margin-bottom: 20px;
+      padding-bottom: 14px;
+      border-bottom: 2px solid #0d9488;
+      width: 100%;
+      max-width: 950px;
+    }
+    .header-box h1 {
+      font-family: 'Prompt', sans-serif;
+      font-size: 20px;
+      color: #0f766e;
+      margin: 0 0 6px 0;
+    }
+    .header-box p {
+      font-size: 13px;
+      color: #64748b;
+      margin: 0;
+    }
+    .legend {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 10px;
+      font-size: 11px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .legend-box {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+    }
+    .mermaid {
+      background: #ffffff;
+      display: flex;
+      justify-content: center;
+    }
+    .mermaid svg {
+      max-width: 100%;
+      height: auto;
+      font-family: 'Sarabun', sans-serif !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="header-box">
+    <h1>ผังงานที่ 2: ขั้นตอนการยืม-เบิกแบบ One-Stop พร้อมเงื่อนไขตรวจสอบความปลอดภัย (Unified Request Flow)</h1>
+    <p>คู่มือการใช้งานระบบห้องปฏิบัติการพยาบาลศาสตร์ สำหรับนิสิต (Student User Manual)</p>
+    <div class="legend">
+      <div class="legend-item"><span class="legend-box" style="background:#047857;"></span><span>จุดเริ่มต้น/สิ้นสุด (Terminal)</span></div>
+      <div class="legend-item"><span class="legend-box" style="background:#ffffff;border:1.5px solid #0284c7;"></span><span>ขั้นตอนการทำงาน (Process)</span></div>
+      <div class="legend-item"><span class="legend-box" style="background:#fef3c7;border:1.5px solid #d97706;"></span><span>จุดตัดสินใจเงื่อนไข (Decision)</span></div>
+      <div class="legend-item"><span class="legend-box" style="background:#eff6ff;border:1.5px solid #2563eb;"></span><span>การรับ-แสดงข้อมูล (Input/Output)</span></div>
+      <div class="legend-item"><span class="legend-box" style="background:#f0fdf4;border:1.5px solid #16a34a;"></span><span>สำเร็จ/อนุมัติ (Approved)</span></div>
+      <div class="legend-item"><span class="legend-box" style="background:#fef2f2;border:1.5px solid #dc2626;"></span><span>ไม่อนุมัติ/ข้อผิดพลาด (Rejected)</span></div>
+    </div>
+  </div>
+  <div class="mermaid">
+    flowchart TD
+    classDef terminator fill:#0f766e,stroke:#115e59,stroke-width:2.5px,color:#ffffff,font-weight:bold;
+    classDef process fill:#ffffff,stroke:#0284c7,stroke-width:2px,color:#0f172a;
+    classDef inputOutput fill:#eff6ff,stroke:#2563eb,stroke-width:2px,color:#1e40af;
+    classDef decision fill:#fef3c7,stroke:#d97706,stroke-width:2.5px,color:#92400e,font-weight:bold;
+    classDef successProcess fill:#f0fdf4,stroke:#16a34a,stroke-width:2px,color:#14532d,font-weight:bold;
+    classDef warnProcess fill:#fef2f2,stroke:#dc2626,stroke-width:2px,color:#991b1b;
+    classDef doc fill:#fdf4ff,stroke:#a855f7,stroke-width:2px,color:#6b21a8;
+
+    StartReq([🟢 เริ่มต้น: กดสร้างคำขอยืม-เบิกใหม่ One-Stop]):::terminator
+    ChooseCourse[/เลือกรหัสรายวิชา: ระบบค้นหาชื่ออาจารย์ผู้รับผิดชอบให้อัตโนมัติ/]:::inputOutput
+    StartReq --> ChooseCourse
+
+    DecideTarget{วัตถุประสงค์การใช้งาน<br/>(Use Target)?}:::decision
+    ChooseCourse --> DecideTarget
+
+    %% Human Branch
+    HumanPath[/🧑‍⚕️ ใช้งานกับคนจริง / คลินิก Clinical Patient/]:::inputOutput
+    DecideTarget -->|ใช้กับคนจริง| HumanPath
+    LockSafety[🛡️ เปิดระบบ Patient Safety Lock ตรวจสอบวันหมดอายุ 100%]:::process
+    HumanPath --> LockSafety
+    CheckUnexpired{ยอดสต็อกที่ยังไม่หมดอายุ<br/>มีเพียงพอหรือไม่?}:::decision
+    LockSafety --> CheckUnexpired
+    RejectHuman[❌ ปฏิเสธการขอเบิก: ล็อตหมดอายุไม่สามารถใช้กับคนจริงได้]:::warnProcess
+    CheckUnexpired -->|ไม่พอ/หมดอายุ| RejectHuman
+    RejectHuman -.->|เปลี่ยนรายการ/ลดจำนวน| ChooseCourse
+    PassHuman[✅ ตรวจสอบผ่าน: จัดสรรเฉพาะล็อตที่ยังไม่หมดอายุ]:::successProcess
+    CheckUnexpired -->|เพียงพอ| PassHuman
+
+    %% Simulation Branch
+    SimPath[/🧪 ฝึกปฏิบัติการกับหุ่นจำลอง Sim-Lab Training/]:::inputOutput
+    DecideTarget -->|ฝึกกับหุ่น| SimPath
+    AllowExpired[ระบบอนุญาตให้ใช้เวชภัณฑ์ที่หมดอายุได้เพื่อประหยัดทรัพยากร]:::process
+    SimPath --> AllowExpired
+    CheckTotalStock{ยอดสต็อกรวมทั้งหมด<br/>มีเพียงพอหรือไม่?}:::decision
+    AllowExpired --> CheckTotalStock
+    RejectSim[❌ ปฏิเสธ: ยอดของในคลังไม่พอ]:::warnProcess
+    CheckTotalStock -->|ไม่เพียงพอ| RejectSim
+    RejectSim -.->|เปลี่ยนรายการ| ChooseCourse
+    PassSim[✅ ตรวจสอบผ่าน: ติดป้ายเตือนสีเหลือง สำหรับฝึกกับหุ่นเท่านั้น]:::successProcess
+    CheckTotalStock -->|เพียงพอ| PassSim
+
+    %% Merge
+    SelectItems[/เลือกรายการครุภัณฑ์ที่ยืม และระบุวัสดุสิ้นเปลืองที่ขอเบิก/]:::inputOutput
+    PassHuman --> SelectItems
+    PassSim --> SelectItems
+    SetDates[/ระบุวัน-เวลาที่ยืม และกำหนดวันส่งคืน/]:::inputOutput
+    SelectItems --> SetDates
+    SubmitForm[กดยืนยัน: ส่งคำขอรวม One-Stop เข้าสู่ระบบ]:::process
+    SetDates --> SubmitForm
+
+    NotifyAdvisor[📄 ส่งแจ้งเตือนอาจารย์ผู้รับผิดชอบรายวิชารับทราบ]:::doc
+    SubmitForm --> NotifyAdvisor
+    AdvisorAck{อาจารย์ผู้สอน<br/>กดรับทราบแล้วหรือไม่?}:::decision
+    NotifyAdvisor --> AdvisorAck
+    WaitAck[สถานะ: รออาจารย์รับทราบ Pending Advisor Acknowledgment]:::warnProcess
+    AdvisorAck -->|ยังไม่รับทราบ| WaitAck
+    WaitAck -.->|อาจารย์ตรวจสอบ| AdvisorAck
+
+    OfficerReview[เจ้าหน้าที่แล็บพยาบาล ตรวจสอบและจัดสรรของ]:::process
+    AdvisorAck -->|รับทราบแล้ว| OfficerReview
+    OfficerApprove{เจ้าหน้าที่แล็บ<br/>อนุมัติคำขอหรือไม่?}:::decision
+    OfficerReview --> OfficerApprove
+    RejectOfficer[❌ ไม่อนุมัติ: ระบุเหตุผลในระบบ]:::warnProcess
+    OfficerApprove -->|ไม่อนุมัติ| RejectOfficer
+    ApproveDone[✅ อนุมัติเรียบร้อย: สถานะ APPROVED พร้อมจ่ายของ]:::successProcess
+    OfficerApprove -->|อนุมัติ| ApproveDone
+
+    DispenseItems[นิสิตติดต่อรับพัสดุ: เจ้าหน้าที่จ่ายของตามล็อตที่อนุมัติ]:::process
+    ApproveDone --> DispenseItems
+    EndReq([🔴 สิ้นสุดขั้นตอนการยืม-เบิก]):::terminator
+    DispenseItems --> EndReq
+    
+  </div>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'default',
+      flowchart: {
+        useMaxWidth: false,
+        htmlLabels: true,
+        curve: 'basis'
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>คู่มือการใช้งานระบบห้องปฏิบัติการพยาบาลศาสตร์ สำหรับนิสิต (Student User Manual)</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=Prompt:wght@400;600;700;800&display=swap');
+    
+    :root {
+      --primary: #0d9488;
+      --primary-dark: #0f766e;
+      --primary-light: #f0fdfa;
+      --secondary: #0284c7;
+      --accent: #f59e0b;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --border: #e2e8f0;
+      --bg-page: #f8fafc;
+      --bg-card: #ffffff;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Sarabun', sans-serif;
+      background: var(--bg-page);
+      color: var(--text-main);
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 24px;
+    }
+
+    /* Cover / Header */
+    .manual-header {
+      background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+      color: white;
+      border-radius: 24px;
+      padding: 48px 36px;
+      text-align: center;
+      margin-bottom: 36px;
+      box-shadow: 0 20px 40px -15px rgba(13, 148, 136, 0.3);
+    }
+    .header-badge {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      padding: 6px 16px;
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      letter-spacing: 0.5px;
+    }
+    .manual-header h1 {
+      font-family: 'Prompt', sans-serif;
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1.3;
+      margin-bottom: 10px;
+    }
+    .manual-header h2 {
+      font-size: 18px;
+      font-weight: 400;
+      opacity: 0.95;
+      margin-bottom: 18px;
+    }
+    .manual-header p {
+      font-size: 14px;
+      opacity: 0.85;
+    }
+
+    /* Card Content */
+    .card {
+      background: var(--bg-card);
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      padding: 36px;
+      margin-bottom: 28px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
+    }
+
+    h2.chapter-title {
+      font-family: 'Prompt', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--primary-dark);
+      border-bottom: 2px solid #ccfbf1;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    h3.section-title {
+      font-family: 'Prompt', sans-serif;
+      font-size: 17px;
+      font-weight: 600;
+      color: #1e293b;
+      margin-top: 24px;
+      margin-bottom: 12px;
+    }
+
+    p {
+      margin-bottom: 14px;
+      color: var(--text-muted);
+    }
+
+    ul, ol {
+      margin-left: 24px;
+      margin-bottom: 16px;
+      color: var(--text-muted);
+    }
+    li {
+      margin-bottom: 6px;
+    }
+
+    /* Images & Figures */
+    .figure-box {
+      margin: 24px 0;
+      text-align: center;
+      background: #f8fafc;
+      border-radius: 16px;
+      padding: 16px;
+      border: 1px solid var(--border);
+    }
+    .figure-box img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    }
+    .figure-caption {
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 10px;
+      font-weight: 500;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 18px 0;
+      font-size: 14px;
+    }
+    th {
+      background: #f1f5f9;
+      color: #334155;
+      font-weight: 700;
+      text-align: left;
+      padding: 12px 16px;
+      border-bottom: 2px solid var(--border);
+    }
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+    tr:hover td {
+      background: #f8fafc;
+    }
+
+    /* Callout Alert */
+    .callout {
+      border-radius: 14px;
+      padding: 16px 20px;
+      margin: 20px 0;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      font-size: 14px;
+    }
+    .callout-info {
+      background: #f0fdfa;
+      border: 1.5px solid #99f6e4;
+      color: #0f766e;
+    }
+    .callout-warn {
+      background: #fff1f2;
+      border: 1.5px solid #fecdd3;
+      color: #be123c;
+    }
+
+    /* Table of contents */
+    .toc-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    .toc-list li {
+      padding: 8px 0;
+      border-bottom: 1px dashed var(--border);
+    }
+    .toc-list a {
+      color: var(--primary-dark);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .toc-list a:hover {
+      text-decoration: underline;
+    }
+
+    /* Print styles */
+    @media print {
+      body { background: white; }
+      .container { max-width: 100%; padding: 0; }
+      .card { border: none; box-shadow: none; padding: 10px 0; page-break-inside: avoid; }
+      .figure-box { border: none; padding: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="manual-header">
+      <span class="header-badge">SMART NURSING LAB • STUDENT MANUAL</span>
+      <h1>คู่มือการใช้งานระบบห้องปฏิบัติการพยาบาลศาสตร์</h1>
+      <h2>สำหรับนิสิตพยาบาลศาสตร์ (Student User Manual)</h2>
+      <p>คณะพยาบาลศาสตร์ มหาวิทยาลัย • ฉบับปรับปรุงมาตรฐานสากลและระบบความปลอดภัย 2569</p>
+    </div>
+
+    <!-- TOC -->
+    <div class="card">
+      <h2 class="chapter-title">📑 สารบัญ (Table of Contents)</h2>
+      <ul class="toc-list">
+        <li><a href="#intro">บทนำ: วัตถุประสงค์และภาพรวมระบบ</a></li>
+        <li><a href="#ch1">บทที่ 1: การเข้าสู่ระบบและการเตรียมความพร้อม</a></li>
+        <li><a href="#ch2">บทที่ 2: ผังงานขั้นตอนการทำงานมาตรฐาน (Standard ISO/ANSI Flowcharts)</a></li>
+        <li><a href="#ch3">บทที่ 3: ขั้นตอนการยืม-คืนครุภัณฑ์ และเบิกพัสดุสิ้นเปลือง (One-Stop Requisition)</a></li>
+        <li><a href="#ch4">บทที่ 4: การขอเบิกชุดฝึกปฏิบัติการสำเร็จรูป (Nursing Practice Kits)</a></li>
+        <li><a href="#ch5">บทที่ 5: การขอเข้าฝึกปฏิบัติการด้วยตนเองและสแกน QR Code (Self-Practice & QR Check-in)</a></li>
+        <li><a href="#ch6">บทที่ 6: การส่งคืนอุปกรณ์และข้อปฏิบัติความปลอดภัย (Return Guidelines & Safety)</a></li>
+      </ul>
+    </div>
+
+    <!-- Intro -->
+    <div class="card" id="intro">
+      <h2 class="chapter-title">🩺 บทนำและวัตถุประสงค์ของระบบ</h2>
+      <p>ระบบบริหารจัดการห้องปฏิบัติการพยาบาลศาสตร์ (Smart Nursing Lab Management System) ได้รับการออกแบบขึ้นเพื่อสนับสนุนการเรียนการสอนและฝึกทักษะทางการพยาบาลของนิสิต ให้เป็นไปอย่างราบรื่น รวดเร็ว ถูกต้องตามหลักการพยาบาล และเกิดความปลอดภัยสูงสุด</p>
+      
+      <div class="callout callout-info">
+        <div>💡</div>
+        <div>
+          <b>3 จุดเด่นสำคัญสำหรับนิสิต:</b>
+          <ol style="margin-top: 6px; margin-bottom: 0;">
+            <li><b>One-Stop Requisition:</b> รวมการยืมครุภัณฑ์และการเบิกเวชภัณฑ์ในใบเดียว</li>
+            <li><b>Patient Safety Lock:</b> แยกการเบิกเวชภัณฑ์สำหรับ "หุ่นจำลอง" กับ "คนจริง" ชัดเจน 100%</li>
+            <li><b>Self-Practice Booking & E-Ticket:</b> จองห้องแล็บซ้อมนอกเวลา พร้อมสแกน QR Code เข้าห้องได้ทันที</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chapter 1 -->
+    <div class="card" id="ch1">
+      <h2 class="chapter-title">🔑 บทที่ 1: การเข้าสู่ระบบและการเตรียมความพร้อม</h2>
+      <p>นิสิตสามารถเข้าใช้งานระบบผ่านอุปกรณ์ใดก็ได้ โดยเข้าสู่หน้าล็อกอินด้วยบัญชีมหาวิทยาลัยหรือรหัสนิสิต</p>
+
+      <div class="figure-box">
+        <img src="./images/ui_mockup_login.png" alt="หน้าจอเข้าสู่ระบบสำหรับนิสิตพยาบาล">
+        <div class="figure-caption">รูปที่ 1.1: หน้าจอเข้าสู่ระบบสำหรับนิสิตพยาบาล (Student Login)</div>
+      </div>
+
+      <h3 class="section-title">ข้อมูลตัวอย่างนิสิตในคู่มือ (Student Persona):</h3>
+      <ul>
+        <li><b>ชื่อ-สกุล:</b> น.ส. นภัสสร ใจดี</li>
+        <li><b>รหัสนิสิต:</b> 66010023 (ชั้นปีที่ 2 สาขาวิชาพยาบาลศาสตร์)</li>
+        <li><b>รายวิชาที่เรียน:</b> NS201 การพยาบาลพื้นฐาน (Fundamental of Nursing)</li>
+        <li><b>อาจารย์ประจำวิชา:</b> ผศ.ดร.พิมพา สุขเกษม</li>
+      </ul>
+    </div>
+
+    <!-- Chapter 2 -->
+    <div class="card" id="ch2">
+      <h2 class="chapter-title">📊 บทที่ 2: ผังงานขั้นตอนการทำงานมาตรฐาน (Standard Flowcharts)</h2>
+      <p>ผังงานในระบบใช้มาตรฐานสากล ISO 5807 / ANSI เพื่อให้นิสิตเข้าใจลำดับขั้นตอนและจุดตัดสินใจทางเทคนิคได้อย่างชัดเจน</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>สัญลักษณ์</th>
+            <th>ชื่อเรียก</th>
+            <th>ความหมาย</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>🟢 วงรี / แคปซูล</td>
+            <td>Terminator</td>
+            <td>จุดเริ่มต้นหรือจุดสิ้นสุดกระบวนการ</td>
+          </tr>
+          <tr>
+            <td>⬜ สี่เหลี่ยมผืนผ้า</td>
+            <td>Process</td>
+            <td>ขั้นตอนการปฏิบัติงานหรือการประมวลผล</td>
+          </tr>
+          <tr>
+            <td>🔶 สี่เหลี่ยมข้าวหลามตัด</td>
+            <td>Decision</td>
+            <td>จุดตรวจสอบเงื่อนไข / การตัดสินใจ (Yes/No)</td>
+          </tr>
+          <tr>
+            <td>🔷 สี่เหลี่ยมด้านขนาน</td>
+            <td>Data / I/O</td>
+            <td>การกรอกข้อมูลนำเข้า หรือการแสดงผล</td>
+          </tr>
+          <tr>
+            <td>📄 เอกสาร</td>
+            <td>Document</td>
+            <td>การออกเอกสาร บัตรคิว หรือ E-Ticket</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3 class="section-title">2.1 ผังงานภาพรวมการใช้งานของนิสิต (Overall Student Lifecycle)</h3>
+      <div class="figure-box">
+        <img src="./flowcharts/flowchart_1_student_lifecycle.png" alt="ผังงานภาพรวมการใช้งานของนิสิต">
+        <div class="figure-caption">ผังงานที่ 1: ภาพรวมกระบวนการใช้งานระบบของนิสิตพยาบาล</div>
+      </div>
+
+      <h3 class="section-title">2.2 ผังงานการยืม-เบิก One-Stop และระบบ Patient Safety Lock</h3>
+      <div class="figure-box">
+        <img src="./flowcharts/flowchart_2_unified_borrow_requisition.png" alt="ผังงานการยืม-เบิก One-Stop">
+        <div class="figure-caption">ผังงานที่ 2: ขั้นตอนการยืม-เบิกแบบ One-Stop พร้อมระบบ Patient Safety Lock</div>
+      </div>
+
+      <h3 class="section-title">2.3 ผังงานการจองห้องปฏิบัติการและ Check-in สแกนเข้าห้อง</h3>
+      <div class="figure-box">
+        <img src="./flowcharts/flowchart_3_practice_booking.png" alt="ผังงานการจองห้องแล็บและ Check-in">
+        <div class="figure-caption">ผังงานที่ 3: ขั้นตอนการจองห้องแล็บและสแกน QR Code Check-in</div>
+      </div>
+    </div>
+
+    <!-- Chapter 3 -->
+    <div class="card" id="ch3">
+      <h2 class="chapter-title">📑 บทที่ 3: ขั้นตอนการยืม-คืนครุภัณฑ์ และเบิกพัสดุสิ้นเปลือง (One-Stop Requisition)</h2>
+      <p>ระบบรองรับการยื่นคำขอในหน้าต่างเดียว ทั้งครุภัณฑ์ที่ต้องส่งคืน และเวชภัณฑ์สิ้นเปลืองที่เบิกใช้หมดไป</p>
+
+      <div class="figure-box">
+        <img src="./images/ui_mockup_unified_request.png" alt="หน้าต่างขอยืม-เบิกแบบ One-Stop">
+        <div class="figure-caption">รูปที่ 3.1: หน้าต่างขอยืม-เบิกแบบ One-Stop (Unified Requisition Modal)</div>
+      </div>
+
+      <h3 class="section-title">ขั้นตอนการกรอกคำขอ:</h3>
+      <ol>
+        <li><b>เลือกวัตถุประสงค์การใช้งาน (Use Target):</b>
+          <ul>
+            <li><b>🧪 ฝึกปฏิบัติการกับหุ่นจำลอง (Sim-Lab):</b> ระบบอนุญาตให้เบิกเวชภัณฑ์หมดอายุได้เพื่อความคุ้มค่า</li>
+            <li><b>🧑‍⚕️ ใช้งานกับคนจริง (Clinical Patient):</b> ระบบจะเปิดโหมดความปลอดภัย บล็อกล็อตหมดอายุ 100%</li>
+          </ul>
+        </li>
+        <li><b>เลือกรหัสรายวิชา:</b> เลือกรหัสวิชา เช่น <code>NS201 การพยาบาลพื้นฐาน</code> ระบบจะดึงชื่ออาจารย์ผู้รับผิดชอบให้อัตโนมัติ</li>
+        <li><b>กำหนดวัน-เวลานัดหมาย:</b> ระบุวันเวลารับของ และกำหนดวันส่งคืนครุภัณฑ์</li>
+        <li><b>เลือกอุปกรณ์และเวชภัณฑ์:</b> ระบุจำนวนที่ต้องการ</li>
+        <li><b>กดยืนยันและส่งคำขอ:</b> คำขอจะส่งไปยังอาจารย์ประจำวิชาเพื่อรับทราบ และเจ้าหน้าที่แล็บเพื่ออนุมัติ</li>
+      </ol>
+    </div>
+
+    <!-- Chapter 4 -->
+    <div class="card" id="ch4">
+      <h2 class="chapter-title">📦 บทที่ 4: การขอเบิกชุดฝึกปฏิบัติการสำเร็จรูป (Nursing Practice Kits)</h2>
+      <p>ชุด Box Set สำเร็จรูปตามหัตถการทางการพยาบาล ช่วยให้นิสิตขอเบิกได้ในคลิกเดียว (One-Click)</p>
+
+      <div class="figure-box">
+        <img src="./images/ui_mockup_kits.png" alt="ชุดฝึกปฏิบัติการสำเร็จรูป">
+        <div class="figure-caption">รูปที่ 4.1: หน้ารายการชุดฝึกปฏิบัติการสำเร็จรูป (Practice Kits)</div>
+      </div>
+
+      <h3 class="section-title">ตัวอย่างชุดฝึกยอดนิยม:</h3>
+      <ul>
+        <li><b>ชุดทำแผลปลอดเชื้อ (Sterile Dressing Kit):</b> ปากคีบ, ถ้วยไอโอดีนสแตนเลส, สำลีก้อน, กอซ, ผ้าเจาะกลาง</li>
+        <li><b>ชุดฝึกสวนปัสสาวะ (Catheterization Kit):</b> Foley catheter, Urine bag, Syringe 10ml, K-Y Jelly, ถุงมือ Sterile</li>
+        <li><b>ชุดตรวจสัญญาณชีพ (Vital Signs Kit):</b> Stethoscope, Sphygmomanometer, ปรอทดิจิทัล, Pulse Oximeter</li>
+      </ul>
+    </div>
+
+    <!-- Chapter 5 -->
+    <div class="card" id="ch5">
+      <h2 class="chapter-title">📅 บทที่ 5: การขอเข้าฝึกปฏิบัติการด้วยตนเองและสแกน QR Code</h2>
+      <p>นิสิตสามารถจองห้องปฏิบัติการทักษะและเตียงฝึกซ้อมนอกเวลาเรียน เพื่อทบทวนหัตถการก่อนสอบ OSCE</p>
+
+      <div class="figure-box">
+        <img src="./images/ui_mockup_practice_booking.png" alt="หน้าจอจองห้องปฏิบัติการ">
+        <div class="figure-caption">รูปที่ 5.1: การเลือกรอบเวลา (Time Slots) และระบุหัตถการ</div>
+      </div>
+
+      <div class="figure-box">
+        <img src="./images/ui_mockup_practice_ticket.png" alt="บัตร Digital E-Ticket พร้อม QR Code">
+        <div class="figure-caption">รูปที่ 5.2: บัตร Digital E-Ticket พร้อม QR Code สำหรับ Check-in เข้าห้องแล็บ</div>
+      </div>
+
+      <h3 class="section-title">ขั้นตอนการ Check-in หน้าห้องแล็บ:</h3>
+      <ol>
+        <li>เดินทางมาถึงหน้าห้องปฏิบัติการก่อนเวลาเริ่มซ้อม 5 นาที</li>
+        <li>เปิดหน้า Digital E-Ticket บนสมาร์ทโฟน</li>
+        <li>สแกน QR Code หน้าห้องแล็บเพื่อเช็คอิน</li>
+        <li>ระบบจะเริ่มนับเวลาและบันทึก "ชั่วโมงฝึกปฏิบัติการสะสม" ให้อัตโนมัติ</li>
+      </ol>
+    </div>
+
+    <!-- Chapter 6 -->
+    <div class="card" id="ch6">
+      <h2 class="chapter-title">🛡️ บทที่ 6: การส่งคืนอุปกรณ์และข้อปฏิบัติความปลอดภัย</h2>
+      <p>เพื่อรักษามาตรฐานความปลอดภัยและความพร้อมใช้ของอุปกรณ์ นิสิตต้องปฏิบัติตามแนวทางดังนี้:</p>
+
+      <div class="callout callout-warn">
+        <div>⚠️</div>
+        <div>
+          <b>ข้อพึงระวังสำคัญ:</b>
+          <p style="margin-top: 4px; margin-bottom: 0;">ห้ามนำเวชภัณฑ์ที่มีป้าย "สำหรับฝึกกับหุ่นจำลองเท่านั้น" ไปใช้กับผู้ป่วยจริงบนหอผู้ป่วยโดยเด็ดขาด</p>
+        </div>
+      </div>
+
+      <h3 class="section-title">ขั้นตอนการส่งคืนครุภัณฑ์:</h3>
+      <ul>
+        <li>ทำความสะอาดและจัดเรียงอุปกรณ์เข้ากล่องบรรจุให้เรียบร้อย</li>
+        <li>นำส่งคืน ณ เคาน์เตอร์ห้องปฏิบัติการตามเวลาที่นัดหมาย</li>
+        <li>เจ้าหน้าที่ตรวจรับความสมบูรณ์และกดปิดสถานะเป็น <code>RETURNED</code></li>
+      </ul>
+    </div>
+
+    <footer style="text-align: center; font-size: 13px; color: #94a3b8; padding: 20px 0;">
+      งานห้องปฏิบัติการและเทคโนโลยีการศึกษา คณะพยาบาลศาสตร์ มหาวิทยาลัย<br>
+      Smart Nursing Lab Management System • เวอร์ชัน 2.0 (กันยายน 2569)
+    </footer>
+  </div>
+</body>
+</html>

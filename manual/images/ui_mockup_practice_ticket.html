@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=Prompt:wght@400;600;700;800&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Sarabun', sans-serif; }
+    body { background: #0f172a; padding: 30px; display: flex; justify-content: center; align-items: center; }
+    .ticket {
+      background: #ffffff; width: 100%; max-width: 440px; border-radius: 24px;
+      overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+    }
+    .ticket-header { background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%); color: white; padding: 24px; text-align: center; }
+    .ticket-header h3 { font-family: 'Prompt', sans-serif; font-size: 18px; font-weight: 700; }
+    .ticket-header p { font-size: 12px; opacity: 0.9; margin-top: 2px; }
+    .ticket-body { padding: 24px; }
+    .qr-box {
+      background: #f8fafc; border: 2px dashed #0d9488; border-radius: 16px;
+      padding: 20px; text-align: center; margin-bottom: 20px;
+    }
+    .qr-svg { width: 160px; height: 160px; margin: 0 auto 10px auto; display: block; }
+    .qr-code-text { font-family: monospace; font-size: 13px; font-weight: 700; color: #0f766e; letter-spacing: 1px; }
+    .info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 12.5px; }
+    .info-label { color: #64748b; }
+    .info-val { font-weight: 700; color: #0f172a; }
+    .status-badge { background: #dcfce7; color: #15803d; font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 6px; }
+    .ticket-footer {
+      background: #f8fafc; padding: 14px 24px; border-top: 1px dashed #cbd5e1;
+      text-align: center; font-size: 11px; color: #64748b; line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <div class="ticket">
+    <div class="ticket-header">
+      <h3>🎫 DIGITAL LAB E-TICKET</h3>
+      <p>บัตรเข้าห้องปฏิบัติการพยาบาลศาสตร์เสมือน</p>
+    </div>
+
+    <div class="ticket-body">
+      <div class="qr-box">
+        <svg class="qr-svg" viewBox="0 0 100 100" fill="#0f172a">
+          <rect x="5" y="5" width="28" height="28" rx="4" fill="#0d9488"/>
+          <rect x="9" y="9" width="20" height="20" rx="2" fill="white"/>
+          <rect x="13" y="13" width="12" height="12" rx="1" fill="#0d9488"/>
+
+          <rect x="67" y="5" width="28" height="28" rx="4" fill="#0d9488"/>
+          <rect x="71" y="9" width="20" height="20" rx="2" fill="white"/>
+          <rect x="75" y="13" width="12" height="12" rx="1" fill="#0d9488"/>
+
+          <rect x="5" y="67" width="28" height="28" rx="4" fill="#0d9488"/>
+          <rect x="9" y="71" width="20" height="20" rx="2" fill="white"/>
+          <rect x="13" y="75" width="12" height="12" rx="1" fill="#0d9488"/>
+
+          <rect x="38" y="10" width="5" height="5"/>
+          <rect x="48" y="10" width="5" height="5"/>
+          <rect x="58" y="10" width="5" height="5"/>
+          <rect x="38" y="20" width="5" height="5"/>
+          <rect x="48" y="25" width="5" height="5"/>
+          <rect x="10" y="38" width="5" height="5"/>
+          <rect x="20" y="48" width="5" height="5"/>
+          <rect x="38" y="38" width="8" height="8" fill="#0d9488"/>
+          <rect x="52" y="38" width="6" height="6"/>
+          <rect x="65" y="45" width="8" height="5"/>
+          <rect x="80" y="40" width="6" height="6"/>
+          <rect x="40" y="55" width="6" height="6"/>
+          <rect x="55" y="55" width="8" height="8" fill="#0d9488"/>
+          <rect x="70" y="58" width="6" height="6"/>
+          <rect x="85" y="55" width="5" height="5"/>
+          <rect x="38" y="70" width="5" height="5"/>
+          <rect x="48" y="75" width="5" height="5"/>
+          <rect x="60" y="70" width="6" height="6"/>
+          <rect x="75" y="72" width="6" height="6"/>
+          <rect x="40" y="85" width="6" height="6"/>
+          <rect x="55" y="85" width="6" height="6"/>
+          <rect x="70" y="85" width="8" height="8"/>
+        </svg>
+        <div class="qr-code-text">REF: LAB-20260912-0042</div>
+      </div>
+
+      <div class="info-row">
+        <span class="info-label">ผู้จอง:</span>
+        <span class="info-val">น.ส. นภัสสร ใจดี (66010023)</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">ห้องปฏิบัติการ:</span>
+        <span class="info-val">Lab Skill Room 101 (เตียงที่ 04)</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">วัน-เวลาฝึก:</span>
+        <span class="info-val">12 ก.ย. 2569 • 16:30 - 18:30 น.</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">รายวิชา:</span>
+        <span class="info-val">NS201 การพยาบาลพื้นฐาน</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">สถานะตั๋ว:</span>
+        <span class="status-badge">🟢 พร้อม Check-in เข้าห้อง</span>
+      </div>
+    </div>
+
+    <div class="ticket-footer">
+      💡 สแกน QR Code หน้าห้องแล็บก่อนเวลา 5 นาที<br>
+      เมื่อ Check-in แล้วระบบจะเริ่มบันทึกชั่วโมงฝึกซ้อมอัตโนมัติ
+    </div>
+  </div>
+</body>
+</html>

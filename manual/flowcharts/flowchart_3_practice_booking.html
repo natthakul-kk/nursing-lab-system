@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>ผังงานที่ 3: ขั้นตอนการจองห้องปฏิบัติการและ Check-in สแกนเข้าห้อง (Practice Booking & Check-in Flow)</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=Prompt:wght@400;600;700&display=swap');
+    body {
+      margin: 0;
+      padding: 30px;
+      background: #ffffff;
+      font-family: 'Sarabun', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .header-box {
+      text-align: center;
+      margin-bottom: 20px;
+      padding-bottom: 14px;
+      border-bottom: 2px solid #0d9488;
+      width: 100%;
+      max-width: 950px;
+    }
+    .header-box h1 {
+      font-family: 'Prompt', sans-serif;
+      font-size: 20px;
+      color: #0f766e;
+      margin: 0 0 6px 0;
+    }
+    .header-box p {
+      font-size: 13px;
+      color: #64748b;
+      margin: 0;
+    }
+    .legend {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 10px;
+      font-size: 11px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .legend-box {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+    }
+    .mermaid {
+      background: #ffffff;
+      display: flex;
+      justify-content: center;
+    }
+    .mermaid svg {
+      max-width: 100%;
+      height: auto;
+      font-family: 'Sarabun', sans-serif !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="header-box">
+    <h1>ผังงานที่ 3: ขั้นตอนการจองห้องปฏิบัติการและ Check-in สแกนเข้าห้อง (Practice Booking & Check-in Flow)</h1>
+    <p>คู่มือการใช้งานระบบห้องปฏิบัติการพยาบาลศาสตร์ สำหรับนิสิต (Student User Manual)</p>
+    <div class="legend">
+      <div class="legend-item"><span class="legend-box" style="background:#047857;"></span><span>จุดเริ่มต้น/สิ้นสุด (Terminal)</span></div>
+      <div class="legend-item"><span class="legend-box" style="background:#ffffff;border:1.5px solid #0284c7;"></span><span>ขั้นตอนการทำงาน (Process)</span></div>
+      <div class="legend-item"><span class="legend-box" style="background:#fef3c7;border:1.5px solid #d97706;"></span><span>จุดตัดสินใจเงื่อนไข (Decision)</span></div>
+      <div class="legend-item"><span class="legend-box" style="background:#eff6ff;border:1.5px solid #2563eb;"></span><span>การรับ-แสดงข้อมูล (Input/Output)</span></div>
+      <div class="legend-item"><span class="legend-box" style="background:#f0fdf4;border:1.5px solid #16a34a;"></span><span>สำเร็จ/อนุมัติ (Approved)</span></div>
+      <div class="legend-item"><span class="legend-box" style="background:#fef2f2;border:1.5px solid #dc2626;"></span><span>ไม่อนุมัติ/ข้อผิดพลาด (Rejected)</span></div>
+    </div>
+  </div>
+  <div class="mermaid">
+    flowchart TD
+    classDef terminator fill:#1e3a8a,stroke:#1e40af,stroke-width:2.5px,color:#ffffff,font-weight:bold;
+    classDef process fill:#ffffff,stroke:#0284c7,stroke-width:2px,color:#0f172a;
+    classDef inputOutput fill:#eff6ff,stroke:#2563eb,stroke-width:2px,color:#1e40af;
+    classDef decision fill:#fef3c7,stroke:#d97706,stroke-width:2.5px,color:#92400e,font-weight:bold;
+    classDef successProcess fill:#f0fdf4,stroke:#16a34a,stroke-width:2px,color:#14532d,font-weight:bold;
+    classDef warnProcess fill:#fef2f2,stroke:#dc2626,stroke-width:2px,color:#991b1b;
+    classDef doc fill:#fdf4ff,stroke:#a855f7,stroke-width:2px,color:#6b21a8;
+
+    StartBook([🟢 เริ่มต้น: เข้าเมนู ขอเข้าฝึกปฏิบัติด้วยตนเอง]):::terminator
+    ChooseRoomDate[/1. เลือกห้องปฏิบัติการ และวันที่ต้องการฝึกซ้อม/]:::inputOutput
+    StartBook --> ChooseRoomDate
+    ViewSlots[ระบบแสดงตารางรอบเวลา Time Slots และจำนวนที่ว่าง]:::process
+    ChooseRoomDate --> ViewSlots
+    SelectTimeSlot[/2. เลือกรอบเวลาฝึก เช่น 16:30 - 18:00 น./]:::inputOutput
+    ViewSlots --> SelectTimeSlot
+
+    CheckSlotAvailable{รอบเวลาดังกล่าว<br/>มีที่ว่างหรือไม่?}:::decision
+    SelectTimeSlot --> CheckSlotAvailable
+    SlotFullNotice[❌ รอบนี้เต็มแล้ว: ระบบแสดงป้ายสีแดง]:::warnProcess
+    CheckSlotAvailable -->|เต็ม| SlotFullNotice
+    SlotFullNotice -.->|เลือกรอบอื่น/ห้องอื่น| ChooseRoomDate
+
+    FillBookingDetails[/3. ระบุรายวิชา, วัตถุประสงค์ และอาจารย์ที่ปรึกษา/]:::inputOutput
+    CheckSlotAvailable -->|มีที่ว่าง| FillBookingDetails
+    AttachKit{ต้องการชุดฝึก<br/>หัตถการ Kits ด้วยหรือไม่?}:::decision
+    FillBookingDetails --> AttachKit
+    SelectKitOption[/เลือกชุด Kit ที่ต้องการ เช่น ชุดสวนปัสสาวะ, ชุดทำแผล/]:::inputOutput
+    AttachKit -->|ต้องการชุดฝึก| SelectKitOption
+    SelectKitOption --> ConfirmSubmit
+    ConfirmSubmit[กดยืนยันการจองห้องปฏิบัติการ]:::process
+    AttachKit -->|ไม่ต้องการชุดฝึก| ConfirmSubmit
+
+    SaveBooking[ระบบบันทึกการจอง และล็อกที่นั่งในรอบเวลาทันที]:::process
+    ConfirmSubmit --> SaveBooking
+    GenerateTicket[📄 ออก E-Ticket พร้อม QR Code ประจำรอบการจอง]:::doc
+    SaveBooking --> GenerateTicket
+
+    DayOfPractice[นิสิตเดินทางมาถึงหน้าห้องแล็บตามวัน-เวลาที่จอง]:::process
+    GenerateTicket --> DayOfPractice
+    ScanCheckin[/สแกน QR Code หน้าห้องแล็บเพื่อ Check-in/]:::inputOutput
+    DayOfPractice --> ScanCheckin
+
+    ValidateCheckin{ระบบตรวจสอบ<br/>วัน-เวลาและสิทธิ์ถูกต้อง?}:::decision
+    ScanCheckin --> ValidateCheckin
+    InvalidCheckin[❌ ปฏิเสธ: ไม่อยู่ในช่วงเวลาที่จองไว้]:::warnProcess
+    ValidateCheckin -->|ไม่ถูกต้อง| InvalidCheckin
+    InvalidCheckin -.->|รอถึงเวลา| DayOfPractice
+
+    CheckinSuccess[✅ Check-in สำเร็จ: สถานะ IN_PRACTICE เข้าฝึกได้]:::successProcess
+    ValidateCheckin -->|ถูกต้อง| CheckinSuccess
+    FinishPractice[เมื่อฝึกซ้อมเสร็จสิ้น: กด Check-out หรือหมดเวลาอัตโนมัติ]:::process
+    CheckinSuccess --> FinishPractice
+    RecordHours[บันทึกสถิติชั่วโมงการฝึกซ้อมลงประวัติส่วนตัว COMPLETED]:::successProcess
+    FinishPractice --> RecordHours
+    EndBook([🔴 สิ้นสุดการเข้าฝึกปฏิบัติการ]):::terminator
+    RecordHours --> EndBook
+    
+  </div>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'default',
+      flowchart: {
+        useMaxWidth: false,
+        htmlLabels: true,
+        curve: 'basis'
+      }
+    });
+  </script>
+</body>
+</html>

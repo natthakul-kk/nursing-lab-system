@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=Prompt:wght@400;600;700;800&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Sarabun', sans-serif; }
+    body { background: #f8fafc; padding: 24px; }
+    .title-box { margin-bottom: 20px; }
+    .title-box h2 { font-family: 'Prompt', sans-serif; font-size: 20px; color: #0f172a; }
+    .title-box p { font-size: 13px; color: #64748b; }
+    .booking-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .panel {
+      background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0;
+      padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+    }
+    .panel h3 {
+      font-family: 'Prompt', sans-serif; font-size: 14px; font-weight: 700; color: #0f766e;
+      margin-bottom: 14px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;
+    }
+    .slot-item {
+      display: flex; justify-content: space-between; align-items: center; padding: 12px 14px;
+      border-radius: 12px; border: 1.5px solid #e2e8f0; margin-bottom: 10px; background: #f8fafc;
+    }
+    .slot-item.selected {
+      border-color: #0d9488; background: #f0fdfa; box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.2);
+    }
+    .slot-item.full { opacity: 0.6; background: #fff1f2; border-color: #fecdd3; }
+    .slot-time { font-size: 13px; font-weight: 700; color: #0f172a; }
+    .slot-room { font-size: 11px; color: #64748b; margin-top: 2px; }
+    .badge-status { font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 6px; }
+    .badge-avail { background: #dcfce7; color: #166534; }
+    .badge-full { background: #fee2e2; color: #991b1b; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 4px; }
+    .form-group input { width: 100%; padding: 9px 12px; border-radius: 10px; border: 1px solid #cbd5e1; font-size: 12px; color: #1e293b; }
+    .btn-confirm {
+      width: 100%; padding: 12px; background: #0d9488; color: white; border: none;
+      border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer;
+      box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3); margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="title-box">
+    <h2>📅 ระบบขอเข้าฝึกปฏิบัติด้วยตนเอง (Self-Directed Practice Booking)</h2>
+    <p>จองเตียงฝึกปฏิบัติการและห้องปฏิบัติการทักษะทางการพยาบาลล่วงหน้า</p>
+  </div>
+
+  <div class="booking-layout">
+    <div class="panel">
+      <h3>1. เลือกรอบเวลาที่เปิดให้บริการ (Time Slots)</h3>
+      
+      <div class="slot-item">
+        <div>
+          <div class="slot-time">⏰ 09:00 - 11:30 น. (ช่วงเช้า)</div>
+          <div class="slot-room">ห้อง Lab Skill 101 • เตียง 01-10</div>
+        </div>
+        <span class="badge-status badge-avail">ว่าง 4 ที่นั่ง</span>
+      </div>
+
+      <div class="slot-item full">
+        <div>
+          <div class="slot-time">⏰ 13:00 - 15:30 น. (ช่วงบ่าย)</div>
+          <div class="slot-room">ห้อง Lab Skill 101 • เตียง 01-10</div>
+        </div>
+        <span class="badge-status badge-full">เต็ม (10/10)</span>
+      </div>
+
+      <div class="slot-item selected">
+        <div>
+          <div class="slot-time">⏰ 16:30 - 18:30 น. (ช่วงเย็นนอกเวลา) ✓</div>
+          <div class="slot-room">ห้อง Lab Skill 101 • เตียง 04 (เลือกแล้ว)</div>
+        </div>
+        <span class="badge-status badge-avail">ว่าง 2 ที่นั่ง</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>2. รายละเอียดการฝึกและอาจารย์ที่ปรึกษา</h3>
+      
+      <div class="form-group">
+        <label>นิสิตผู้ขอจอง</label>
+        <input type="text" value="น.ส. นภัสสร ใจดี (รหัส 66010023)" readonly>
+      </div>
+
+      <div class="form-group">
+        <label>รายวิชาที่ต้องการฝึกซ้อม</label>
+        <input type="text" value="NS201 การพยาบาลพื้นฐาน" readonly>
+      </div>
+
+      <div class="form-group">
+        <label>อาจารย์ผู้รับทราบ / ที่ปรึกษา</label>
+        <input type="text" value="ผศ.ดร.พิมพา สุขเกษม" readonly>
+      </div>
+
+      <div class="form-group">
+        <label>หัตถการที่ต้องการฝึกซ้อม</label>
+        <input type="text" value="ฝึกทักษะการทำแผลปลอดเชื้อ (Sterile Wound Dressing)" readonly>
+      </div>
+
+      <button class="btn-confirm">🎟️ ยืนยันการจอง และออก E-Ticket ทันที</button>
+    </div>
+  </div>
+</body>
+</html>

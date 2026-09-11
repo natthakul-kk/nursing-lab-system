@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=Prompt:wght@400;600;700;800&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Sarabun', sans-serif; }
+    body { background: #f8fafc; padding: 30px; }
+    .header-bar { margin-bottom: 24px; }
+    .header-bar h2 {
+      font-family: 'Prompt', sans-serif; font-size: 20px; color: #0f172a; display: flex; align-items: center; gap: 8px;
+    }
+    .header-bar p { font-size: 13px; color: #64748b; margin-top: 4px; }
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .kit-card {
+      background: #ffffff; border-radius: 18px; border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); padding: 20px;
+      display: flex; flex-direction: column; justify-content: space-between;
+    }
+    .kit-badge {
+      display: inline-block; padding: 3px 8px; background: #ccfbf1; color: #0f766e;
+      font-size: 10px; font-weight: 700; border-radius: 6px; margin-bottom: 10px;
+    }
+    .kit-title { font-family: 'Prompt', sans-serif; font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 8px; line-height: 1.3; }
+    .kit-items {
+      font-size: 11.5px; color: #475569; background: #f8fafc; border-radius: 10px;
+      padding: 10px; margin-bottom: 16px; border: 1px solid #f1f5f9; line-height: 1.6;
+    }
+    .kit-items li { margin-left: 14px; }
+    .btn-kit {
+      width: 100%; padding: 10px; background: #0d9488; color: white; border: none;
+      border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header-bar">
+    <h2>📦 ชุดฝึกปฏิบัติการสำเร็จรูป (Nursing Practice Kits / Box Sets)</h2>
+    <p>รวมชุดอุปกรณ์และเวชภัณฑ์ตามมาตรฐานหัตถการทางการพยาบาล สะดวก รวดเร็ว ขอเบิกได้ในคลิกเดียว (One-Click)</p>
+  </div>
+
+  <div class="grid">
+    <div class="kit-card">
+      <div>
+        <span class="kit-badge">รหัสชุด: KIT-01 • การพยาบาลพื้นฐาน</span>
+        <div class="kit-title">ชุดฝึกทำแผลปลอดเชื้อ<br>(Sterile Dressing Kit)</div>
+        <div class="kit-items">
+          <b>อุปกรณ์ภายในชุด (ครบเซ็ต):</b>
+          <ul>
+            <li>ปากคีบมีเขี้ยวและไม่มีเขี้ยว (อย่างละ 1 อัน)</li>
+            <li>ถ้วยไอโอดีนสแตนเลส (1 ใบ)</li>
+            <li>สำลีก้อนปลอดเชื้อ (4 ก้อน)</li>
+            <li>ผ้ากอซสี่เหลี่ยม 3x3 นิ้ว (3 ชิ้น)</li>
+            <li>ผ้าสี่เหลี่ยมเจาะกลางปลอดเชื้อ (1 ผืน)</li>
+          </ul>
+        </div>
+      </div>
+      <button class="btn-kit">⚡ ขอเบิกชุดนี้ทันที (One-Click)</button>
+    </div>
+
+    <div class="kit-card">
+      <div>
+        <span class="kit-badge">รหัสชุด: KIT-02 • การพยาบาลพื้นฐาน</span>
+        <div class="kit-title">ชุดฝึกสวนปัสสาวะ<br>(Catheterization Kit)</div>
+        <div class="kit-items">
+          <b>อุปกรณ์ภายในชุด (ครบเซ็ต):</b>
+          <ul>
+            <li>สายสวนปัสสาวะโฟเลย์ (Foley Catheter Ch.14)</li>
+            <li>ถุงรองรับน้ำปัสสาวะ Urine Bag (1 ใบ)</li>
+            <li>กระบอกฉีดยา Syringe 10 ml (1 อัน)</li>
+            <li>สารหล่อลื่น K-Y Jelly (1 ซอง)</li>
+            <li>ถุงมือปลอดเชื้อ Sterile Gloves เบอร์ 7 (1 คู่)</li>
+          </ul>
+        </div>
+      </div>
+      <button class="btn-kit">⚡ ขอเบิกชุดนี้ทันที (One-Click)</button>
+    </div>
+
+    <div class="kit-card">
+      <div>
+        <span class="kit-badge">รหัสชุด: KIT-03 • การประเมินสุขภาพ</span>
+        <div class="kit-title">ชุดฝึกตรวจสัญญาณชีพ<br>(Vital Signs Assessment Kit)</div>
+        <div class="kit-items">
+          <b>อุปกรณ์ภายในชุด (ครบเซ็ต):</b>
+          <ul>
+            <li>หูฟังแพทย์ Stethoscope คุณภาพสูง (1 อัน)</li>
+            <li>เครื่องวัดความดันโลหิตแบบดิจิทัล (1 เครื่อง)</li>
+            <li>เทอร์โมมิเตอร์วัดอุณหภูมิดิจิทัล (1 อัน)</li>
+            <li>เครื่องวัดระดับออกซิเจนในเลือด Pulse Oxi (1 อัน)</li>
+            <li>สำลีแอลกอฮอล์สำหรับเช็ดทำความสะอาด (5 ซอง)</li>
+          </ul>
+        </div>
+      </div>
+      <button class="btn-kit" style="background: #0284c7;">⚡ ขอยืมชุดนี้ทันที (One-Click)</button>
+    </div>
+  </div>
+</body>
+</html>

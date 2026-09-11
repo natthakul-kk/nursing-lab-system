@@ -15,6 +15,7 @@ export async function POST(req: Request) {
       brand,
       packSize,
       packageUnit,
+      usageUnit,
       quantity,
       unitCost,
       expiryDate,
@@ -46,6 +47,14 @@ export async function POST(req: Request) {
       const cst = Number(unitCost) || 0;
       const total = qty * cst;
       const parsedReceivedDate = receivedDate ? new Date(receivedDate) : new Date();
+      const effectiveUsageUnit = usageUnit ? String(usageUnit).trim() : (item.usageUnit || 'ชิ้น');
+
+      if (usageUnit && String(usageUnit).trim() && String(usageUnit).trim() !== item.usageUnit) {
+        await prisma.item.update({
+          where: { id: itemId },
+          data: { usageUnit: String(usageUnit).trim() },
+        });
+      }
 
       const lot = await prisma.stockLot.create({
         data: {
@@ -75,7 +84,7 @@ export async function POST(req: Request) {
           totalCost: total,
           createdById: userId,
           createdAt: parsedReceivedDate,
-          note: note || `รับเข้าสต็อก Lot: ${lotNumber}${brand ? ` (ยี่ห้อ: ${brand})` : ''} ขนาดบรรจุ ${parsedPackSize} ${item.usageUnit || 'ชิ้น'}/${packageUnit || item.unit || 'หน่วย'} (รวม ${computedTotalPieces.toLocaleString()} ${item.usageUnit || 'ชิ้น'})`,
+          note: note || `รับเข้าสต็อก Lot: ${lotNumber}${brand ? ` (ยี่ห้อ: ${brand})` : ''} ขนาดบรรจุ ${parsedPackSize} ${effectiveUsageUnit}/${packageUnit || item.unit || 'หน่วย'} (รวม ${computedTotalPieces.toLocaleString()} ${effectiveUsageUnit})`,
         },
       });
 

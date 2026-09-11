@@ -30,7 +30,8 @@ import {
   ChevronUp,
   ChevronLeft,
   ChevronRight,
-  LayoutGrid
+  LayoutGrid,
+  Building2
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
@@ -39,6 +40,7 @@ export default function SchedulePage() {
   const [borrowList, setBorrowList] = useState<any[]>([]);
   const [requisitionList, setRequisitionList] = useState<any[]>([]);
   const [practiceList, setPracticeList] = useState<any[]>([]);
+  const [roomBookingList, setRoomBookingList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [timeFilter, setTimeFilter] = useState<'ALL' | 'TODAY' | 'UPCOMING' | 'OVERDUE'>('ALL');
@@ -88,10 +90,11 @@ export default function SchedulePage() {
 
   const fetchScheduleData = async () => {
     try {
-      const [bRes, rRes, pRes] = await Promise.all([
+      const [bRes, rRes, pRes, rmRes] = await Promise.all([
         fetch('/api/borrow'),
         fetch('/api/requisitions'),
         fetch('/api/practice/bookings'),
+        fetch('/api/room-bookings?status=APPROVED'),
       ]);
 
       if (bRes.ok) {
@@ -112,6 +115,10 @@ export default function SchedulePage() {
           ? pData.filter((p: any) => ['APPROVED', 'CHECKED_IN'].includes(p.status))
           : [];
         setPracticeList(relevantPractices);
+      }
+      if (rmRes.ok) {
+        const rmData = await rmRes.json();
+        setRoomBookingList(Array.isArray(rmData) ? rmData : []);
       }
     } catch (err) {
       console.error('Failed to load schedule data', err);
@@ -276,6 +283,33 @@ export default function SchedulePage() {
   const practiceEventTasks = Object.values(practiceSlotGroups);
 
   const allDisplayTasks = [
+    ...roomBookingList.map((rb) => {
+      const isUsageToday = isToday(rb.bookingDate);
+      return {
+        id: rb.id,
+        type: 'ROOM_BOOKING' as const,
+        requestNumber: rb.bookingNumber,
+        status: rb.status,
+        user: rb.user,
+        course: rb.course,
+        advisorName: rb.advisorName,
+        purpose: rb.title,
+        usagePurpose: rb.purpose,
+        pickupDate: rb.bookingDate,
+        returnDate: undefined,
+        timeSlot: `${rb.startTime} - ${rb.endTime} น.`,
+        roomName: rb.room?.name || 'ห้องปฏิบัติการ',
+        roomCode: rb.room?.code,
+        attendeesCount: rb.attendeesCount,
+        equipmentNeeded: rb.equipmentNeeded,
+        contactPhone: rb.contactPhone || rb.user?.phone,
+        items: [],
+        isOverdue: false,
+        isPickupToday: isUsageToday,
+        isReturnToday: false,
+      };
+    }),
+
     ...combinedTasks,
     ...practiceEventTasks,
   ];
@@ -462,6 +496,109 @@ export default function SchedulePage() {
 
   // Render individual task card
   const renderTaskCard = (task: any) => {
+    if (task.type === 'ROOM_BOOKING') {
+      return (
+        <div
+          key={`room-${task.id}`}
+          className="bg-white dark:bg-slate-900 rounded-3xl border-2 border-emerald-200 dark:border-emerald-900/60 p-5 shadow-sm space-y-3 transition hover:shadow-md"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
+                <Building2 className="w-3 h-3 text-emerald-600" />
+                <span>จองใช้ห้องปฏิบัติการ (Room Reservation)</span>
+              </span>
+              <span className="font-mono text-xs font-bold text-slate-800 dark:text-slate-200">
+                {task.requestNumber}
+              </span>
+              <span className="font-bold text-xs text-teal-800 dark:text-teal-300 bg-teal-50 dark:bg-teal-950 px-2 py-0.5 rounded border border-teal-100">
+                {task.roomName} {task.roomCode ? `(${task.roomCode})` : ''}
+              </span>
+              {task.isPickupToday && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500 text-white shadow-sm animate-pulse">
+                  ⚡ ใช้งานวันนี้!
+                </span>
+              )}
+            </div>
+
+            <div className="text-xs text-slate-500 flex items-center gap-1.5">
+              <User className="w-3.5 h-3.5 text-slate-400" />
+              <span className="font-bold text-slate-800 dark:text-slate-200">{task.user?.name}</span>
+              {task.user?.studentId && (
+                <span className="text-[10px] font-mono text-teal-700 bg-teal-50 px-1.5 py-0.2 rounded">
+                  {task.user.studentId}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+            <div className="md:col-span-2 space-y-1.5">
+              <div>
+                <span className="text-slate-400 font-bold">ชื่องาน/การใช้งาน: </span>
+                <span className="text-slate-900 dark:text-slate-100 font-black text-sm">{task.purpose}</span>
+              </div>
+              <div className="text-slate-600 dark:text-slate-400">
+                <span className="text-slate-400 font-bold">วัตถุประสงค์: </span>
+                <span>{task.usagePurpose}</span>
+              </div>
+              {task.course && (
+                <div className="text-teal-700 font-semibold">
+                  รายวิชา: [{task.course.code}] {task.course.name}
+                </div>
+              )}
+              {task.advisorName && (
+                <div className="text-indigo-700 font-medium flex items-center gap-1">
+                  <GraduationCap className="w-3.5 h-3.5" />
+                  <span>อาจารย์: {task.advisorName}</span>
+                </div>
+              )}
+              {task.equipmentNeeded && (
+                <div className="p-2 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-800 dark:text-amber-300 text-[11px] font-medium flex items-start gap-1.5">
+                  <Package className="w-3.5 h-3.5 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <span>อุปกรณ์ที่ขอจัดเตรียม: <strong>{task.equipmentNeeded}</strong></span>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-1 bg-slate-50 dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700 text-slate-700 dark:text-slate-300">
+              <div className="flex items-center gap-1.5 font-bold">
+                <Calendar className="w-4 h-4 text-emerald-600" />
+                <span>วันที่: {formatDate(task.pickupDate)}</span>
+              </div>
+              <div className="flex items-center gap-1.5 font-bold text-teal-700">
+                <Clock className="w-4 h-4 text-teal-600" />
+                <span>เวลา: {task.timeSlot}</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-slate-500 pt-1">
+                <Users className="w-3.5 h-3.5 text-slate-400" />
+                <span>ผู้เข้าใช้: ~{task.attendeesCount || 1} คน</span>
+              </div>
+              {task.contactPhone && (
+                <div className="flex items-center gap-1.5 text-slate-500">
+                  <Phone className="w-3.5 h-3.5 text-slate-400" />
+                  <span>โทร: {task.contactPhone}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+            <span className="text-[11px] text-slate-400">
+              * ได้รับอนุมัติให้เข้าใช้ห้องเรียบร้อยแล้ว
+            </span>
+            <Link
+              href="/rooms"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold transition shadow-sm"
+            >
+              <span>ดูตารางการใช้ห้อง</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        </div>
+      );
+    }
+
     if (task.type === 'PRACTICE_EVENT') {
       const isExpanded = expandedSlotIds[task.id] !== false; // default expanded
       const checkedInCount = task.students.filter((s: any) => s.status === 'CHECKED_IN').length;
@@ -1113,6 +1250,10 @@ export default function SchedulePage() {
                   const pDate = t.pickupDate ? new Date(t.pickupDate).toISOString().slice(0, 10) : '';
                   return pDate === cell.dateStr && t.type === 'PRACTICE_EVENT';
                 });
+                const roomTasks = dayTasks.filter((t: any) => {
+                  const pDate = t.pickupDate ? new Date(t.pickupDate).toISOString().slice(0, 10) : '';
+                  return pDate === cell.dateStr && t.type === 'ROOM_BOOKING';
+                });
                 const overdues = dayTasks.filter((t: any) => {
                   const rDate = t.returnDate ? new Date(t.returnDate).toISOString().slice(0, 10) : '';
                   return rDate === cell.dateStr && t.isOverdue;
@@ -1173,6 +1314,12 @@ export default function SchedulePage() {
                         <div className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-800 truncate flex items-center gap-1">
                           <span>🏥 แล็บ</span>
                           <span className="ml-auto font-black">{practices.length}</span>
+                        </div>
+                      )}
+                      {roomTasks.length > 0 && (
+                        <div className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 truncate flex items-center gap-1">
+                          <span>🏢 ใช้ห้อง</span>
+                          <span className="ml-auto font-black">{roomTasks.length}</span>
                         </div>
                       )}
                       {overdues.length > 0 && (

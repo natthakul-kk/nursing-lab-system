@@ -24,6 +24,7 @@ import {
   BookOpen,
   ChevronDown,
   ChevronsUpDown,
+  Building2,
   X,
 } from 'lucide-react';
 import ProfileModal from '@/components/profile/ProfileModal';
@@ -49,7 +50,8 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
           setPendingCount(
             (data.pendingBorrows || 0) +
             (data.pendingRequisitions || 0) +
-            (data.pendingPracticeCount || 0)
+            (data.pendingPracticeCount || 0) +
+            (data.pendingRoomBookings || 0)
           );
         }
       } catch (err) {
@@ -123,11 +125,18 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
           badge: 'แนะนำ',
         },
         {
+          label: 'จองห้องสำหรับใช้งาน',
+          href: '/rooms',
+          icon: Building2,
+          roles: ['ADMIN', 'OFFICER', 'APPROVER', 'TEACHER', 'USER'],
+          badge: 'ขอใช้ห้อง',
+        },
+        {
           label: 'ขอเข้าฝึกปฏิบัติด้วยตนเอง',
           href: '/practice',
           icon: QrCode,
           roles: ['ADMIN', 'OFFICER', 'APPROVER', 'TEACHER', 'USER'],
-          badge: 'ใหม่',
+          badge: 'OSCE',
         },
         {
           label: 'ประวัติเบิกจ่ายวัสดุ',

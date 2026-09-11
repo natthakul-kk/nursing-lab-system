@@ -37,6 +37,8 @@ model User {
   repackRecords       RepackRecord[]
   practiceBookings    PracticeBooking[]    @relation("UserPracticeBookings")
   approvedBookings    PracticeBooking[]    @relation("ApproverPracticeBookings")
+  roomBookings        RoomBooking[]        @relation("UserRoomBookings")
+  approvedRoomBookings RoomBooking[]       @relation("ApproverRoomBookings")
 
   @@index([role, status])
   @@index([studentId])
@@ -58,6 +60,7 @@ model Course {
   borrowRequests      BorrowRequest[]
   stockTransactions   StockTransaction[]
   practiceBookings    PracticeBooking[]
+  roomBookings        RoomBooking[]
 
   @@index([semester, academicYear])
 }
@@ -395,10 +398,12 @@ model PracticeRoom {
   capacity    Int            @default(10)
   description String?
   isActive    Boolean        @default(true)
+  closeReason String?        // เหตุผลหากปิดห้อง เช่น "ปิดปรับปรุงระบบปรับอากาศ", "ซ่อมบำรุงประจำปี"
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
-  slots       PracticeSlot[]
+  slots        PracticeSlot[]
+  roomBookings RoomBooking[]
 
   @@index([isActive])
 }
@@ -469,3 +474,37 @@ model PracticeConfig {
   updatedAt       DateTime @updatedAt
 }
 
+model RoomBooking {
+  id              String        @id @default(cuid())
+  bookingNumber   String        @unique // เช่น "ROOM-25690911-001"
+  roomId          String
+  room            PracticeRoom  @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User          @relation("UserRoomBookings", fields: [userId], references: [id])
+  
+  title           String        // ชื่องาน/หัวข้อการใช้ห้อง เช่น "การเรียนการสอนรายวิชา NUR201", "ติวทบทวน OSCE กลุ่ม 2"
+  purpose         String        // วัตถุประสงค์ เช่น "การเรียนการสอน", "สอบประเมินทักษะ", "ติว/ทบทวน", "ประชุม/อบรม", "กิจกรรมคณะ", "อื่นๆ"
+  bookingDate     DateTime      // วันที่ใช้งาน (00:00:00 UTC)
+  startTime       String        // เวลาเริ่มต้น เช่น "08:30"
+  endTime         String        // เวลาสิ้นสุด เช่น "12:00"
+  attendeesCount  Int           @default(1) // จำนวนผู้ใช้งานโดยประมาณ (คน)
+  
+  courseId        String?
+  course          Course?       @relation(fields: [courseId], references: [id])
+  advisorName     String?       // อาจารย์ผู้สอน / ที่ปรึกษา / ผู้รับผิดชอบ
+  contactPhone    String?       // เบอร์โทรศัพท์ติดต่อ
+  equipmentNeeded String?       // อุปกรณ์ประจำห้องที่ต้องการใช้ เช่น หุ่นจำลอง CPR, โปรเจกเตอร์, เตียงผู้ป่วย
+  note            String?       // หมายเหตุเพิ่มเติม
+  
+  status          String        @default("PENDING") // "PENDING", "APPROVED", "REJECTED", "CANCELLED", "COMPLETED"
+  approverId      String?
+  approver        User?         @relation("ApproverRoomBookings", fields: [approverId], references: [id])
+  approvedAt      DateTime?
+  rejectionReason String?
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([roomId, bookingDate])
+  @@index([userId, status])
+}

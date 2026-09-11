@@ -30,6 +30,7 @@ export async function GET() {
       activePracticeCount,
       pendingPracticeCount,
       completedPracticeSessions,
+      pendingRoomBookings,
     ] = await Promise.all([
       prisma.item.count({ where: { type: 'EQUIPMENT' } }),
       prisma.item.count({ where: { type: 'CONSUMABLE' } }),
@@ -82,6 +83,7 @@ export async function GET() {
         where: { status: 'COMPLETED' },
         select: { actualMinutes: true },
       }),
+      prisma.roomBooking.count({ where: { status: 'PENDING' } }),
     ]);
 
     const lowStockItems = consumables
@@ -137,6 +139,7 @@ export async function GET() {
       recentTransactions,
       activePracticeCount,
       pendingPracticeCount,
+      pendingRoomBookings,
       totalPracticeMinutes,
       totalPracticeHours,
     };

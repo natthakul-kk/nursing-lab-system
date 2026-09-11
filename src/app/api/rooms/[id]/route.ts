@@ -1,0 +1,65 @@
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { invalidateCache } from '@/lib/cache';
+
+export async function PUT(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = await req.json();
+    const { code, name, location, capacity, description, isActive, closeReason } = body;
+
+    const room = await prisma.practiceRoom.update({
+      where: { id },
+      data: {
+        ...(code && { code }),
+        ...(name && { name }),
+        ...(location !== undefined && { location: location || null }),
+        ...(capacity !== undefined && { capacity: Number(capacity) || 10 }),
+        ...(description !== undefined && { description: description || null }),
+        ...(isActive !== undefined && { isActive }),
+        ...(closeReason !== undefined && { closeReason: closeReason || null }),
+      },
+    });
+
+    invalidateCache('practice:rooms:');
+    return NextResponse.json(room);
+  } catch (error: any) {
+    console.error('Error updating room:', error);
+    return NextResponse.json({ error: error.message || 'Failed to update room' }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+
+    const bookingsCount = await prisma.roomBooking.count({
+      where: { roomId: id },
+    });
+
+    if (bookingsCount > 0) {
+      await prisma.practiceRoom.update({
+        where: { id },
+        data: { isActive: false, closeReason: 'ปิดการใช้งานถาวรเนื่องจากมีประวัติการจอง' },
+      });
+      invalidateCache('practice:rooms:');
+      return NextResponse.json({ message: 'ปิดการใช้งานห้องเรียบร้อยแล้ว เนื่องจากมีประวัติการจองห้อง' });
+    }
+
+    await prisma.practiceRoom.delete({
+      where: { id },
+    });
+
+    invalidateCache('practice:rooms:');
+    return NextResponse.json({ message: 'ลบห้องปฏิบัติการเรียบร้อยแล้ว' });
+  } catch (error: any) {
+    console.error('Error deleting room:', error);
+    return NextResponse.json({ error: error.message || 'Failed to delete room' }, { status: 500 });
+  }
+}

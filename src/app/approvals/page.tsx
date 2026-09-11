@@ -22,7 +22,8 @@ import {
   QrCode,
   Sparkles,
   MapPin,
-  Package
+  Package,
+  Building2
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
@@ -33,9 +34,10 @@ export default function ApprovalsPage() {
   const [allBorrows, setAllBorrows] = useState<any[]>([]);
   const [allRequisitions, setAllRequisitions] = useState<any[]>([]);
   const [allPracticeBookings, setAllPracticeBookings] = useState<any[]>([]);
+  const [allRoomBookings, setAllRoomBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<'PENDING' | 'APPROVED' | 'REJECTED'>('PENDING');
-  const [activeTab, setActiveTab] = useState<'ALL' | 'BORROW' | 'REQUISITION' | 'PRACTICE'>('ALL');
+  const [activeTab, setActiveTab] = useState<'ALL' | 'BORROW' | 'REQUISITION' | 'PRACTICE' | 'ROOM'>('ALL');
   const [viewScope, setViewScope] = useState<'RELEVANT' | 'ALL'>('RELEVANT');
 
   useEffect(() => {
@@ -47,7 +49,7 @@ export default function ApprovalsPage() {
   }, [isAdmin]);
 
   // Reject Modal State
-  const [rejectItem, setRejectItem] = useState<{ id: string; type: 'BORROW' | 'REQUISITION' | 'PRACTICE' } | null>(null);
+  const [rejectItem, setRejectItem] = useState<{ id: string; type: 'BORROW' | 'REQUISITION' | 'PRACTICE' | 'ROOM' } | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [acknowledgingId, setAcknowledgingId] = useState<string | null>(null);
@@ -58,10 +60,11 @@ export default function ApprovalsPage() {
   const fetchData = async (manual = false) => {
     if (manual) setIsRefreshing(true);
     try {
-      const [borrowRes, reqRes, practiceRes] = await Promise.all([
+      const [borrowRes, reqRes, practiceRes, roomRes] = await Promise.all([
         fetch('/api/borrow'),
         fetch('/api/requisitions'),
         fetch('/api/practice/bookings'),
+        fetch('/api/room-bookings'),
       ]);
 
       if (borrowRes.ok) {
@@ -76,6 +79,10 @@ export default function ApprovalsPage() {
         const pData = await practiceRes.json();
         setAllPracticeBookings(Array.isArray(pData) ? pData : []);
       }
+      if (roomRes.ok) {
+        const rmData = await roomRes.json();
+        setAllRoomBookings(Array.isArray(rmData) ? rmData : []);
+      }
       setLastUpdated(new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
     } catch (err) {
       console.error(err);
@@ -89,7 +96,7 @@ export default function ApprovalsPage() {
     fetchData();
   }, []);
 
-  const handleApprove = async (id: string, type: 'BORROW' | 'REQUISITION' | 'PRACTICE') => {
+  const handleApprove = async (id: string, type: 'BORROW' | 'REQUISITION' | 'PRACTICE' | 'ROOM') => {
     setApprovingId(id);
     setSubmitting(true);
     try {
@@ -98,6 +105,8 @@ export default function ApprovalsPage() {
           ? `/api/borrow/${id}`
           : type === 'REQUISITION'
           ? `/api/requisitions/${id}`
+          : type === 'ROOM'
+          ? `/api/room-bookings/${id}`
           : `/api/practice/bookings/${id}`;
       const res = await fetch(endpoint, {
         method: 'PUT',
@@ -156,6 +165,8 @@ export default function ApprovalsPage() {
           ? `/api/borrow/${rejectItem.id}`
           : rejectItem.type === 'REQUISITION'
           ? `/api/requisitions/${rejectItem.id}`
+          : rejectItem.type === 'ROOM'
+          ? `/api/room-bookings/${rejectItem.id}`
           : `/api/practice/bookings/${rejectItem.id}`;
       const res = await fetch(endpoint, {
         method: 'PUT',
@@ -292,6 +303,11 @@ export default function ApprovalsPage() {
       ? allPracticeBookings
       : allPracticeBookings.filter((p) => isRelevantToTeacher(p, currentUser));
 
+  const scopedRoomBookings =
+    viewScope === 'ALL'
+      ? allRoomBookings
+      : allRoomBookings.filter((r) => isRelevantToTeacher(r, currentUser));
+
   // Filter Borrows by statusFilter
   const filteredBorrows = scopedBorrows.filter((b) => {
     if (statusFilter === 'PENDING') return b.status === 'PENDING';
@@ -317,41 +333,56 @@ export default function ApprovalsPage() {
     return true;
   });
 
+  // Filter Room Bookings by statusFilter
+  const filteredRoomBookings = scopedRoomBookings.filter((r) => {
+    if (statusFilter === 'PENDING') return r.status === 'PENDING';
+    if (statusFilter === 'APPROVED') return isApproved(r.status);
+    if (statusFilter === 'REJECTED') return r.status === 'REJECTED';
+    return true;
+  });
+
   // Total counts for main status tabs (unified requests counted once)
   const pendingCount =
     scopedBorrows.filter((b) => b.status === 'PENDING').length +
     scopedRequisitions.filter((r) => !r.borrowRequest && r.status === 'PENDING').length +
-    scopedPracticeBookings.filter((p) => p.status === 'PENDING').length;
+    scopedPracticeBookings.filter((p) => p.status === 'PENDING').length +
+    scopedRoomBookings.filter((r) => r.status === 'PENDING').length;
 
   const approvedCount =
     scopedBorrows.filter((b) => isApproved(b.status)).length +
     scopedRequisitions.filter((r) => !r.borrowRequest && isApproved(r.status)).length +
-    scopedPracticeBookings.filter((p) => isApproved(p.status)).length;
+    scopedPracticeBookings.filter((p) => isApproved(p.status)).length +
+    scopedRoomBookings.filter((r) => isApproved(r.status)).length;
 
   const rejectedCount =
     scopedBorrows.filter((b) => b.status === 'REJECTED').length +
     scopedRequisitions.filter((r) => !r.borrowRequest && r.status === 'REJECTED').length +
-    scopedPracticeBookings.filter((p) => p.status === 'REJECTED').length;
+    scopedPracticeBookings.filter((p) => p.status === 'REJECTED').length +
+    scopedRoomBookings.filter((r) => r.status === 'REJECTED').length;
 
   const currentTabTotal =
     activeTab === 'ALL'
-      ? filteredBorrows.length + filteredRequisitions.length + filteredPracticeBookings.length
+      ? filteredBorrows.length + filteredRequisitions.length + filteredPracticeBookings.length + filteredRoomBookings.length
       : activeTab === 'BORROW'
       ? filteredBorrows.length
       : activeTab === 'REQUISITION'
       ? filteredRequisitions.length
-      : filteredPracticeBookings.length;
+      : activeTab === 'PRACTICE'
+      ? filteredPracticeBookings.length
+      : filteredRoomBookings.length;
 
   // Total items in system vs relevant to teacher
   const totalSystemItems =
     allBorrows.length +
     allRequisitions.filter((r) => !r.borrowRequest).length +
-    allPracticeBookings.length;
+    allPracticeBookings.length +
+    allRoomBookings.length;
 
   const totalRelevantItems =
     allBorrows.filter((b) => isRelevantToTeacher(b, currentUser)).length +
     allRequisitions.filter((r) => !r.borrowRequest && isRelevantToTeacher(r, currentUser)).length +
-    allPracticeBookings.filter((p) => isRelevantToTeacher(p, currentUser)).length;
+    allPracticeBookings.filter((p) => isRelevantToTeacher(p, currentUser)).length +
+    allRoomBookings.filter((r) => isRelevantToTeacher(r, currentUser)).length;
 
   const getStageLabel = (status: string, type: 'BORROW' | 'REQUISITION') => {
     if (type === 'BORROW') {
@@ -557,6 +588,17 @@ export default function ApprovalsPage() {
         >
           <Sparkles className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
           <span>ขอฝึกปฏิบัติด้วยตนเอง ({filteredPracticeBookings.length})</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('ROOM')}
+          className={`px-4 py-1.5 text-xs font-bold rounded-lg transition flex items-center gap-1.5 cursor-pointer ${
+            activeTab === 'ROOM'
+              ? 'bg-white dark:bg-slate-700 text-teal-700 dark:text-teal-300 shadow-sm'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'
+          }`}
+        >
+          <Building2 className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+          <span>จองห้องใช้งาน ({filteredRoomBookings.length})</span>
         </button>
       </div>
 
@@ -1208,6 +1250,161 @@ export default function ApprovalsPage() {
                       {b.rejectionReason && (
                         <span className="text-rose-700 font-medium">
                           เหตุผล: <strong>{b.rejectionReason}</strong>
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+
+            {/* Room Booking Cards */}
+            {(activeTab === 'ALL' || activeTab === 'ROOM') &&
+              filteredRoomBookings.map((rm) => (
+                <div
+                  key={rm.id}
+                  className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 space-y-4 hover:shadow-md transition shadow-xs"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/80 flex items-center gap-1.5">
+                        <Building2 className="w-3.5 h-3.5 text-indigo-600" />
+                        จองห้องใช้งาน
+                      </span>
+                      <span className="font-mono text-xs font-bold text-slate-800 dark:text-slate-200">
+                        {rm.bookingNumber}
+                      </span>
+                    </div>
+
+                    <div className="text-[11px] text-slate-400">
+                      ยื่นคำขอเมื่อ: {new Date(rm.createdAt).toLocaleDateString('th-TH')} {new Date(rm.createdAt).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.
+                    </div>
+                  </div>
+
+                  <div className="space-y-2.5 text-xs">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="font-bold text-sm text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                        <span>{rm.title}</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                          {rm.purpose}
+                        </span>
+                      </div>
+                      <div className="text-slate-500 flex items-center gap-1.5">
+                        <User className="w-3.5 h-3.5 text-slate-400" />
+                        <span>ผู้จอง: <strong className="text-slate-700 dark:text-slate-300">{rm.user?.name || '-'}</strong></span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800 text-xs">
+                      <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                        <Building2 className="w-4 h-4 text-indigo-600 flex-shrink-0" />
+                        <span>ห้อง: <strong className="text-indigo-800 dark:text-indigo-300">{rm.room?.name || 'ห้องปฏิบัติการ'}</strong></span>
+                      </div>
+                      <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                        <Calendar className="w-4 h-4 text-teal-600 flex-shrink-0" />
+                        <span>วันที่: <strong className="text-slate-900 dark:text-slate-100">{new Date(rm.bookingDate).toLocaleDateString('th-TH', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</strong></span>
+                      </div>
+                      <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                        <Clock className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                        <span>เวลา: <strong className="text-slate-900 dark:text-slate-100">{rm.startTime} - {rm.endTime} น.</strong></span>
+                      </div>
+                      <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                        <User className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                        <span>ผู้เข้าร่วม: <strong className="text-slate-900 dark:text-slate-100">{rm.attendeesCount} คน</strong></span>
+                      </div>
+                    </div>
+
+                    {(rm.course || rm.advisorName || rm.contactPhone || rm.equipmentNeeded || rm.note) && (
+                      <div className="bg-slate-50/50 dark:bg-slate-950/40 p-3 rounded-xl border border-slate-100 dark:border-slate-800/80 text-[11px] space-y-1.5 text-slate-600 dark:text-slate-400">
+                        {rm.course && (
+                          <div>
+                            <span className="font-bold text-slate-500">วิชาที่เกี่ยวข้อง: </span>
+                            <span className="text-slate-800 dark:text-slate-200 font-medium">{rm.course.courseCode} {rm.course.courseName}</span>
+                          </div>
+                        )}
+                        {rm.advisorName && (
+                          <div>
+                            <span className="font-bold text-slate-500">อาจารย์ผู้รับผิดชอบ/ที่ปรึกษา: </span>
+                            <span className="text-slate-800 dark:text-slate-200 font-medium">{rm.advisorName}</span>
+                          </div>
+                        )}
+                        {rm.contactPhone && (
+                          <div>
+                            <span className="font-bold text-slate-500">เบอร์โทรศัพท์ติดต่อ: </span>
+                            <span className="text-slate-800 dark:text-slate-200 font-medium">{rm.contactPhone}</span>
+                          </div>
+                        )}
+                        {rm.equipmentNeeded && (
+                          <div>
+                            <span className="font-bold text-amber-700 dark:text-amber-400">อุปกรณ์/ครุภัณฑ์ที่ต้องการใช้: </span>
+                            <span className="text-slate-800 dark:text-slate-200 font-medium">{rm.equipmentNeeded}</span>
+                          </div>
+                        )}
+                        {rm.note && (
+                          <div>
+                            <span className="font-bold text-slate-500">หมายเหตุเพิ่มเติม: </span>
+                            <span className="text-slate-800 dark:text-slate-200">{rm.note}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Actions / Status Footer */}
+                  {statusFilter === 'PENDING' ? (
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                      <div className="text-[11px] text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800/80 px-2.5 py-1 rounded-lg font-medium inline-flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5 text-amber-600" />
+                        <span>รออาจารย์หรือเจ้าหน้าที่พิจารณาอนุมัติคำขอใช้ห้องปฏิบัติการ</span>
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          disabled={submitting}
+                          onClick={() => setRejectItem({ id: rm.id, type: 'ROOM' })}
+                          className="px-4 py-2 rounded-xl text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 disabled:opacity-50 disabled:cursor-not-allowed border border-rose-200 dark:border-rose-800 transition cursor-pointer"
+                        >
+                          ไม่อนุมัติ
+                        </button>
+                        <button
+                          disabled={submitting}
+                          onClick={() => handleApprove(rm.id, 'ROOM')}
+                          className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-indigo-600/20 transition cursor-pointer flex items-center gap-1.5"
+                        >
+                          {approvingId === rm.id ? (
+                            <>
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                              <span>กำลังอนุมัติ...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Check className="w-3.5 h-3.5" />
+                              <span>อนุมัติการใช้ห้อง</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  ) : statusFilter === 'APPROVED' ? (
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        อนุมัติแล้ว {rm.approvedAt ? `(${new Date(rm.approvedAt).toLocaleDateString('th-TH')})` : ''}
+                      </span>
+                      {rm.approver?.name && (
+                        <span className="text-slate-500 dark:text-slate-400 font-medium">
+                          ผู้อนุมัติ: <strong className="text-slate-700 dark:text-slate-200">{rm.approver.name}</strong>
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/70 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                        <XCircle className="w-3.5 h-3.5 text-rose-600" />
+                        ไม่อนุมัติคำขอ
+                      </span>
+                      {rm.rejectionReason && (
+                        <span className="text-rose-700 dark:text-rose-400 font-medium">
+                          เหตุผล: <strong>{rm.rejectionReason}</strong>
                         </span>
                       )}
                     </div>

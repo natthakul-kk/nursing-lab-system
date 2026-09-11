@@ -157,7 +157,7 @@ export async function GET(req: Request) {
         };
       });
 
-      setCached(cacheKey, formatted, 30 * 1000); // 30s TTL
+      setCached(cacheKey, formatted, 15); // 15s TTL
       return NextResponse.json(formatted);
     }
 
@@ -222,7 +222,7 @@ export async function GET(req: Request) {
       };
     });
 
-    setCached(cacheKey, formatted, 30 * 1000); // 30s TTL
+    setCached(cacheKey, formatted, 15); // 15s TTL
     return NextResponse.json(formatted);
   } catch (error) {
     console.error('Failed to get items:', error);

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { invalidateCache } from '@/lib/cache';
 
 export async function POST(req: Request) {
   try {
@@ -101,6 +102,8 @@ export async function POST(req: Request) {
         orderBy: { boxNumberInLot: 'asc' },
       });
 
+      invalidateCache('items:');
+      invalidateCache('dashboard:');
       return NextResponse.json({ success: true, lot, transaction: tx, boxes: createdBoxes });
     } else {
       // Equipment
@@ -147,6 +150,8 @@ export async function POST(req: Request) {
         },
       });
 
+      invalidateCache('items:');
+      invalidateCache('dashboard:');
       return NextResponse.json({ success: true, asset, transaction: tx });
     }
   } catch (error: any) {

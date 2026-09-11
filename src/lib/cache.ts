@@ -19,9 +19,11 @@ export function getCached<T>(key: string): T | null {
 }
 
 export function setCached<T>(key: string, data: T, ttlSeconds: number = 30): void {
+  // Gracefully handle if callers pass milliseconds (e.g. 30 * 1000)
+  const normalizedSeconds = ttlSeconds > 1000 ? Math.round(ttlSeconds / 1000) : ttlSeconds;
   memoryCache.set(key, {
     data,
-    expiresAt: Date.now() + ttlSeconds * 1000,
+    expiresAt: Date.now() + normalizedSeconds * 1000,
   });
 }
 

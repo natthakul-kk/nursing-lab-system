@@ -43,10 +43,10 @@ flowchart TB
     %% 3. ACADEMIC & PRACTICE SLOTS
     subgraph S3 ["3. หลักสูตร & การฝึกปฏิบัติ (Academic & Practice)"]
         direction TB
-        Faculty["คณาจารย์ / หัวหน้าภาค"] --> Course["จัดการรายวิชา & ต้นทุน\n(รหัสวิชา, อาจารย์ผู้ประสานงาน, งบประมาณ)"]
+        Faculty["คณาจารย์ / หัวหน้าภาค"] --> Course["จัดการรายวิชา & ต้นทุน (/courses)\n(รหัสวิชา, อาจารย์ผู้ประสานงาน, งบประมาณ)"]
         Course -.-> Kits
         
-        Rooms["ห้องปฏิบัติการพยาบาล (Rooms)"] --> Practice["ระบบจองฝึกหัตถการอิสระ"]
+        Rooms["ห้องปฏิบัติการพยาบาล (Rooms)"] --> Practice["ระบบจองฝึกหัตถการอิสระ (/practice)"]
         Slots["ตารางช่วงเวลา (Slots)"] --> Practice
         Students["นิสิตพยาบาล (Students)"] -->|จองห้องซ้อมแล็บ| Practice
         Practice -->|ผูกกับ| Course

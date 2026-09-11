@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import AssetQrModal from '@/components/qrcode/AssetQrModal';
 import ConsumableQrModal from '@/components/qrcode/ConsumableQrModal';
@@ -61,6 +61,8 @@ export default function InventoryPage() {
   const [filterType, setFilterType] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string>('');
@@ -391,10 +393,12 @@ export default function InventoryPage() {
       if (itemsRes.ok) {
         const data = await itemsRes.json();
         setItems(data);
+        try { sessionStorage.setItem('cached_inventory_items', JSON.stringify(data)); } catch {}
       }
       if (catRes.ok) {
         const catData = await catRes.json();
         setCategories(catData);
+        try { sessionStorage.setItem('cached_inventory_categories', JSON.stringify(catData)); } catch {}
       }
       setLastUpdated(new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
     } catch (err) {
@@ -497,6 +501,16 @@ export default function InventoryPage() {
   };
 
   useEffect(() => {
+    try {
+      const cItems = sessionStorage.getItem('cached_inventory_items');
+      const cCats = sessionStorage.getItem('cached_inventory_categories');
+      if (cItems) {
+        setItems(JSON.parse(cItems));
+        setLoading(false);
+      }
+      if (cCats) setCategories(JSON.parse(cCats));
+    } catch {}
+
     fetchItems();
     fetchCategories();
   }, []);
@@ -653,15 +667,29 @@ export default function InventoryPage() {
     }
   };
 
-  const filteredItems = items.filter((item) => {
-    const matchesType =
-      filterType === 'ALL' || item.type === filterType;
-    const matchesSearch =
-      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.category?.name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesType && matchesSearch;
-  });
+  const filteredItems = useMemo(() => {
+    return items.filter((item) => {
+      const matchesType =
+        filterType === 'ALL' || item.type === filterType;
+      const matchesSearch =
+        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.category?.name.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesType && matchesSearch;
+    });
+  }, [items, filterType, searchQuery]);
+
+  // Reset page when filter or search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterType, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / (pageSize || 25)));
+  const paginatedItems = useMemo(() => {
+    if (pageSize >= 1000) return filteredItems;
+    const start = (currentPage - 1) * pageSize;
+    return filteredItems.slice(start, start + pageSize);
+  }, [filteredItems, currentPage, pageSize]);
 
   const handleDownloadTemplate = () => {
     const sampleData = [
@@ -922,7 +950,7 @@ export default function InventoryPage() {
                   </td>
                 </tr>
               ) : (
-                filteredItems.map((item) => {
+                paginatedItems.map((item) => {
                   const isExpanded = expandedItemId === item.id;
                   const isEquipment = item.type === 'EQUIPMENT';
 
@@ -1496,6 +1524,75 @@ export default function InventoryPage() {
               )}
             </tbody>
           </table>
+
+          {/* Pagination Controls */}
+          {filteredItems.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 bg-slate-50/70 dark:bg-slate-900/60 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-400">
+              <div className="flex items-center gap-2">
+                <span>
+                  แสดง {Math.min((currentPage - 1) * pageSize + 1, filteredItems.length)} - {Math.min(currentPage * pageSize, filteredItems.length)} จาก {filteredItems.length} รายการ
+                </span>
+                <span className="text-slate-300 dark:text-slate-700">|</span>
+                <div className="flex items-center gap-1.5">
+                  <span>แสดงต่อหน้า:</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => {
+                      setPageSize(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-teal-500 cursor-pointer"
+                  >
+                    <option value={20}>20</option>
+                    <option value={35}>35</option>
+                    <option value={50}>50</option>
+                    <option value={9999}>ทั้งหมด ({filteredItems.length})</option>
+                  </select>
+                </div>
+              </div>
+
+              {totalPages > 1 && (
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+                  >
+                    ก่อนหน้า
+                  </button>
+                  <div className="flex items-center gap-1 px-1">
+                    {Array.from({ length: totalPages }, (_, idx) => idx + 1)
+                      .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+                      .map((p, idx, arr) => (
+                        <React.Fragment key={p}>
+                          {idx > 0 && arr[idx - 1] !== p - 1 && <span className="px-1 text-slate-400">...</span>}
+                          <button
+                            type="button"
+                            onClick={() => setCurrentPage(p)}
+                            className={`min-w-[28px] h-7 px-2 rounded-lg font-bold transition text-xs cursor-pointer ${
+                              currentPage === p
+                                ? 'bg-teal-600 text-white shadow-sm'
+                                : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+                            }`}
+                          >
+                            {p}
+                          </button>
+                        </React.Fragment>
+                      ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+                  >
+                    ถัดไป
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

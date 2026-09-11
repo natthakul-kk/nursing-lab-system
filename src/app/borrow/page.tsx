@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import {
   RefreshCw,
@@ -105,18 +105,23 @@ export default function BorrowPage() {
       if (borrowRes.ok) {
         const data = await borrowRes.json();
         setRequests(data);
+        try { sessionStorage.setItem('cached_borrow_requests', JSON.stringify(data)); } catch {}
       }
       if (itemsRes.ok) {
         const items = await itemsRes.json();
-        setEquipmentList(items.filter((i: any) => i.isBorrowable !== false));
+        const filtered = items.filter((i: any) => i.isBorrowable !== false);
+        setEquipmentList(filtered);
+        try { sessionStorage.setItem('cached_borrow_equipment', JSON.stringify(filtered)); } catch {}
       }
       if (consumablesRes.ok) {
         const cItems = await consumablesRes.json();
         setConsumablesList(cItems);
+        try { sessionStorage.setItem('cached_borrow_consumables', JSON.stringify(cItems)); } catch {}
       }
       if (coursesRes.ok) {
         const cData = await coursesRes.json();
         setCourses(cData);
+        try { sessionStorage.setItem('cached_borrow_courses', JSON.stringify(cData)); } catch {}
       }
       if (usersRes.ok) {
         const uData = await usersRes.json();
@@ -130,7 +135,9 @@ export default function BorrowPage() {
             u.name.startsWith('ผศ.') ||
             u.name.startsWith('รศ.')
         );
-        setInstructors(teacherList.length > 0 ? teacherList : uData);
+        const finalTeachers = teacherList.length > 0 ? teacherList : uData;
+        setInstructors(finalTeachers);
+        try { sessionStorage.setItem('cached_borrow_instructors', JSON.stringify(finalTeachers)); } catch {}
       }
       setLastUpdated(new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
     } catch (err) {
@@ -142,6 +149,23 @@ export default function BorrowPage() {
   };
 
   useEffect(() => {
+    try {
+      const cReqs = sessionStorage.getItem('cached_borrow_requests');
+      const cEq = sessionStorage.getItem('cached_borrow_equipment');
+      const cCon = sessionStorage.getItem('cached_borrow_consumables');
+      const cCourses = sessionStorage.getItem('cached_borrow_courses');
+      const cInst = sessionStorage.getItem('cached_borrow_instructors');
+
+      if (cReqs) {
+        setRequests(JSON.parse(cReqs));
+        setLoading(false);
+      }
+      if (cEq) setEquipmentList(JSON.parse(cEq));
+      if (cCon) setConsumablesList(JSON.parse(cCon));
+      if (cCourses) setCourses(JSON.parse(cCourses));
+      if (cInst) setInstructors(JSON.parse(cInst));
+    } catch {}
+
     fetchBorrowData();
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -350,14 +374,16 @@ export default function BorrowPage() {
 
   const isStaff = isOfficer || isApprover || currentUser?.role === 'ADMIN';
 
-  const filteredRequests = requests.filter((r) => {
-    // If not staff (e.g. student/general user) or if viewScope is 'MY', only show own requests
-    if (!isStaff || viewScope === 'MY') {
-      if (r.userId !== currentUser?.id) return false;
-    }
-    if (filterStatus === 'ALL') return true;
-    return r.status === filterStatus;
-  });
+  const filteredRequests = useMemo(() => {
+    return requests.filter((r) => {
+      // If not staff (e.g. student/general user) or if viewScope is 'MY', only show own requests
+      if (!isStaff || viewScope === 'MY') {
+        if (r.userId !== currentUser?.id) return false;
+      }
+      if (filterStatus === 'ALL') return true;
+      return r.status === filterStatus;
+    });
+  }, [requests, isStaff, viewScope, currentUser?.id, filterStatus]);
 
   return (
     <div className="space-y-6">

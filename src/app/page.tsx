@@ -37,6 +37,9 @@ export default function DashboardPage() {
       if (res.ok) {
         const json = await res.json();
         setData(json);
+        try {
+          sessionStorage.setItem('cached_dashboard_stats', JSON.stringify(json));
+        } catch {}
       }
     } catch (err) {
       console.error('Error fetching dashboard:', err);
@@ -48,6 +51,13 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!currentUser) return;
     if (currentUser.role !== 'USER') {
+      try {
+        const cached = sessionStorage.getItem('cached_dashboard_stats');
+        if (cached) {
+          setData(JSON.parse(cached));
+          setLoading(false);
+        }
+      } catch {}
       fetchDashboard();
     } else {
       setLoading(false);

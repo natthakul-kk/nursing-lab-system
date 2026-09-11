@@ -43,12 +43,13 @@ export default function ReportsPage() {
 
   const fetchReports = async (manual = false) => {
     if (manual) setIsRefreshing(true);
-    setLoading(true);
+    if (!reportData) setLoading(true);
     try {
       const res = await fetch('/api/reports');
       if (res.ok) {
         const data = await res.json();
         setReportData(data);
+        try { sessionStorage.setItem('cached_reports_data', JSON.stringify(data)); } catch {}
         setLastUpdated(new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
       } else {
         alert('เกิดข้อผิดพลาดในการโหลดข้อมูลรายงาน');
@@ -63,6 +64,13 @@ export default function ReportsPage() {
   };
 
   useEffect(() => {
+    try {
+      const cRep = sessionStorage.getItem('cached_reports_data');
+      if (cRep) {
+        setReportData(JSON.parse(cRep));
+        setLoading(false);
+      }
+    } catch {}
     fetchReports();
   }, []);
 

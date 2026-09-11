@@ -2,16 +2,21 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCached, setCached, invalidateCache } from '@/lib/cache';
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const cacheKey = 'practice:rooms:list';
+    const { searchParams } = new URL(req.url);
+    const includeInactive = searchParams.get('includeInactive') === 'true';
+
+    const cacheKey = `practice:rooms:list:${includeInactive ? 'ALL' : 'ACTIVE'}`;
     const cached = getCached(cacheKey);
     if (cached) {
       return NextResponse.json(cached);
     }
 
+    const where = includeInactive ? {} : { isActive: true };
+
     const rooms = await prisma.practiceRoom.findMany({
-      where: { isActive: true },
+      where,
       include: {
         _count: {
           select: { slots: true },

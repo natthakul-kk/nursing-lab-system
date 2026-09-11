@@ -113,6 +113,31 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
+
+    // Batch creation support
+    if (Array.isArray(body.slots) && body.slots.length > 0) {
+      const dataToInsert = body.slots.map((s: any) => {
+        const slotDate = new Date(s.date);
+        slotDate.setHours(0, 0, 0, 0);
+        return {
+          roomId: s.roomId,
+          date: slotDate,
+          startTime: s.startTime,
+          endTime: s.endTime,
+          maxCapacity: Number(s.maxCapacity) || 6,
+          isOpen: s.isOpen !== undefined ? Boolean(s.isOpen) : true,
+          closeReason: s.closeReason || null,
+          availableSkills: s.availableSkills || null,
+        };
+      });
+
+      const result = await prisma.practiceSlot.createMany({
+        data: dataToInsert,
+      });
+
+      return NextResponse.json({ success: true, count: result.count }, { status: 201 });
+    }
+
     const { roomId, date, startTime, endTime, maxCapacity, isOpen, closeReason, availableSkills } = body;
 
     if (!roomId || !date || !startTime || !endTime) {

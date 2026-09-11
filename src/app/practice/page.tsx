@@ -47,6 +47,7 @@ import LoadingSpinner from '@/components/common/LoadingSpinner';
 export default function PracticePage() {
   const { currentUser, isOfficer, isApprover, isAdmin, isTeacher } = useAuth();
   const canManageSlots = isOfficer || isAdmin || isTeacher;
+  const canApprove = isOfficer || isAdmin || isTeacher || isApprover;
 
   // Navigation Tabs
   const [activeTab, setActiveTab] = useState<'TIMETABLE' | 'BOOKINGS' | 'SCANNER' | 'SETTINGS'>('TIMETABLE');
@@ -187,7 +188,7 @@ export default function PracticePage() {
 
       const [slotsRes, roomsRes, bookingsRes, configRes, statsRes, coursesRes, kitsRes, usersRes] = await Promise.all([
         fetch(`/api/practice/slots?year=${year}&month=${month}`),
-        fetch('/api/practice/rooms'),
+        fetch('/api/practice/rooms?includeInactive=true'),
         fetch(`/api/practice/bookings${currentUser?.role === 'USER' && !isTeacher ? `?userId=${currentUser.id}` : ''}`),
         fetch('/api/practice/config'),
         fetch(`/api/practice/stats${currentUser?.id ? `?userId=${currentUser.id}` : ''}`),
@@ -663,6 +664,125 @@ export default function PracticePage() {
   };
 
   // 5.5 Actions: Add/Edit Room
+    // Toggle Room Active/Inactive (Open/Closed for booking)
+  const handleToggleRoomStatus = async (room: any) => {
+    const newStatus = !room.isActive;
+    const actionText = newStatus ? 'เปิดให้จองห้อง' : 'ปิดงดรับจองห้องชั่วคราว';
+    if (!confirm(`คุณต้องการ ${actionText} "${room.name}" ใช่หรือไม่?`)) return;
+
+    try {
+      const res = await fetch(`/api/practice/rooms/${room.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: newStatus }),
+      });
+
+      if (res.ok) {
+        fetchData();
+      } else {
+        const err = await res.json();
+        alert(err.error || 'เกิดข้อผิดพลาดในการเปลี่ยนสถานะห้อง');
+      }
+    } catch (err) {
+      alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+    }
+  };
+
+  // Auto generate standard slots for weekdays of current month
+  const handleAutoGenerateStandardSlots = async () => {
+    const activeRooms = rooms.filter((r) => r.isActive !== false);
+    if (activeRooms.length === 0) {
+      alert('ไม่มีห้องปฏิบัติการที่เปิดใช้งานอยู่ กรุณาเปิดใช้งานห้องปฏิบัติการก่อน');
+      return;
+    }
+
+    const thaiMonth = currentMonth.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' });
+    const confirmMsg = `ระบบจะสร้างรอบเวลามาตรฐาน (09:00 - 12:00 น. และ 13:00 - 16:00 น.) ให้กับ ${activeRooms.length} ห้องที่เปิดใช้งาน สำหรับวันจันทร์ - ศุกร์ ในเดือน ${thaiMonth}\n\nต้องการดำเนินการต่อหรือไม่?`;
+    if (!confirm(confirmMsg)) return;
+
+    setSubmitting(true);
+    try {
+      const year = currentMonth.getFullYear();
+      const month = currentMonth.getMonth();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+      const slotsToCreate: any[] = [];
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const d = new Date(year, month, day);
+        const dayOfWeek = d.getDay();
+        // Only Monday - Friday (1 - 5)
+        if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+          const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+          for (const room of activeRooms) {
+            const morningExists = slots.some(
+              (s) =>
+                s.roomId === room.id &&
+                new Date(s.date).toISOString().slice(0, 10) === dateStr &&
+                s.startTime === '09:00'
+            );
+            if (!morningExists) {
+              slotsToCreate.push({
+                roomId: room.id,
+                date: dateStr,
+                startTime: '09:00',
+                endTime: '12:00',
+                maxCapacity: room.capacity || 6,
+                isOpen: true,
+                closeReason: '',
+                availableSkills: 'ฝึกทักษะการพยาบาลพื้นฐาน, ให้ยา, ทำแผล',
+              });
+            }
+
+            const afternoonExists = slots.some(
+              (s) =>
+                s.roomId === room.id &&
+                new Date(s.date).toISOString().slice(0, 10) === dateStr &&
+                s.startTime === '13:00'
+            );
+            if (!afternoonExists) {
+              slotsToCreate.push({
+                roomId: room.id,
+                date: dateStr,
+                startTime: '13:00',
+                endTime: '16:00',
+                maxCapacity: room.capacity || 6,
+                isOpen: true,
+                closeReason: '',
+                availableSkills: 'ฝึกทักษะหัตถการทางการพยาบาล, CPR, ใส่สายยาง',
+              });
+            }
+          }
+        }
+      }
+
+      if (slotsToCreate.length === 0) {
+        alert('มีรอบเวลามาตรฐานในเดือนนี้ครบถ้วนแล้ว');
+        return;
+      }
+
+      const res = await fetch('/api/practice/slots', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slots: slotsToCreate }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        alert(`สร้างรอบเวลามาตรฐานสำเร็จเรียบร้อยแล้ว จำนวน ${data.count || slotsToCreate.length} รอบ!`);
+        fetchData();
+      } else {
+        const err = await res.json();
+        alert(err.error || 'เกิดข้อผิดพลาดในการสร้างรอบเวลา');
+      }
+    } catch (err) {
+      alert('Network error');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleOpenAddRoomModal = () => {
     setRoomToEdit(null);
     setRoomForm({
@@ -964,6 +1084,152 @@ export default function PracticePage() {
       {/* TAB 1: TIMETABLE & CALENDAR VIEW */}
       {activeTab === 'TIMETABLE' && (
         <div className="space-y-6">
+          {/* ROOM MANAGEMENT & BOOKING AVAILABILITY SECTION */}
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 p-5 sm:p-6 shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Building className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+                  <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-slate-100">
+                    ห้องปฏิบัติการทักษะ & สถานะการเปิดรับจอง ({rooms.length} ห้อง)
+                  </h3>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  ตรวจสอบสถานะห้อง และเลือกเปิด/ปิดรับการจองได้ตามความพร้อมของห้องปฏิบัติการ
+                </p>
+              </div>
+
+              {canManageSlots && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={handleAutoGenerateStandardSlots}
+                    disabled={submitting}
+                    className="px-3.5 py-2 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 shadow-sm"
+                    title="สร้างรอบเวลา 09:00-12:00 และ 13:00-16:00 อัตโนมัติสำหรับวันจันทร์-ศุกร์ ในเดือนที่เลือก"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                    <span>⚡ สร้างรอบเวลามาตรฐานอัตโนมัติ</span>
+                  </button>
+
+                  <button
+                    onClick={handleOpenAddRoomModal}
+                    className="px-3.5 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 shadow-sm"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>+ เพิ่มห้องปฏิบัติการใหม่</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Room Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+              {rooms.map((room) => {
+                const isOpen = room.isActive !== false;
+                return (
+                  <div
+                    key={room.id}
+                    className={`rounded-2xl p-4 border transition flex flex-col justify-between space-y-3 ${
+                      isOpen
+                        ? 'bg-slate-50/50 dark:bg-slate-850/60 border-slate-200 dark:border-slate-800 hover:border-teal-300'
+                        : 'bg-rose-50/40 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/40 opacity-90'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="font-mono text-[10px] font-bold text-teal-800 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/80 px-2 py-0.5 rounded border border-teal-200 dark:border-teal-800">
+                          {room.code}
+                        </span>
+                        <span
+                          className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            isOpen
+                              ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                              : 'bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                          }`}
+                        >
+                          {isOpen ? (
+                            <>
+                              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                              <span>เปิดให้จอง</span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+                              <span>ปิดบริการชั่วคราว</span>
+                            </>
+                          )}
+                        </span>
+                      </div>
+
+                      <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 mt-2">
+                        {room.name}
+                      </h4>
+
+                      <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex flex-wrap items-center gap-2">
+                        {room.location && (
+                          <span className="flex items-center gap-1">
+                            <MapPin className="w-3 h-3 text-slate-400" />
+                            {room.location}
+                          </span>
+                        )}
+                        <span>•</span>
+                        <span>ความจุ {room.capacity || 10} คน/รอบ</span>
+                      </div>
+
+                      {room.description && (
+                        <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-2 bg-white dark:bg-slate-900 p-2 rounded-xl border border-slate-100 dark:border-slate-800 line-clamp-2">
+                          {room.description}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Staff/Admin Toggle & Edit Controls */}
+                    {canManageSlots && (
+                      <div className="pt-2 border-t border-slate-200/70 dark:border-slate-800 flex items-center justify-between gap-2">
+                        <button
+                          onClick={() => handleToggleRoomStatus(room)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                            isOpen
+                              ? 'bg-rose-100 hover:bg-rose-200 text-rose-800 dark:bg-rose-950 dark:hover:bg-rose-900 dark:text-rose-300'
+                              : 'bg-emerald-100 hover:bg-emerald-200 text-emerald-800 dark:bg-emerald-950 dark:hover:bg-emerald-900 dark:text-emerald-300'
+                          }`}
+                        >
+                          {isOpen ? (
+                            <>
+                              <Lock className="w-3.5 h-3.5" />
+                              <span>ปิดรับจองห้องนี้</span>
+                            </>
+                          ) : (
+                            <>
+                              <Unlock className="w-3.5 h-3.5" />
+                              <span>เปิดรับจองห้องนี้</span>
+                            </>
+                          )}
+                        </button>
+
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleOpenEditRoomModal(room)}
+                            className="p-1.5 text-slate-500 hover:text-teal-600 hover:bg-teal-50 dark:hover:bg-slate-800 rounded-lg transition cursor-pointer"
+                            title="แก้ไขข้อมูลห้อง"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteRoom(room.id, room.name)}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-slate-800 rounded-lg transition cursor-pointer"
+                            title="ลบหรือปิดห้อง"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
           {/* Calendar Controls & Filter Bar */}
           <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-sm space-y-4">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -1766,7 +2032,7 @@ export default function PracticePage() {
                         )}
 
                         {/* Approval Buttons for Instructor / Staff */}
-                        {isPending && canManageSlots && (
+                        {isPending && canApprove && (
                           <>
                             <button
                               disabled={submitting}

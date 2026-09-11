@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ผังงานมาตรฐานสากล (Standard Flowchart) - ระบบห้องปฏิบัติการพยาบาล</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Prompt:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Sarabun', 'Leelawadee UI', sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+      padding: 30px 15px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .container {
+      max-width: 1100px;
+      width: 100%;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+      padding: 40px 30px;
+      border: 1px solid #e2e8f0;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding-bottom: 25px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    .badge {
+      display: inline-block;
+      background: #e0f2fe;
+      color: #0369a1;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 5px 14px;
+      border-radius: 9999px;
+      margin-bottom: 12px;
+      letter-spacing: 0.5px;
+    }
+    h1 {
+      font-family: 'Prompt', 'Sarabun', sans-serif;
+      font-size: 26px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 10px;
+    }
+    p.subtitle {
+      font-size: 15px;
+      color: #64748b;
+      max-width: 800px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+    .symbols-guide {
+      margin-top: 25px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      background: #f8fafc;
+      padding: 16px;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+    }
+    .sym-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: #334155;
+    }
+    .sym-shape {
+      width: 28px;
+      height: 20px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: bold;
+    }
+    .shape-terminator {
+      background: #0f172a;
+      color: #fff;
+      border-radius: 10px;
+    }
+    .shape-process {
+      background: #fff;
+      border: 2px solid #0284c7;
+      color: #0284c7;
+      border-radius: 2px;
+    }
+    .shape-decision {
+      background: #fef3c7;
+      border: 2px solid #d97706;
+      transform: rotate(45deg);
+      width: 18px;
+      height: 18px;
+      margin: 0 5px;
+    }
+    .shape-input {
+      background: #eff6ff;
+      border: 2px solid #2563eb;
+      transform: skewX(-20deg);
+      border-radius: 2px;
+    }
+    .shape-db {
+      background: #f1f5f9;
+      border: 2px solid #475569;
+      border-radius: 4px / 8px;
+    }
+    .shape-subroutine {
+      background: #f8fafc;
+      border: 2px double #0284c7;
+    }
+    .shape-connector {
+      background: #fff;
+      border: 2px solid #64748b;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+    }
+    .diagram-wrapper {
+      display: flex;
+      justify-content: center;
+      background: #ffffff;
+      padding: 25px 10px;
+      overflow-x: auto;
+    }
+    .mermaid {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+    }
+    .mermaid svg {
+      max-width: 100%;
+      height: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <span class="badge">ISO / ANSI STANDARD VERTICAL FLOWCHART</span>
+      <h1>ผังขั้นตอนการทำงานทั้งระบบตามมาตรฐานสากล (Vertical Flowchart)</h1>
+      <p class="subtitle">แสดงลำดับขั้นตอนการปฏิบัติงานในแนวตั้ง โดยใช้สัญลักษณ์ตามหลักวิชาการผังงาน (Flowchart Standard) อย่างถูกต้อง ครอบคลุมจุดเริ่มต้น-สิ้นสุด, การรับเข้า/ส่งออกข้อมูล, การประมวลผล, จุดตัดสินใจเงื่อนไข และฐานข้อมูล</p>
+      
+      <div class="symbols-guide">
+        <div class="sym-card"><span class="sym-shape shape-terminator"></span> <strong>จุดเริ่มต้น/สิ้นสุด</strong> (Oval)</div>
+        <div class="sym-card"><span class="sym-shape shape-input"></span> <strong>รับเข้า/แสดงผล</strong> (Parallelogram)</div>
+        <div class="sym-card"><span class="sym-shape shape-process"></span> <strong>กระบวนการ</strong> (Rectangle)</div>
+        <div class="sym-card"><span class="sym-shape shape-decision"></span> <strong>จุดตัดสินใจ</strong> (Diamond)</div>
+        <div class="sym-card"><span class="sym-shape shape-db"></span> <strong>ฐานข้อมูล</strong> (Cylinder)</div>
+        <div class="sym-card"><span class="sym-shape shape-subroutine"></span> <strong>ระบบย่อย</strong> (Subroutine)</div>
+        <div class="sym-card"><span class="sym-shape shape-connector"></span> <strong>จุดเชื่อมต่อ</strong> (Connector)</div>
+      </div>
+    </div>
+
+    <div class="diagram-wrapper">
+      <div class="mermaid">
+flowchart TD
+    %% Standard Flowchart Styles
+    classDef terminator fill:#0f172a,stroke:#334155,stroke-width:2.5px,color:#ffffff,font-weight:bold;
+    classDef process fill:#ffffff,stroke:#0284c7,stroke-width:2px,color:#0f172a;
+    classDef subroutine fill:#f8fafc,stroke:#0284c7,stroke-width:2.5px,color:#0369a1,font-weight:600;
+    classDef inputOutput fill:#eff6ff,stroke:#2563eb,stroke-width:2px,color:#1e40af;
+    classDef decision fill:#fef3c7,stroke:#d97706,stroke-width:2.5px,color:#92400e,font-weight:bold;
+    classDef database fill:#f1f5f9,stroke:#475569,stroke-width:2px,color:#1e293b;
+    classDef warnProcess fill:#fef2f2,stroke:#dc2626,stroke-width:2px,color:#991b1b;
+    classDef successProcess fill:#f0fdf4,stroke:#16a34a,stroke-width:2px,color:#14532d;
+    classDef connector fill:#f8fafc,stroke:#64748b,stroke-width:2px,color:#334155,font-weight:bold;
+
+    %% STAGE 1: INGRESS
+    Start([🔵 เริ่มต้น: ผู้ใช้งานเข้าใช้งานระบบ]):::terminator
+    Auth[[ระบบตรวจสอบสิทธิ์และบทบาทผู้ใช้ Supabase Auth & RLS]]:::subroutine
+    Start --> Auth
+
+    %% STAGE 2: SUBMISSION & INVENTORY CHECK
+    InputReq[/ผู้ขอกรอกข้อมูลคำขอ: รายวิชา วัน-เวลา ห้องแลป และรายการพัสดุ/]:::inputOutput
+    Auth --> InputReq
+
+    QueryStock[(ค้นหาข้อมูลทะเบียนคลังพัสดุและสถานะครุภัณฑ์)]:::database
+    InputReq --> QueryStock
+
+    DecideStock{พัสดุในคลัง<br/>มีเพียงพอหรือไม่?}:::decision
+    QueryStock --> DecideStock
+
+    OrderSupply[แจ้งเตือนสต็อกต่ำ & ดำเนินการจัดซื้อ/รับเข้าคลัง Stock-In]:::warnProcess
+    DecideStock -- ❌ ไม่เพียงพอ --> OrderSupply
+    OrderSupply --> QueryStock
+
+    SavePending[(บันทึกคำร้องลงระบบ: สถานะ รอดำเนินการ PENDING)]:::database
+    DecideStock --  เพียงพอ --> SavePending
+
+    %% STAGE 3: REVIEW & APPROVAL
+    ReviewReq[อาจารย์ผู้รับผิดชอบหรือเจ้าหน้าที่แลป ตรวจสอบคำขอ]:::process
+    SavePending --> ReviewReq
+
+    DecideApprove{ผลการพิจารณา<br/>อนุมัติหรือไม่?}:::decision
+    ReviewReq --> DecideApprove
+
+    RejectNotice[/ระบบแจ้งผลไม่อนุมัติ พร้อมระบุเหตุผลและข้อแก้ไข/]:::inputOutput
+    ConnRevise((A)):::connector
+    DecideApprove -- ❌ ไม่อนุมัติ --> RejectNotice
+    RejectNotice --> ConnRevise
+    ConnRevise -.->|แก้ไขข้อมูลใหม่| InputReq
+
+    ApproveProc[อนุมัติคำขอ: ระบบล็อกยอดพัสดุและจองคิวห้องแลปทันที]:::successProcess
+    DecideApprove --  อนุมัติ --> ApproveProc
+
+    %% STAGE 4: FULFILLMENT & CHECK-OUT
+    PickProc[เจ้าหน้าที่จัดของตามใบงาน หยิบครุภัณฑ์และเวชภัณฑ์]:::process
+    ApproveProc --> PickProc
+
+    ScanQR[สแกน QR Code ประจำตัวเครื่องเพื่อตรวจสอบความถูกต้อง]:::process
+    PickProc --> ScanQR
+
+    SignHandover[/ผู้ขอตรวจรับอุปกรณ์ร่วมกับเจ้าหน้าที่ และลงนามรับมอบในระบบ/]:::inputOutput
+    ScanQR --> SignHandover
+
+    SetInUse[(ปรับสถานะคำร้องเป็น: อยู่ระหว่างใช้งาน IN_USE)]:::database
+    SignHandover --> SetInUse
+
+    %% STAGE 5: PRACTICE & RETURN INSPECTION
+    PracticeProc[นักศึกษาดำเนินการฝึกทักษะการพยาบาลตามเวลา]:::process
+    SetInUse --> PracticeProc
+
+    ReturnItems[/ผู้ขอนำอุปกรณ์และเวชภัณฑ์คงเหลือมาส่งคืนห้องแลป/]:::inputOutput
+    PracticeProc --> ReturnItems
+
+    InspectProc[เจ้าหน้าที่ตรวจนับจำนวน ตรวจสภาพการทำงาน และความสะอาด]:::process
+    ReturnItems --> InspectProc
+
+    DecideDamage{พบอุปกรณ์ชำรุด<br/>เสียหาย หรือสูญหาย?}:::decision
+    InspectProc --> DecideDamage
+
+    %% Damage Branch
+    DamageDoc[/บันทึกรายงานประเมินความเสียหาย Damage Assessment/]:::inputOutput
+    FineProc[คำนวณค่าปรับตามระเบียบคณะ และส่งเข้าคิวแจ้งซ่อม MAINTENANCE]:::warnProcess
+    DecideDamage -- ⚠️ พบชำรุด/สูญหาย --> DamageDoc
+    DamageDoc --> FineProc
+
+    %% Normal Branch
+    ReturnNormal[รับคืนสำเร็จ: ปรับสถานะอุปกรณ์เป็นพร้อมใช้ AVAILABLE]:::successProcess
+    CutStock[บันทึกตัดลดยอดเวชภัณฑ์ที่ใช้หมดไปตามจริง Consumed Stock]:::process
+    DecideDamage --  ปกติสมบูรณ์ --> ReturnNormal
+    ReturnNormal --> CutStock
+
+    %% STAGE 6: CLOSING, AUDIT & DASHBOARD
+    CloseReq[(ปรับปรุงสถานะคำร้องเป็น: เสร็จสิ้นสมบูรณ์ COMPLETED)]:::database
+    FineProc --> CloseReq
+    CutStock --> CloseReq
+
+    AuditLog[(บันทึกประวัติการดำเนินงานทุกขั้นตอนลง Audit Trail Log)]:::database
+    CloseReq --> AuditLog
+
+    CalcKPI[[ระบบประมวลผลคำนวณสถิติและดัชนีชี้วัดประสิทธิภาพ KPIs]]:::subroutine
+    AuditLog --> CalcKPI
+
+    ExecDash[/นำเสนอข้อมูลสรุปเชิงยุทธศาสตร์บน Executive Dashboard/]:::inputOutput
+    CalcKPI --> ExecDash
+
+    EndNode([🔴 สิ้นสุด: ปิดวงจรการทำงานสมบูรณ์]):::terminator
+    ExecDash --> EndNode
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+      themeVariables: {
+        fontFamily: "'Sarabun', 'Leelawadee UI', sans-serif",
+        fontSize: '13px',
+        primaryColor: '#ffffff',
+        primaryTextColor: '#0f172a',
+        primaryBorderColor: '#0284c7',
+        lineColor: '#475569',
+        secondaryColor: '#eff6ff',
+        tertiaryColor: '#fef3c7',
+        edgeLabelBackground: '#ffffff'
+      },
+      flowchart: {
+        curve: 'basis',
+        htmlLabels: true,
+        useMaxWidth: false,
+        nodeSpacing: 35,
+        rankSpacing: 40
+      }
+    });
+  </script>
+</body>
+</html>

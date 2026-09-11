@@ -51,6 +51,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         location: location !== undefined ? location || null : undefined,
         description: description !== undefined ? description || null : undefined,
         imageUrl: imageUrl !== undefined ? imageUrl || null : undefined,
+        isBorrowable: body.isBorrowable !== undefined ? Boolean(body.isBorrowable) : undefined,
+        allowExpiredForSim: body.allowExpiredForSim !== undefined ? Boolean(body.allowExpiredForSim) : undefined,
       },
       include: {
         category: true,

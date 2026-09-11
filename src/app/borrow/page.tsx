@@ -88,8 +88,11 @@ export default function BorrowPage() {
   }[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [acknowledgingId, setAcknowledgingId] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<string>('');
 
-  const fetchBorrowData = async () => {
+  const fetchBorrowData = async (manual = false) => {
+    if (manual) setIsRefreshing(true);
     try {
       const [borrowRes, itemsRes, consumablesRes, coursesRes, usersRes] = await Promise.all([
         fetch('/api/borrow'),
@@ -105,7 +108,7 @@ export default function BorrowPage() {
       }
       if (itemsRes.ok) {
         const items = await itemsRes.json();
-        setEquipmentList(items);
+        setEquipmentList(items.filter((i: any) => i.isBorrowable !== false));
       }
       if (consumablesRes.ok) {
         const cItems = await consumablesRes.json();
@@ -129,10 +132,12 @@ export default function BorrowPage() {
         );
         setInstructors(teacherList.length > 0 ? teacherList : uData);
       }
+      setLastUpdated(new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -369,6 +374,20 @@ export default function BorrowPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          {lastUpdated && (
+            <span className="hidden sm:inline text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+              อัปเดตล่าสุด: {lastUpdated}
+            </span>
+          )}
+          <button
+            onClick={() => fetchBorrowData(true)}
+            disabled={isRefreshing}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition cursor-pointer shadow-sm disabled:opacity-60"
+            title="รีเฟรชข้อมูลรายการคำขอทันที"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-teal-600 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <span>{isRefreshing ? 'กำลังโหลด...' : 'รีเฟรช'}</span>
+          </button>
           <button
             onClick={() => setShowUnifiedModal(true)}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-teal-600 via-teal-700 to-indigo-600 hover:from-teal-500 hover:to-indigo-500 text-white text-xs font-black shadow-lg shadow-teal-600/25 transition cursor-pointer ring-2 ring-teal-400/30"

@@ -62,6 +62,8 @@ export default function PracticePage() {
   const [teachers, setTeachers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<string>('');
 
   // Filter States & Calendar Mode
   const [viewMode, setViewMode] = useState<'CALENDAR' | 'LIST'>('CALENDAR');
@@ -177,7 +179,8 @@ export default function PracticePage() {
   };
 
   // 1. Fetch All Initial Data
-  const fetchData = async () => {
+  const fetchData = async (manual = false) => {
+    if (manual) setIsRefreshing(true);
     try {
       const year = currentMonth.getFullYear();
       const month = currentMonth.getMonth() + 1;
@@ -232,10 +235,12 @@ export default function PracticePage() {
           : [];
         setTeachers(tList);
       }
+      setLastUpdated(new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
     } catch (err) {
       console.error('Error fetching practice data:', err);
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -936,6 +941,23 @@ export default function PracticePage() {
               <span>ตั้งค่าระบบจอง</span>
             </button>
           )}
+
+          <div className="ml-auto flex items-center gap-2">
+            {lastUpdated && (
+              <span className="hidden sm:inline text-[11px] text-teal-200 font-medium">
+                อัปเดตล่าสุด: {lastUpdated}
+              </span>
+            )}
+            <button
+              onClick={() => fetchData(true)}
+              disabled={isRefreshing}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/20 text-white border border-white/15 transition cursor-pointer disabled:opacity-60"
+              title="รีเฟรชข้อมูลตารางและการจองทันที"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-teal-300 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span>{isRefreshing ? 'กำลังโหลด...' : 'รีเฟรช'}</span>
+            </button>
+          </div>
         </div>
       </div>
 

@@ -52,8 +52,11 @@ export default function ApprovalsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [acknowledgingId, setAcknowledgingId] = useState<string | null>(null);
   const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<string>('');
 
-  const fetchData = async () => {
+  const fetchData = async (manual = false) => {
+    if (manual) setIsRefreshing(true);
     try {
       const [borrowRes, reqRes, practiceRes] = await Promise.all([
         fetch('/api/borrow'),
@@ -73,10 +76,12 @@ export default function ApprovalsPage() {
         const pData = await practiceRes.json();
         setAllPracticeBookings(Array.isArray(pData) ? pData : []);
       }
+      setLastUpdated(new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -388,13 +393,29 @@ export default function ApprovalsPage() {
           </p>
         </div>
 
-        {pendingCount > 0 && (
-          <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {lastUpdated && (
+            <span className="text-[11px] text-slate-500 hidden sm:inline font-medium">
+              อัปเดตล่าสุด: {lastUpdated} น.
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={() => fetchData(true)}
+            disabled={isRefreshing}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 text-xs font-bold shadow-xs cursor-pointer disabled:opacity-60 transition active:scale-95"
+            title="กดเพื่อดึงข้อมูลคำขอและการอนุมัติล่าสุดทันที"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-teal-600 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <span>{isRefreshing ? 'กำลังโหลด...' : 'รีเฟรชข้อมูล'}</span>
+          </button>
+
+          {pendingCount > 0 && (
             <span className="px-3 py-1.5 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 font-bold text-xs flex items-center gap-1.5 animate-pulse">
               <Clock className="w-4 h-4 text-amber-600" /> มีคำขอรอการพิจารณา {pendingCount} รายการ
             </span>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Scope Selector: [ เฉพาะคำขอที่ฉันรับผิดชอบ | ทั้งหมดในระบบ ] */}

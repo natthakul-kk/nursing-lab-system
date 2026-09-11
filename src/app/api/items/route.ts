@@ -67,11 +67,13 @@ export async function GET(req: Request) {
           description: true,
           imageUrl: true,
           status: true,
+          isBorrowable: true,
+          allowExpiredForSim: true,
           categoryId: true,
           category: { select: { id: true, name: true } },
           assets: {
             where: { status: 'AVAILABLE' },
-            select: { id: true, assetCode: true, sequenceNumber: true, location: true, brand: true, model: true, supplier: true, warrantyExpiry: true },
+            select: { id: true, assetCode: true, sequenceNumber: true, location: true, brand: true, model: true, supplier: true, warrantyExpiry: true, isBorrowable: true },
             orderBy: { sequenceNumber: 'asc' },
           },
           stockLots: {
@@ -132,13 +134,15 @@ export async function GET(req: Request) {
           status: item.status,
           categoryId: item.categoryId,
           category: item.category,
+          isBorrowable: (item as any).isBorrowable !== false,
+          allowExpiredForSim: (item as any).allowExpiredForSim !== false,
           physicalStock,
           reservedStock,
           availableStock,
           currentStock: availableStock, // Guarantees all selectors and stock checks validate against available stock
           openPackRemainder,
           isLowStock: availableStock <= item.minStockAlert,
-          availableAssets: item.type === 'EQUIPMENT' ? item.assets : [],
+          availableAssets: item.type === 'EQUIPMENT' ? (item.assets || []).filter((a: any) => a.isBorrowable !== false) : [],
           nextRecommendedPacks:
             item.type === 'CONSUMABLE' && (item as any).targetRepacks?.[0]?.packItems?.length > 0
               ? {
@@ -243,6 +247,8 @@ export async function POST(req: Request) {
         model: body.model ? String(body.model).trim() : null,
         location: body.location,
         description: body.description,
+        isBorrowable: body.isBorrowable !== undefined ? Boolean(body.isBorrowable) : true,
+        allowExpiredForSim: body.allowExpiredForSim !== undefined ? Boolean(body.allowExpiredForSim) : true,
       },
       include: {
         category: true,

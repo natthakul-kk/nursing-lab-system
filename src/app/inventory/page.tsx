@@ -43,6 +43,7 @@ import {
   Info,
   Building2,
   ShieldCheck,
+  ClipboardCheck,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { TableLoadingRow } from '@/components/common/LoadingSpinner';
@@ -60,6 +61,17 @@ export default function InventoryPage() {
   const [filterType, setFilterType] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
+
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<string>('');
+
+  // Cycle Count & Stock Reconciliation State
+  const [showCycleCountModal, setShowCycleCountModal] = useState(false);
+  const [cycleCountItem, setCycleCountItem] = useState<any | null>(null);
+  const [cycleCounts, setCycleCounts] = useState<{ [lotId: string]: number }>({});
+  const [cycleCountReasons, setCycleCountReasons] = useState<{ [lotId: string]: string }>({});
+  const [cycleCountNote, setCycleCountNote] = useState('');
+  const [cycleCountSubmitting, setCycleCountSubmitting] = useState(false);
 
 
   // Category Management State
@@ -219,6 +231,8 @@ export default function InventoryPage() {
     model: '',
     location: '',
     description: '',
+    isBorrowable: true,
+    allowExpiredForSim: true,
   });
   const [itemSaving, setItemSaving] = useState(false);
 
@@ -299,6 +313,8 @@ export default function InventoryPage() {
       model: item.model || '',
       location: item.location || '',
       description: item.description || '',
+      isBorrowable: item.isBorrowable !== false,
+      allowExpiredForSim: item.allowExpiredForSim !== false,
     });
   };
 
@@ -360,20 +376,111 @@ export default function InventoryPage() {
     model: '',
     location: '',
     description: '',
+    isBorrowable: true,
+    allowExpiredForSim: true,
   });
   const [submitting, setSubmitting] = useState(false);
 
-  const fetchItems = async () => {
+  const fetchItems = async (manual = false) => {
+    if (manual) setIsRefreshing(true);
     try {
-      const res = await fetch('/api/items');
-      if (res.ok) {
-        const data = await res.json();
+      const [itemsRes, catRes] = await Promise.all([
+        fetch('/api/items'),
+        fetch('/api/categories'),
+      ]);
+      if (itemsRes.ok) {
+        const data = await itemsRes.json();
         setItems(data);
       }
+      if (catRes.ok) {
+        const catData = await catRes.json();
+        setCategories(catData);
+      }
+      setLastUpdated(new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
     } catch (err) {
       console.error('Failed to fetch items:', err);
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+
+
+  const openCycleCountModal = (item?: any) => {
+    const targetItem = item || items.find((i) => i.type === 'CONSUMABLE' && i.stockLots?.length > 0) || items[0];
+    setCycleCountItem(targetItem);
+    const initialCounts: { [lotId: string]: number } = {};
+    const initialReasons: { [lotId: string]: string } = {};
+    if (targetItem?.stockLots) {
+      targetItem.stockLots.forEach((l: any) => {
+        initialCounts[l.id] = l.quantityRemaining;
+        initialReasons[l.id] = 'ตรวจนับสต็อกประจำงวด (Periodic Cycle Count)';
+      });
+    }
+    setCycleCounts(initialCounts);
+    setCycleCountReasons(initialReasons);
+    setCycleCountNote('');
+    setShowCycleCountModal(true);
+  };
+
+  const handleSelectCycleItem = (itemId: string) => {
+    const targetItem = items.find((i) => i.id === itemId);
+    if (!targetItem) return;
+    setCycleCountItem(targetItem);
+    const initialCounts: { [lotId: string]: number } = {};
+    const initialReasons: { [lotId: string]: string } = {};
+    if (targetItem.stockLots) {
+      targetItem.stockLots.forEach((l: any) => {
+        initialCounts[l.id] = l.quantityRemaining;
+        initialReasons[l.id] = 'ตรวจนับสต็อกประจำงวด (Periodic Cycle Count)';
+      });
+    }
+    setCycleCounts(initialCounts);
+    setCycleCountReasons(initialReasons);
+  };
+
+  const handleSaveReconcile = async () => {
+    if (!cycleCountItem?.stockLots || cycleCountItem.stockLots.length === 0) {
+      alert('รายการนี้ไม่มีสต็อกล็อตให้ตรวจนับ');
+      return;
+    }
+
+    const adjustments = cycleCountItem.stockLots
+      .filter((lot: any) => cycleCounts[lot.id] !== undefined && cycleCounts[lot.id] !== lot.quantityRemaining)
+      .map((lot: any) => ({
+        lotId: lot.id,
+        physicalCount: Number(cycleCounts[lot.id]),
+        reason: cycleCountReasons[lot.id] || 'ตรวจนับสต็อกประจำงวด',
+      }));
+
+    if (adjustments.length === 0) {
+      alert('จำนวนที่ตรวจนับตรงกับยอดในระบบทั้งหมด ไม่มีการปรับยอดสต็อก');
+      setShowCycleCountModal(false);
+      return;
+    }
+
+    setCycleCountSubmitting(true);
+    try {
+      const res = await fetch('/api/inventory/reconcile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          adjustments,
+          note: cycleCountNote || `ตรวจนับสต็อก ${cycleCountItem.name} [${cycleCountItem.code}]`,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(`ปรับยอดสต็อกสำเร็จเรียบร้อย (${data.adjustedLots?.length || adjustments.length} ล็อต)`);
+        setShowCycleCountModal(false);
+        await fetchItems(true);
+      } else {
+        alert(data.error || 'เกิดข้อผิดพลาดในการปรับยอดสต็อก');
+      }
+    } catch (err) {
+      alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
+    } finally {
+      setCycleCountSubmitting(false);
     }
   };
 
@@ -531,6 +638,8 @@ export default function InventoryPage() {
           model: '',
           location: '',
           description: '',
+          isBorrowable: true,
+          allowExpiredForSim: true,
         });
         fetchItems();
       } else {
@@ -662,10 +771,35 @@ export default function InventoryPage() {
           </p>
         </div>
 
-        {isOfficer && (
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <button
-              onClick={handleOpenAddCategory}
+        <div className="flex items-center gap-2.5 flex-wrap">
+          {lastUpdated && (
+            <span className="hidden sm:inline text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+              อัปเดตล่าสุด: {lastUpdated}
+            </span>
+          )}
+          <button
+            onClick={() => fetchItems(true)}
+            disabled={isRefreshing}
+            className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition cursor-pointer shadow-sm disabled:opacity-60"
+            title="รีเฟรชข้อมูลสต็อกทันที"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-teal-600 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <span>{isRefreshing ? 'กำลังโหลด...' : 'รีเฟรช'}</span>
+          </button>
+
+          {isOfficer && (
+            <>
+              <button
+                onClick={() => openCycleCountModal()}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-teal-600 hover:from-indigo-500 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-indigo-600/20 transition cursor-pointer"
+                title="ตรวจนับสต็อกจริงและปรับยอดกระทบยอด (Cycle Count & Reconciliation)"
+              >
+                <ClipboardCheck className="w-4 h-4 text-emerald-300" />
+                <span>ตรวจนับสต็อกประจำงวด</span>
+              </button>
+
+              <button
+                onClick={handleOpenAddCategory}
               className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 text-xs font-bold shadow-sm transition cursor-pointer"
               title="จัดการหมวดหมู่พัสดุ (เพิ่ม, แก้ไขชื่อ, ลบหมวดหมู่)"
             >
@@ -686,31 +820,34 @@ export default function InventoryPage() {
               <span>นำเข้าจาก Excel</span>
             </button>
 
-            <button
-              onClick={() => {
-                setNewItem({
-                  code: '',
-                  name: '',
-                  type: 'CONSUMABLE',
-                  categoryId: '',
-                  unit: 'กล่อง',
-                  usageUnit: '',
-                  conversionRatio: '' as any,
-                  minStockAlert: '' as any,
-                  brand: '',
-                  model: '',
-                  location: '',
-                  description: '',
-                });
-                setShowAddModal(true);
-              }}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>เพิ่มรายการใหม่</span>
-            </button>
-          </div>
-        )}
+              <button
+                onClick={() => {
+                  setNewItem({
+                    code: '',
+                    name: '',
+                    type: 'CONSUMABLE',
+                    categoryId: '',
+                    unit: 'กล่อง',
+                    usageUnit: '',
+                    conversionRatio: '' as any,
+                    minStockAlert: '' as any,
+                    brand: '',
+                    model: '',
+                    location: '',
+                    description: '',
+                    isBorrowable: true,
+                    allowExpiredForSim: true,
+                  });
+                  setShowAddModal(true);
+                }}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>เพิ่มรายการใหม่</span>
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Filter and Search Bar */}
@@ -811,6 +948,20 @@ export default function InventoryPage() {
                                   </span>
                                 ) : null
                               )
+                            )}
+                            {item.type === 'EQUIPMENT' && (
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border flex items-center gap-1 ${
+                                item.isBorrowable === false
+                                  ? 'text-rose-700 bg-rose-50 border-rose-200'
+                                  : 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                              }`}>
+                                {item.isBorrowable === false ? '🔒 ประจำห้อง (ห้ามยืมออก)' : '✅ ยืมออกได้'}
+                              </span>
+                            )}
+                            {item.type === 'CONSUMABLE' && item.allowExpiredForSim !== false && (
+                              <span className="text-[10px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200 flex items-center gap-1" title="สามารถนำสต็อกหมดอายุไปฝึกกับหุ่นจำลองได้">
+                                🧪 รองรับฝึกหุ่น (Sim-Lab)
+                              </span>
                             )}
                             {item.description && (
                               <span className="text-slate-400 text-[11px] truncate max-w-xs">
@@ -1252,9 +1403,18 @@ export default function InventoryPage() {
                                               </td>
                                               <td className="py-2">
                                                 {lot.expiryDate ? (
-                                                  <span className="text-slate-800 dark:text-slate-200">
-                                                    {new Date(lot.expiryDate).toLocaleDateString('th-TH')}
-                                                  </span>
+                                                  <div>
+                                                    <span className={`font-semibold ${
+                                                      new Date(lot.expiryDate) < new Date() ? 'text-rose-600' : 'text-slate-800 dark:text-slate-200'
+                                                    }`}>
+                                                      {new Date(lot.expiryDate).toLocaleDateString('th-TH')}
+                                                    </span>
+                                                    {new Date(lot.expiryDate) < new Date() && item.allowExpiredForSim !== false && (
+                                                      <span className="block text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1 mt-0.5 w-max">
+                                                        🧪 ใช้ฝึกกับหุ่นได้ (Sim-Lab)
+                                                      </span>
+                                                    )}
+                                                  </div>
                                                 ) : (
                                                   <span className="text-slate-400">ไม่ระบุ</span>
                                                 )}
@@ -1581,6 +1741,49 @@ export default function InventoryPage() {
                   />
                 </div>
               </div>
+
+              {/* Toggle การยืม และ อนุญาตใช้ฝึกหุ่น */}
+              {editItemTarget?.type === 'EQUIPMENT' ? (
+                <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
+                      อนุญาตให้ยืมออกนอกห้องปฏิบัติการ (Borrowable)
+                    </span>
+                    <span className="text-[11px] text-slate-500">
+                      หากปิดไว้ รายการนี้จะเป็นครุภัณฑ์ประจำห้อง (เช่น จอติดผนัง, เตียงไฟฟ้า) และจะไม่แสดงให้เลือกในใบขอยืม
+                    </span>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={editItemForm.isBorrowable !== false}
+                      onChange={(e) => setEditItemForm({ ...editItemForm, isBorrowable: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-teal-600"></div>
+                  </label>
+                </div>
+              ) : (
+                <div className="p-3 bg-amber-50/60 dark:bg-amber-950/40 rounded-xl border border-amber-200 dark:border-amber-800 flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-bold text-amber-900 dark:text-amber-200 block">
+                      🧪 อนุญาตให้นำของหมดอายุไปฝึกกับหุ่นจำลอง (Sim-Lab Simulation)
+                    </span>
+                    <span className="text-[11px] text-amber-800/80 dark:text-amber-300/80">
+                      เวชภัณฑ์ที่หมดอายุแล้วสามารถนำมาใช้ซ้ำฝึกหัตถการกับหุ่นทางการพยาบาลได้เพื่อประหยัดงบประมาณ
+                    </span>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={editItemForm.allowExpiredForSim !== false}
+                      onChange={(e) => setEditItemForm({ ...editItemForm, allowExpiredForSim: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-600"></div>
+                  </label>
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
@@ -2423,6 +2626,49 @@ export default function InventoryPage() {
                 />
               </div>
 
+              {/* Toggle การยืม และ อนุญาตใช้ฝึกหุ่น */}
+              {editItemTarget?.type === 'EQUIPMENT' ? (
+                <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
+                      อนุญาตให้ยืมออกนอกห้องปฏิบัติการ (Borrowable)
+                    </span>
+                    <span className="text-[11px] text-slate-500">
+                      หากปิดไว้ รายการนี้จะเป็นครุภัณฑ์ประจำห้อง (เช่น จอติดผนัง, เตียงไฟฟ้า) และจะไม่แสดงให้เลือกในใบขอยืม
+                    </span>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={editItemForm.isBorrowable !== false}
+                      onChange={(e) => setEditItemForm({ ...editItemForm, isBorrowable: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-teal-600"></div>
+                  </label>
+                </div>
+              ) : (
+                <div className="p-3 bg-amber-50/60 dark:bg-amber-950/40 rounded-xl border border-amber-200 dark:border-amber-800 flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-bold text-amber-900 dark:text-amber-200 block">
+                      🧪 อนุญาตให้นำของหมดอายุไปฝึกกับหุ่นจำลอง (Sim-Lab Simulation)
+                    </span>
+                    <span className="text-[11px] text-amber-800/80 dark:text-amber-300/80">
+                      เวชภัณฑ์ที่หมดอายุแล้วสามารถนำมาใช้ซ้ำฝึกหัตถการกับหุ่นทางการพยาบาลได้เพื่อประหยัดงบประมาณ
+                    </span>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={editItemForm.allowExpiredForSim !== false}
+                      onChange={(e) => setEditItemForm({ ...editItemForm, allowExpiredForSim: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-600"></div>
+                  </label>
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   รายละเอียดเพิ่มเติม
@@ -2819,6 +3065,235 @@ export default function InventoryPage() {
                 className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition cursor-pointer"
               >
                 ปิดหน้าต่าง
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      {/* Modal: ตรวจนับสต็อกประจำงวด (Cycle Count & Reconciliation) */}
+      {showCycleCountModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-800 max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-800 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                  <ClipboardCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">
+                    ตรวจนับสต็อกประจำงวดและปรับยอดกระทบยอด (Cycle Count & Reconciliation)
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    นับจำนวนคงเหลือจริงหน้างาน ตรวจสอบผลต่าง และปรับยอดคงคลังอัตโนมัติพร้อมบันทึกประวัติการตรวจสอบ
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowCycleCountModal(false)}
+                className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="py-4 space-y-4 overflow-y-auto flex-1">
+              {/* เลือกรายการพัสดุ */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                  เลือกรายการพัสดุที่ต้องการตรวจนับ
+                </label>
+                <select
+                  value={cycleCountItem?.id || ''}
+                  onChange={(e) => handleSelectCycleItem(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500"
+                >
+                  {items.map((it) => (
+                    <option key={it.id} value={it.id}>
+                      [{it.code}] {it.name} ({it.type === 'EQUIPMENT' ? 'ครุภัณฑ์' : 'วัสดุสิ้นเปลือง'}) - คงเหลือระบบ {it.currentStock} {it.unit}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {cycleCountItem && (
+                <div className="p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700/80 space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-slate-800 dark:text-slate-200">
+                      {cycleCountItem.name} [{cycleCountItem.code}]
+                    </span>
+                    <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950 px-2 py-0.5 rounded-md">
+                      หน่วยนับ: {cycleCountItem.unit}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-slate-500">
+                    ที่เก็บหลัก: {cycleCountItem.location || 'ห้องปฏิบัติการพยาบาล'} | หมวดหมู่: {cycleCountItem.category?.name || 'ทั่วไป'}
+                  </div>
+                </div>
+              )}
+
+              {/* รายการล็อตคงคลัง */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                    <Boxes className="w-4 h-4 text-indigo-600" />
+                    <span>ตารางนับยอดจริงเทียบยอดระบบรายล็อต</span>
+                  </h4>
+                  <span className="text-[10px] text-slate-400">
+                    * กรอกจำนวนที่นับได้จริงในแต่ละล็อต ระบบจะคำนวณผลต่างให้อัตโนมัติ
+                  </span>
+                </div>
+
+                {cycleCountItem?.stockLots && cycleCountItem.stockLots.length > 0 ? (
+                  <div className="space-y-2.5">
+                    {cycleCountItem.stockLots.map((lot: any) => {
+                      const sysQty = lot.quantityRemaining;
+                      const physical = cycleCounts[lot.id] !== undefined ? cycleCounts[lot.id] : sysQty;
+                      const diff = physical - sysQty;
+
+                      return (
+                        <div
+                          key={lot.id}
+                          className="p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 space-y-2"
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono text-xs font-bold text-teal-700 dark:text-teal-400">
+                                  Lot: {lot.lotNumber}
+                                </span>
+                                {lot.expiryDate && (
+                                  <span className="text-[10px] text-slate-500">
+                                    (หมดอายุ: {new Date(lot.expiryDate).toLocaleDateString('th-TH')})
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[11px] text-slate-500 mt-0.5">
+                                ยอดในระบบ: <strong className="text-slate-800 dark:text-slate-200">{sysQty}</strong> {cycleCountItem.unit}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                              <div className="text-right">
+                                <label className="block text-[10px] font-bold text-slate-500 mb-0.5">
+                                  นับได้จริง ({cycleCountItem.unit})
+                                </label>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={physical}
+                                  onChange={(e) =>
+                                    setCycleCounts((prev) => ({
+                                      ...prev,
+                                      [lot.id]: Math.max(0, parseInt(e.target.value, 10) || 0),
+                                    }))
+                                  }
+                                  className="w-24 text-center font-bold text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-1 focus:ring-2 focus:ring-indigo-500"
+                                />
+                              </div>
+
+                              <div className="min-w-[70px] text-center">
+                                <div className="text-[10px] text-slate-400 mb-0.5">ผลต่าง</div>
+                                {diff === 0 ? (
+                                  <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                                    ตรง (0)
+                                  </span>
+                                ) : diff > 0 ? (
+                                  <span className="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                                    เกิน (+{diff})
+                                  </span>
+                                ) : (
+                                  <span className="text-[11px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full">
+                                    ขาด ({diff})
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {diff !== 0 && (
+                            <div className="pt-2 border-t border-slate-100 dark:border-slate-700/60">
+                              <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 mb-1">
+                                ระบุเหตุผลการปรับปรุงยอดผลต่าง:
+                              </label>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                {['ตรวจนับสต็อกประจำงวด', 'พบชำรุดตัดยอดทิ้ง', 'ของเกินรับเข้าคลัง', 'หมดอายุใช้งาน'].map((r) => (
+                                  <button
+                                    key={r}
+                                    type="button"
+                                    onClick={() =>
+                                      setCycleCountReasons((prev) => ({ ...prev, [lot.id]: r }))
+                                    }
+                                    className={`text-[10px] px-2 py-0.5 rounded-md border transition ${
+                                      cycleCountReasons[lot.id] === r
+                                        ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-bold'
+                                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                                    }`}
+                                  >
+                                    {r}
+                                  </button>
+                                ))}
+                                <input
+                                  type="text"
+                                  placeholder="หรือพิมพ์เหตุผลอื่น..."
+                                  value={cycleCountReasons[lot.id] || ''}
+                                  onChange={(e) =>
+                                    setCycleCountReasons((prev) => ({
+                                      ...prev,
+                                      [lot.id]: e.target.value,
+                                    }))
+                                  }
+                                  className="flex-1 min-w-[150px] text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 rounded-md px-2 py-0.5"
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="p-4 text-center text-xs text-slate-400 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                    {cycleCountItem?.type === 'EQUIPMENT'
+                      ? 'สำหรับครุภัณฑ์คงทน สามารถตรวจสอบสถานะรายชิ้นได้ที่แถบรายการด้านล่าง'
+                      : 'ไม่พบล็อตคงคลังสำหรับรายการนี้'}
+                  </div>
+                )}
+              </div>
+
+              {/* บันทึกหมายเหตุการตรวจนับ */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  หมายเหตุ / ผู้รับผิดชอบตรวจนับ
+                </label>
+                <input
+                  type="text"
+                  placeholder="เช่น กรรมการตรวจนับประจำปี 2569, จนท. สมชาย ร่วมกับ ผศ. ดร. ..."
+                  value={cycleCountNote}
+                  onChange={(e) => setCycleCountNote(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setShowCycleCountModal(false)}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 transition cursor-pointer"
+              >
+                ยกเลิก
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSaveReconcile}
+                disabled={cycleCountSubmitting || !cycleCountItem?.stockLots || cycleCountItem.stockLots.length === 0}
+                className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-teal-600 hover:from-indigo-500 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-indigo-600/25 transition cursor-pointer disabled:opacity-50"
+              >
+                {cycleCountSubmitting && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                <span>{cycleCountSubmitting ? 'กำลังปรับยอดสต็อก...' : 'ยืนยันและปรับปรุงยอดสต็อก (Reconcile)'}</span>
               </button>
             </div>
           </div>

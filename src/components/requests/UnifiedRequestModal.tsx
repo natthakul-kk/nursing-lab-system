@@ -68,7 +68,10 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
           fetch('/api/users?role=APPROVER'),
         ]);
 
-        if (eqRes.ok) setEquipmentList(await eqRes.json());
+        if (eqRes.ok) {
+          const rawEq = await eqRes.json();
+          setEquipmentList(rawEq.filter((e: any) => e.isBorrowable !== false));
+        }
         if (conRes.ok) setConsumablesList(await conRes.json());
         if (cRes.ok) setCourses(await cRes.json());
         if (insRes.ok) setInstructors(await insRes.json());

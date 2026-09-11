@@ -87,6 +87,8 @@ model Item {
   description     String?
   imageUrl        String?
   status          String   @default("ACTIVE")
+  isBorrowable    Boolean  @default(true) // อนุญาตให้ยืมออกนอกห้องได้หรือไม่
+  allowExpiredForSim Boolean @default(true) // อนุญาตให้ใช้เวชภัณฑ์หมดอายุเพื่อฝึกกับหุ่นจำลอง
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -121,6 +123,7 @@ model EquipmentAsset {
   imageUrl       String?   // ลิงก์รูปภาพในไดรฟ์
   status         String    @default("AVAILABLE") // "AVAILABLE", "BORROWED", "MAINTENANCE", "RETIRED"
   condition      String    @default("GOOD")      // "GOOD", "FAIR", "DAMAGED"
+  isBorrowable   Boolean   @default(true)        // ควบคุมเฉพาะชิ้น เช่น ติดตั้งประจำห้องห้ามยืม
   note           String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
@@ -159,6 +162,7 @@ model StockLot {
   openPackRemainder Int       @default(0) // เศษชิ้นที่เหลือในซอง/กล่องที่เปิดใช้แล้ว (Loose pieces in opened pack)
   unitCost          Float
   expiryDate        DateTime?
+  isSimLabApproved  Boolean   @default(false) // สำหรับระบุว่าล็อตนี้อนุญาตให้ใช้ฝึกหัตถการกับหุ่นจำลอง
   receivedDate      DateTime  @default(now())
   supplier          String?
   createdAt         DateTime  @default(now())

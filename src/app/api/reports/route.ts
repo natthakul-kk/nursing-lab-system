@@ -4,7 +4,6 @@ import { prisma } from '@/lib/prisma';
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const type = searchParams.get('type'); // 'CONSUMABLE', 'EQUIPMENT', or 'ALL'
 
     // 1. Fetch Consumable Items with Active Lots
     const consumableItems = await prisma.item.findMany({
@@ -126,6 +125,142 @@ export async function GET(req: Request) {
       });
     });
 
+    // 3. Cost-per-Skill & Cost-per-Student Analytics
+    const [courses, practiceKits] = await Promise.all([
+      prisma.course.findMany({
+        include: {
+          practiceBookings: {
+            where: { status: { in: ['CONFIRMED', 'CHECKED_OUT', 'COMPLETED'] } },
+            include: {
+              user: true,
+              practiceKit: true,
+            },
+          },
+          requisitionRequests: {
+            where: { status: 'DISPENSED' },
+            include: {
+              items: {
+                include: { item: { include: { stockLots: true } } },
+              },
+            },
+          },
+        },
+        orderBy: { code: 'asc' },
+      }),
+      prisma.practiceKit.findMany({
+        include: {
+          items: {
+            include: {
+              item: {
+                include: {
+                  stockLots: true,
+                },
+              },
+            },
+          },
+          practiceBookings: {
+            where: { status: { in: ['CONFIRMED', 'CHECKED_OUT', 'COMPLETED'] } },
+          },
+        },
+        orderBy: { name: 'asc' },
+      }),
+    ]);
+
+    // Calculate Practice Kit Unit Costs
+    const kitAnalytics = practiceKits.map((kit) => {
+      let unitCost = 0;
+      const itemBreakdown = kit.items.map((pki) => {
+        const lots = pki.item.stockLots || [];
+        const avgLotCost = lots.length > 0
+          ? lots.reduce((acc, l) => acc + l.unitCost, 0) / lots.length
+          : 0;
+        const subtotal = pki.quantity * avgLotCost;
+        unitCost += subtotal;
+        return {
+          itemId: pki.item.id,
+          itemName: pki.item.name,
+          itemCode: pki.item.code,
+          quantity: pki.quantity,
+          unit: pki.item.unit,
+          avgUnitCost: avgLotCost,
+          subtotal,
+        };
+      });
+
+      const usageCount = kit.practiceBookings.length;
+      const totalCostDispensed = unitCost * usageCount;
+
+      return {
+        id: kit.id,
+        code: kit.code,
+        name: kit.name,
+        category: kit.category,
+        targetCourse: kit.targetCourse,
+        unitCost,
+        usageCount,
+        totalCostDispensed,
+        items: itemBreakdown,
+      };
+    });
+
+    const kitCostMap = new Map(kitAnalytics.map((k) => [k.id, k.unitCost]));
+
+    // Calculate Course Costs
+    let totalFacultyAllocatedBudget = 0;
+    let totalFacultyConsumableSpent = 0;
+
+    const courseAnalytics = courses.map((course) => {
+      totalFacultyAllocatedBudget += course.allocatedBudget || 0;
+
+      // Requisition items cost
+      let requisitionCost = 0;
+      course.requisitionRequests.forEach((req) => {
+        req.items.forEach((reqItem) => {
+          const lots = reqItem.item.stockLots || [];
+          const avgCost = lots.length > 0
+            ? lots.reduce((a, l) => a + l.unitCost, 0) / lots.length
+            : 0;
+          requisitionCost += (reqItem.quantityDispensed || reqItem.quantityRequested) * avgCost;
+        });
+      });
+
+      // Practice kits cost
+      let practiceKitsCost = 0;
+      const uniqueStudentIds = new Set<string>();
+      course.practiceBookings.forEach((b) => {
+        if (b.userId) uniqueStudentIds.add(b.userId);
+        if (b.practiceKitId && kitCostMap.has(b.practiceKitId)) {
+          practiceKitsCost += kitCostMap.get(b.practiceKitId)!;
+        }
+      });
+
+      const totalCost = requisitionCost + practiceKitsCost;
+      totalFacultyConsumableSpent += totalCost;
+
+      const studentCount = uniqueStudentIds.size || (course.practiceBookings.length > 0 ? course.practiceBookings.length : 1);
+      const costPerStudent = totalCost / studentCount;
+      const budgetUtilization = course.allocatedBudget > 0
+        ? (totalCost / course.allocatedBudget) * 100
+        : 0;
+
+      return {
+        id: course.id,
+        code: course.code,
+        name: course.name,
+        semester: course.semester,
+        academicYear: course.academicYear,
+        instructorName: course.instructorName,
+        allocatedBudget: course.allocatedBudget,
+        requisitionCost,
+        practiceKitsCost,
+        totalCost,
+        totalBookings: course.practiceBookings.length,
+        studentCount: uniqueStudentIds.size,
+        costPerStudent,
+        budgetUtilization,
+      };
+    });
+
     return NextResponse.json({
       success: true,
       generatedAt: new Date().toISOString(),
@@ -146,6 +281,12 @@ export async function GET(req: Request) {
         maintenanceCount,
         retiredCount,
         rows: equipmentAssetRows,
+      },
+      costAnalytics: {
+        totalAllocatedBudget: totalFacultyAllocatedBudget,
+        totalConsumableSpent: totalFacultyConsumableSpent,
+        courses: courseAnalytics,
+        kits: kitAnalytics,
       },
     });
   } catch (error: any) {

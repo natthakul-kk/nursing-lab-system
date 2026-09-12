@@ -29,6 +29,7 @@ import {
   Eye
 } from 'lucide-react';
 import { TableLoadingRow } from '@/components/common/LoadingSpinner';
+import BatchRepackStickerModal from '@/components/qrcode/BatchRepackStickerModal';
 
 export default function RepackPage() {
   const { currentUser, isOfficer, isAdmin } = useAuth();
@@ -38,6 +39,7 @@ export default function RepackPage() {
   const [consumableItems, setConsumableItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showBatchRepackModal, setShowBatchRepackModal] = useState(false);
 
   // New Repack Modal
   const [showModal, setShowModal] = useState(false);
@@ -664,10 +666,19 @@ export default function RepackPage() {
         <div className="flex items-center gap-2.5">
           <button
             onClick={fetchData}
-            className="p-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 transition cursor-pointer"
+            className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition cursor-pointer"
             title="รีเฟรชข้อมูล"
           >
             <RefreshCw className="w-4 h-4" />
+          </button>
+
+          <button
+            onClick={() => setShowBatchRepackModal(true)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-teal-200 dark:border-teal-800 bg-teal-50/80 dark:bg-teal-950/50 hover:bg-teal-100 dark:hover:bg-teal-900/60 text-teal-700 dark:text-teal-300 text-xs font-bold transition shadow-sm cursor-pointer"
+            title="พิมพ์สติกเกอร์ซองย่อยทีละหลาย Sub-lot พร้อมกัน"
+          >
+            <Layers className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+            <span>พิมพ์สติกเกอร์หลายรายการ (Batch Printing)</span>
           </button>
 
           {isStaff && (
@@ -1778,6 +1789,14 @@ export default function RepackPage() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Batch Repack Sticker Modal */}
+      {showBatchRepackModal && (
+        <BatchRepackStickerModal
+          records={records}
+          onClose={() => setShowBatchRepackModal(false)}
+        />
       )}
     </div>
   );

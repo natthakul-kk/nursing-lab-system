@@ -70,6 +70,8 @@ export default function RepackPage() {
   const [selectedPackForSinglePrint, setSelectedPackForSinglePrint] = useState<any | null>(null);
   const [labelQrs, setLabelQrs] = useState<{ [key: string]: string }>({});
   const [previewQrModal, setPreviewQrModal] = useState<{ code: string; name: string; qrUrl: string } | null>(null);
+  const [labelSize, setLabelSize] = useState<'compact' | 'mini'>('compact');
+  const [includeLotSticker, setIncludeLotSticker] = useState(true);
 
   useEffect(() => {
     if (!selectedRecordForLabel) return;
@@ -112,6 +114,388 @@ export default function RepackPage() {
     }
     genPackQrs();
   }, [selectedRecordForLabel]);
+
+  // Handle Dedicated Print Popup for Repack Stickers
+  const handlePrint = () => {
+    if (!selectedRecordForLabel) return;
+
+    const printWindow = window.open('', '_blank', 'width=900,height=800');
+    if (!printWindow) {
+      alert('เบราว์เซอร์บล็อกหน้าต่างพิมพ์ กรุณาอนุญาตป๊อปอัป');
+      return;
+    }
+
+    const rec = selectedRecordForLabel;
+    const itemName = rec.targetItem?.name || rec.sourceItem?.name || 'เวชภัณฑ์ปลอดเชื้อ';
+    const itemCode = rec.targetItem?.code || rec.sourceItem?.code || '-';
+    const usageUnit = rec.sourceItem?.usageUnit || 'ชิ้น';
+    const totalPacks = rec.packItems?.length || rec.totalPacksProduced || 1;
+    const formattedPacked = rec.packedDate ? new Date(rec.packedDate).toLocaleDateString('th-TH') : '-';
+    const formattedExpiry = rec.sterileExpiryDate ? new Date(rec.sterileExpiryDate).toLocaleDateString('th-TH') : 'ไม่ระบุ';
+
+    let cardsHtml = '';
+    let pageCss = '';
+
+    const packsToPrint = printMode === 'single_pack' && selectedPackForSinglePrint
+      ? [selectedPackForSinglePrint]
+      : printMode === 'all_packs'
+      ? (rec.packItems && rec.packItems.length > 0
+          ? rec.packItems
+          : Array.from({ length: totalPacks }).map((_, idx) => ({
+              packNumber: idx + 1,
+              packCode: `${rec.subLotNumber}-P${String(idx + 1).padStart(2, '0')}`,
+              unitsCount: rec.unitsPerPack,
+            }))
+        )
+      : [];
+
+    // Prepend Sub-lot Header Label if lot_summary or all_packs with includeLotSticker
+    if (printMode === 'lot_summary' || (printMode === 'all_packs' && includeLotSticker)) {
+      const lotQr = labelQrs[rec.subLotNumber] || '';
+      if (labelSize === 'mini') {
+        cardsHtml += `
+          <div class="box-card-mini lot-header-card-mini">
+            <img src="${lotQr}" class="box-qr-mini" />
+            <div class="box-info-mini">
+              <div class="lot-header-badge-mini">🏷️ ป้ายประจำ Sub-lot (${totalPacks} ซอง)</div>
+              <div class="box-title-mini">${itemName}</div>
+              <div class="box-num-mini font-mono">SUB-LOT: ${rec.subLotNumber}</div>
+              <div class="box-dates-mini">ซองละ ${rec.unitsPerPack} ${usageUnit} | <span class="box-exp">EXP: ${formattedExpiry}</span></div>
+            </div>
+          </div>
+        `;
+      } else {
+        cardsHtml += `
+          <div class="box-card-compact lot-header-card-compact">
+            <div class="box-header-compact lot-banner-compact">
+              <span class="box-org-text">คณะพยาบาลศาสตร์ ม.เกษตรศาสตร์</span>
+              <span class="box-org-sub lot-sub-badge">🏷️ ป้ายประจำ Sub-lot</span>
+            </div>
+            <div class="box-body-compact">
+              <img src="${lotQr}" class="box-qr-compact" />
+              <div class="box-info-compact">
+                <div class="box-title-compact">${itemName}</div>
+                <div class="box-num-compact font-mono">SUB-LOT: ${rec.subLotNumber}</div>
+                <div class="box-code-compact">รวม ${totalPacks} ซอง (ซองละ ${rec.unitsPerPack} ${usageUnit}) • รหัส: ${itemCode}</div>
+                <div class="box-dates-compact"><span class="box-exp">EXP ปลอดเชื้อ: ${formattedExpiry}</span> (อบ ${formattedPacked})</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    // Print pack cards
+    if (printMode !== 'lot_summary') {
+      packsToPrint.forEach((pack: any) => {
+        const packQr = labelQrs[pack.packCode] || '';
+        const packNum = pack.packNumber || 1;
+        const packUnits = pack.unitsCount || rec.unitsPerPack;
+
+        if (labelSize === 'mini') {
+          cardsHtml += `
+            <div class="box-card-mini">
+              <img src="${packQr}" class="box-qr-mini" />
+              <div class="box-info-mini">
+                <div class="box-title-mini">${itemName}</div>
+                <div class="box-num-mini">👉 ซองที่ #${packNum}/${totalPacks} (${packUnits} ${usageUnit})</div>
+                <div class="box-code-mini">Lot: ${rec.subLotNumber} • ${pack.packCode}</div>
+                <div class="box-dates-mini"><span class="box-exp">EXP: ${formattedExpiry}</span> (อบ ${formattedPacked})</div>
+              </div>
+            </div>
+          `;
+        } else {
+          cardsHtml += `
+            <div class="box-card-compact">
+              <div class="box-header-compact">
+                <span class="box-org-text">คณะพยาบาลศาสตร์ ม.เกษตรศาสตร์</span>
+                <span class="box-org-sub">ห้องปฏิบัติการ</span>
+              </div>
+              <div class="box-body-compact">
+                <img src="${packQr}" class="box-qr-compact" />
+                <div class="box-info-compact">
+                  <div class="box-title-compact">${itemName}</div>
+                  <div class="box-num-compact">👉 ซองที่ #${packNum}/${totalPacks} (${packUnits} ${usageUnit})</div>
+                  <div class="box-code-compact">Lot: ${rec.subLotNumber} • ${pack.packCode}</div>
+                  <div class="box-dates-compact"><span class="box-exp">EXP ปลอดเชื้อ: ${formattedExpiry}</span> (อบ ${formattedPacked})</div>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+      });
+    }
+
+    if (labelSize === 'mini') {
+      pageCss = `
+        @page { size: A4 portrait; margin: 6mm 5mm; }
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Sarabun", sans-serif;
+          margin: 0;
+          padding: 0;
+          background: #fff;
+          box-sizing: border-box;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        .labels-grid {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 2mm 2.5mm;
+          width: 100%;
+          box-sizing: border-box;
+        }
+        .box-card-mini {
+          border: 1px solid #334155;
+          border-radius: 3px;
+          padding: 2px 3.5px;
+          width: 100%;
+          height: 14.5mm;
+          max-height: 14.5mm;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          box-sizing: border-box;
+          page-break-inside: avoid;
+          break-inside: avoid;
+          background: #fff;
+        }
+        .lot-header-card-mini {
+          border: 1.2px solid #0d9488 !important;
+          background: #f0fdfa !important;
+        }
+        .lot-header-badge-mini {
+          font-size: 6.5px;
+          font-weight: 900;
+          color: #0f766e;
+          line-height: 1;
+          margin-bottom: 1px;
+        }
+        .box-qr-mini {
+          width: 46px;
+          height: 46px;
+          flex-shrink: 0;
+          display: block;
+        }
+        .box-info-mini {
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          overflow: hidden;
+          line-height: 1.14;
+          flex: 1;
+          min-width: 0;
+        }
+        .box-title-mini {
+          font-size: 8px;
+          font-weight: 800;
+          color: #0f172a;
+          line-height: 1.14;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          word-break: break-word;
+          max-height: 18px;
+        }
+        .box-num-mini {
+          font-size: 9px;
+          font-weight: 900;
+          color: #0f766e;
+          margin-top: 0.5px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .box-code-mini {
+          font-family: monospace;
+          font-size: 7px;
+          color: #334155;
+          font-weight: bold;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          margin-top: 0.5px;
+        }
+        .box-dates-mini {
+          font-size: 6.5px;
+          color: #64748b;
+          margin-top: 0.5px;
+          line-height: 1.12;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .box-exp {
+          color: #e11d48;
+          font-weight: 800;
+        }
+      `;
+    } else {
+      pageCss = `
+        @page { size: A4 portrait; margin: 6mm 5mm; }
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Sarabun", sans-serif;
+          margin: 0;
+          padding: 0;
+          background: #fff;
+          box-sizing: border-box;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        .labels-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 2.5mm 2.5mm;
+          width: 100%;
+          box-sizing: border-box;
+        }
+        .box-card-compact {
+          border: 1.2px solid #334155;
+          border-radius: 4px;
+          padding: 2.5px 5px 3px 5px;
+          width: 100%;
+          height: 22.5mm;
+          max-height: 22.5mm;
+          display: flex;
+          flex-direction: column;
+          box-sizing: border-box;
+          page-break-inside: avoid;
+          break-inside: avoid;
+          background: #fff;
+        }
+        .lot-header-card-compact {
+          border: 1.5px solid #0d9488 !important;
+          background: #f8fafc !important;
+        }
+        .lot-banner-compact {
+          background: #ccfbf1 !important;
+          border-bottom: 1px solid #0f766e !important;
+        }
+        .lot-sub-badge {
+          color: #047857 !important;
+          font-weight: 900 !important;
+        }
+        .box-header-compact {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          background: #f0fdfa;
+          border-bottom: 1px solid #0d9488;
+          border-top-left-radius: 3px;
+          border-top-right-radius: 3px;
+          padding: 1.5px 5px;
+          margin: -2.5px -5px 2px -5px;
+          box-sizing: border-box;
+        }
+        .box-org-text {
+          font-size: 7.5px;
+          font-weight: 800;
+          color: #0f766e;
+          letter-spacing: 0.2px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .box-org-sub {
+          font-size: 6.5px;
+          font-weight: 700;
+          color: #0d9488;
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+        .box-body-compact {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          flex: 1;
+          min-height: 0;
+        }
+        .box-qr-compact {
+          width: 58px;
+          height: 58px;
+          flex-shrink: 0;
+          display: block;
+        }
+        .box-info-compact {
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          overflow: hidden;
+          line-height: 1.15;
+          flex: 1;
+          min-width: 0;
+        }
+        .box-title-compact {
+          font-size: 9px;
+          font-weight: 800;
+          color: #0f172a;
+          line-height: 1.15;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          word-break: break-word;
+          max-height: 22px;
+        }
+        .box-num-compact {
+          font-size: 10px;
+          font-weight: 900;
+          color: #0f766e;
+          margin-top: 1px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .box-code-compact {
+          font-family: monospace;
+          font-size: 7.5px;
+          color: #334155;
+          font-weight: bold;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          margin-top: 0.5px;
+        }
+        .box-dates-compact {
+          font-size: 7.5px;
+          color: #64748b;
+          margin-top: 0.5px;
+          line-height: 1.15;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .box-exp {
+          color: #e11d48;
+          font-weight: 800;
+        }
+      `;
+    }
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>พิมพ์สติกเกอร์ซองแบ่งบรรจุ - คณะพยาบาลศาสตร์ ม.เกษตรศาสตร์</title>
+          <meta charset="utf-8" />
+          <style>${pageCss}</style>
+        </head>
+        <body>
+          <div class="labels-grid">${cardsHtml}</div>
+          <script>
+            window.onload = function() {
+              setTimeout(function() {
+                window.print();
+                window.close();
+              }, 400);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -1001,30 +1385,77 @@ export default function RepackPage() {
               </button>
             </div>
 
-            {/* Mode Selector (Hidden in Print) */}
-            <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-2xl print:hidden text-xs font-bold">
-              <button
-                onClick={() => setPrintMode('all_packs')}
-                className={`flex-1 py-2 rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 ${
-                  printMode === 'all_packs'
-                    ? 'bg-white text-teal-700 shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <Layers className="w-4 h-4" />
-                <span>พิมพ์สติกเกอร์ครบทุกซอง ({selectedRecordForLabel.packItems?.length || selectedRecordForLabel.totalPacksProduced} ซอง)</span>
-              </button>
-              <button
-                onClick={() => setPrintMode('lot_summary')}
-                className={`flex-1 py-2 rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 ${
-                  printMode === 'lot_summary'
-                    ? 'bg-white text-teal-700 shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <Tag className="w-4 h-4" />
-                <span>ฉลากสรุปรวมทั้งล็อต (1 ใบ)</span>
-              </button>
+            {/* Mode Selector & Size Toolbar */}
+            <div className="space-y-2.5 pb-2 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                {/* Mode Tabs */}
+                <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl text-xs font-bold flex-1 min-w-[280px]">
+                  <button
+                    onClick={() => setPrintMode('all_packs')}
+                    className={`flex-1 py-2 rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                      printMode === 'all_packs'
+                        ? 'bg-white dark:bg-slate-700 text-teal-700 dark:text-teal-300 shadow-sm'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                    }`}
+                  >
+                    <Layers className="w-4 h-4" />
+                    <span>พิมพ์ครบทุกซอง ({selectedRecordForLabel.packItems?.length || selectedRecordForLabel.totalPacksProduced} ซอง)</span>
+                  </button>
+                  <button
+                    onClick={() => setPrintMode('lot_summary')}
+                    className={`flex-1 py-2 rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                      printMode === 'lot_summary'
+                        ? 'bg-white dark:bg-slate-700 text-teal-700 dark:text-teal-300 shadow-sm'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                    }`}
+                  >
+                    <Tag className="w-4 h-4" />
+                    <span>ฉลากสรุป Sub-lot (1 ใบ)</span>
+                  </button>
+                </div>
+
+                {/* Label Size Selection */}
+                <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                  <button
+                    onClick={() => setLabelSize('compact')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                      labelSize === 'compact'
+                        ? 'bg-white dark:bg-slate-700 text-teal-700 dark:text-teal-300 shadow-sm'
+                        : 'text-slate-500 hover:text-slate-900 dark:text-slate-400'
+                    }`}
+                  >
+                    กะทัดรัด (3 แถว/A4)
+                  </button>
+                  <button
+                    onClick={() => setLabelSize('mini')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                      labelSize === 'mini'
+                        ? 'bg-white dark:bg-slate-700 text-teal-700 dark:text-teal-300 shadow-sm'
+                        : 'text-slate-500 hover:text-slate-900 dark:text-slate-400'
+                    }`}
+                  >
+                    แถบจิ๋ว (4 แถว/A4)
+                  </button>
+                </div>
+              </div>
+
+              {/* Sub-lot Header Sticker Option (When all_packs) */}
+              {printMode === 'all_packs' && (
+                <div className="flex items-center justify-between px-1">
+                  <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer select-none bg-teal-50 dark:bg-teal-950/40 px-3 py-1.5 rounded-xl border border-teal-200/80 dark:border-teal-800/60">
+                    <input
+                      type="checkbox"
+                      checked={includeLotSticker}
+                      onChange={(e) => setIncludeLotSticker(e.target.checked)}
+                      className="w-4 h-4 rounded text-teal-600 focus:ring-teal-500 border-slate-300"
+                    />
+                    <span>พิมพ์ป้ายประจำ Sub-lot ด้วย (1 แผ่น นำหน้าซองย่อยทั้งหมด)</span>
+                  </label>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                    รวมพิมพ์: <strong className="text-teal-700 dark:text-teal-400 font-bold">{(selectedRecordForLabel.packItems?.length || selectedRecordForLabel.totalPacksProduced) + (includeLotSticker ? 1 : 0)}</strong> ใบ
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Printable Content Area */}
@@ -1272,11 +1703,11 @@ export default function RepackPage() {
                   ปิด
                 </button>
                 <button
-                  onClick={() => window.print()}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition cursor-pointer"
+                  onClick={handlePrint}
+                  className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition cursor-pointer"
                 >
                   <Printer className="w-4 h-4" />
-                  <span>พิมพ์ออกเครื่องพิมพ์</span>
+                  <span>พิมพ์สติกเกอร์ (A4)</span>
                 </button>
               </div>
             </div>

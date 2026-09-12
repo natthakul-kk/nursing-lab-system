@@ -160,6 +160,27 @@ export default function ReportsPage() {
       }
     });
 
+    // Add Grand Total row
+    const totalCurrentStock = filteredConsumables.reduce((s: number, r: any) => s + (Number(r.currentStock) || 0), 0);
+    const totalValuation = filteredConsumables.reduce((s: number, r: any) => s + (Number(r.totalValuation) || 0), 0);
+
+    exportRows.push({
+      'รหัสพัสดุ': 'รวมทั้งสิ้น',
+      'ชื่อวัสดุสิ้นเปลือง': `${filteredConsumables.length} รายการ`,
+      'หมวดหมู่': '',
+      'หน่วยนับ': '',
+      'สถานที่จัดเก็บ': '',
+      'ยอดคงเหลือรวม': totalCurrentStock,
+      'เกณฑ์แจ้งเตือนขั้นต่ำ': '',
+      'สถานะสต็อก': '',
+      'หมายเลขล็อต (Lot)': '-',
+      'ยอดคงเหลือในล็อต': totalCurrentStock,
+      'ราคาต่อหน่วย (บาท)': '',
+      'มูลค่าในล็อต (บาท)': totalValuation,
+      'วันหมดอายุ': '',
+      'สถานะวันหมดอายุ': '',
+    });
+
     const ws = XLSX.utils.json_to_sheet(exportRows);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'รายงานวัสดุสิ้นเปลืองคงคลัง');
@@ -273,13 +294,20 @@ export default function ReportsPage() {
       </div>
 
       {/* Print Title (Only visible when printing) */}
-      <div className="hidden print:block border-b border-slate-300 pb-3 mb-4">
-        <h1 className="text-lg font-bold text-slate-900">
-          คณะพยาบาลศาสตร์ - รายงานสรุปพัสดุและสถานะครุภัณฑ์ห้องปฏิบัติการ
+      <div className="hidden print:block border-b-2 border-slate-800 pb-3 mb-4">
+        <h1 className="text-xl font-bold text-slate-900">
+          คณะพยาบาลศาสตร์ มหาวิทยาลัยเกษตรศาสตร์
         </h1>
-        <div className="text-xs text-slate-600 flex justify-between mt-1">
+        <h2 className="text-sm font-bold text-slate-700 mt-0.5">
+          {activeTab === 'CONSUMABLES'
+            ? 'รายงานยอดพัสดุและวัสดุสิ้นเปลืองคงเหลือห้องปฏิบัติการ (Consumables Stock Balance Report)'
+            : activeTab === 'EQUIPMENT'
+            ? 'รายงานสถานะครุภัณฑ์และวัสดุคงทนห้องปฏิบัติการ (Equipment Assets Report)'
+            : 'รายงานวิเคราะห์ต้นทุนต่อหัวและหัตถการ (Cost Analytics Report)'}
+        </h2>
+        <div className="text-xs text-slate-600 flex justify-between mt-2 pt-1 border-t border-slate-200">
           <span>
-            ประเภท: {activeTab === 'CONSUMABLES' ? 'รายงานวัสดุสิ้นเปลืองคงคลัง' : 'รายงานสถานะครุภัณฑ์และวัสดุคงทน'}
+            ประเภทเอกสาร: {activeTab === 'CONSUMABLES' ? 'รายงานวัสดุสิ้นเปลืองคงคลัง' : activeTab === 'EQUIPMENT' ? 'รายงานสถานะครุภัณฑ์และวัสดุคงทน' : 'รายงานวิเคราะห์ต้นทุน'}
           </span>
           <span>วันที่พิมพ์รายงาน: {new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })} น.</span>
         </div>
@@ -528,7 +556,56 @@ export default function ReportsPage() {
                     ))
                   )}
                 </tbody>
+                <tfoot className="bg-slate-100 dark:bg-slate-800/90 font-bold border-t-2 border-slate-300 dark:border-slate-700">
+                  <tr>
+                    <td className="py-3 px-4 font-black text-slate-900 dark:text-slate-100">
+                      รวมทั้งสิ้น ({filteredConsumables.length.toLocaleString()} รายการ)
+                    </td>
+                    <td className="py-3 px-4 text-slate-500 dark:text-slate-400 text-xs">-</td>
+                    <td className="py-3 px-4 text-center font-black text-sm text-teal-700 dark:text-teal-400">
+                      {filteredConsumables
+                        .reduce((s: number, i: any) => s + (Number(i.currentStock) || 0), 0)
+                        .toLocaleString()}{' '}
+                      <span className="text-xs font-normal text-slate-500">ชิ้น</span>
+                    </td>
+                    <td className="py-3 px-4 text-center text-slate-400">-</td>
+                    <td className="py-3 px-4 text-right font-black text-sm text-emerald-700 dark:text-emerald-400">
+                      ฿{filteredConsumables
+                        .reduce((s: number, i: any) => s + (Number(i.totalValuation) || 0), 0)
+                        .toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </td>
+                    <td className="py-3 px-4 text-slate-400 text-xs">-</td>
+                  </tr>
+                </tfoot>
               </table>
+            </div>
+          </div>
+
+          {/* Official 3-tier Signature Block for Print */}
+          <div className="hidden print:grid grid-cols-3 gap-6 mt-12 pt-8 text-center text-xs text-slate-800 break-inside-avoid">
+            <div className="space-y-12">
+              <div>ลงชื่อ................................................................</div>
+              <div>
+                <p className="font-semibold">(................................................................)</p>
+                <p className="text-slate-600 mt-1">ผู้จัดทำรายงาน / เจ้าหน้าที่ห้องปฏิบัติการ</p>
+                <p className="text-[10px] text-slate-500 mt-1">วันที่ ........ / ........ / ................</p>
+              </div>
+            </div>
+            <div className="space-y-12">
+              <div>ลงชื่อ................................................................</div>
+              <div>
+                <p className="font-semibold">(................................................................)</p>
+                <p className="text-slate-600 mt-1">ผู้ตรวจสอบ / หัวหน้างานห้องปฏิบัติการ</p>
+                <p className="text-[10px] text-slate-500 mt-1">วันที่ ........ / ........ / ................</p>
+              </div>
+            </div>
+            <div className="space-y-12">
+              <div>ลงชื่อ................................................................</div>
+              <div>
+                <p className="font-semibold">(................................................................)</p>
+                <p className="text-slate-600 mt-1">ผู้อนุมัติ / ผู้ช่วยคณบดีหรือคณบดี</p>
+                <p className="text-[10px] text-slate-500 mt-1">วันที่ ........ / ........ / ................</p>
+              </div>
             </div>
           </div>
         </div>

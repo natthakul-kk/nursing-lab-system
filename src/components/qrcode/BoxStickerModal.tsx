@@ -110,36 +110,40 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
     if (labelSize === 'mini') {
       // Mini Strip: ~36x18 mm
       pageCss = `
-        @page { size: auto; margin: 4mm; }
+        @page { size: A4 portrait; margin: 8mm 6mm; }
         body {
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
           margin: 0;
-          padding: 6px;
+          padding: 0;
           background: #fff;
+          box-sizing: border-box;
         }
         .labels-grid {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 6px;
-          justify-content: flex-start;
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 3mm 2.5mm;
+          width: 100%;
+          box-sizing: border-box;
         }
         .box-card-mini {
           border: 1px dashed #0d9488;
-          border-radius: 6px;
-          padding: 3px 5px;
-          width: 165px;
-          height: 64px;
+          border-radius: 5px;
+          padding: 3px 4px;
+          width: 100%;
+          height: 20mm;
+          max-height: 20mm;
           display: flex;
           align-items: center;
-          gap: 5px;
+          gap: 4px;
           box-sizing: border-box;
           page-break-inside: avoid;
           break-inside: avoid;
           background: #fff;
+          overflow: hidden;
         }
         .box-qr-mini {
-          width: 52px;
-          height: 52px;
+          width: 42px;
+          height: 42px;
           flex-shrink: 0;
           display: block;
         }
@@ -149,33 +153,50 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
           justify-content: center;
           overflow: hidden;
           line-height: 1.15;
+          flex: 1;
+          min-width: 0;
         }
         .box-title-mini {
-          font-size: 8px;
+          font-size: 7.5px;
           font-weight: 800;
           color: #0f172a;
-          white-space: nowrap;
+          line-height: 1.1;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
           overflow: hidden;
-          text-overflow: ellipsis;
-          max-width: 100px;
+          word-break: break-word;
+          max-height: 17px;
         }
         .box-num-mini {
-          font-size: 9px;
+          font-size: 8.5px;
           font-weight: 900;
           color: #0d9488;
           margin-top: 1px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
         .box-code-mini {
           font-family: monospace;
-          font-size: 7.5px;
+          font-size: 7px;
           color: #475569;
           font-weight: bold;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
         .box-dates-mini {
-          font-size: 7px;
+          font-size: 6.5px;
           color: #64748b;
-          margin-top: 1px;
+          margin-top: 0.5px;
           white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .box-exp {
+          color: #e11d48;
+          font-weight: 800;
         }
       `;
 
@@ -197,36 +218,43 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
     } else {
       // Compact: ~48x28 mm (ขนาดกะทัดรัด ไม่ใหญ่มาก ติดหน้ากล่องพอดีสวยงาม)
       pageCss = `
-        @page { size: auto; margin: 5mm; }
+        @page {
+          size: A4 portrait;
+          margin: 8mm 6mm;
+        }
         body {
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
           margin: 0;
-          padding: 8px;
+          padding: 0;
           background: #fff;
+          box-sizing: border-box;
         }
         .labels-grid {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-          justify-content: flex-start;
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 3.5mm 3mm;
+          width: 100%;
+          box-sizing: border-box;
         }
         .box-card-compact {
           border: 1.2px dashed #0d9488;
-          border-radius: 8px;
-          padding: 6px 8px;
-          width: 220px;
-          height: 84px;
+          border-radius: 6px;
+          padding: 4px 6px;
+          width: 100%;
+          height: 29mm;
+          max-height: 29mm;
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 6px;
           box-sizing: border-box;
           page-break-inside: avoid;
           break-inside: avoid;
           background: #fff;
+          overflow: hidden;
         }
         .box-qr-compact {
-          width: 66px;
-          height: 66px;
+          width: 54px;
+          height: 54px;
           flex-shrink: 0;
           display: block;
         }
@@ -235,45 +263,63 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
           flex-direction: column;
           justify-content: center;
           overflow: hidden;
-          line-height: 1.22;
+          line-height: 1.15;
+          flex: 1;
+          min-width: 0;
         }
         .box-org-compact {
-          font-size: 7px;
+          font-size: 6.5px;
           font-weight: 700;
           color: #0d9488;
           text-transform: uppercase;
-        }
-        .box-title-compact {
-          font-size: 9.5px;
-          font-weight: 800;
-          color: #0f172a;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
-          max-width: 135px;
+        }
+        .box-title-compact {
+          font-size: 8.5px;
+          font-weight: 800;
+          color: #0f172a;
+          line-height: 1.15;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          word-break: break-word;
+          max-height: 20px;
           margin-top: 0.5px;
         }
         .box-num-compact {
-          font-size: 10.5px;
+          font-size: 10px;
           font-weight: 900;
           color: #0f766e;
-          margin-top: 1px;
+          margin-top: 1.5px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
         .box-code-compact {
           font-family: monospace;
-          font-size: 8px;
+          font-size: 7.5px;
           color: #334155;
           font-weight: bold;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          margin-top: 0.5px;
         }
         .box-meta-compact {
-          font-size: 7.5px;
+          font-size: 7px;
           color: #64748b;
-          margin-top: 2px;
-          line-height: 1.2;
+          margin-top: 1.5px;
+          line-height: 1.15;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
         .box-exp {
           color: #e11d48;
-          font-weight: 700;
+          font-weight: 800;
         }
       `;
 

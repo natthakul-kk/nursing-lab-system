@@ -125,7 +125,11 @@ export async function POST(req: Request) {
           include: {
             stockLots: {
               where: { quantityRemaining: { gt: 0 } },
-              orderBy: { expiryDate: 'asc' },
+              orderBy: [
+                { expiryDate: 'asc' },
+                { receivedDate: 'asc' },
+                { createdAt: 'asc' },
+              ],
             },
           },
         }),

@@ -216,6 +216,24 @@ export default function UsersPage() {
         'รหัสนิสิต/บุคลากร': 'T0001',
         'เบอร์โทร': '0899998877',
       },
+      {
+        'คำนำหน้า': 'นางสาว',
+        'ชื่อ-นามสกุล': 'พิมพ์ใจ ว่องไว (เจ้าหน้าที่แล็บ)',
+        'อีเมล': 'pimjai.w@nurse.ac.th',
+        'บทบาท': 'OFFICER',
+        'ภาควิชา/คณะ': 'งานห้องปฏิบัติการพยาบาล',
+        'รหัสนิสิต/บุคลากร': 'ST0021',
+        'เบอร์โทร': '0854443322',
+      },
+      {
+        'คำนำหน้า': 'ดร.',
+        'ชื่อ-นามสกุล': 'ธนากร เชี่ยวชาญ (ผู้ดูแลระบบ)',
+        'อีเมล': 'thanakorn.c@nurse.ac.th',
+        'บทบาท': 'ADMIN',
+        'ภาควิชา/คณะ': 'ศูนย์เทคโนโลยีสารสนเทศ',
+        'รหัสนิสิต/บุคลากร': 'AD0001',
+        'เบอร์โทร': '0825556677',
+      },
     ];
 
     const ws = XLSX.utils.json_to_sheet(sampleData);
@@ -1225,9 +1243,9 @@ export default function UsersPage() {
                   </div>
                   <div className="overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-xl max-h-48">
                     <table className="w-full text-left text-[11px]">
-                      <thead className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold">
+                      <thead className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold sticky top-0">
                         <tr>
-                          {Object.keys(previewData[0] || {}).slice(0, 6).map((col) => (
+                          {Object.keys(previewData[0] || {}).map((col) => (
                             <th key={col} className="p-2 whitespace-nowrap">{col}</th>
                           ))}
                         </tr>
@@ -1235,7 +1253,7 @@ export default function UsersPage() {
                       <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                         {previewData.slice(0, 5).map((row, idx) => (
                           <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
-                            {Object.keys(previewData[0] || {}).slice(0, 6).map((col) => (
+                            {Object.keys(previewData[0] || {}).map((col) => (
                               <td key={col} className="p-2 whitespace-nowrap text-slate-600 dark:text-slate-300">
                                 {String(row[col] ?? '-')}
                               </td>

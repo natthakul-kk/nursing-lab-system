@@ -355,7 +355,7 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
           (box) => `
         <div class="box-card-compact">
           <div class="box-header-compact">
-            <span class="box-org-text">คณะพยาบาลศาสตร์ มหาวิทยาลัยขอนแก่น</span>
+            <span class="box-org-text">คณะพยาบาลศาสตร์ มหาวิทยาลัยเกษตรศาสตร์</span>
             <span class="box-org-sub">ห้องปฏิบัติการ</span>
           </div>
           <div class="box-body-compact">

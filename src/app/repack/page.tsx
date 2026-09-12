@@ -72,6 +72,7 @@ export default function RepackPage() {
   const [previewQrModal, setPreviewQrModal] = useState<{ code: string; name: string; qrUrl: string } | null>(null);
   const [labelSize, setLabelSize] = useState<'compact' | 'mini'>('compact');
   const [includeLotSticker, setIncludeLotSticker] = useState(true);
+  const [showDispensedPacks, setShowDispensedPacks] = useState(false);
 
   useEffect(() => {
     if (!selectedRecordForLabel) return;
@@ -136,17 +137,19 @@ export default function RepackPage() {
     let cardsHtml = '';
     let pageCss = '';
 
+    const allPacksList = rec.packItems && rec.packItems.length > 0
+      ? rec.packItems
+      : Array.from({ length: totalPacks }).map((_, idx) => ({
+          packNumber: idx + 1,
+          packCode: `${rec.subLotNumber}-P${String(idx + 1).padStart(2, '0')}`,
+          unitsCount: rec.unitsPerPack,
+          status: 'AVAILABLE',
+        }));
+
     const packsToPrint = printMode === 'single_pack' && selectedPackForSinglePrint
       ? [selectedPackForSinglePrint]
       : printMode === 'all_packs'
-      ? (rec.packItems && rec.packItems.length > 0
-          ? rec.packItems
-          : Array.from({ length: totalPacks }).map((_, idx) => ({
-              packNumber: idx + 1,
-              packCode: `${rec.subLotNumber}-P${String(idx + 1).padStart(2, '0')}`,
-              unitsCount: rec.unitsPerPack,
-            }))
-        )
+      ? (showDispensedPacks ? allPacksList : allPacksList.filter((p: any) => p.status !== 'DISPENSED'))
       : [];
 
     // Prepend Sub-lot Header Label if lot_summary or all_packs with includeLotSticker
@@ -1439,20 +1442,33 @@ export default function RepackPage() {
                 </div>
               </div>
 
-              {/* Sub-lot Header Sticker Option (When all_packs) */}
+              {/* Sub-lot Header Sticker & Dispensed Filter Options (When all_packs) */}
               {printMode === 'all_packs' && (
-                <div className="flex items-center justify-between px-1">
-                  <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer select-none bg-teal-50 dark:bg-teal-950/40 px-3 py-1.5 rounded-xl border border-teal-200/80 dark:border-teal-800/60">
-                    <input
-                      type="checkbox"
-                      checked={includeLotSticker}
-                      onChange={(e) => setIncludeLotSticker(e.target.checked)}
-                      className="w-4 h-4 rounded text-teal-600 focus:ring-teal-500 border-slate-300"
-                    />
-                    <span>พิมพ์ป้ายประจำ Sub-lot ด้วย (1 แผ่น นำหน้าซองย่อยทั้งหมด)</span>
-                  </label>
+                <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer select-none bg-teal-50 dark:bg-teal-950/40 px-3 py-1.5 rounded-xl border border-teal-200/80 dark:border-teal-800/60">
+                      <input
+                        type="checkbox"
+                        checked={includeLotSticker}
+                        onChange={(e) => setIncludeLotSticker(e.target.checked)}
+                        className="w-4 h-4 rounded text-teal-600 focus:ring-teal-500 border-slate-300"
+                      />
+                      <span>พิมพ์ป้ายประจำ Sub-lot ด้วย (1 แผ่น นำหน้าซองย่อยทั้งหมด)</span>
+                    </label>
+
+                    <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 cursor-pointer select-none px-2 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 transition">
+                      <input
+                        type="checkbox"
+                        checked={showDispensedPacks}
+                        onChange={(e) => setShowDispensedPacks(e.target.checked)}
+                        className="w-3.5 h-3.5 rounded text-teal-600 focus:ring-teal-500 border-slate-300"
+                      />
+                      <span>รวมซองที่เบิกจ่ายแล้ว (Dispensed)</span>
+                    </label>
+                  </div>
+
                   <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                    รวมพิมพ์: <strong className="text-teal-700 dark:text-teal-400 font-bold">{(selectedRecordForLabel.packItems?.length || selectedRecordForLabel.totalPacksProduced) + (includeLotSticker ? 1 : 0)}</strong> ใบ
+                    รวมพิมพ์: <strong className="text-teal-700 dark:text-teal-400 font-bold">{((selectedRecordForLabel.packItems || []).filter((p: any) => showDispensedPacks ? true : p.status !== 'DISPENSED').length || selectedRecordForLabel.totalPacksProduced) + (includeLotSticker ? 1 : 0)}</strong> ใบ
                   </span>
                 </div>
               )}
@@ -1464,11 +1480,12 @@ export default function RepackPage() {
               {printMode === 'all_packs' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 print:grid-cols-2 print:gap-2">
                   {(selectedRecordForLabel.packItems && selectedRecordForLabel.packItems.length > 0
-                    ? selectedRecordForLabel.packItems
+                    ? (showDispensedPacks ? selectedRecordForLabel.packItems : selectedRecordForLabel.packItems.filter((p: any) => p.status !== 'DISPENSED'))
                     : Array.from({ length: selectedRecordForLabel.totalPacksProduced }).map((_, idx) => ({
                         packNumber: idx + 1,
                         packCode: `${selectedRecordForLabel.subLotNumber}-P${String(idx + 1).padStart(2, '0')}`,
                         unitsCount: selectedRecordForLabel.unitsPerPack,
+                        status: 'AVAILABLE',
                       }))
                   ).map((pack: any) => (
                     <div

@@ -56,11 +56,16 @@ export default function BatchAssetStickerModal({
 
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedItemIds, setExpandedItemIds] = useState<string[]>([]);
-  // Selected asset IDs
+  const [showRetired, setShowRetired] = useState(false);
+  // Selected asset IDs (Default: Only active/available assets, exclude RETIRED)
   const [selectedAssetIds, setSelectedAssetIds] = useState<string[]>(() => {
     const ids: string[] = [];
     availableItems.forEach((item) => {
-      item.assetItems?.forEach((a) => ids.push(a.id));
+      item.assetItems?.forEach((a) => {
+        if (a.status !== 'RETIRED') {
+          ids.push(a.id);
+        }
+      });
     });
     return ids;
   });
@@ -770,6 +775,17 @@ export default function BatchAssetStickerModal({
               </button>
             </div>
           </div>
+
+          {/* Show Retired Toggle */}
+          <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 cursor-pointer select-none px-2 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 transition">
+            <input
+              type="checkbox"
+              checked={showRetired}
+              onChange={(e) => setShowRetired(e.target.checked)}
+              className="w-3.5 h-3.5 rounded text-teal-600 focus:ring-teal-500 border-slate-300"
+            />
+            <span>รวมครุภัณฑ์ที่แทงจำหน่ายแล้ว (Retired)</span>
+          </label>
         </div>
 
         {/* Selection summary & quick actions */}
@@ -861,7 +877,7 @@ export default function BatchAssetStickerModal({
                   {isExpanded && (
                     <div className="ml-8 mt-2 space-y-2 pl-3 border-l-2 border-slate-200 dark:border-slate-700">
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                        {itemAssets.map((asset) => {
+                        {itemAssets.filter((a) => showRetired ? true : a.status !== 'RETIRED').map((asset) => {
                           const isSelected = selectedAssetIds.includes(asset.id);
                           return (
                             <div

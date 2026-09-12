@@ -68,12 +68,18 @@ export default function BatchConsumableStickerModal({
 
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedItemIds, setExpandedItemIds] = useState<string[]>([]);
-  // Selected box ids
+  const [showDepleted, setShowDepleted] = useState(false);
+
+  // Selected box ids (Default: Only in-stock boxes, exclude DEPLETED)
   const [selectedBoxIds, setSelectedBoxIds] = useState<string[]>(() => {
     const ids: string[] = [];
     availableItems.forEach((item) => {
       item.stockLots?.forEach((lot) => {
-        lot.boxes?.forEach((b) => ids.push(b.id));
+        lot.boxes?.forEach((b) => {
+          if (b.status !== 'DEPLETED') {
+            ids.push(b.id);
+          }
+        });
       });
     });
     return ids;
@@ -686,7 +692,18 @@ export default function BatchConsumableStickerModal({
               onChange={(e) => setIncludeLotStickers(e.target.checked)}
               className="w-4 h-4 rounded text-teal-600 focus:ring-teal-500 border-slate-300"
             />
-            <span>พิมพ์ป้ายประจำล็อตด้วย (นำหน้ากล่องในแต่ละล็อต)</span>
+            <span>พิมพ์ป้ายประจำล็อตด้วย</span>
+          </label>
+
+          {/* Show Depleted Toggle */}
+          <label className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-400 cursor-pointer select-none px-2 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 transition">
+            <input
+              type="checkbox"
+              checked={showDepleted}
+              onChange={(e) => setShowDepleted(e.target.checked)}
+              className="w-3.5 h-3.5 rounded text-teal-600 focus:ring-teal-500 border-slate-300"
+            />
+            <span>รวมกล่องที่ใช้หมดแล้ว</span>
           </label>
         </div>
 
@@ -788,7 +805,7 @@ export default function BatchConsumableStickerModal({
                   {isExpanded && (
                     <div className="ml-8 mt-2 space-y-2.5 pl-3 border-l-2 border-slate-200 dark:border-slate-700">
                       {item.stockLots?.map((lot) => {
-                        const lotBoxes = lot.boxes || [];
+                        const lotBoxes = (lot.boxes || []).filter((b) => showDepleted ? true : b.status !== 'DEPLETED');
                         const selectedLotBoxCount = lotBoxes.filter((b) => selectedBoxIds.includes(b.id)).length;
                         const isLotAll = lotBoxes.length > 0 && selectedLotBoxCount === lotBoxes.length;
                         const isLotPartial = selectedLotBoxCount > 0 && selectedLotBoxCount < lotBoxes.length;
@@ -834,13 +851,17 @@ export default function BatchConsumableStickerModal({
                                   <button
                                     key={box.id}
                                     onClick={() => toggleBox(box.id)}
-                                    className={`py-1 px-1.5 rounded-lg text-[10px] font-bold border transition text-center cursor-pointer ${
+                                    className={`py-1 px-1.5 rounded-lg text-[10px] font-bold border transition text-center cursor-pointer relative ${
                                       isBoxSelected
                                         ? 'bg-teal-50 dark:bg-teal-950/60 border-teal-500 text-teal-700 dark:text-teal-300'
+                                        : box.status === 'DEPLETED'
+                                        ? 'bg-rose-50/50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900 text-rose-400'
                                         : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400'
                                     }`}
+                                    title={box.status === 'DEPLETED' ? 'กล่องนี้ถูกใช้หมดแล้ว' : `กล่อง #${box.boxNumberInYear}`}
                                   >
                                     #{box.boxNumberInYear}
+                                    {box.status === 'DEPLETED' && <span className="block text-[8px] text-rose-500 font-normal">หมด</span>}
                                   </button>
                                 );
                               })}

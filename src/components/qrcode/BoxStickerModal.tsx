@@ -34,7 +34,11 @@ interface BoxStickerModalProps {
 export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxStickerModalProps) {
   const [boxQrs, setBoxQrs] = useState<{ [key: string]: string }>({});
   const [labelSize, setLabelSize] = useState<'compact' | 'mini'>('compact');
-  const [selectedBoxIds, setSelectedBoxIds] = useState<string[]>(boxes.map((b) => b.id));
+  const [showDepleted, setShowDepleted] = useState(false);
+  // Default: only select in-stock boxes (exclude DEPLETED)
+  const [selectedBoxIds, setSelectedBoxIds] = useState<string[]>(() =>
+    boxes.filter((b) => b.status !== 'DEPLETED').map((b) => b.id)
+  );
 
   const totalLotBoxes = lot.quantityInitial || boxes.length;
   const unitLabel = lot.packageUnit || item.unit || 'กล่อง';
@@ -462,6 +466,15 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
             >
               ขนาดแถบจิ๋ว (~47x14.5 มม.)
             </button>
+            <label className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer select-none ml-2 border-l pl-3 border-teal-200 dark:border-teal-800">
+              <input
+                type="checkbox"
+                checked={showDepleted}
+                onChange={(e) => setShowDepleted(e.target.checked)}
+                className="w-3.5 h-3.5 rounded text-teal-600 focus:ring-teal-500 border-slate-300"
+              />
+              <span>รวมกล่องที่ใช้หมดแล้ว</span>
+            </label>
           </div>
         </div>
 
@@ -491,7 +504,7 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
         {/* Scrollable Preview Grid of Boxes */}
         <div className="flex-1 overflow-y-auto pr-1 space-y-2 max-h-[50vh]">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            {boxes.map((box) => {
+            {boxes.filter((b) => showDepleted ? true : b.status !== 'DEPLETED').map((box) => {
               const isChecked = selectedBoxIds.includes(box.id);
               const qrUrl = boxQrs[box.boxCode];
 

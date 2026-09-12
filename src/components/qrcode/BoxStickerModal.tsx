@@ -223,11 +223,13 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
           margin: 6mm 5mm;
         }
         body {
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Sarabun", sans-serif;
           margin: 0;
           padding: 0;
           background: #fff;
           box-sizing: border-box;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
         }
         .labels-grid {
           display: grid;
@@ -239,22 +241,57 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
         .box-card-compact {
           border: 1.2px dashed #0d9488;
           border-radius: 6px;
-          padding: 4px 7px;
+          padding: 3px 5px 4px 5px;
           width: 100%;
-          height: 27mm;
-          max-height: 27mm;
+          height: 28mm;
+          max-height: 28mm;
           display: flex;
-          align-items: center;
-          gap: 7px;
+          flex-direction: column;
           box-sizing: border-box;
           page-break-inside: avoid;
           break-inside: avoid;
           background: #fff;
           overflow: hidden;
         }
+        .box-header-compact {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          background: #f0fdfa;
+          border-bottom: 1px solid #99f6e4;
+          border-top-left-radius: 4px;
+          border-top-right-radius: 4px;
+          padding: 2px 5px;
+          margin: -3px -5px 3px -5px;
+          box-sizing: border-box;
+        }
+        .box-org-text {
+          font-size: 7.5px;
+          font-weight: 800;
+          color: #0f766e;
+          letter-spacing: 0.2px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .box-org-sub {
+          font-size: 6.5px;
+          font-weight: 700;
+          color: #0d9488;
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+        .box-body-compact {
+          display: flex;
+          align-items: center;
+          gap: 7px;
+          flex: 1;
+          min-height: 0;
+          overflow: hidden;
+        }
         .box-qr-compact {
-          width: 62px;
-          height: 62px;
+          width: 56px;
+          height: 56px;
           flex-shrink: 0;
           display: block;
         }
@@ -263,31 +300,21 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
           flex-direction: column;
           justify-content: center;
           overflow: hidden;
-          line-height: 1.18;
+          line-height: 1.16;
           flex: 1;
           min-width: 0;
-        }
-        .box-org-compact {
-          font-size: 7px;
-          font-weight: 700;
-          color: #0d9488;
-          text-transform: uppercase;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
         }
         .box-title-compact {
           font-size: 9.5px;
           font-weight: 800;
           color: #0f172a;
-          line-height: 1.2;
+          line-height: 1.18;
           display: -webkit-box;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
           overflow: hidden;
           word-break: break-word;
           max-height: 23px;
-          margin-top: 1px;
         }
         .box-num-compact {
           font-size: 11px;
@@ -311,8 +338,8 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
         .box-meta-compact {
           font-size: 7.5px;
           color: #64748b;
-          margin-top: 1px;
-          line-height: 1.18;
+          margin-top: 0.5px;
+          line-height: 1.15;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -327,14 +354,19 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
         .map(
           (box) => `
         <div class="box-card-compact">
-          <img src="${boxQrs[box.boxCode] || ''}" class="box-qr-compact" />
-          <div class="box-info-compact">
-            <div class="box-org-compact">คณะพยาบาลศาสตร์ • แล็บปฏิบัติการ</div>
-            <div class="box-title-compact">${item.name}</div>
-            <div class="box-num-compact">👉 ${unitLabel}ที่ #${box.boxNumberInYear} • B${String(box.boxNumberInYear).padStart(3, '0')}</div>
-            <div class="box-code-compact">Lot: ${lot.lotNumber} (${box.boxNumberInLot}/${totalLotBoxes})</div>
-            <div class="box-meta-compact">
-              <div><span class="box-exp">EXP: ${formattedExpiry}</span> | รับ: ${formattedReceived}</div>
+          <div class="box-header-compact">
+            <span class="box-org-text">คณะพยาบาลศาสตร์ มหาวิทยาลัยขอนแก่น</span>
+            <span class="box-org-sub">ห้องปฏิบัติการ</span>
+          </div>
+          <div class="box-body-compact">
+            <img src="${boxQrs[box.boxCode] || ''}" class="box-qr-compact" />
+            <div class="box-info-compact">
+              <div class="box-title-compact">${item.name}</div>
+              <div class="box-num-compact">👉 ${unitLabel}ที่ #${box.boxNumberInYear} • B${String(box.boxNumberInYear).padStart(3, '0')}</div>
+              <div class="box-code-compact">Lot: ${lot.lotNumber} (${box.boxNumberInLot}/${totalLotBoxes})</div>
+              <div class="box-meta-compact">
+                <span class="box-exp">EXP: ${formattedExpiry}</span> | รับ: ${formattedReceived}
+              </div>
             </div>
           </div>
         </div>

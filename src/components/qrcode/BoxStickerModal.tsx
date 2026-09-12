@@ -216,11 +216,11 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
         )
         .join('');
     } else {
-      // Compact: ~48x28 mm (ขนาดกะทัดรัด ไม่ใหญ่มาก ติดหน้ากล่องพอดีสวยงาม)
+      // Compact: ~48x28 mm (ขนาดกะทัดรัด สัดส่วนพอดี ไม่เวิ้งว้าง ไม่ล้นขอบ)
       pageCss = `
         @page {
           size: A4 portrait;
-          margin: 8mm 6mm;
+          margin: 6mm 5mm;
         }
         body {
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -232,20 +232,20 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
         .labels-grid {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 3.5mm 3mm;
+          gap: 2.5mm 2.5mm;
           width: 100%;
           box-sizing: border-box;
         }
         .box-card-compact {
           border: 1.2px dashed #0d9488;
           border-radius: 6px;
-          padding: 4px 6px;
+          padding: 4px 7px;
           width: 100%;
-          height: 29mm;
-          max-height: 29mm;
+          height: 27mm;
+          max-height: 27mm;
           display: flex;
           align-items: center;
-          gap: 6px;
+          gap: 7px;
           box-sizing: border-box;
           page-break-inside: avoid;
           break-inside: avoid;
@@ -253,8 +253,8 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
           overflow: hidden;
         }
         .box-qr-compact {
-          width: 54px;
-          height: 54px;
+          width: 62px;
+          height: 62px;
           flex-shrink: 0;
           display: block;
         }
@@ -263,12 +263,12 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
           flex-direction: column;
           justify-content: center;
           overflow: hidden;
-          line-height: 1.15;
+          line-height: 1.18;
           flex: 1;
           min-width: 0;
         }
         .box-org-compact {
-          font-size: 6.5px;
+          font-size: 7px;
           font-weight: 700;
           color: #0d9488;
           text-transform: uppercase;
@@ -277,20 +277,20 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
           text-overflow: ellipsis;
         }
         .box-title-compact {
-          font-size: 8.5px;
+          font-size: 9.5px;
           font-weight: 800;
           color: #0f172a;
-          line-height: 1.15;
+          line-height: 1.2;
           display: -webkit-box;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
           overflow: hidden;
           word-break: break-word;
-          max-height: 20px;
-          margin-top: 0.5px;
+          max-height: 23px;
+          margin-top: 1px;
         }
         .box-num-compact {
-          font-size: 10px;
+          font-size: 11px;
           font-weight: 900;
           color: #0f766e;
           margin-top: 1.5px;
@@ -309,10 +309,10 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
           margin-top: 0.5px;
         }
         .box-meta-compact {
-          font-size: 7px;
+          font-size: 7.5px;
           color: #64748b;
-          margin-top: 1.5px;
-          line-height: 1.15;
+          margin-top: 1px;
+          line-height: 1.18;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;

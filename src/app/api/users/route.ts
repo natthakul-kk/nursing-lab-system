@@ -7,14 +7,19 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const role = searchParams.get('role'); // e.g. "APPROVER", "TEACHER", "OFFICER"
+    const statusParam = searchParams.get('status'); // e.g. "all", "ACTIVE", "INACTIVE"
+    const includeInactive = searchParams.get('includeInactive') === 'true' || statusParam === 'all';
 
-    const cacheKey = `users:list:${role || 'ALL'}`;
+    const cacheKey = `users:list:${role || 'ALL'}:${statusParam || 'ACTIVE'}`;
     const cached = getCached(cacheKey);
     if (cached) {
       return NextResponse.json(cached);
     }
 
-    const whereCondition: any = { status: 'ACTIVE' };
+    const whereCondition: any = {};
+    if (!includeInactive) {
+      whereCondition.status = statusParam || 'ACTIVE';
+    }
     if (role === 'APPROVER' || role === 'INSTRUCTOR' || role === 'TEACHER') {
       whereCondition.OR = [
         { role: 'APPROVER' },
@@ -90,6 +95,7 @@ export async function POST(req: Request) {
         department: body.department,
         studentId: trimmedStudentId,
         phone: body.phone,
+        status: body.status || 'ACTIVE',
       },
     });
 
@@ -98,5 +104,37 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error('Failed to create user:', error);
     return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: Request) {
+  try {
+    const body = await req.json();
+    const { userIds, status } = body;
+
+    if (!Array.isArray(userIds) || userIds.length === 0 || !status) {
+      return NextResponse.json(
+        { error: 'กรุณาระบุรายชื่อผู้ใช้และสถานะที่ต้องการเปลี่ยน' },
+        { status: 400 }
+      );
+    }
+
+    const updated = await prisma.user.updateMany({
+      where: { id: { in: userIds } },
+      data: { status },
+    });
+
+    invalidateCache('users:');
+    return NextResponse.json({
+      success: true,
+      count: updated.count,
+      message: `อัปเดตสถานะผู้ใช้ ${updated.count} บัญชีเป็น ${status} สำเร็จแล้ว`,
+    });
+  } catch (error: any) {
+    console.error('Batch user status update error:', error);
+    return NextResponse.json(
+      { error: error.message || 'เกิดข้อผิดพลาดในการอัปเดตสถานะผู้ใช้' },
+      { status: 500 }
+    );
   }
 }

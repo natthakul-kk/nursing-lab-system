@@ -129,6 +129,37 @@ function extractUserFromRow(row: Record<string, any>) {
     row['Phone'] ||
     '';
 
+  // 7. Status (ACTIVE vs INACTIVE - รองรับ ปิดบัญชี, จบการศึกษา, ลาออก, พ้นสภาพ)
+  const rawStatus =
+    map['สถานะ'] ||
+    map['สถานะบัญชี'] ||
+    map['สถานะผู้ใช้งาน'] ||
+    map['status'] ||
+    row['สถานะ'] ||
+    row['สถานะบัญชี'] ||
+    row['Status'] ||
+    '';
+  let status: 'ACTIVE' | 'INACTIVE' = 'ACTIVE';
+  let hasStatusInput = false;
+  if (rawStatus) {
+    hasStatusInput = true;
+    const s = String(rawStatus).trim().toUpperCase();
+    if (
+      s.includes('INACTIVE') ||
+      s.includes('ปิด') ||
+      s.includes('ระงับ') ||
+      s.includes('จบ') ||
+      s.includes('สำเร็จ') ||
+      s.includes('ลาออก') ||
+      s.includes('พ้นสภาพ') ||
+      s.includes('ระงับสิทธิ์')
+    ) {
+      status = 'INACTIVE';
+    } else {
+      status = 'ACTIVE';
+    }
+  }
+
   let prefix = String(prefixInput || '').trim();
   let name = String(rawName || '').trim();
 
@@ -152,6 +183,8 @@ function extractUserFromRow(row: Record<string, any>) {
     role: String(role || '').trim(),
     department: String(department || '').trim(),
     phone: String(phone || '').trim(),
+    status,
+    hasStatusInput,
   };
 }
 
@@ -225,6 +258,7 @@ export async function POST(req: Request) {
               studentId: studentId || existing.studentId,
               department: department || existing.department,
               phone: phone || existing.phone,
+              ...(u.hasStatusInput ? { status: u.status } : {}),
               ...(email && email !== existing.email ? { email } : {}),
             },
           });
@@ -240,6 +274,7 @@ export async function POST(req: Request) {
               studentId,
               department,
               phone,
+              status: u.status || 'ACTIVE',
             },
           });
           createdCount++;

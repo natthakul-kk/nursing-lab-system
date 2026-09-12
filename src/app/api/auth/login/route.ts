@@ -34,9 +34,9 @@ export async function POST(req: Request) {
       );
     }
 
-    if (user.status === 'INACTIVE') {
+    if (user.status && user.status !== 'ACTIVE') {
       return NextResponse.json(
-        { error: 'บัญชีนี้ถูกระงับการใช้งาน กรุณาติดต่อผู้ดูแลระบบ' },
+        { error: 'บัญชีผู้ใช้นี้ถูกปิดการใช้งานหรือระงับสิทธิ์แล้ว (เช่น สำเร็จการศึกษา หรือ ลาออก) กรุณาติดต่อเจ้าหน้าที่/ผู้ดูแลระบบห้องปฏิบัติการ' },
         { status: 403 }
       );
     }

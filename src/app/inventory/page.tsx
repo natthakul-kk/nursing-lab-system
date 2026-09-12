@@ -1450,6 +1450,7 @@ export default function InventoryPage() {
                                                 setSelectedAssetForQr({
                                                   asset,
                                                   itemName: item.name,
+                                                  itemUnit: item.unit,
                                                 })
                                               }
                                               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-teal-50 dark:bg-teal-950/40 hover:bg-teal-100 dark:hover:bg-teal-900/60 text-teal-700 dark:text-teal-300 text-xs font-bold transition border border-teal-200 dark:border-teal-800 cursor-pointer ml-auto"

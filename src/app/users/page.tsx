@@ -701,7 +701,7 @@ export default function UsersPage() {
             }`}
           >
             <span className="w-2 h-2 rounded-full bg-emerald-400" />
-            <span>ใช้งานอยู่ (Active)</span>
+            <span>สถานะปกติ (Active)</span>
             <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${statusFilter === 'ACTIVE' ? 'bg-emerald-800 text-white' : 'bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200'}`}>
               {activeCount}
             </span>
@@ -864,7 +864,7 @@ export default function UsersPage() {
                     ) : (
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                        <span>ใช้งานอยู่</span>
+                        <span>สถานะปกติ</span>
                       </span>
                     )}
                   </td>
@@ -1176,7 +1176,7 @@ export default function UsersPage() {
                     onChange={(e) => setEditingUser({ ...editingUser, status: e.target.value })}
                     className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-teal-500/20 cursor-pointer"
                   >
-                    <option value="ACTIVE">🟢 ใช้งานอยู่ (Active)</option>
+                    <option value="ACTIVE">🟢 สถานะปกติ (Active)</option>
                     <option value="INACTIVE">🔴 ปิดบัญชี / เด็กจบ / ลาออก (Inactive)</option>
                   </select>
                 </div>

@@ -108,30 +108,32 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
     let pageCss = '';
 
     if (labelSize === 'mini') {
-      // Mini Strip: ~36x18 mm
+      // Mini Strip: ~45x14.5 mm (ขนาดแถบจิ๋ว แน่นกระชับ สัดส่วนพอดี)
       pageCss = `
-        @page { size: A4 portrait; margin: 8mm 6mm; }
+        @page { size: A4 portrait; margin: 6mm 5mm; }
         body {
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Sarabun", sans-serif;
           margin: 0;
           padding: 0;
           background: #fff;
           box-sizing: border-box;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
         }
         .labels-grid {
           display: grid;
           grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 3mm 2.5mm;
+          gap: 2mm 2.5mm;
           width: 100%;
           box-sizing: border-box;
         }
         .box-card-mini {
           border: 1px solid #334155;
-          border-radius: 4px;
-          padding: 2.5px 4px;
+          border-radius: 3px;
+          padding: 2px 3.5px;
           width: 100%;
-          height: 20mm;
-          max-height: 20mm;
+          height: 14.5mm;
+          max-height: 14.5mm;
           display: flex;
           align-items: center;
           gap: 4px;
@@ -141,8 +143,8 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
           background: #fff;
         }
         .box-qr-mini {
-          width: 42px;
-          height: 42px;
+          width: 46px;
+          height: 46px;
           flex-shrink: 0;
           display: block;
         }
@@ -151,27 +153,27 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
           flex-direction: column;
           justify-content: center;
           overflow: hidden;
-          line-height: 1.15;
+          line-height: 1.14;
           flex: 1;
           min-width: 0;
         }
         .box-title-mini {
-          font-size: 7.5px;
+          font-size: 8px;
           font-weight: 800;
           color: #0f172a;
-          line-height: 1.1;
+          line-height: 1.14;
           display: -webkit-box;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
           overflow: hidden;
           word-break: break-word;
-          max-height: 17px;
+          max-height: 18px;
         }
         .box-num-mini {
-          font-size: 8.5px;
+          font-size: 9px;
           font-weight: 900;
-          color: #0d9488;
-          margin-top: 1px;
+          color: #0f766e;
+          margin-top: 0.5px;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -179,16 +181,18 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
         .box-code-mini {
           font-family: monospace;
           font-size: 7px;
-          color: #475569;
+          color: #334155;
           font-weight: bold;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+          margin-top: 0.5px;
         }
         .box-dates-mini {
           font-size: 6.5px;
           color: #64748b;
           margin-top: 0.5px;
+          line-height: 1.12;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -445,7 +449,7 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
                   : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
               }`}
             >
-              ขนาดกะทัดรัด (~48x28 มม.)
+              ขนาดกะทัดรัด (~64x22.5 มม.)
             </button>
             <button
               type="button"
@@ -456,7 +460,7 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
                   : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
               }`}
             >
-              ขนาดแถบจิ๋ว (~36x18 มม.)
+              ขนาดแถบจิ๋ว (~47x14.5 มม.)
             </button>
           </div>
         </div>

@@ -1,13 +1,31 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-// Map Thai or common item type words
-function normalizeItemType(typeInput?: string): 'EQUIPMENT' | 'CONSUMABLE' {
-  if (!typeInput) return 'EQUIPMENT';
-  const t = typeInput.trim().toUpperCase();
-  if (t.includes('CONSUMABLE') || t.includes('สิ้นเปลือง') || t.includes('เวชภัณฑ์') || t.includes('ยา') || t.includes('วัสดุ')) {
+// Map Thai or common item type words with smart fallback from name and category
+function normalizeItemType(typeInput?: string, itemName?: string, categoryName?: string): 'EQUIPMENT' | 'CONSUMABLE' {
+  if (typeInput) {
+    const t = typeInput.trim().toUpperCase();
+    if (t.includes('CONSUMABLE') || t.includes('สิ้นเปลือง') || t.includes('เวชภัณฑ์') || t.includes('ยา') || t.includes('วัสดุ')) {
+      return 'CONSUMABLE';
+    }
+    if (t.includes('EQUIPMENT') || t.includes('ครุภัณฑ์') || t.includes('เครื่อง') || t.includes('หุ่น') || t.includes('เตียง')) {
+      return 'EQUIPMENT';
+    }
+  }
+
+  // Smart fallback: detect medical consumable keywords from item name or category
+  const textToCheck = `${itemName || ''} ${categoryName || ''}`.toLowerCase();
+  const consumableKeywords = [
+    'เข็ม', 'needle', 'syringe', 'หลอดฉีดยา', 'ไซริงค์', 'ถุงมือ', 'glove',
+    'สำลี', 'cotton', 'ผ้าก๊อซ', 'gauze', 'พลาสเตอร์', 'plaster', 'แอลกอฮอล์',
+    'alcohol', 'เบตาดีน', 'betadine', 'สายยาง', 'catheter', 'tube', 'ใบมีด',
+    'blade', 'swab', 'ยา', 'เวชภัณฑ์', 'สิ้นเปลือง', 'mask', 'หน้ากาก',
+    'แผ่นรอง', 'iv set', 'สายน้ำเกลือ', 'ชุดให้น้ำเกลือ', 'เซตทำแผล'
+  ];
+  if (consumableKeywords.some((kw) => textToCheck.includes(kw))) {
     return 'CONSUMABLE';
   }
+
   return 'EQUIPMENT';
 }
 
@@ -341,7 +359,7 @@ export async function POST(req: Request) {
       }
 
       const name = row.name;
-      const type = normalizeItemType(row.type);
+      const type = normalizeItemType(row.type, row.name, row.category);
       const unit = row.unit || (type === 'EQUIPMENT' ? 'เครื่อง' : 'ชิ้น');
       const location = row.location || 'ห้องปฏิบัติการพยาบาล';
       const cost = row.cost;

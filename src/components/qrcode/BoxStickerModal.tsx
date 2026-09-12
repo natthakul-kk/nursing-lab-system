@@ -22,6 +22,7 @@ interface BoxStickerModalProps {
   };
   lot: {
     lotNumber: string;
+    packageUnit?: string | null;
     expiryDate?: string | Date | null;
     receivedDate?: string | Date | null;
     quantityInitial: number;
@@ -36,6 +37,7 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
   const [selectedBoxIds, setSelectedBoxIds] = useState<string[]>(boxes.map((b) => b.id));
 
   const totalLotBoxes = lot.quantityInitial || boxes.length;
+  const unitLabel = lot.packageUnit || item.unit || 'กล่อง';
 
   useEffect(() => {
     async function generateAllQrs() {
@@ -184,9 +186,9 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
           <img src="${boxQrs[box.boxCode] || ''}" class="box-qr-mini" />
           <div class="box-info-mini">
             <div class="box-title-mini">${item.name}</div>
-            <div class="box-num-mini">กล่องที่ ${box.boxNumberInLot}/${totalLotBoxes} (กล่อง ${box.boxNumberInYear}/${box.year})</div>
-            <div class="box-code-mini">${box.boxCode}</div>
-            <div class="box-dates-mini">รับ: ${formattedReceived} | EXP: ${formattedExpiry}</div>
+            <div class="box-num-mini">👉 ${unitLabel}ที่ #${box.boxNumberInYear} (B${String(box.boxNumberInYear).padStart(3, '0')})</div>
+            <div class="box-code-mini">Lot: ${lot.lotNumber} (${box.boxNumberInLot}/${totalLotBoxes})</div>
+            <div class="box-dates-mini"><span class="box-exp">EXP: ${formattedExpiry}</span> (รับ ${formattedReceived})</div>
           </div>
         </div>
       `
@@ -283,11 +285,10 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
           <div class="box-info-compact">
             <div class="box-org-compact">คณะพยาบาลศาสตร์ • แล็บปฏิบัติการ</div>
             <div class="box-title-compact">${item.name}</div>
-            <div class="box-num-compact">กล่องที่ ${box.boxNumberInLot}/${totalLotBoxes} (กล่อง ${box.boxNumberInYear}/${box.year})</div>
-            <div class="box-code-compact">${box.boxCode} • Lot: ${lot.lotNumber}</div>
+            <div class="box-num-compact">👉 ${unitLabel}ที่ #${box.boxNumberInYear} • B${String(box.boxNumberInYear).padStart(3, '0')}</div>
+            <div class="box-code-compact">Lot: ${lot.lotNumber} (${box.boxNumberInLot}/${totalLotBoxes})</div>
             <div class="box-meta-compact">
-              <div>รับเข้า: ${formattedReceived}</div>
-              <div>วันหมดอายุ: <span class="box-exp">${formattedExpiry}</span></div>
+              <div><span class="box-exp">EXP: ${formattedExpiry}</span> | รับ: ${formattedReceived}</div>
             </div>
           </div>
         </div>
@@ -336,10 +337,10 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
             </div>
             <div>
               <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                สติกเกอร์ประจำกล่อง (Box-Level Labels)
+                สติกเกอร์ประจำ{unitLabel} ({unitLabel}-Level Labels)
               </h3>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                ระบุลำดับกล่องในล็อตและลำดับกล่องประจำปี สำหรับแปะหน้ากล่องก่อนนำเข้าชั้น
+                ระบุลำดับ{unitLabel}ในล็อตและลำดับประจำปี สำหรับแปะหน้า{unitLabel}ก่อนนำเข้าชั้น
               </p>
             </div>
           </div>
@@ -356,7 +357,7 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
           <div>
             <div className="font-extrabold text-slate-900 dark:text-slate-100">{item.name}</div>
             <div className="text-[11px] text-teal-800 dark:text-teal-300 font-medium">
-              Lot: <b className="font-mono">{lot.lotNumber}</b> | ทั้งหมด {boxes.length} {item.unit} | รับเข้า: {formattedReceived} | หมดอายุ: {formattedExpiry}
+              Lot: <b className="font-mono">{lot.lotNumber}</b> | ทั้งหมด {boxes.length} {unitLabel} | รับเข้า: {formattedReceived} | หมดอายุ: {formattedExpiry}
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -399,12 +400,12 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
             )}
             <span>
               {selectedBoxIds.length === boxes.length
-                ? 'เลือกครบทุกกล่อง (' + boxes.length + ' กล่อง)'
-                : 'เลือกทั้งหมด (' + selectedBoxIds.length + '/' + boxes.length + ' กล่อง)'}
+                ? `เลือกครบทุก${unitLabel} (${boxes.length} ${unitLabel})`
+                : `เลือกทั้งหมด (${selectedBoxIds.length}/${boxes.length} ${unitLabel})`}
             </span>
           </button>
           <span className="text-[11px] text-slate-400">
-            * สติกเกอร์ขนาดพอดีกล่อง ไม่บดบังฉลากสำคัญของบรรจุภัณฑ์เดิม
+            * สติกเกอร์ขนาดพอดี{unitLabel} ไม่บดบังฉลากสำคัญของบรรจุภัณฑ์เดิม
           </span>
         </div>
 
@@ -447,8 +448,8 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
 
                   <div className="overflow-hidden flex-1 leading-tight space-y-0.5">
                     <div className="font-mono font-black text-xs text-teal-900 dark:text-teal-300 flex items-center justify-between">
-                      <span>กล่องที่ {box.boxNumberInLot}/{totalLotBoxes}</span>
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">กล่อง {box.boxNumberInYear}/{box.year}</span>
+                      <span>👉 {unitLabel}ที่ #{box.boxNumberInYear} • B{String(box.boxNumberInYear).padStart(3, '0')}</span>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">({box.boxNumberInLot}/{totalLotBoxes})</span>
                     </div>
                     <div className="font-bold text-slate-800 dark:text-slate-200 text-[11px] truncate">
                       {item.name}
@@ -470,7 +471,7 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
         {/* Footer Actions */}
         <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
           <span className="text-xs text-slate-500 dark:text-slate-400">
-            พร้อมพิมพ์ <b className="text-teal-700 dark:text-teal-400">{selectedBoxIds.length}</b> กล่อง จากทั้งหมด {boxes.length} กล่อง
+            พร้อมพิมพ์ <b className="text-teal-700 dark:text-teal-400">{selectedBoxIds.length}</b> {unitLabel} จากทั้งหมด {boxes.length} {unitLabel}
           </span>
           <div className="flex items-center gap-2">
             <button
@@ -487,7 +488,7 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
               className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition disabled:opacity-50 cursor-pointer"
             >
               <Printer className="w-4 h-4" />
-              <span>พิมพ์สติกเกอร์กล่อง ({selectedBoxIds.length} กล่อง)</span>
+              <span>พิมพ์สติกเกอร์{unitLabel} ({selectedBoxIds.length} {unitLabel})</span>
             </button>
           </div>
         </div>

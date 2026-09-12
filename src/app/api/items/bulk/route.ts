@@ -577,6 +577,34 @@ export async function POST(req: Request) {
             },
           });
 
+          // Auto-generate boxes/units for this consumable lot with yearly sequence
+          const currentYearStr = String(currentYearThai);
+          const maxBox = await prisma.stockLotBox.findFirst({
+            where: { itemId: item.id, year: currentYearStr },
+            orderBy: { boxNumberInYear: 'desc' },
+          });
+          let currentYearCounter = maxBox ? maxBox.boxNumberInYear : 0;
+
+          const cleanItemCode = (item.code || 'ITEM').replace(/[^a-zA-Z0-9-]/g, '');
+          const boxesData = [];
+          const boxesCount = Math.min(quantity, 500);
+          for (let b = 1; b <= boxesCount; b++) {
+            currentYearCounter++;
+            boxesData.push({
+              lotId: lot.id,
+              itemId: item.id,
+              boxCode: `${cleanItemCode}-${currentYearStr}-B${String(currentYearCounter).padStart(3, '0')}`,
+              boxNumberInLot: b,
+              boxNumberInYear: currentYearCounter,
+              year: currentYearStr,
+              status: 'IN_STOCK',
+            });
+          }
+
+          if (boxesData.length > 0) {
+            await prisma.stockLotBox.createMany({ data: boxesData });
+          }
+
           createdLotsCount++;
         } else {
           // EQUIPMENT: create individual assets

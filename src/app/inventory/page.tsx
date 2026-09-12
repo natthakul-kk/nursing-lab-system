@@ -1490,6 +1490,7 @@ export default function InventoryPage() {
                                       </thead>
                                       <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
                                         {item.stockLots?.map((lot: any) => {
+                                          const unitLabel = lot.packageUnit || item.unit || 'กล่อง';
                                           const nextBox =
                                             lot.boxes?.find((b: any) => b.status === 'IN_USE') ||
                                             lot.boxes?.find((b: any) => b.status === 'IN_STOCK');
@@ -1507,7 +1508,7 @@ export default function InventoryPage() {
                                                 {nextBox && (
                                                   <div className="mt-1">
                                                     <span className="font-sans text-[10px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800 px-1.5 py-0.5 rounded-md inline-flex items-center gap-1">
-                                                      👉 หยิบกล่อง #{nextBox.boxNumberInLot} ({nextBox.boxCode})
+                                                      👉 หยิบ{unitLabel} #{nextBox.boxNumberInYear} ({nextBox.boxCode})
                                                     </span>
                                                   </div>
                                                 )}
@@ -1571,7 +1572,7 @@ export default function InventoryPage() {
                                                       title="พิมพ์สติกเกอร์ประจำกล่อง/หน่วยย่อยของล็อตนี้"
                                                     >
                                                       <Box className="w-3.5 h-3.5" />
-                                                      <span>สติกเกอร์รายกล่อง ({lot.boxes.length})</span>
+                                                      <span>สติกเกอร์ราย{unitLabel} ({lot.boxes.length})</span>
                                                     </button>
                                                   )}
                                                   <button

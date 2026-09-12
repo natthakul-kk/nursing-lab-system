@@ -119,14 +119,65 @@ function extractItemFromRow(row: Record<string, any>) {
     row['category'] ||
     '';
 
-  // 5. Unit
+  // 5. Unit / Package Unit (หน่วยบรรจุใหญ่ เช่น กล่อง, ห่อ, ลัง)
   const unit =
+    map['หน่วยบรรจุหน่วยใหญ่'] ||
+    map['หน่วยบรรจุ'] ||
     map['หน่วยนับ'] ||
     map['หน่วย'] ||
     map['unit'] ||
+    map['packageunit'] ||
+    row['หน่วยบรรจุ (หน่วยใหญ่)'] ||
+    row['หน่วยบรรจุ'] ||
     row['หน่วยนับ'] ||
     row['unit'] ||
     '';
+
+  // 5.1 Usage Unit (หน่วยย่อยที่เบิกใช้ เช่น เล่ม, ชิ้น, ก้อน, คู่)
+  const usageUnit =
+    map['หน่วยย่อยที่เบิกใช้'] ||
+    map['หน่วยย่อย'] ||
+    map['หน่วยเบิกใช้'] ||
+    map['หน่วยเบิก'] ||
+    map['usageunit'] ||
+    map['dispenseunit'] ||
+    row['หน่วยย่อยที่เบิกใช้'] ||
+    row['หน่วยย่อย'] ||
+    row['usageUnit'] ||
+    '';
+
+  // 5.2 Pack Size (จำนวนย่อยต่อแพ็ค/กล่อง เช่น 100 เล่ม/กล่อง)
+  const rawPackSize =
+    map['จำนวนย่อยต่อแพ็คชิ้นกล่อง'] ||
+    map['จำนวนย่อยต่อแพ็ค'] ||
+    map['จำนวนย่อยต่อหน่วยบรรจุ'] ||
+    map['ขนาดบรรจุ'] ||
+    map['บรรจุกล่องละ'] ||
+    map['จำนวนชิ้นต่อแพ็ค'] ||
+    map['จำนวนต่อกล่อง'] ||
+    map['packsize'] ||
+    map['piecesperpack'] ||
+    map['conversionratio'] ||
+    map['อัตราแปลง'] ||
+    row['จำนวนย่อยต่อแพ็ค (ชิ้น/กล่อง)'] ||
+    row['จำนวนย่อยต่อแพ็ค'] ||
+    row['ขนาดบรรจุ'] ||
+    row['packSize'] ||
+    1;
+  const packSize = Math.max(1, Number(rawPackSize) || 1);
+
+  // 5.3 Min Stock Alert (จุดแจ้งเตือนสต็อกขั้นต่ำ)
+  const rawMinStock =
+    map['จุดแจ้งเตือนสต็อกขั้นต่ำ'] ||
+    map['จุดเตือนขั้นต่ำ'] ||
+    map['สต็อกขั้นต่ำ'] ||
+    map['minstockalert'] ||
+    map['minstock'] ||
+    row['จุดแจ้งเตือนสต็อกขั้นต่ำ'] ||
+    row['จุดเตือนขั้นต่ำ'] ||
+    row['minStockAlert'] ||
+    5;
+  const minStockAlert = Math.max(0, Number(rawMinStock) || 5);
 
   // 6. Quantity
   const quantity =
@@ -315,6 +366,9 @@ function extractItemFromRow(row: Record<string, any>) {
     assetCode: String(labCodePrefix || '').trim(),
     govAssetCode: String(govAssetCode || '').trim(),
     serialNumber: String(serialNumber || '').trim(),
+    packSize,
+    usageUnit: String(usageUnit || '').trim(),
+    minStockAlert,
   };
 }
 
@@ -403,6 +457,10 @@ export async function POST(req: Request) {
           },
         });
 
+        const effectiveUsageUnit = row.usageUnit || (type === 'CONSUMABLE' ? 'ชิ้น' : null);
+        const effectivePackSize = row.packSize || 1;
+        const effectiveMinStock = row.minStockAlert || 5;
+
         if (!item) {
           item = await prisma.item.create({
             data: {
@@ -411,8 +469,10 @@ export async function POST(req: Request) {
               type,
               categoryId,
               unit,
+              usageUnit: effectiveUsageUnit,
+              conversionRatio: effectivePackSize,
               location,
-              minStockAlert: 5,
+              minStockAlert: effectiveMinStock,
               brand: row.brand || null,
               model: row.model || null,
               description: row.description || null,
@@ -420,11 +480,21 @@ export async function POST(req: Request) {
           });
           createdItemsCount++;
         } else {
+          // If existing item, update conversionRatio/usageUnit if user provided new values
+          if (row.usageUnit || row.packSize > 1) {
+            await prisma.item.update({
+              where: { id: item.id },
+              data: {
+                ...(row.usageUnit ? { usageUnit: row.usageUnit } : {}),
+                ...(row.packSize > 1 ? { conversionRatio: row.packSize } : {}),
+              },
+            });
+          }
           updatedItemsCount++;
         }
 
         if (type === 'CONSUMABLE') {
-          // Create Stock Lot for consumable
+          // Create Stock Lot for consumable with sub-units tracking
           let lotNum = row.lotNumber ? String(row.lotNumber).trim() : '';
           if (!lotNum) {
             const lotCount = await prisma.stockLot.count({
@@ -436,11 +506,19 @@ export async function POST(req: Request) {
           const expiryDate = row.expiryDate;
           const receivedDate = row.receivedDate || new Date();
           const supplier = row.supplier ? String(row.supplier).trim() : null;
+          const packSize = row.packSize || Math.round(Number(item.conversionRatio) || 1);
+          const totalPieces = quantity * packSize;
+          const packageUnit = unit || item.unit || 'กล่อง';
+          const usageUnit = row.usageUnit || item.usageUnit || 'ชิ้น';
 
           const lot = await prisma.stockLot.create({
             data: {
               itemId: item.id,
               lotNumber: lotNum,
+              packSize: packSize,
+              packageUnit: packageUnit,
+              totalPieces: totalPieces,
+              piecesRemaining: totalPieces,
               quantityInitial: quantity,
               quantityRemaining: quantity,
               unitCost: cost,
@@ -460,7 +538,9 @@ export async function POST(req: Request) {
               totalCost: quantity * cost,
               createdById: userId || null,
               createdAt: receivedDate,
-              note: `นำเข้าสต็อกเป็นชุด (Lot: ${lotNum})`,
+              note: packSize > 1 
+                ? `นำเข้าสต็อกเป็นชุด (Lot: ${lotNum}) ${quantity} ${packageUnit} บรรจุ ${packSize} ${usageUnit}/${packageUnit} (รวม ${totalPieces.toLocaleString()} ${usageUnit})`
+                : `นำเข้าสต็อกเป็นชุด (Lot: ${lotNum})`,
             },
           });
 

@@ -691,12 +691,91 @@ export default function InventoryPage() {
     return filteredItems.slice(start, start + pageSize);
   }, [filteredItems, currentPage, pageSize]);
 
-  const handleDownloadTemplate = () => {
+  // 1. แบบฟอร์มวัสดุสิ้นเปลือง / เวชภัณฑ์ (Consumables Template)
+  const handleDownloadConsumablesTemplate = () => {
+    const sampleData = [
+      {
+        'ชื่อรายการ': 'เข็มฉีดยาเบอร์ 18 ความยาว 1 นิ้ว',
+        'รหัสพัสดุ': 'CS-NDL-18-1',
+        'หมวดหมู่': 'เวชภัณฑ์ฉีดยา',
+        'หน่วยบรรจุ (หน่วยใหญ่)': 'กล่อง',
+        'จำนวนรับเข้า (หน่วยใหญ่)': 10,
+        'จำนวนย่อยต่อแพ็ค (ชิ้น/กล่อง)': 100,
+        'หน่วยย่อยที่เบิกใช้': 'เล่ม',
+        'ราคาต่อหน่วยบรรจุ': 180,
+        'หมายเลขล็อต': 'LOT-2026-N18',
+        'วันหมดอายุ (YYYY-MM-DD)': '2028-12-31',
+        'วันที่รับเข้า (YYYY-MM-DD)': '2026-09-12',
+        'ผู้จัดจำหน่าย (Supplier)': 'บจก. นอร์ทเทิร์นเมดิคอล',
+        'สถานที่จัดเก็บ': 'ตู้เก็บเวชภัณฑ์ฉีดยา ห้องแล็บ 402',
+        'จุดแจ้งเตือนสต็อกขั้นต่ำ': 5,
+        'คำอธิบาย': 'เข็มดูดยา สแตนเลส สเตอร์ไรด์ ชนิดใช้ครั้งเดียวทิ้ง',
+      },
+      {
+        'ชื่อรายการ': 'เข็มฉีดยาเบอร์ 24 ความยาว 1½ นิ้ว',
+        'รหัสพัสดุ': 'CS-NDL-24-15',
+        'หมวดหมู่': 'เวชภัณฑ์ฉีดยา',
+        'หน่วยบรรจุ (หน่วยใหญ่)': 'กล่อง',
+        'จำนวนรับเข้า (หน่วยใหญ่)': 10,
+        'จำนวนย่อยต่อแพ็ค (ชิ้น/กล่อง)': 100,
+        'หน่วยย่อยที่เบิกใช้': 'เล่ม',
+        'ราคาต่อหน่วยบรรจุ': 180,
+        'หมายเลขล็อต': 'LOT-2026-N24',
+        'วันหมดอายุ (YYYY-MM-DD)': '2028-12-31',
+        'วันที่รับเข้า (YYYY-MM-DD)': '2026-09-12',
+        'ผู้จัดจำหน่าย (Supplier)': 'บจก. นอร์ทเทิร์นเมดิคอล',
+        'สถานที่จัดเก็บ': 'ตู้เก็บเวชภัณฑ์ฉีดยา ห้องแล็บ 402',
+        'จุดแจ้งเตือนสต็อกขั้นต่ำ': 5,
+        'คำอธิบาย': 'เข็มฉีดยาเข้ากล้ามเนื้อ (IM) สเตอร์ไรด์ ชนิดใช้ครั้งเดียวทิ้ง',
+      },
+      {
+        'ชื่อรายการ': 'ถุงมือตรวจโรคสเตอร์ไรด์ เบอร์ 7',
+        'รหัสพัสดุ': 'CS-GLOVE-07',
+        'หมวดหมู่': 'เวชภัณฑ์ปลอดเชื้อ',
+        'หน่วยบรรจุ (หน่วยใหญ่)': 'กล่อง',
+        'จำนวนรับเข้า (หน่วยใหญ่)': 20,
+        'จำนวนย่อยต่อแพ็ค (ชิ้น/กล่อง)': 50,
+        'หน่วยย่อยที่เบิกใช้': 'คู่',
+        'ราคาต่อหน่วยบรรจุ': 220,
+        'หมายเลขล็อต': 'LOT-2026-A1',
+        'วันหมดอายุ (YYYY-MM-DD)': '2028-12-31',
+        'วันที่รับเข้า (YYYY-MM-DD)': '2026-09-12',
+        'ผู้จัดจำหน่าย (Supplier)': 'บจก. สยามเซมเพอร์เมด',
+        'สถานที่จัดเก็บ': 'ตู้เก็บเวชภัณฑ์ ชั้น 2',
+        'จุดแจ้งเตือนสต็อกขั้นต่ำ': 5,
+        'คำอธิบาย': 'ถุงมือยางธรรมชาติชนิดมีแป้ง กล่องละ 50 คู่',
+      },
+      {
+        'ชื่อรายการ': 'สำลีก้อนกลมบริสุทธิ์ 0.50 กรัม',
+        'รหัสพัสดุ': 'CS-COT-01',
+        'หมวดหมู่': 'วัสดุทำแผล',
+        'หน่วยบรรจุ (หน่วยใหญ่)': 'ห่อ',
+        'จำนวนรับเข้า (หน่วยใหญ่)': 15,
+        'จำนวนย่อยต่อแพ็ค (ชิ้น/กล่อง)': 450,
+        'หน่วยย่อยที่เบิกใช้': 'ก้อน',
+        'ราคาต่อหน่วยบรรจุ': 120,
+        'หมายเลขล็อต': 'LOT-2026-C1',
+        'วันหมดอายุ (YYYY-MM-DD)': '2029-06-30',
+        'วันที่รับเข้า (YYYY-MM-DD)': '2026-09-12',
+        'ผู้จัดจำหน่าย (Supplier)': 'บจก. ไทยก๊อซ',
+        'สถานที่จัดเก็บ': 'ชั้นเก็บวัสดุทำแผล',
+        'จุดแจ้งเตือนสต็อกขั้นต่ำ': 3,
+        'คำอธิบาย': 'สำลีก้อนชุบแอลกอฮอล์หรือน้ำยาฆ่าเชื้อ นำไป Repack สเตอร์ไรด์ได้',
+      },
+    ];
+
+    const ws = XLSX.utils.json_to_sheet(sampleData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'แบบฟอร์มวัสดุสิ้นเปลือง');
+    XLSX.writeFile(wb, 'Template_Consumables_วัสดุสิ้นเปลืองและเวชภัณฑ์.xlsx');
+  };
+
+  // 2. แบบฟอร์มครุภัณฑ์และอุปกรณ์ (Equipment Template)
+  const handleDownloadEquipmentTemplate = () => {
     const sampleData = [
       {
         'ชื่อรายการ': 'เครื่องกระตุกหัวใจไฟฟ้า AED Trainer',
         'รหัสพัสดุ': 'EQ-AED-01',
-        'ประเภท (EQUIPMENT/CONSUMABLE)': 'EQUIPMENT',
         'หมวดหมู่': 'อุปกรณ์ช่วยชีวิตและฉุกเฉิน',
         'หน่วยนับ': 'เครื่อง',
         'จำนวนรับเข้า': 2,
@@ -712,26 +791,33 @@ export default function InventoryPage() {
         'เลขครุภัณฑ์ราชการ': 'พย.69-02-0045, พย.69-02-0046',
       },
       {
-        'ชื่อรายการ': 'ถุงมือตรวจโรคสเตอร์ไรด์ เบอร์ 7',
-        'รหัสพัสดุ': 'CS-GLOVE-07',
-        'ประเภท (EQUIPMENT/CONSUMABLE)': 'CONSUMABLE',
-        'หมวดหมู่': 'เวชภัณฑ์ปลอดเชื้อ',
-        'หน่วยนับ': 'กล่อง',
-        'จำนวนรับเข้า': 50,
-        'ราคาต่อหน่วย': 220,
+        'ชื่อรายการ': 'เครื่องวัดความดันโลหิตระบบดิจิทัล',
+        'รหัสพัสดุ': 'EQ-BP-01',
+        'หมวดหมู่': 'อุปกรณ์ตรวจวินิจฉัย',
+        'หน่วยนับ': 'เครื่อง',
+        'จำนวนรับเข้า': 4,
+        'ราคาต่อหน่วย': 3200,
         'วันที่รับเข้า (YYYY-MM-DD)': '2026-09-10',
-        'ผู้จัดจำหน่าย (Supplier)': 'บจก. สยามเซมเพอร์เมด',
-        'สถานที่จัดเก็บ': 'ตู้เก็บเวชภัณฑ์ ชั้น 2',
-        'คำอธิบาย': 'ถุงมือยางธรรมชาติชนิดมีแป้ง กล่องละ 50 คู่',
-        'หมายเลขล็อต': 'LOT-2026-A1',
-        'วันหมดอายุ (YYYY-MM-DD)': '2028-12-31',
+        'ยี่ห้อ (Brand)': 'Omron',
+        'รุ่น (Model)': 'HEM-7120',
+        'ผู้จัดจำหน่าย (Supplier)': 'บจก. ออมรอนเฮลธ์แคร์',
+        'วันหมดประกัน (YYYY-MM-DD)': '2027-09-10',
+        'สถานที่จัดเก็บ': 'ตู้เครื่องมือตรวจ ชั้น 1',
+        'คำอธิบาย': 'เครื่องวัดความดันโลหิตแบบสอดแขนพร้อมผ้าพันแขน',
+        'รหัสแล็บ (ขึ้นต้น)': 'BP-2569-',
+        'เลขครุภัณฑ์ราชการ': 'พย.69-03-0112, พย.69-03-0113, พย.69-03-0114, พย.69-03-0115',
       },
     ];
 
     const ws = XLSX.utils.json_to_sheet(sampleData);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'แบบฟอร์มนำเข้าพัสดุ');
-    XLSX.writeFile(wb, 'Template_Items_and_Assets.xlsx');
+    XLSX.utils.book_append_sheet(wb, ws, 'แบบฟอร์มครุภัณฑ์');
+    XLSX.writeFile(wb, 'Template_Equipment_ครุภัณฑ์และเครื่องมือ.xlsx');
+  };
+
+  // 3. แบบฟอร์มรวมเดิม (All-in-One Template)
+  const handleDownloadTemplate = () => {
+    handleDownloadConsumablesTemplate();
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -2881,24 +2967,56 @@ export default function InventoryPage() {
 
             <div className="space-y-4 py-4 overflow-y-auto flex-1">
               {/* Step 1: Download Template */}
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200/80 dark:border-slate-800 space-y-3">
                 <div className="space-y-0.5">
-                  <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                     <span className="w-5 h-5 rounded-full bg-teal-600 text-white text-[10px] flex items-center justify-center font-bold">1</span>
-                    ดาวน์โหลดแม่แบบไฟล์ Excel สำหรับนำเข้าพัสดุ
+                    ดาวน์โหลดแบบฟอร์ม Excel (แยกตามประเภทพัสดุ)
                   </div>
-                  <p className="text-[11px] text-slate-500">
-                    มีตัวอย่างทั้ง <b>ครุภัณฑ์คงทน (EQUIPMENT)</b> และ <b>วัสดุสิ้นเปลือง (CONSUMABLE)</b>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                    กรุณาเลือกดาวน์โหลดแบบฟอร์มให้ตรงกับประเภท เพื่อให้มีคอลัมน์เฉพาะที่ถูกต้องครบถ้วน:
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleDownloadTemplate}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs font-bold shadow-sm transition flex-shrink-0 cursor-pointer"
-                >
-                  <Download className="w-3.5 h-3.5 text-teal-600" />
-                  <span>ดาวน์โหลด Template (.xlsx)</span>
-                </button>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                  {/* ปุ่มแบบฟอร์มวัสดุสิ้นเปลือง / เวชภัณฑ์ */}
+                  <button
+                    type="button"
+                    onClick={handleDownloadConsumablesTemplate}
+                    className="flex items-start gap-2.5 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 hover:bg-emerald-100/80 dark:hover:bg-emerald-900/40 transition text-left cursor-pointer group shadow-xs"
+                  >
+                    <div className="p-2 rounded-lg bg-emerald-600 text-white flex-shrink-0 group-hover:scale-105 transition">
+                      <Download className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-emerald-950 dark:text-emerald-200 flex items-center gap-1">
+                        แบบฟอร์มวัสดุสิ้นเปลือง / เวชภัณฑ์
+                      </div>
+                      <p className="text-[10px] text-emerald-800/80 dark:text-emerald-300/80 mt-0.5 leading-tight">
+                        รองรับระบุจำนวนย่อยต่อแพ็ค (เช่น 100 เล่ม/กล่อง), ล็อต และวันหมดอายุ
+                      </p>
+                    </div>
+                  </button>
+
+                  {/* ปุ่มแบบฟอร์มครุภัณฑ์ / เครื่องมือ */}
+                  <button
+                    type="button"
+                    onClick={handleDownloadEquipmentTemplate}
+                    className="flex items-start gap-2.5 p-3 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/60 hover:bg-purple-100/80 dark:hover:bg-purple-900/40 transition text-left cursor-pointer group shadow-xs"
+                  >
+                    <div className="p-2 rounded-lg bg-purple-600 text-white flex-shrink-0 group-hover:scale-105 transition">
+                      <Download className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-purple-950 dark:text-purple-200 flex items-center gap-1">
+                        แบบฟอร์มครุภัณฑ์ / เครื่องมือ
+                      </div>
+                      <p className="text-[10px] text-purple-800/80 dark:text-purple-300/80 mt-0.5 leading-tight">
+                        รองรับระบุเลขครุภัณฑ์ราชการ, รหัสแล็บ, ยี่ห้อ, รุ่น, วันหมดประกัน
+                      </p>
+                    </div>
+                  </button>
+                </div>
               </div>
 
               {/* Step 2: Upload File */}

@@ -2,7 +2,14 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 // Map Thai or common item type words with smart fallback from name and category
-function normalizeItemType(typeInput?: string, itemName?: string, categoryName?: string): 'EQUIPMENT' | 'CONSUMABLE' {
+function normalizeItemType(
+  typeInput?: string,
+  itemName?: string,
+  categoryName?: string,
+  code?: string,
+  packSize?: number,
+  usageUnit?: string
+): 'EQUIPMENT' | 'CONSUMABLE' {
   if (typeInput) {
     const t = typeInput.trim().toUpperCase();
     if (t.includes('CONSUMABLE') || t.includes('สิ้นเปลือง') || t.includes('เวชภัณฑ์') || t.includes('ยา') || t.includes('วัสดุ')) {
@@ -13,6 +20,22 @@ function normalizeItemType(typeInput?: string, itemName?: string, categoryName?:
     }
   }
 
+  // Code prefix check
+  if (code) {
+    const upperCode = code.trim().toUpperCase();
+    if (upperCode.startsWith('CS-') || upperCode.startsWith('CON-')) {
+      return 'CONSUMABLE';
+    }
+    if (upperCode.startsWith('EQ-')) {
+      return 'EQUIPMENT';
+    }
+  }
+
+  // Sub-unit or pack size check
+  if ((packSize && packSize > 1) || (usageUnit && usageUnit.trim() !== '')) {
+    return 'CONSUMABLE';
+  }
+
   // Smart fallback: detect medical consumable keywords from item name or category
   const textToCheck = `${itemName || ''} ${categoryName || ''}`.toLowerCase();
   const consumableKeywords = [
@@ -20,7 +43,11 @@ function normalizeItemType(typeInput?: string, itemName?: string, categoryName?:
     'สำลี', 'cotton', 'ผ้าก๊อซ', 'gauze', 'พลาสเตอร์', 'plaster', 'แอลกอฮอล์',
     'alcohol', 'เบตาดีน', 'betadine', 'สายยาง', 'catheter', 'tube', 'ใบมีด',
     'blade', 'swab', 'ยา', 'เวชภัณฑ์', 'สิ้นเปลือง', 'mask', 'หน้ากาก',
-    'แผ่นรอง', 'iv set', 'สายน้ำเกลือ', 'ชุดให้น้ำเกลือ', 'เซตทำแผล'
+    'แผ่นรอง', 'iv set', 'สายน้ำเกลือ', 'ชุดให้น้ำเกลือ', 'เซตทำแผล',
+    'nss', 'd-5-w', 'd5w', 'สารน้ำ', 'น้ำเกลือ', 'suction', 'ดูดเสมหะ',
+    'urine', 'ปัสสาวะ', 'สายสวน', 'feed', 'ให้อาหาร', 'ezbag', 'eztube',
+    'ถุงซิป', 'zip', 'ทิ้งเข็ม', 'คม', 'วัตถุมีคม', 'ถังทิ้ง', 'ถังขยะติดเชื้อ',
+    'ez-bag', 'ez-tube', 'ถุง', 'สาย'
   ];
   if (consumableKeywords.some((kw) => textToCheck.includes(kw))) {
     return 'CONSUMABLE';
@@ -179,30 +206,36 @@ function extractItemFromRow(row: Record<string, any>) {
     5;
   const minStockAlert = Math.max(0, Number(rawMinStock) || 5);
 
-  // 6. Quantity
-  const quantity =
+  // 6. Quantity (จำนวนรับเข้า ทั้งหน่วยเดี่ยวและหน่วยใหญ่)
+  const rawQuantity =
+    map['จำนวนรับเข้าหน่วยใหญ่'] ||
     map['จำนวนรับเข้า'] ||
     map['จำนวน'] ||
     map['จำนวนชิ้น'] ||
     map['quantity'] ||
     map['qty'] ||
+    row['จำนวนรับเข้า (หน่วยใหญ่)'] ||
     row['จำนวนรับเข้า'] ||
     row['จำนวน'] ||
     row['quantity'] ||
     1;
+  const quantity = Math.max(1, Number(rawQuantity) || 1);
 
-  // 7. Cost
-  const cost =
+  // 7. Cost (ราคาต่อหน่วย หรือราคาต่อหน่วยบรรจุ)
+  const rawCost =
+    map['ราคาต่อหน่วยบรรจุ'] ||
     map['ราคาต่อหน่วย'] ||
     map['ราคา'] ||
     map['ราคาทุน'] ||
     map['cost'] ||
     map['price'] ||
     map['unitcost'] ||
+    row['ราคาต่อหน่วยบรรจุ'] ||
     row['ราคาต่อหน่วย'] ||
     row['ราคา'] ||
     row['cost'] ||
     0;
+  const cost = Math.max(0, Number(rawCost) || 0);
 
   // 8. Location
   const location =
@@ -413,7 +446,7 @@ export async function POST(req: Request) {
       }
 
       const name = row.name;
-      const type = normalizeItemType(row.type, row.name, row.category);
+      const type = normalizeItemType(row.type, row.name, row.category, row.code, row.packSize, row.usageUnit);
       const unit = row.unit || (type === 'EQUIPMENT' ? 'เครื่อง' : 'ชิ้น');
       const location = row.location || 'ห้องปฏิบัติการพยาบาล';
       const cost = row.cost;

@@ -126,9 +126,9 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
           box-sizing: border-box;
         }
         .box-card-mini {
-          border: 1px dashed #0d9488;
-          border-radius: 5px;
-          padding: 3px 4px;
+          border: 1px solid #334155;
+          border-radius: 4px;
+          padding: 2.5px 4px;
           width: 100%;
           height: 20mm;
           max-height: 20mm;
@@ -139,7 +139,6 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
           page-break-inside: avoid;
           break-inside: avoid;
           background: #fff;
-          overflow: hidden;
         }
         .box-qr-mini {
           width: 42px;
@@ -239,30 +238,29 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
           box-sizing: border-box;
         }
         .box-card-compact {
-          border: 1.2px dashed #0d9488;
-          border-radius: 6px;
-          padding: 3px 5px 4px 5px;
+          border: 1.2px solid #334155;
+          border-radius: 4px;
+          padding: 2.5px 5px 3px 5px;
           width: 100%;
-          height: 28mm;
-          max-height: 28mm;
+          height: 22.5mm;
+          max-height: 22.5mm;
           display: flex;
           flex-direction: column;
           box-sizing: border-box;
           page-break-inside: avoid;
           break-inside: avoid;
           background: #fff;
-          overflow: hidden;
         }
         .box-header-compact {
           display: flex;
           align-items: center;
           justify-content: space-between;
           background: #f0fdfa;
-          border-bottom: 1px solid #99f6e4;
-          border-top-left-radius: 4px;
-          border-top-right-radius: 4px;
-          padding: 2px 5px;
-          margin: -3px -5px 3px -5px;
+          border-bottom: 1px solid #0d9488;
+          border-top-left-radius: 3px;
+          border-top-right-radius: 3px;
+          padding: 1.5px 5px;
+          margin: -2.5px -5px 2px -5px;
           box-sizing: border-box;
         }
         .box-org-text {
@@ -284,14 +282,13 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
         .box-body-compact {
           display: flex;
           align-items: center;
-          gap: 7px;
+          gap: 6px;
           flex: 1;
           min-height: 0;
-          overflow: hidden;
         }
         .box-qr-compact {
-          width: 56px;
-          height: 56px;
+          width: 58px;
+          height: 58px;
           flex-shrink: 0;
           display: block;
         }
@@ -300,7 +297,7 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
           flex-direction: column;
           justify-content: center;
           overflow: hidden;
-          line-height: 1.16;
+          line-height: 1.15;
           flex: 1;
           min-width: 0;
         }
@@ -308,7 +305,7 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
           font-size: 9.5px;
           font-weight: 800;
           color: #0f172a;
-          line-height: 1.18;
+          line-height: 1.16;
           display: -webkit-box;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
@@ -317,10 +314,10 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
           max-height: 23px;
         }
         .box-num-compact {
-          font-size: 11px;
+          font-size: 10.5px;
           font-weight: 900;
           color: #0f766e;
-          margin-top: 1.5px;
+          margin-top: 1px;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -339,7 +336,7 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
           font-size: 7.5px;
           color: #64748b;
           margin-top: 0.5px;
-          line-height: 1.15;
+          line-height: 1.14;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;

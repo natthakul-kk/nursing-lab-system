@@ -124,6 +124,7 @@ model EquipmentAsset {
   supplier       String?   // บริษัทผู้จัดจำหน่าย / คู่ค้า
   warrantyExpiry DateTime? // วันที่สิ้นสุดระยะเวลารับประกัน
   location       String?   // สถานที่จัดเก็บเฉพาะชิ้น เช่น ตู้ฉุกเฉิน ห้อง Lab 1
+  previousLocation String? // ตำแหน่งจัดเก็บเดิมก่อนถูกจัดสรรประจำห้องเรียน
   receivedDate   DateTime  @default(now()) // วันที่รับเข้า
   cost           Float     @default(0)     // ราคาจัดซื้อ / มูลค่าต่อชิ้น
   imageUrl       String?   // ลิงก์รูปภาพในไดรฟ์
@@ -216,6 +217,8 @@ model BorrowRequest {
   expectedReturnDate DateTime
   actualReturnDate   DateTime?
   status             String    @default("PENDING") // "PENDING", "APPROVED", "REJECTED", "BORROWED", "RETURNED_COMPLETE", "RETURNED_WITH_ISSUE", "CANCELLED"
+  requestType        String    @default("NORMAL") // "NORMAL" (ยืมทั่วไป), "COURSE_ALLOCATION" (จัดสรรประจำวิชาตลอดเทอม)
+  targetLocation     String?   // สถานที่หรือห้องแล็ปที่นำอุปกรณ์ไปติดตั้งประจำ เช่น "ห้อง Lab 401"
   
   approverId         String?
   approver           User?     @relation("ApproverBorrowRequests", fields: [approverId], references: [id])
@@ -251,6 +254,7 @@ model BorrowItem {
   assetId         String?
   asset           EquipmentAsset? @relation(fields: [assetId], references: [id])
   quantity        Int             @default(1)
+  previousLocation String?        // บันทึกสถานที่เดิมของชิ้นนี้
   isReturned      Boolean         @default(false)
   returnCondition String?
 }

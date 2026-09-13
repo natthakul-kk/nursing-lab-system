@@ -17,9 +17,10 @@ import {
 interface QrScannerModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onScan?: (decodedText: string) => void;
 }
 
-export default function QrScannerModal({ isOpen, onClose }: QrScannerModalProps) {
+export default function QrScannerModal({ isOpen, onClose, onScan }: QrScannerModalProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'CAMERA' | 'MANUAL'>('CAMERA');
   const [manualCode, setManualCode] = useState('');
@@ -32,6 +33,13 @@ export default function QrScannerModal({ isOpen, onClose }: QrScannerModalProps)
   const processScannedResult = (decodedText: string) => {
     if (!decodedText) return;
     const cleanText = decodedText.trim();
+
+    if (onScan) {
+      stopScanner();
+      onClose();
+      onScan(cleanText);
+      return;
+    }
 
     // 1. Check if it's a URL like http.../asset/[code]
     const assetUrlMatch = cleanText.match(/\/asset\/([^\/\?#]+)/);

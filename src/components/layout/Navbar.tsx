@@ -17,6 +17,7 @@ import {
   QrCode,
   Menu,
   X,
+  Store,
 } from 'lucide-react';
 import ProfileModal from '@/components/profile/ProfileModal';
 import QrScannerModal from '@/components/qrcode/QrScannerModal';
@@ -107,6 +108,16 @@ export default function Navbar({ onToggleMobileMenu, isMobileMenuOpen }: NavbarP
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
           <span>Supabase Cloud</span>
         </div>
+
+        {/* Quick Lab Store POS Button */}
+        <Link
+          href="/pos"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-teal-600 to-indigo-600 hover:from-teal-500 hover:to-indigo-500 text-white text-xs font-black shadow-sm transition cursor-pointer"
+          title="จุดเบิกจ่ายด่วน Lab Store POS (สแกนบาร์โค้ดยืม-เบิกทันใจ)"
+        >
+          <Store className="w-3.5 h-3.5 text-amber-300" />
+          <span className="hidden sm:inline">Lab Store (POS)</span>
+        </Link>
 
         {/* Quick QR Scanner Button */}
         <button

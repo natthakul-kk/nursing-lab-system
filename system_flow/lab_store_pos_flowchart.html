@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ผังขั้นตอนการทำงาน: จุดบริการเบิกจ่ายด่วน (Lab Store & Express Checkout POS)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --primary: #0F766E;
+      --primary-dark: #115E59;
+      --primary-light: #CCFBF1;
+      --secondary: #0E7490;
+      --accent: #F59E0B;
+      --slate-dark: #0F172A;
+      --slate-muted: #475569;
+      --bg-page: #F8FAFC;
+      --border-color: #E2E8F0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Sarabun', 'Leelawadee UI', Tahoma, sans-serif;
+      background-color: var(--bg-page);
+      color: var(--slate-dark);
+      padding: 30px;
+      line-height: 1.7;
+    }
+    .container {
+      max-width: 1300px;
+      margin: 0 auto;
+      background: #FFFFFF;
+      border-radius: 20px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 4px 25px rgba(0,0,0,0.06);
+      padding: 40px;
+    }
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      padding-bottom: 24px;
+      border-bottom: 2px solid var(--primary-light);
+      margin-bottom: 30px;
+    }
+    .header-title h1 {
+      font-size: 26px;
+      color: var(--primary);
+      font-weight: 700;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .header-title h2 {
+      font-size: 16px;
+      color: var(--secondary);
+      font-weight: 600;
+    }
+    .badge-status {
+      background: #ECFDF5;
+      color: #065F46;
+      border: 1px solid #A7F3D0;
+      padding: 6px 14px;
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .concept-card {
+      background: linear-gradient(135deg, #F0FDFA 0%, #E6FFFA 100%);
+      border: 1px solid #99F6E4;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 30px;
+    }
+    .concept-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #115E59;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .concept-desc {
+      color: #134E4A;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .flowchart-wrapper {
+      background: #FFFFFF;
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 30px;
+      margin-bottom: 35px;
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.02);
+      overflow-x: auto;
+    }
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 20px;
+      margin-bottom: 35px;
+    }
+    .step-card {
+      background: #FFFFFF;
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+      position: relative;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .step-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.07);
+    }
+    .step-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      margin-right: 8px;
+    }
+    .step-header {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--slate-dark);
+      display: flex;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #F1F5F9;
+    }
+    .step-detail {
+      font-size: 13.5px;
+      color: var(--slate-muted);
+      line-height: 1.6;
+    }
+    .step-detail ul {
+      margin-left: 20px;
+      margin-top: 8px;
+    }
+    .step-detail li {
+      margin-bottom: 6px;
+    }
+    .highlight-tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      margin: 2px 0;
+    }
+    .tag-teal { background: #CCFBF1; color: #0F766E; }
+    .tag-amber { background: #FEF3C7; color: #B45309; }
+    .tag-purple { background: #F3E8FF; color: #7E22CE; }
+    .tag-blue { background: #DBEAFE; color: #1D4ED8; }
+    .footer-note {
+      text-align: center;
+      font-size: 13px;
+      color: #94A3B8;
+      padding-top: 20px;
+      border-top: 1px solid #F1F5F9;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header-bar">
+      <div class="header-title">
+        <h1>🛒 จุดบริการเบิกจ่ายด่วน (Lab Store & Express Checkout POS)</h1>
+        <h2>ผังขั้นตอนการทำงานและสถาปัตยกรรมกระบวนการ (Operational Flowchart)</h2>
+      </div>
+      <div class="badge-status">
+        ✓ ระบบพร้อมพัฒนา (Ready for Execution)
+      </div>
+    </div>
+
+    <div class="concept-card">
+      <div class="concept-title">
+        💡 แนวคิดหลัก: หยิบก่อน สแกนทีเดียว ตัดสต็อกทันที (Pick First, Scan Once, Instant Checkout)
+      </div>
+      <div class="concept-desc">
+        ออกแบบเพื่อแก้ปัญหาความล่าช้าในคาบปฏิบัติการ เมื่อนิสิตหรืออาจารย์จำเป็นต้องใช้วัสดุ/อุปกรณ์เพิ่มอย่างเร่งด่วน โดยไม่ต้องกรอกใบเบิกคำร้องและรอเจ้าหน้าที่เข้ามากดอนุมัติทีละขั้นตอน นิสิตสามารถหยิบพัสดุจากชั้นวางแล้วเดินมาสแกนบัตรนิสิต + สแกนของที่เคาน์เตอร์ ระบบจะตัดสต็อกและบันทึกต้นทุนรายวิชาทันที
+      </div>
+    </div>
+
+    <!-- Interactive Mermaid Flowchart -->
+    <div class="flowchart-wrapper">
+      <pre class="mermaid">
+flowchart TD
+    Start(["ผู้เบิกเดินมาที่เคาน์เตอร์ พร้อมของที่หยิบมาจากชั้น"]) --> Step1
+
+    subgraph Phase1 ["ขั้นตอนที่ 1: ยืนยันตัวตน Identify"]
+      Step1["สแกนบัตรนิสิต หรือ บาร์โค้ด หรือ ค้นหาชื่อ"] --> CheckUser{"พบบัญชีในระบบ?"}
+      CheckUser -->|พบ| Step2
+      CheckUser -->|ไม่พบ| QuickReg["กรอกรหัสด่วน สร้างผู้ใช้ชั่วคราว"] --> Step2
+    end
+
+    subgraph Phase2 ["ขั้นตอนที่ 2: ระบุบริบท Context"]
+      Step2["เลือกบริบทการใช้งาน"] --> ChoiceCourse["ระบุรายวิชา เช่น พย.1102 หรือ ซ้อมทักษะอิสระ"]
+      ChoiceCourse --> Step3
+    end
+
+    subgraph Phase3 ["ขั้นตอนที่ 3: สแกนพัสดุต่อเนื่อง Continuous Scan"]
+      Step3["ใช้เครื่องยิงบาร์โค้ด หรือ กล้อง สแกนของต่อเนื่อง"] --> ItemDetect{"ระบบตรวจสอบประเภทพัสดุ"}
+      
+      ItemDetect -->|รหัสกล่อง| AddBox["บันทึกเบิกทั้งกล่อง ตัด StockLotBox"]
+      ItemDetect -->|รหัสซองย่อย| AddPack["บันทึกตัดซองสเตอร์ไรด์ Repack"]
+      ItemDetect -->|รหัสพัสดุทั่วไป| AddItem["เพิ่มจำนวนในตะกร้า บวก 1"]
+      ItemDetect -->|ครุภัณฑ์| AddAsset["ตรวจพบอุปกรณ์ สลับเป็นยืมด่วน"]
+      
+      AddBox --> Cart["ตะกร้าพัสดุ สรุปรายการ จำนวน ต้นทุนรวม"]
+      AddPack --> Cart
+      AddItem --> Cart
+      AddAsset --> Cart
+    end
+
+    subgraph Phase4 ["ขั้นตอนที่ 4: ตรวจสอบและตัดสต็อก Checkout"]
+      Cart --> ReviewCart["ตรวจสอบความถูกต้อง ปรับลดจำนวน ลบรายการ"]
+      ReviewCart --> ClickCheckout["กดปุ่ม ยืนยันการเบิกจ่าย Instant Checkout"]
+      
+      ClickCheckout --> AtomicTx[("บันทึกตัดสต็อก FEFO ทันที และบันทึกประวัติ")]
+    end
+
+    subgraph Phase5 ["ขั้นตอนที่ 5: ออกหลักฐาน Receipt"]
+      AtomicTx --> Receipt["ออกสลิปบันทึก E-Receipt รองรับพิมพ์สลิป 80mm"]
+      Receipt --> Finish(["เสร็จสิ้นกระบวนการ รวดเร็วใน 30 วินาที"])
+    end
+      </pre>
+    </div>
+
+    <!-- Step Breakdown Cards -->
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-header">
+          <span class="step-num">1</span>
+          <span>สแกนยืนยันตัวตน (Identify)</span>
+        </div>
+        <div class="step-detail">
+          <ul>
+            <li>ยิงบาร์โค้ดบน <b>บัตรนิสิต</b> หรือสแกน QR Code หน้าบัตร</li>
+            <li>หรือพิมพ์ค้นหาด่วนด้วย รหัสนิสิต / ชื่อ-นามสกุล</li>
+            <li>กรณีอาจารย์หรือเจ้าหน้าที่ล็อกอินค้างไว้ มีปุ่มคลิกเลือกเป็นชื่อตนเองได้ทันที</li>
+            <li>แสดงรูปโปรไฟล์, สาขาวิชา, และสิทธิ์การใช้งานบนหน้าจอ</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="step-card">
+        <div class="step-header">
+          <span class="step-num">2</span>
+          <span>เลือกรายวิชา / วัตถุประสงค์</span>
+        </div>
+        <div class="step-detail">
+          <ul>
+            <li>เลือก <span class="highlight-tag tag-teal">รายวิชา</span> ที่กำลังฝึก (เช่น พย.1102)</li>
+            <li>ระบบจะดึงยอดค่าใช้จ่ายไปคำนวณใน <b>Cost Analytics</b> ของวิชานั้นทันที</li>
+            <li>หากไม่ใช่คาบเรียนปกติ สามารถเลือก:
+              <ul>
+                <li><span class="highlight-tag tag-amber">ซ้อมทักษะอิสระ (Self-Practice)</span></li>
+                <li><span class="highlight-tag tag-purple">เตรียมการสอน / สอบ OSCE</span></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="step-card">
+        <div class="step-header">
+          <span class="step-num">3</span>
+          <span>สแกนพัสดุต่อเนื่อง (Continuous Scan)</span>
+        </div>
+        <div class="step-detail">
+          <ul>
+            <li>รองรับเครื่องยิง Barcode USB หรือกล้อง iPad/Tablet มีเสียง <b>"Beep!"</b> ตอบรับ</li>
+            <li><b>แยกแยะประเภทอัตโนมัติ:</b>
+              <ul>
+                <li><span class="highlight-tag tag-teal">Box Code</span> ตัดกล่องนั้นโดยเฉพาะ</li>
+                <li><span class="highlight-tag tag-amber">Pack Code</span> ตัดซองสเตอร์ไรด์รายชิ้น</li>
+                <li><span class="highlight-tag tag-purple">Item Code</span> บวกจำนวนในตะกร้า +1</li>
+                <li><span class="highlight-tag tag-blue">Asset Code</span> เพิ่มรายการ "ยืมครุภัณฑ์"</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="step-card">
+        <div class="step-header">
+          <span class="step-num">4</span>
+          <span>ตรวจสอบตะกร้า (Cart Review)</span>
+        </div>
+        <div class="step-detail">
+          <ul>
+            <li>แสดงรายการสิ่งของทั้งหมดพร้อมรูปภาพ และหน่วยนับ</li>
+            <li>มีปุ่ม <b>+ / -</b> ปรับจำนวน หรือกดถังขยะลบรายการ</li>
+            <li>แสดงผลคำนวณ <b>มูลค่าต้นทุนรวม (Total Cost)</b> ของการเบิกครั้งนี้</li>
+            <li>แจ้งเตือนทันทีหากมีรายการใดที่สต็อกในคลังไม่เพียงพอ</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="step-card">
+        <div class="step-header">
+          <span class="step-num">5</span>
+          <span>ตัดสต็อกทันที (Instant Checkout)</span>
+        </div>
+        <div class="step-detail">
+          <ul>
+            <li>ตัดยอดคงคลังทันทีแบบ <b>FEFO</b> (ล็อตหมดอายุก่อนตัดก่อน)</li>
+            <li>เปลี่ยนสถานะในระบบเป็น <span class="highlight-tag tag-teal">DISPENSED</span> อัตโนมัติ</li>
+            <li>สร้างประวัติใน RequisitionRequest สถานะเสร็จสิ้น เพื่อให้ข้อมูลรายงานผู้บริหารตรงกันทั้งระบบ</li>
+            <li>ส่งข้อมูลตัดจ่ายไปยังตารางบัญชีต้นทุนต่อวิชา Real-time</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="step-card">
+        <div class="step-header">
+          <span class="step-num">6</span>
+          <span>ออกสลิปบันทึก (E-Receipt)</span>
+        </div>
+        <div class="step-detail">
+          <ul>
+            <li>หน้าจอแสดงใบเสร็จดิจิทัล (E-Receipt) พร้อม QR ตรวจสอบ</li>
+            <li>ปุ่มพิมพ์สลิปกระดาษความร้อน <b>80mm Thermal Printer</b> สำหรับเหน็บไว้ที่โต๊ะหัตถการ</li>
+            <li>บันทึก Audit Trail ระบุวัน-เวลา และเคาน์เตอร์ที่ทำรายการ</li>
+            <li>เคลียร์หน้าจอพร้อมให้บริการผู้เบิกคนถัดไปทันที</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-note">
+      ระบบบริหารจัดการห้องปฏิบัติการพยาบาล คณะพยาบาลศาสตร์ • แผนภาพกระบวนการทำงาน Express POS Flow
+    </div>
+  </div>
+
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'neutral',
+      fontFamily: 'Sarabun',
+      flowchart: {
+        useMaxWidth: true,
+        htmlLabels: true,
+        curve: 'basis'
+      }
+    });
+  </script>
+</body>
+</html>

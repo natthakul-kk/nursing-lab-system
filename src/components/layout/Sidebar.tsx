@@ -26,6 +26,7 @@ import {
   ChevronsUpDown,
   Building2,
   X,
+  Store,
 } from 'lucide-react';
 import ProfileModal from '@/components/profile/ProfileModal';
 import ThemeToggle from '@/components/common/ThemeToggle';
@@ -117,6 +118,13 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
           icon: RefreshCw,
           roles: ['ADMIN', 'OFFICER', 'APPROVER', 'TEACHER', 'USER'],
           badge: 'One-Stop',
+        },
+        {
+          label: 'จุดเบิกจ่ายด่วน (Lab Store)',
+          href: '/pos',
+          icon: Store,
+          roles: ['ADMIN', 'OFFICER', 'APPROVER', 'TEACHER', 'USER'],
+          badge: 'POS สแกนด่วน',
         },
         {
           label: 'ชุดฝึกปฏิบัติการ (Kits)',

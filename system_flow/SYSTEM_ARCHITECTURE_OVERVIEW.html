@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ภาพรวมสถาปัตยกรรมและการทำงานทั้งระบบ - คณะพยาบาลศาสตร์ ม.เกษตรศาสตร์</title>
+  <!-- Google Fonts: Prompt & Sarabun -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&family=Sarabun:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Mermaid.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Prompt', 'Sarabun', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+              800: '#166534',
+              900: '#14532d',
+            },
+            teal: {
+              50: '#f0fdfa',
+              100: '#ccfbf1',
+              500: '#14b8a6',
+              600: '#0d9488',
+              700: '#0f766e',
+              800: '#115e59',
+              900: '#134e4a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Prompt', 'Sarabun', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+      line-height: 1.7;
+    }
+    .mermaid {
+      background: #ffffff;
+      border-radius: 1rem;
+      padding: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border: 1px solid #e2e8f0;
+      overflow-x: auto;
+      text-align: center;
+    }
+    @media print {
+      body {
+        background: #ffffff !important;
+        color: #000000 !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .mermaid {
+        box-shadow: none !important;
+        border: 1px solid #cbd5e1 !important;
+        page-break-inside: avoid;
+      }
+      .page-break {
+        page-break-before: always;
+      }
+      @page {
+        size: A4 portrait;
+        margin: 12mm 10mm;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen py-8 px-4 sm:px-6 lg:px-8">
+
+  <!-- Floating Navigation / Action Bar -->
+  <div class="no-print fixed top-5 right-5 z-50 flex items-center gap-3 bg-white/95 backdrop-blur-md px-4 py-2.5 rounded-2xl shadow-lg border border-slate-200">
+    <button onclick="window.print()" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md transition cursor-pointer">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+      <span>พิมพ์เอกสาร / บันทึกเป็น PDF</span>
+    </button>
+  </div>
+
+  <div class="max-w-5xl mx-auto space-y-10">
+
+    <!-- Document Header -->
+    <div class="bg-gradient-to-br from-teal-900 via-teal-800 to-slate-900 text-white p-8 sm:p-10 rounded-3xl shadow-xl border border-teal-700/40 relative overflow-hidden">
+      <div class="absolute -right-10 -bottom-10 w-72 h-72 bg-teal-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="flex flex-wrap items-center gap-3 text-teal-300 text-xs font-semibold uppercase tracking-wider mb-3">
+        <span class="px-2.5 py-1 bg-teal-500/20 rounded-lg border border-teal-400/30">Official Architecture Document</span>
+        <span>•</span>
+        <span>คณะพยาบาลศาสตร์ มหาวิทยาลัยเกษตรศาสตร์</span>
+      </div>
+      <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white mb-3">
+        ภาพรวมสถาปัตยกรรมและการทำงานทั้งระบบ
+      </h1>
+      <p class="text-base sm:text-lg text-teal-100/90 font-medium">
+        Nursing Lab Information & Inventory Management System (Enterprise Architecture & Operational Lifecycle)
+      </p>
+      <div class="mt-6 pt-6 border-t border-teal-700/50 flex flex-wrap items-center gap-6 text-xs text-teal-200">
+        <div><strong class="text-white">สถานะระบบ:</strong> พร้อมใช้งานจริง (Production-ready)</div>
+        <div><strong class="text-white">เวอร์ชันระบบ:</strong> 1.0.0 (Next.js 15 + Prisma v6)</div>
+        <div><strong class="text-white">ปรับปรุงล่าสุด:</strong> 2026-09-12</div>
+      </div>
+    </div>
+
+    <!-- Section 1: Purpose & High-level -->
+    <section class="bg-white p-7 sm:p-9 rounded-3xl shadow-sm border border-slate-200">
+      <div class="flex items-center gap-3 mb-5 border-b border-slate-100 pb-4">
+        <div class="w-9 h-9 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center font-black text-lg border border-teal-200">1</div>
+        <h2 class="text-xl font-bold text-slate-900">วัตถุประสงค์และภาพรวมระดับสูง (High-Level Purpose)</h2>
+      </div>
+      <p class="text-slate-700 text-sm leading-relaxed mb-6">
+        ระบบห้องปฏิบัติการพยาบาลถูกออกแบบและพัฒนาขึ้นเป็น <strong>Enterprise Web Application แบบครบวงจร (End-to-End)</strong> เพื่อยกระดับการบริหารจัดการห้องปฏิบัติการพยาบาล จากเดิมที่ใช้เอกสารกระดาษหรือสมุดจดบันทึก มาเป็นระบบดิจิทัลที่เชื่อมโยงกันอย่างไร้รอยต่อ ครอบคลุมพันธกิจ 4 ด้านสำคัญ:
+      </p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-teal-500/50 transition">
+          <div class="text-sm font-bold text-teal-800 flex items-center gap-2 mb-2">
+            <span>📦</span> 1. การควบคุมพัสดุและสินทรัพย์แม่นยำ
+          </div>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            แยกชัดเจนระหว่าง <strong>ครุภัณฑ์ (Equipment Assets)</strong> ที่ต้องติดตามประวัติรายชิ้น เลขเครื่อง และ <strong>วัสดุสิ้นเปลือง (Consumables)</strong> ที่บริหารจัดการตามล็อต (Lot/Expiry) มีระบบตัดสต็อก FIFO และตัวกรองสถานะหมดสต็อก
+          </p>
+        </div>
+        <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-teal-500/50 transition">
+          <div class="text-sm font-bold text-teal-800 flex items-center gap-2 mb-2">
+            <span>✂️</span> 2. งานแบ่งบรรจุและการอบฆ่าเชื้อ (Repack & Sterile)
+          </div>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            รองรับการเบิกเวชภัณฑ์ห่อใหญ่มาจัดชุดซองย่อยปลอดเชื้อ กำหนดรหัส Sub-lot วันที่หมดอายุปลอดเชื้อ และติดตามสถานะรายซอง (Pack 1..N) พร้อมสติกเกอร์เฉพาะซองที่ยังไม่ถูกเบิกจ่าย
+          </p>
+        </div>
+        <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-teal-500/50 transition">
+          <div class="text-sm font-bold text-teal-800 flex items-center gap-2 mb-2">
+            <span>🎓</span> 3. สนับสนุนการเรียนการสอนและฝึกทักษะ
+          </div>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            เปิดจองรอบซ้อมแล็บ (Self-Practice Slots) แบบอัตโนมัติ ป้องกันการชนกันของห้อง (Conflict Detection) พร้อมระบบยื่นคำขอเบิก-ยืมพัสดุแบบบูรณาการ (Unified Request)
+          </p>
+        </div>
+        <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-teal-500/50 transition">
+          <div class="text-sm font-bold text-teal-800 flex items-center gap-2 mb-2">
+            <span>🔒</span> 4. ธรรมาภิบาลและการตรวจสอบ (Governance & Audit)
+          </div>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            การพิจารณาอนุมัติ 2 ระดับ (อาจารย์ผู้ประสานงานวิชา $ightarrow$ เจ้าหน้าที่ห้องแลป), ระบบประเมินความเสียหาย/ค่าปรับ, และรายงานสรุปผู้บริหารพร้อมบล็อกลงนามทางการ 3 ลำดับขั้น
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 2: Technical Stack -->
+    <section class="bg-white p-7 sm:p-9 rounded-3xl shadow-sm border border-slate-200">
+      <div class="flex items-center gap-3 mb-5 border-b border-slate-100 pb-4">
+        <div class="w-9 h-9 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center font-black text-lg border border-teal-200">2</div>
+        <h2 class="text-xl font-bold text-slate-900">โครงสร้างสถาปัตยกรรมทางเทคนิค (Technical Architecture Stack)</h2>
+      </div>
+      
+      <div class="mermaid my-6">
+graph TB
+    subgraph ClientLayer ["1. Client & Presentation Layer (ส่วนติดต่อผู้ใช้งาน)"]
+        UI["Web UI: Next.js 15 (App Router) + React 19 + TypeScript"]
+        Tailwind["Styling: Tailwind CSS (Responsive Desktop / Tablet / Mobile + Dark Mode)"]
+        Components["Component System: Lucide React + Recharts (KPI Dashboards)"]
+        PWA["QR Scanner & Print Engine (Dedicated CSS Paged Media A4)"]
+    end
+
+    subgraph ServiceLayer ["2. Application & API Layer (Next.js Route Handlers)"]
+        AuthService["Authentication & RBAC Service (Admin / Officer / Teacher / Student)"]
+        InvService["Inventory & Lot Balances Engine (FIFO / LIFO / Depletion Tracking)"]
+        RepackService["Repack & Sterilization Workflow Engine"]
+        BookingService["Slot Booking & Conflict Detection Engine"]
+        ApprovalService["Unified Request & Multi-tier Approval State Machine"]
+        ReportService["Export Engine (Excel / Official PDF / Print Layouts)"]
+    end
+
+    subgraph DataLayer ["3. Persistence & Database Layer"]
+        Prisma["Prisma ORM (v6.x) - Type-Safe Schema & Migrations"]
+        DB[("PostgreSQL Database / Supabase")]
+        AuditLog[("Audit Trail & Immutable Activity Logs")]
+    end
+
+    ClientLayer --> ServiceLayer
+    ServiceLayer --> DataLayer
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200/80">
+          <div class="text-xs font-bold text-teal-700 uppercase mb-1">Frontend Stack</div>
+          <div class="text-sm font-bold text-slate-900">Next.js 15 + React 19</div>
+          <div class="text-xs text-slate-500 mt-1">TypeScript, Tailwind CSS, Lucide Icons, Recharts Analytics</div>
+        </div>
+        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200/80">
+          <div class="text-xs font-bold text-blue-700 uppercase mb-1">Backend & API</div>
+          <div class="text-sm font-bold text-slate-900">Next.js Route Handlers</div>
+          <div class="text-xs text-slate-500 mt-1">RESTful Architecture, Type-safe Payload Validation, Server Actions</div>
+        </div>
+        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200/80">
+          <div class="text-xs font-bold text-emerald-700 uppercase mb-1">Database & ORM</div>
+          <div class="text-sm font-bold text-slate-900">Prisma ORM + PostgreSQL</div>
+          <div class="text-xs text-slate-500 mt-1">Relational Integrity, Audit Triggers, Transaction Isolation</div>
+        </div>
+        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200/80">
+          <div class="text-xs font-bold text-purple-700 uppercase mb-1">Security & Access</div>
+          <div class="text-sm font-bold text-slate-900">Multi-Role RBAC</div>
+          <div class="text-xs text-slate-500 mt-1">Admin, Officer/Staff, Teacher, Student พร้อม Zero-PII masking</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 3: 6 Core Pillars -->
+    <section class="bg-white p-7 sm:p-9 rounded-3xl shadow-sm border border-slate-200 page-break">
+      <div class="flex items-center gap-3 mb-5 border-b border-slate-100 pb-4">
+        <div class="w-9 h-9 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center font-black text-lg border border-teal-200">3</div>
+        <h2 class="text-xl font-bold text-slate-900">สถาปัตยกรรม 6 มิติหลักของระบบ (6 Core Architectural Pillars)</h2>
+      </div>
+
+      <div class="mermaid my-6">
+flowchart TB
+    classDef inv fill:#ecfdf5,stroke:#10b981,stroke-width:2px,color:#065f46;
+    classDef repack fill:#f0fdfa,stroke:#0d9488,stroke-width:2px,color:#134e4a;
+    classDef teach fill:#eff6ff,stroke:#3b82f6,stroke-width:2px,color:#1e40af;
+    classDef flow fill:#fff7ed,stroke:#f97316,stroke-width:2px,color:#9a3412;
+    classDef inspect fill:#fef2f2,stroke:#ef4444,stroke-width:2px,color:#991b1b;
+    classDef report fill:#faf5ff,stroke:#a855f7,stroke-width:2px,color:#6b21a8;
+
+    subgraph P1 [" เสาหลักที่ 1: ทะเบียนคลังพัสดุ & ครุภัณฑ์ (Inventory & Assets)"]
+        Items["ทะเบียนพัสดุหลัก (Items)"]
+        Assets["ครุภัณฑ์รายชิ้น (EquipmentAsset)<br/>• Serial Number / เลขครุภัณฑ์<br/>• ประวัติซ่อมบำรุง (Maintenance)"]
+        Lots["ล็อตวัสดุสิ้นเปลือง (StockLots)<br/>• Lot No, Expire Date, วันตรวจรับ<br/>• กล่องบรรจุ (Box Tracking) & สถานะคงเหลือ"]
+        Items --> Assets
+        Items --> Lots
+    end
+    class P1,Items,Assets,Lots inv;
+
+    subgraph P2 ["✂️ เสาหลักที่ 2: งานแบ่งบรรจุ & สเตอร์ไรด์ (Repacking & Sterilization)"]
+        RepackAction["ตัดยอดเวชภัณฑ์ห่อใหญ่ (Source Item/Lot)"]
+        SubLot["สร้างรอบแบ่งบรรจุ (Sub-lot No.)<br/>• วันที่ผลิต & วันหมดอายุปลอดเชื้อ<br/>• วิธีการฆ่าเชื้อ (Autoclave / EO Gas)"]
+        Packs["ผลิตซองย่อยรายชิ้น (Pack 1..N)<br/>• บันทึกสถานะ (AVAILABLE / DISPENSED)<br/>• Batch Repack Sticker Printing"]
+        RepackAction --> SubLot --> Packs
+    end
+    class P2,RepackAction,SubLot,Packs repack;
+
+    subgraph P3 [" เสาหลักที่ 3: หลักสูตร & การฝึกปฏิบัติ (Academic & Practice)"]
+        Courses["รายวิชา & อาจารย์ผู้ประสานงาน"]
+        Kits["ชุดฝึกปฏิบัติการแม่แบบ (Practice Kits)"]
+        Rooms["ห้องปฏิบัติการพยาบาล & เตียงฝึก"]
+        Slots["ระบบเปิดตารางซ้อมแล็บ (Self-Practice Slots)"]
+        Courses --> Kits
+        Rooms --> Slots
+    end
+    class P3,Courses,Kits,Rooms,Slots teach;
+
+    subgraph P4 [" เสาหลักที่ 4: คำขอ & การอนุมัติแบบบูรณาการ (Unified Request & Approval)"]
+        Req["ยื่นคำขอใช้งาน (Unified Request)<br/>• ขอยืมครุภัณฑ์ (Borrow)<br/>• เบิกวัสดุสิ้นเปลือง (Requisition)<br/>• จองห้องฝึก/ชุดหัตถการ (Practice & Kit)"]
+        Approval["ระบบอนุมัติ 2 ระดับ (Two-tier Approvals)<br/>• อาจารย์ประจำวิชาอนุมัติคำขอ<br/>• เจ้าหน้าที่แลปอนุมัติการจ่ายพัสดุ"]
+        Hold["กันสต็อกและล็อกคิวห้องแลปทันที (Inventory Hold)"]
+        Req --> Approval --> Hold
+    end
+    class P4,Req,Approval,Hold flow;
+
+    subgraph P5 [" เสาหลักที่ 5: การส่งมอบ คืนพัสดุ & คุณภาพ (Fulfillment & Quality Inspection)"]
+        ScanOut["สแกน QR Code ตรวจสอบ & ส่งมอบ (Check-out)"]
+        Use["อยู่ระหว่างการเรียนการสอน / ฝึกปฏิบัติ (IN_USE)"]
+        ScanIn["ตรวจรับคืน & ตรวจนับสภาพ (Check-in Inspection)"]
+        Judge{"ตรวจพบชำรุด<br/>หรือสูญหาย?"}
+        Normal["สภาพสมบูรณ์:<br/>• ปรับครุภัณฑ์เป็นพร้อมใช้ (AVAILABLE)<br/>• ตัดยอดเวชภัณฑ์ใช้หมดจริง (Consumed)"]
+        Damage["ชำรุด/เสียหาย:<br/>• บันทึกรูปภาพ & บันทึกชดใช้ค่าเสียหาย<br/>• ส่งเข้าคิวซ่อมบำรุง (Maintenance Ticket)"]
+
+        ScanOut --> Use --> ScanIn --> Judge
+        Judge -- ไม่มี --> Normal
+        Judge -- พบชำรุด --> Damage
+    end
+    class P5,ScanOut,Use,ScanIn,Normal flow;
+    class Judge,Damage inspect;
+
+    subgraph P6 [" เสาหลักที่ 6: ตรวจสอบ สรุปสถิติ & รายงานผู้บริหาร (Audit & Executive Intelligence)"]
+        Audit["System Audit Trail (บันทึกทุก Action ห้ามลบ)"]
+        Reports["รายงานมาตรฐานทางการ:<br/>• รายงานยอดคงเหลือวัสดุสิ้นเปลือง (Excel / ลายมือชื่อ 3 ขั้น)<br/>• รายงานครุภัณฑ์และการเสื่อมสภาพ<br/>• รายงานการใช้ห้องแลปแยกรายวิชา"]
+        Dashboard["Executive Dashboard & Strategic KPIs"]
+        Audit --> Reports --> Dashboard
+    end
+    class P6,Audit,Reports,Dashboard report;
+
+    %% Inter-module links
+    Lots -.->|เบิกไปแบ่งบรรจุ| RepackAction
+    Kits -.->|ดึงไปใช้ในคำร้อง| Req
+    Slots -.->|พ่วงขอพัสดุ| Req
+    Hold -.->|เบิกจ่ายของจริง| ScanOut
+    Normal -.->|บันทึกสถิติ| Audit
+    Damage -.->|บันทึกสถิติ| Audit
+      </div>
+    </section>
+
+    <!-- Section 4: Sequence Diagram -->
+    <section class="bg-white p-7 sm:p-9 rounded-3xl shadow-sm border border-slate-200 page-break">
+      <div class="flex items-center gap-3 mb-5 border-b border-slate-100 pb-4">
+        <div class="w-9 h-9 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center font-black text-lg border border-teal-200">4</div>
+        <h2 class="text-xl font-bold text-slate-900">วงจรการทำงานตั้งแต่ต้นจนจบ (End-to-End Operational Lifecycle)</h2>
+      </div>
+
+      <div class="mermaid my-6">
+sequenceDiagram
+    autonumber
+    actor User as นิสิต / อาจารย์ผู้สอน
+    actor Teacher as อาจารย์ผู้ประสานงานวิชา
+    actor Officer as เจ้าหน้าที่ห้องปฏิบัติการ
+    participant Sys as ระบบ Nursing Lab System
+    participant DB as ฐานข้อมูล & Audit Trail
+
+    Note over Officer,Sys: 1. ขั้นเตรียมการและจัดการคลัง
+    Officer->>Sys: นำเข้าพัสดุ (Stock-In), แยกกล่อง, สั่งพิมพ์สติกเกอร์ QR Code แบบชุด (Batch)
+    Officer->>Sys: แบ่งบรรจุซองย่อย (Repack), อบฆ่าเชื้อ, พิมพ์สติกเกอร์ซองย่อยประจำ Sub-lot
+
+    Note over User,Sys: 2. ยื่นคำขอใช้งาน
+    User->>Sys: เลือกวันเวลา, ห้องแลป, ชุดฝึก หรือระบุครุภัณฑ์/เวชภัณฑ์ที่ต้องการ
+    Sys->>DB: บันทึกคำขอ สถานะ PENDING
+
+    Note over Teacher,Officer: 3. การพิจารณาอนุมัติ (Approval Gate)
+    Teacher->>Sys: ตรวจสอบความสอดคล้องกับรายวิชา -> กดอนุมัติ (Approved by Teacher)
+    Officer->>Sys: ตรวจสอบความพร้อมของคลังและห้องปฏิบัติการ -> กดอนุมัติจ่าย (Approved by Lab)
+    Sys->>DB: ล็อกยอดพัสดุในคลัง (Hold Stock) และจองคิวห้องแลป
+
+    Note over Officer,User: 4. การส่งมอบ (Fulfillment)
+    Officer->>Sys: สแกน QR Code ประจำอุปกรณ์รายชิ้นเพื่อยืนยันความถูกต้อง
+    Officer->>User: ส่งมอบพัสดุ ตรวจสภาพร่วมกัน และบันทึกจ่ายของ (สถานะ: IN_USE)
+
+    Note over User,Officer: 5. การฝึกปฏิบัติและการส่งคืน (Return & Inspection)
+    User->>Officer: นำพัสดุมาส่งคืนที่ห้องปฏิบัติการหลังเสร็จสิ้นการเรียนการสอน
+    Officer->>Sys: ตรวจสอบสภาพการทำงาน และนับจำนวนเวชภัณฑ์ที่เหลือ
+    alt พบการชำรุดหรือสูญหาย
+        Officer->>Sys: บันทึก Damage Assessment แนบรูปภาพ ประเมินค่าปรับ ส่งซ่อมบำรุง
+    else ปกติสมบูรณ์
+        Officer->>Sys: รับคืน ปรับสถานะครุภัณฑ์เป็น AVAILABLE และตัดสต็อกเวชภัณฑ์ที่ใช้จริง
+    end
+
+    Note over Sys,DB: 6. การปิดงานและสรุปผลผู้บริหาร
+    Sys->>DB: บันทึกสถานะ COMPLETED พร้อมลง Audit Trail ป้องกันการแก้ไขย้อนหลัง
+    Sys->>Sys: ประมวลผลดัชนีชี้วัด (KPIs) นำเสนอขึ้น Executive Analytics Dashboard
+      </div>
+    </section>
+
+    <!-- Section 5: Highlights Table -->
+    <section class="bg-white p-7 sm:p-9 rounded-3xl shadow-sm border border-slate-200 page-break">
+      <div class="flex items-center gap-3 mb-5 border-b border-slate-100 pb-4">
+        <div class="w-9 h-9 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center font-black text-lg border border-teal-200">5</div>
+        <h2 class="text-xl font-bold text-slate-900">จุดเด่นเฉพาะตัวของระบบที่ได้รับการพัฒนาล่าสุด (Key Highlights)</h2>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs sm:text-sm border-collapse">
+          <thead>
+            <tr class="bg-slate-100/80 text-slate-800 border-b border-slate-200">
+              <th class="p-3.5 font-bold rounded-tl-xl">ฟังก์ชันงาน</th>
+              <th class="p-3.5 font-bold">รายละเอียดและการทำงาน</th>
+              <th class="p-3.5 font-bold rounded-tr-xl">ประโยชน์ต่อองค์กร</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 text-slate-600">
+            <tr class="hover:bg-slate-50/60 transition">
+              <td class="p-3.5 font-bold text-slate-900 whitespace-nowrap">ระบบแบ่งบรรจุ & ปลอดเชื้อ<br/><code class="text-[11px] text-teal-600 font-mono">/repack</code></td>
+              <td class="p-3.5 leading-relaxed">รองรับการตัดยอดกล่องใหญ่มาแบ่งบรรจุเป็นซองย่อยปลอดเชื้อ กำหนด Sub-lot วันที่หมดอายุ และวิธีอบฆ่าเชื้อ</td>
+              <td class="p-3.5 leading-relaxed text-teal-900 font-medium">ลดต้นทุนการซื้อเวชภัณฑ์สำเร็จรูปขนาดเล็ก ควบคุมมาตรฐานความปลอดเชื้อทางการพยาบาล</td>
+            </tr>
+            <tr class="hover:bg-slate-50/60 transition">
+              <td class="p-3.5 font-bold text-slate-900 whitespace-nowrap">การพิมพ์สติกเกอร์หลายรายการ<br/><span class="inline-block px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[11px] font-semibold mt-1">Batch Printing</span></td>
+              <td class="p-3.5 leading-relaxed">พิมพ์สติกเกอร์ QR Code สำหรับกล่องพัสดุ, ครุภัณฑ์, และซองย่อยได้คราวละหลายรายการ พร้อมตัวกรองซองที่เบิกจ่ายแล้วออกอัตโนมัติ และหัวแถบทางการของคณะพยาบาลศาสตร์ มก.</td>
+              <td class="p-3.5 leading-relaxed text-teal-900 font-medium">ประหยัดเวลาเจ้าหน้าที่อย่างมหาศาล สั่งพิมพ์ A4 รวดเดียวไม่มีหน้าว่างปน</td>
+            </tr>
+            <tr class="hover:bg-slate-50/60 transition">
+              <td class="p-3.5 font-bold text-slate-900 whitespace-nowrap">รายงานคงเหลือวัสดุสิ้นเปลือง<br/><code class="text-[11px] text-blue-600 font-mono">/reports</code></td>
+              <td class="p-3.5 leading-relaxed">ตารางแจกแจงพัสดุตามหมวดหมู่ คำนวณยอดคงเหลือ มูลค่ารวม ตารางสรุปท้ายหน้า และบล็อกลงนามทางการ 3 ระดับ (ผู้รายงาน, ผู้ตรวจสอบ, ผู้อนุมัติ) พร้อมปุ่ม Export Excel</td>
+              <td class="p-3.5 leading-relaxed text-teal-900 font-medium">ใช้เป็นเอกสารตรวจนับพัสดุประจำปีตามระเบียบพัสดุภาครัฐได้ทันที</td>
+            </tr>
+            <tr class="hover:bg-slate-50/60 transition">
+              <td class="p-3.5 font-bold text-slate-900 whitespace-nowrap">ระบบจองฝึกทักษะอิสระ<br/><code class="text-[11px] text-purple-600 font-mono">/practice</code></td>
+              <td class="p-3.5 leading-relaxed">จัดสรรห้องปฏิบัติการและเตียงฝึกตาม Slot เวลาที่เปิดให้จอง ป้องกันการชนกันของห้อง (Conflict Detection) พร้อมระบุอาจารย์ผู้ควบคุม</td>
+              <td class="p-3.5 leading-relaxed text-teal-900 font-medium">นิสิตฝึกฝนทักษะหัตถการได้อย่างมีประสิทธิภาพ มีความปลอดภัยในการใช้งาน</td>
+            </tr>
+            <tr class="hover:bg-slate-50/60 transition">
+              <td class="p-3.5 font-bold text-slate-900 whitespace-nowrap">ระบบความปลอดภัย & ตรวจสอบ<br/><span class="inline-block px-2 py-0.5 rounded bg-slate-200 text-slate-800 text-[11px] font-semibold mt-1">Audit Trail</span></td>
+              <td class="p-3.5 leading-relaxed">บันทึกประวัติการกระทำ เวลา ผู้ใช้ และค่าก่อน-หลังการเปลี่ยนแปลง ทุกคำขอมีเลขอ้างอิงติดตามได้</td>
+              <td class="p-3.5 leading-relaxed text-teal-900 font-medium">โปร่งใส ตรวจสอบย้อนหลังได้ 100% ป้องกันทุจริตและการสูญหายของพัสดุ</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <div class="text-center text-xs text-slate-400 py-6 border-t border-slate-200">
+      ระบบบริหารจัดการห้องปฏิบัติการพยาบาล • คณะพยาบาลศาสตร์ มหาวิทยาลัยเกษตรศาสตร์<br/>
+      เอกสารนี้สร้างขึ้นโดยอัตโนมัติจากโครงสร้างฐานข้อมูลและตรรกะทางธุรกิจของระบบ (Source: Nursing Lab System)
+    </div>
+
+  </div>
+
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'default',
+      securityLevel: 'loose',
+      fontFamily: 'Prompt, Sarabun, sans-serif',
+      themeVariables: {
+        fontSize: '13px'
+      }
+    });
+  </script>
+</body>
+</html>

@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import UnifiedRequestModal from '@/components/requests/UnifiedRequestModal';
+import { formatUserName, formatTeacherName } from '@/lib/user-utils';
 
 export default function RequisitionsPage() {
   const { currentUser, isOfficer, isApprover, isAdmin, isTeacher } = useAuth();
@@ -175,7 +176,7 @@ export default function RequisitionsPage() {
         body: JSON.stringify({
           userId: currentUser?.id,
           courseId: newReq.courseId,
-          advisorName: courses.find((c) => c.id === newReq.courseId)?.instructorName || null,
+          advisorName: formatTeacherName(newReq.advisorName || courses.find((c) => c.id === newReq.courseId)?.instructorName) || null,
           purpose: newReq.purpose,
           dateNeeded: newReq.dateNeeded,
           items: newReq.items.map((it) => ({ ...it, quantity: Number(it.quantity) })),
@@ -242,7 +243,7 @@ export default function RequisitionsPage() {
         body: JSON.stringify({
           action: 'ACKNOWLEDGE',
           userId: currentUser?.id,
-          advisorName: currentUser?.name,
+          advisorName: formatTeacherName(currentUser),
         }),
       });
 
@@ -387,17 +388,17 @@ export default function RequisitionsPage() {
                   </span>
                   <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
                     <User className="w-3.5 h-3.5" />
-                    <span>{req.user?.name}</span>
+                    <span>{formatUserName(req.user)}</span>
                   </div>
                   {req.instructorAcknowledged ? (
                     <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/60 px-2.5 py-0.5 rounded-full">
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                      <span>อ.รับทราบแล้ว ({req.advisorName || req.course?.instructorName || 'อาจารย์'}{req.acknowledgedAt ? ` • ${new Date(req.acknowledgedAt).toLocaleDateString('th-TH')}` : ''})</span>
+                      <span>อ.รับทราบแล้ว ({formatTeacherName(req.advisorName || req.course?.instructorName || 'อาจารย์')}{req.acknowledgedAt ? ` • ${new Date(req.acknowledgedAt).toLocaleDateString('th-TH')}` : ''})</span>
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800/60 px-2.5 py-0.5 rounded-full">
                       <Clock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                      <span>รออาจารย์รับทราบ ({req.advisorName || req.course?.instructorName || 'อาจารย์ผู้รับผิดชอบ'})</span>
+                      <span>รออาจารย์รับทราบ ({formatTeacherName(req.advisorName || req.course?.instructorName || 'อาจารย์ผู้รับผิดชอบ')})</span>
                     </span>
                   )}
                 </div>
@@ -580,7 +581,15 @@ export default function RequisitionsPage() {
                   <select
                     value={newReq.courseId}
                     required
-                    onChange={(e) => setNewReq({ ...newReq, courseId: e.target.value })}
+                    onChange={(e) => {
+                      const cid = e.target.value;
+                      const cMatch = courses.find((c) => c.id === cid);
+                      setNewReq({
+                        ...newReq,
+                        courseId: cid,
+                        advisorName: cMatch ? formatTeacherName(cMatch.instructorName) : (newReq.advisorName ? formatTeacherName(newReq.advisorName) : ''),
+                      });
+                    }}
                     className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                   >
                     <option value="">-- กรุณาเลือกรายวิชาที่ขอเบิกใช้งาน --</option>
@@ -632,7 +641,7 @@ export default function RequisitionsPage() {
 
                   {!isEditingAdvisor ? (
                     <div className="text-teal-900 dark:text-teal-200 font-bold pl-5 text-sm">
-                      {newReq.advisorName || courses.find((c) => c.id === newReq.courseId)?.instructorName || 'อาจารย์ผู้รับผิดชอบ'}
+                      {formatTeacherName(newReq.advisorName || courses.find((c) => c.id === newReq.courseId)?.instructorName || 'อาจารย์ผู้รับผิดชอบ')}
                     </div>
                   ) : (
                     <div className="space-y-1.5 pl-1 pt-1">
@@ -642,28 +651,31 @@ export default function RequisitionsPage() {
                         className="w-full bg-white dark:bg-slate-950 border border-teal-400 dark:border-teal-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-teal-500/20"
                       >
                         <option value="">-- กรุณาเลือกอาจารย์ผู้รับทราบจากรายชื่อ --</option>
-                        {newReq.advisorName && !instructors.some((ins) => ins.name === newReq.advisorName) && (
+                        {newReq.advisorName && !instructors.some((ins) => formatTeacherName(ins) === newReq.advisorName || ins.name === newReq.advisorName) && (
                           <option value={newReq.advisorName}>
-                            {newReq.advisorName} (อาจารย์ประจำรายวิชา)
+                            {formatTeacherName(newReq.advisorName)} (อาจารย์ประจำรายวิชา)
                           </option>
                         )}
-                        {instructors.map((ins) => (
-                          <option key={ins.id} value={ins.name}>
-                            {ins.name} ({ins.department || 'อาจารย์พยาบาล'})
-                          </option>
-                        ))}
+                        {instructors.map((ins) => {
+                          const formatted = formatTeacherName(ins);
+                          return (
+                            <option key={ins.id} value={formatted}>
+                              {formatted} ({ins.department || 'อาจารย์พยาบาล'})
+                            </option>
+                          );
+                        })}
                       </select>
                       <div className="flex justify-end">
                         <button
                           type="button"
                           onClick={() => {
                             const c = courses.find((x) => x.id === newReq.courseId);
-                            setNewReq({ ...newReq, advisorName: c?.instructorName || '' });
+                            setNewReq({ ...newReq, advisorName: formatTeacherName(c?.instructorName || '') });
                             setIsEditingAdvisor(false);
                           }}
                           className="text-[10px] text-teal-700 dark:text-teal-300 hover:underline cursor-pointer"
                         >
-                          ↺ กลับไปใช้อาจารย์ประจำวิชา ({courses.find((x) => x.id === newReq.courseId)?.instructorName})
+                          ↺ กลับไปใช้อาจารย์ประจำวิชา ({formatTeacherName(courses.find((x) => x.id === newReq.courseId)?.instructorName)})
                         </button>
                       </div>
                     </div>
@@ -681,11 +693,14 @@ export default function RequisitionsPage() {
                     className="w-full bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-amber-500/20"
                   >
                     <option value="">-- กรุณาเลือกอาจารย์ผู้รับทราบในระบบ --</option>
-                    {instructors.map((ins) => (
-                      <option key={ins.id} value={ins.name}>
-                        {ins.name} ({ins.department || 'อาจารย์พยาบาล'})
-                      </option>
-                    ))}
+                    {instructors.map((ins) => {
+                      const formatted = formatTeacherName(ins);
+                      return (
+                        <option key={ins.id} value={formatted}>
+                          {formatted} ({ins.department || 'อาจารย์พยาบาล'})
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
               )}
@@ -932,7 +947,7 @@ export default function RequisitionsPage() {
                   คำขอเลขที่: {activeReqForDispense.requestNumber}
                 </span>
                 <span className="font-mono text-[10px] text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 px-2 py-0.5 rounded border border-teal-200 dark:border-teal-800/60">
-                  ผู้ขอเบิก: {activeReqForDispense.user?.name}
+                  ผู้ขอเบิก: {formatUserName(activeReqForDispense.user)}
                 </span>
               </div>
               <div className="text-slate-600 dark:text-slate-400">

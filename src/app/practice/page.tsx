@@ -44,6 +44,7 @@ import {
   Boxes,
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { formatUserName, formatTeacherName } from '@/lib/user-utils';
 
 export default function PracticePage() {
   const { currentUser, isOfficer, isApprover, isAdmin, isTeacher } = useAuth();
@@ -495,7 +496,7 @@ export default function PracticePage() {
           slotId: slotForBooking.id,
           skillTopic: finalSkill,
           objectives: bookingForm.objectives,
-          advisorName: bookingForm.advisorName,
+          advisorName: bookingForm.advisorName ? formatTeacherName(bookingForm.advisorName) : null,
           courseId: bookingForm.courseId || null,
           practiceKitId: bookingForm.practiceKitId || null,
           additionalEquipment: bookingForm.additionalEquipment || null,
@@ -634,14 +635,14 @@ export default function PracticePage() {
           setScannerStatus({
             type: 'SUCCESS',
             title: 'เช็คอินเข้าห้องแล็บสำเร็จ!',
-            message: `นิสิต: ${booking.user?.name} (${booking.user?.studentId || '-'}) เช็คอินเข้า ${booking.slot?.room?.name} เวลา ${new Date().toLocaleTimeString('th-TH')}`,
+            message: `นิสิต: ${formatUserName(booking.user)} (${booking.user?.studentId || '-'}) เช็คอินเข้า ${booking.slot?.room?.name} เวลา ${new Date().toLocaleTimeString('th-TH')}`,
             booking: result.booking,
           });
         } else {
           setScannerStatus({
             type: 'SUCCESS',
             title: 'เช็คเอาท์เสร็จสิ้น!',
-            message: `นิสิต: ${booking.user?.name} เสร็จสิ้นการฝึกหัตถการ "${booking.skillTopic}" รวมเวลาฝึกจริง: ${result.booking?.actualMinutes || 0} นาที`,
+            message: `นิสิต: ${formatUserName(booking.user)} เสร็จสิ้นการฝึกหัตถการ "${booking.skillTopic}" รวมเวลาฝึกจริง: ${result.booking?.actualMinutes || 0} นาที`,
             booking: result.booking,
           });
         }
@@ -1941,7 +1942,7 @@ export default function PracticePage() {
                       <div className="flex items-center gap-2 text-xs text-slate-500">
                         <div className="flex items-center gap-1">
                           <User className="w-3.5 h-3.5 text-slate-400" />
-                          <span className="font-semibold text-slate-800">{b.user?.name}</span>
+                          <span className="font-semibold text-slate-800">{formatUserName(b.user)}</span>
                           {b.user?.studentId && (
                             <span className="font-mono text-[10px] text-teal-700 bg-teal-50 px-1 rounded">
                               {b.user.studentId}
@@ -1967,7 +1968,7 @@ export default function PracticePage() {
                         {b.advisorName && (
                           <div className="flex items-center gap-1 text-[11px] font-semibold text-indigo-700">
                             <GraduationCap className="w-3.5 h-3.5 text-indigo-600" />
-                            <span>อาจารย์ผู้ดูแล: {b.advisorName}</span>
+                            <span>อาจารย์ผู้ดูแล: {formatTeacherName(b.advisorName)}</span>
                           </div>
                         )}
                         {b.practiceKit && (
@@ -3102,7 +3103,7 @@ export default function PracticePage() {
                       setBookingForm({
                         ...bookingForm,
                         courseId: cid,
-                        advisorName: c?.instructorName || '',
+                        advisorName: c?.instructorName ? formatTeacherName(c.instructorName) : '',
                       });
                     }}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
@@ -3139,7 +3140,7 @@ export default function PracticePage() {
                     <div className="p-2.5 bg-teal-50 border border-teal-200 rounded-xl text-xs flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
                         <GraduationCap className="w-4 h-4 text-teal-600" />
-                        <span className="font-bold text-teal-900">{bookingForm.advisorName || 'อาจารย์ประจำวิชา'}</span>
+                        <span className="font-bold text-teal-900">{formatTeacherName(bookingForm.advisorName || 'อาจารย์ประจำวิชา')}</span>
                         <span className="text-[10px] bg-teal-200/70 text-teal-800 px-1.5 py-0.5 rounded-md font-bold">
                           ขึ้นให้อัตโนมัติ
                         </span>
@@ -3161,16 +3162,19 @@ export default function PracticePage() {
                         className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                       >
                         <option value="">-- กรุณาเลือกอาจารย์ผู้รับรองจากรายชื่อ --</option>
-                        {bookingForm.advisorName && !teachers.some((t) => t.name === bookingForm.advisorName) && (
+                        {bookingForm.advisorName && !teachers.some((t) => formatTeacherName(t) === bookingForm.advisorName || t.name === bookingForm.advisorName) && (
                           <option value={bookingForm.advisorName}>
-                            {bookingForm.advisorName} (อาจารย์ประจำวิชา)
+                            {formatTeacherName(bookingForm.advisorName)} (อาจารย์ประจำวิชา)
                           </option>
                         )}
-                        {teachers.map((t) => (
-                          <option key={t.id} value={t.name}>
-                            {t.name} ({t.department || 'คณะพยาบาลศาสตร์'})
-                          </option>
-                        ))}
+                        {teachers.map((t) => {
+                          const formatted = formatTeacherName(t);
+                          return (
+                            <option key={t.id} value={formatted}>
+                              {formatted} ({t.department || 'คณะพยาบาลศาสตร์'})
+                            </option>
+                          );
+                        })}
                       </select>
                       {bookingForm.courseId && (
                         <div className="flex justify-end">
@@ -3178,12 +3182,12 @@ export default function PracticePage() {
                             type="button"
                             onClick={() => {
                               const c = courses.find((x) => x.id === bookingForm.courseId);
-                              setBookingForm({ ...bookingForm, advisorName: c?.instructorName || '' });
+                              setBookingForm({ ...bookingForm, advisorName: formatTeacherName(c?.instructorName || '') });
                               setIsEditingAdvisor(false);
                             }}
                             className="text-[10px] text-teal-700 hover:underline cursor-pointer"
                           >
-                            ↺ กลับไปใช้อาจารย์ประจำวิชา ({courses.find((x) => x.id === bookingForm.courseId)?.instructorName})
+                            ↺ กลับไปใช้อาจารย์ประจำวิชา ({formatTeacherName(courses.find((x) => x.id === bookingForm.courseId)?.instructorName)})
                           </button>
                         </div>
                       )}
@@ -3520,7 +3524,7 @@ export default function PracticePage() {
                 {activeBookingForQr.qrCodeToken}
               </span>
               <p className="text-xs font-bold text-slate-700">
-                {activeBookingForQr.user?.name}
+                {formatUserName(activeBookingForQr.user)}
                 {activeBookingForQr.user?.studentId && ` (${activeBookingForQr.user.studentId})`}
               </p>
               <p className="text-[11px] text-teal-700 font-semibold">

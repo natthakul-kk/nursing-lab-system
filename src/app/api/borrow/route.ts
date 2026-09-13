@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendApprovalRequestEmail } from '@/lib/email';
 import { getCached, setCached, invalidateCache } from '@/lib/cache';
+import { formatUserName, formatTeacherName } from '@/lib/user-utils';
 
 export async function GET(req: Request) {
   try {
@@ -50,7 +51,7 @@ export async function GET(req: Request) {
     if (officerIds.length > 0) {
       const officers = await prisma.user.findMany({
         where: { id: { in: officerIds } },
-        select: { id: true, name: true, role: true },
+        select: { id: true, name: true, prefix: true, role: true },
       });
       officers.forEach((o) => officerMap.set(o.id, o));
     }
@@ -78,14 +79,14 @@ export async function POST(req: Request) {
     }
 
     // Determine final advisorName: use provided advisorName, or fallback to course instructor
-    let finalAdvisorName = advisorName || null;
+    let finalAdvisorName = advisorName ? formatTeacherName(advisorName) : null;
     if (!finalAdvisorName && courseId) {
       const course = await prisma.course.findUnique({
         where: { id: courseId },
         select: { instructorName: true },
       });
       if (course?.instructorName) {
-        finalAdvisorName = course.instructorName;
+        finalAdvisorName = formatTeacherName(course.instructorName);
       }
     }
 
@@ -181,7 +182,7 @@ export async function POST(req: Request) {
         });
         if (advisorUser?.email) {
           approverEmail = advisorUser.email;
-          approverName = advisorUser.name;
+          approverName = formatTeacherName(advisorUser);
         }
       }
 
@@ -191,7 +192,7 @@ export async function POST(req: Request) {
         });
         if (fallbackApprover?.email) {
           approverEmail = fallbackApprover.email;
-          approverName = fallbackApprover.name;
+          approverName = formatTeacherName(fallbackApprover);
         }
       }
 
@@ -199,7 +200,7 @@ export async function POST(req: Request) {
         sendApprovalRequestEmail({
           approverEmail,
           approverName,
-          studentName: borrow.user?.name || 'นิสิต',
+          studentName: formatUserName(borrow.user) || 'นิสิต',
           studentId: borrow.user?.studentId || undefined,
           type: 'BORROW',
           title: `คำขอยืมครุภัณฑ์ (${requestNumber})`,

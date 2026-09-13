@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { formatUserName } from '@/lib/user-utils';
 
 // GET: Public Asset Details by code (No login required)
 export async function GET(
@@ -104,7 +105,7 @@ export async function GET(
 
         activeBorrow = {
           requestNumber: latestBorrowReq.requestNumber,
-          borrowerName: latestBorrowReq.user?.name || 'ไม่ระบุชื่อ',
+          borrowerName: formatUserName(latestBorrowReq.user) || 'ไม่ระบุชื่อ',
           borrowerStudentId: latestBorrowReq.user?.studentId || null,
           borrowerPhone: latestBorrowReq.user?.phone || null,
           department: latestBorrowReq.user?.department || 'นิสิตพยาบาล',

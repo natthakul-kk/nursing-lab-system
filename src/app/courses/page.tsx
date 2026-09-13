@@ -21,6 +21,7 @@ import {
   ShieldAlert
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { formatUserName, formatTeacherName } from '@/lib/user-utils';
 
 export default function CoursesPage() {
   const router = useRouter();
@@ -99,7 +100,10 @@ export default function CoursesPage() {
       const res = await fetch('/api/courses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newCourse),
+        body: JSON.stringify({
+          ...newCourse,
+          instructorName: formatTeacherName(newCourse.instructorName),
+        }),
       });
       if (res.ok) {
         setShowNewModal(false);
@@ -247,7 +251,7 @@ export default function CoursesPage() {
                   </div>
 
                   <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-2 line-clamp-1">{c.name}</h4>
-                  <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">ผู้สอน: {c.instructorName}</p>
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">ผู้สอน: {formatTeacherName(c.instructorName)}</p>
 
                   {/* Mini Progress */}
                   <div className="mt-3">
@@ -285,7 +289,7 @@ export default function CoursesPage() {
                       <h3 className="text-lg font-bold text-slate-900 dark:text-white">{selectedCourse.name}</h3>
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      ผู้ประสานงาน: {selectedCourse.instructorName} | ภาคเรียนที่{' '}
+                      ผู้ประสานงาน: {formatTeacherName(selectedCourse.instructorName)} | ภาคเรียนที่{' '}
                       {selectedCourse.semester}/{selectedCourse.academicYear}
                     </p>
                   </div>
@@ -411,7 +415,9 @@ export default function CoursesPage() {
                     <div key={req.id} className="py-3 flex items-center justify-between text-xs">
                       <div>
                         <div className="font-bold text-slate-800 dark:text-slate-200">{req.requestNumber}</div>
-                        <div className="text-slate-500 dark:text-slate-400 mt-0.5">{req.purpose}</div>
+                        <div className="text-slate-500 dark:text-slate-400 mt-0.5">
+                          {req.purpose} {req.user && <span className="text-teal-700 dark:text-teal-300 font-medium">({formatUserName(req.user)})</span>}
+                        </div>
                       </div>
                       <div className="text-right">
                         <div className="font-bold text-emerald-700 dark:text-emerald-400">
@@ -533,8 +539,8 @@ export default function CoursesPage() {
                   >
                     <option value="">-- กรุณาเลือกอาจารย์ผู้ประสานงาน --</option>
                     {instructors.map((inst) => (
-                      <option key={inst.id} value={inst.name}>
-                        {inst.name} {inst.department ? `(${inst.department})` : ''}
+                      <option key={inst.id} value={formatTeacherName(inst)}>
+                        {formatTeacherName(inst)} {inst.department ? `(${inst.department})` : ''}
                       </option>
                     ))}
                     <option value="__CUSTOM__">✍️ ระบุชื่ออื่นด้วยตนเอง...</option>

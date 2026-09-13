@@ -21,6 +21,7 @@ import {
   CheckCircle2,
   Edit3,
 } from 'lucide-react';
+import { formatTeacherName, formatUserName } from '@/lib/user-utils';
 
 interface UnifiedRequestModalProps {
   isOpen: boolean;
@@ -194,7 +195,7 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
         body: JSON.stringify({
           userId: currentUser?.id,
           courseId: courseId || null,
-          advisorName: advisorName || null,
+          advisorName: advisorName ? formatTeacherName(advisorName) : null,
           purpose,
           borrowDate,
           expectedReturnDate,
@@ -330,7 +331,7 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
                       setCourseId(cId);
                       const selectedCourse = courses.find((c) => c.id === cId);
                       if (selectedCourse?.instructorName) {
-                        setAdvisorName(selectedCourse.instructorName);
+                        setAdvisorName(formatTeacherName(selectedCourse.instructorName));
                         setIsEditingAdvisor(false);
                       } else if (!cId) {
                         setAdvisorName('');
@@ -341,7 +342,7 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
                     <option value="">-- ไม่ระบุรายวิชา (ฝึกปฏิบัติส่วนบุคคล/กิจกรรมอื่น) --</option>
                     {courses.map((c) => (
                       <option key={c.id} value={c.id}>
-                        {c.code} {c.name} ({c.instructorName || 'อ.ผู้รับผิดชอบ'})
+                        {c.code} {c.name} ({formatTeacherName(c.instructorName || 'อ.ผู้รับผิดชอบ')})
                       </option>
                     ))}
                   </select>
@@ -369,7 +370,7 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
                       <div className="flex items-center gap-2">
                         <GraduationCap className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" />
                         <span className="font-bold text-teal-900 dark:text-teal-200">
-                          {advisorName || courses.find((c) => c.id === courseId)?.instructorName || 'อาจารย์ผู้รับผิดชอบ'}
+                          {formatTeacherName(advisorName || courses.find((c) => c.id === courseId)?.instructorName || 'อาจารย์ผู้รับผิดชอบ')}
                         </span>
                         <span className="text-[10px] bg-teal-200/60 dark:bg-teal-900/60 text-teal-800 dark:text-teal-300 px-1.5 py-0.5 rounded-md font-bold">
                           ขึ้นให้อัตโนมัติ
@@ -394,16 +395,19 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
                         }`}
                       >
                         <option value="">-- กรุณาเลือกอาจารย์จากรายชื่อ --</option>
-                        {advisorName && !instructors.some((ins) => ins.name === advisorName) && (
+                        {advisorName && !instructors.some((ins) => formatTeacherName(ins) === advisorName || ins.name === advisorName) && (
                           <option value={advisorName}>
-                            {advisorName} (อาจารย์ประจำรายวิชา)
+                            {formatTeacherName(advisorName)} (อาจารย์ประจำรายวิชา)
                           </option>
                         )}
-                        {instructors.map((ins) => (
-                          <option key={ins.id} value={ins.name}>
-                            {ins.name} ({ins.department || 'อาจารย์พยาบาล'})
-                          </option>
-                        ))}
+                        {instructors.map((ins) => {
+                          const formatted = formatTeacherName(ins);
+                          return (
+                            <option key={ins.id} value={formatted}>
+                              {formatted} ({ins.department || 'อาจารย์พยาบาล'})
+                            </option>
+                          );
+                        })}
                       </select>
                       {courseId && (
                         <div className="flex justify-end">
@@ -411,12 +415,12 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
                             type="button"
                             onClick={() => {
                               const sc = courses.find((c) => c.id === courseId);
-                              if (sc?.instructorName) setAdvisorName(sc.instructorName);
+                              if (sc?.instructorName) setAdvisorName(formatTeacherName(sc.instructorName));
                               setIsEditingAdvisor(false);
                             }}
                             className="text-[10px] text-slate-500 hover:text-slate-700 underline cursor-pointer"
                           >
-                            ↺ กลับไปใช้อาจารย์ประจำวิชา ({courses.find((c) => c.id === courseId)?.instructorName})
+                            ↺ กลับไปใช้อาจารย์ประจำวิชา ({formatTeacherName(courses.find((c) => c.id === courseId)?.instructorName)})
                           </button>
                         </div>
                       )}

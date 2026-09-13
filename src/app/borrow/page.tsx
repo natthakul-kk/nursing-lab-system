@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import UnifiedRequestModal from '@/components/requests/UnifiedRequestModal';
-import { formatUserName } from '@/lib/user-utils';
+import { formatUserName, formatTeacherName } from '@/lib/user-utils';
 
 export default function BorrowPage() {
   const { currentUser, isOfficer, isApprover, isAdmin, isTeacher } = useAuth();
@@ -232,7 +232,7 @@ export default function BorrowPage() {
         body: JSON.stringify({
           userId: currentUser.id,
           courseId: newRequest.courseId || null,
-          advisorName: newRequest.advisorName || null,
+          advisorName: newRequest.advisorName ? formatTeacherName(newRequest.advisorName) : null,
           purpose: newRequest.purpose,
           borrowDate: newRequest.borrowDate,
           expectedReturnDate: newRequest.expectedReturnDate,
@@ -315,7 +315,7 @@ export default function BorrowPage() {
         body: JSON.stringify({
           action: 'ACKNOWLEDGE',
           userId: currentUser?.id,
-          advisorName: currentUser?.name,
+          advisorName: formatTeacherName(currentUser),
         }),
       });
 
@@ -500,7 +500,7 @@ export default function BorrowPage() {
         ) : (
           <div className="text-xs font-medium text-teal-800 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 px-3 py-1.5 rounded-xl border border-teal-200/70 dark:border-teal-800 flex items-center gap-1.5 self-start md:self-auto">
             <span>📌</span>
-            <span>แสดงเฉพาะรายการยืมของท่าน ({currentUser?.name || 'นิสิต'})</span>
+            <span>แสดงเฉพาะรายการยืมของท่าน ({formatUserName(currentUser) || 'นิสิต'})</span>
           </div>
         )}
       </div>
@@ -575,12 +575,12 @@ export default function BorrowPage() {
                   {req.instructorAcknowledged ? (
                     <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200 dark:border-emerald-800 px-2.5 py-0.5 rounded-full">
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                      <span>อ.รับทราบแล้ว ({req.advisorName || req.course?.instructorName || 'อาจารย์'}{req.acknowledgedAt ? ` • ${new Date(req.acknowledgedAt).toLocaleDateString('th-TH')}` : ''})</span>
+                      <span>อ.รับทราบแล้ว ({formatTeacherName(req.advisorName || req.course?.instructorName || 'อาจารย์')}{req.acknowledgedAt ? ` • ${new Date(req.acknowledgedAt).toLocaleDateString('th-TH')}` : ''})</span>
                     </div>
                   ) : (
                     <div className="flex items-center gap-1 text-[11px] font-medium text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/70 border border-amber-200 dark:border-amber-800 px-2.5 py-0.5 rounded-full">
                       <Clock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                      <span>รออาจารย์รับทราบ ({req.advisorName || req.course?.instructorName || 'อาจารย์ผู้สอน'})</span>
+                      <span>รออาจารย์รับทราบ ({formatTeacherName(req.advisorName || req.course?.instructorName || 'อาจารย์ผู้สอน')})</span>
                     </div>
                   )}
                 </div>
@@ -871,7 +871,7 @@ export default function BorrowPage() {
                     setNewRequest({
                       ...newRequest,
                       courseId: cid,
-                      advisorName: cMatch ? cMatch.instructorName : (newRequest.advisorName || ''),
+                      advisorName: cMatch ? formatTeacherName(cMatch.instructorName) : (newRequest.advisorName ? formatTeacherName(newRequest.advisorName) : ''),
                     });
                   }}
                   className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
@@ -913,7 +913,7 @@ export default function BorrowPage() {
 
                   {!isEditingAdvisor ? (
                     <div className="text-teal-900 dark:text-teal-200 font-bold pl-5 text-sm flex items-center justify-between">
-                      <span>{newRequest.advisorName || courses.find((c) => c.id === newRequest.courseId)?.instructorName || 'อาจารย์ผู้รับผิดชอบรายวิชา'}</span>
+                      <span>{formatTeacherName(newRequest.advisorName || courses.find((c) => c.id === newRequest.courseId)?.instructorName || 'อาจารย์ผู้รับผิดชอบรายวิชา')}</span>
                     </div>
                   ) : (
                     <div className="space-y-1.5 pl-1 pt-1">
@@ -923,28 +923,31 @@ export default function BorrowPage() {
                         className="w-full bg-white dark:bg-slate-950 border border-teal-400 dark:border-teal-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-teal-500/20"
                       >
                         <option value="">-- กรุณาเลือกอาจารย์ผู้รับทราบจากรายชื่อ --</option>
-                        {newRequest.advisorName && !instructors.some((ins) => ins.name === newRequest.advisorName) && (
+                        {newRequest.advisorName && !instructors.some((ins) => formatTeacherName(ins) === newRequest.advisorName || ins.name === newRequest.advisorName) && (
                           <option value={newRequest.advisorName}>
-                            {newRequest.advisorName} (อาจารย์ประจำรายวิชา)
+                            {formatTeacherName(newRequest.advisorName)} (อาจารย์ประจำรายวิชา)
                           </option>
                         )}
-                        {instructors.map((ins) => (
-                          <option key={ins.id} value={ins.name}>
-                            {ins.name} ({ins.department || 'อาจารย์พยาบาล'})
-                          </option>
-                        ))}
+                        {instructors.map((ins) => {
+                          const formatted = formatTeacherName(ins);
+                          return (
+                            <option key={ins.id} value={formatted}>
+                              {formatted} ({ins.department || 'อาจารย์พยาบาล'})
+                            </option>
+                          );
+                        })}
                       </select>
                       <div className="flex justify-end">
                         <button
                           type="button"
                           onClick={() => {
                             const c = courses.find((x) => x.id === newRequest.courseId);
-                            setNewRequest({ ...newRequest, advisorName: c?.instructorName || '' });
+                            setNewRequest({ ...newRequest, advisorName: formatTeacherName(c?.instructorName || '') });
                             setIsEditingAdvisor(false);
                           }}
                           className="text-[10px] text-teal-700 dark:text-teal-300 hover:underline cursor-pointer"
                         >
-                          ↺ กลับไปใช้อาจารย์ประจำวิชา ({courses.find((x) => x.id === newRequest.courseId)?.instructorName})
+                          ↺ กลับไปใช้อาจารย์ประจำวิชา ({formatTeacherName(courses.find((x) => x.id === newRequest.courseId)?.instructorName)})
                         </button>
                       </div>
                     </div>
@@ -971,11 +974,14 @@ export default function BorrowPage() {
                       className="w-full bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-amber-500/20"
                     >
                       <option value="">-- กรุณาเลือกอาจารย์ผู้รับทราบในระบบ --</option>
-                      {instructors.map((ins) => (
-                        <option key={ins.id} value={ins.name}>
-                          {ins.name} ({ins.department || 'อาจารย์พยาบาล'})
-                        </option>
-                      ))}
+                      {instructors.map((ins) => {
+                        const formatted = formatTeacherName(ins);
+                        return (
+                          <option key={ins.id} value={formatted}>
+                            {formatted} ({ins.department || 'อาจารย์พยาบาล'})
+                          </option>
+                        );
+                      })}
                     </select>
                   </div>
                 </div>
@@ -1267,7 +1273,7 @@ export default function BorrowPage() {
                   {activeBorrowForAction.requisitionRequest && ` + ${activeBorrowForAction.requisitionRequest.requestNumber}`}
                 </span>
                 <span className="font-mono text-[10px] text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 px-2 py-0.5 rounded border border-teal-200 dark:border-teal-800">
-                  ผู้ยืม/เบิก: {activeBorrowForAction.user?.name}
+                  ผู้ยืม/เบิก: {formatUserName(activeBorrowForAction.user)}
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600 dark:text-slate-400 border-t border-slate-200 dark:border-slate-800 pt-1.5">

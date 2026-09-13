@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import ProfileModal from '@/components/profile/ProfileModal';
 import ThemeToggle from '@/components/common/ThemeToggle';
+import { formatUserName } from '@/lib/user-utils';
 
 interface SidebarProps {
   mobileOpen?: boolean;
@@ -377,7 +378,7 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
             <span>สิทธิ์การใช้งานปัจจุบัน:</span>
           </div>
           <div className="text-xs font-bold text-white">
-            {currentUser?.name || 'ผู้ใช้งาน'}
+            {formatUserName(currentUser) || 'ผู้ใช้งาน'}
           </div>
           <div className="text-[10px] text-slate-400">
             {userRole === 'ADMIN' && 'เข้าถึงและกำหนดค่าได้ทุกระบบ'}

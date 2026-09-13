@@ -37,6 +37,7 @@ import {
   Info
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { formatUserName, formatTeacherName } from '@/lib/user-utils';
 
 export default function RoomsPage() {
   const { currentUser, isOfficer, isAdmin, isTeacher, isApprover } = useAuth();
@@ -227,6 +228,7 @@ export default function RoomsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...bookingForm,
+          advisorName: bookingForm.advisorName ? formatTeacherName(bookingForm.advisorName) : null,
           userId: currentUser?.id,
         }),
       });
@@ -1031,7 +1033,7 @@ export default function RoomsPage() {
                             <span>•</span>
                             <span>วัตถุประสงค์: {b.purpose}</span>
                             <span>•</span>
-                            <span>ผู้ขอ: {b.user?.name} ({b.attendeesCount} คน)</span>
+                            <span>ผู้ขอ: {formatUserName(b.user)} ({b.attendeesCount} คน)</span>
                           </div>
 
                           {/* Quick Approval Buttons for Pending */}
@@ -1104,7 +1106,7 @@ export default function RoomsPage() {
                           <div className="flex flex-wrap items-center gap-3 text-slate-500">
                             <span>วันที่: <strong>{formatDate(b.bookingDate)}</strong></span>
                             <span>เวลา: <strong>{b.startTime} - {b.endTime} น.</strong></span>
-                            <span>ผู้ขอ: <strong>{b.user?.name}</strong></span>
+                            <span>ผู้ขอ: <strong>{formatUserName(b.user)}</strong></span>
                             {b.contactPhone && <span>โทร: {b.contactPhone}</span>}
                           </div>
                         </div>
@@ -1233,7 +1235,7 @@ export default function RoomsPage() {
 
                       <div className="text-xs text-slate-500 flex items-center gap-1.5">
                         <Users className="w-3.5 h-3.5 text-slate-400" />
-                        <span className="font-bold text-slate-800 dark:text-slate-200">{b.user?.name}</span>
+                        <span className="font-bold text-slate-800 dark:text-slate-200">{formatUserName(b.user)}</span>
                         {b.user?.studentId && (
                           <span className="text-[10px] font-mono text-teal-700 bg-teal-50 px-1.5 py-0.2 rounded">
                             {b.user.studentId}
@@ -1263,8 +1265,8 @@ export default function RoomsPage() {
 
                         {b.advisorName && (
                           <div className="flex items-center gap-1 text-indigo-700 font-semibold">
-                            <GraduationCap className="w-3.5 h-3.5" />
-                            <span>อาจารย์ผู้รับผิดชอบ/ที่ปรึกษา: {b.advisorName}</span>
+                            <GraduationCap className="w-3.5 h-3.5 text-indigo-600" />
+                            <span>อาจารย์ผู้รับผิดชอบ/ที่ปรึกษา: {formatTeacherName(b.advisorName)}</span>
                           </div>
                         )}
 
@@ -1526,7 +1528,7 @@ export default function RoomsPage() {
                         setBookingForm((prev) => ({
                           ...prev,
                           courseId: cId,
-                          advisorName: selectedC?.instructorName || (cId ? prev.advisorName : ''),
+                          advisorName: selectedC?.instructorName ? formatTeacherName(selectedC.instructorName) : (cId ? prev.advisorName : ''),
                         }));
                         if (selectedC?.instructorName) {
                           setIsEditingAdvisor(false);
@@ -1537,7 +1539,7 @@ export default function RoomsPage() {
                       <option value="">-- ไม่ระบุรายวิชา (ฝึกอิสระ/กิจกรรม) --</option>
                       {courses.map((c) => (
                         <option key={c.id} value={c.id}>
-                          [{c.code}] {c.name} ({c.instructorName || 'อาจารย์ผู้รับผิดชอบ'})
+                          [{c.code}] {c.name} ({formatTeacherName(c.instructorName || 'อาจารย์ผู้รับผิดชอบ')})
                         </option>
                       ))}
                     </select>
@@ -1565,7 +1567,7 @@ export default function RoomsPage() {
                         <div className="flex items-center gap-2">
                           <GraduationCap className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" />
                           <span className="font-bold text-teal-900 dark:text-teal-200">
-                            {bookingForm.advisorName || 'อาจารย์ประจำรายวิชา'}
+                            {formatTeacherName(bookingForm.advisorName || 'อาจารย์ประจำรายวิชา')}
                           </span>
                           <span className="text-[10px] bg-teal-200/60 dark:bg-teal-900/60 text-teal-800 dark:text-teal-300 px-1.5 py-0.5 rounded-md font-bold">
                             ขึ้นให้อัตโนมัติ
@@ -1587,16 +1589,19 @@ export default function RoomsPage() {
                           className="w-full bg-white dark:bg-slate-900 border border-teal-300 dark:border-teal-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20"
                         >
                           <option value="">-- กรุณาเลือกอาจารย์ผู้รับผิดชอบจากรายชื่อ --</option>
-                          {bookingForm.advisorName && !teachers.some((t) => t.name === bookingForm.advisorName) && (
+                          {bookingForm.advisorName && !teachers.some((t) => formatTeacherName(t) === bookingForm.advisorName || t.name === bookingForm.advisorName) && (
                             <option value={bookingForm.advisorName}>
-                              {bookingForm.advisorName} (อาจารย์ประจำวิชา)
+                              {formatTeacherName(bookingForm.advisorName)} (อาจารย์ประจำวิชา)
                             </option>
                           )}
-                          {teachers.map((t) => (
-                            <option key={t.id} value={t.name}>
-                              {t.name} ({t.department || 'คณะพยาบาลศาสตร์'})
-                            </option>
-                          ))}
+                          {teachers.map((t) => {
+                            const formatted = formatTeacherName(t);
+                            return (
+                              <option key={t.id} value={formatted}>
+                                {formatted} ({t.department || 'คณะพยาบาลศาสตร์'})
+                              </option>
+                            );
+                          })}
                         </select>
                         {bookingForm.courseId && (
                           <div className="flex justify-end">
@@ -1604,12 +1609,12 @@ export default function RoomsPage() {
                               type="button"
                               onClick={() => {
                                 const c = courses.find((x) => x.id === bookingForm.courseId);
-                                setBookingForm((prev) => ({ ...prev, advisorName: c?.instructorName || '' }));
+                                setBookingForm((prev) => ({ ...prev, advisorName: formatTeacherName(c?.instructorName || '') }));
                                 setIsEditingAdvisor(false);
                               }}
                               className="text-[10px] text-slate-500 hover:text-slate-700 underline cursor-pointer"
                             >
-                              ↺ กลับไปใช้อาจารย์ประจำวิชา ({courses.find((x) => x.id === bookingForm.courseId)?.instructorName})
+                              ↺ กลับไปใช้อาจารย์ประจำวิชา ({formatTeacherName(courses.find((x) => x.id === bookingForm.courseId)?.instructorName)})
                             </button>
                           </div>
                         )}

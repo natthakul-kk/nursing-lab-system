@@ -26,6 +26,7 @@ import {
   Building2
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { formatUserName, formatTeacherName, stripAllPrefixes } from '@/lib/user-utils';
 
 export default function ApprovalsPage() {
   const { currentUser, isApprover, isAdmin, isOfficer, isTeacher } = useAuth();
@@ -140,7 +141,7 @@ export default function ApprovalsPage() {
         body: JSON.stringify({
           action: 'ACKNOWLEDGE',
           userId: currentUser?.id,
-          advisorName: currentUser?.name,
+          advisorName: formatTeacherName(currentUser),
         }),
       });
 
@@ -211,10 +212,7 @@ export default function ApprovalsPage() {
   // Normalize Thai academic titles and prefixes for matching
   const cleanThaiTitle = (name?: string | null) => {
     if (!name) return '';
-    return name
-      .replace(/^(ศ\.ดร\.|ศ\.|รศ\.ดร\.|รศ\.|ผศ\.ดร\.|ผศ\.|ดร\.|อ\.นพ\.|อ\.พญ\.|อ\.|นพ\.|พญ\.|นายแพทย์|แพทย์หญิง|อาจารย์)\s*/i, '')
-      .trim()
-      .toLowerCase();
+    return stripAllPrefixes(name).toLowerCase();
   };
 
   // Check if an item is directly relevant to the current user (as teacher, advisor, course instructor, or creator)
@@ -464,7 +462,7 @@ export default function ApprovalsPage() {
             </div>
             {currentUser && (
               <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                อาจารย์ผู้ใช้งาน: <strong className="text-slate-700 dark:text-slate-300">{currentUser.name}</strong>
+                อาจารย์ผู้ใช้งาน: <strong className="text-slate-700 dark:text-slate-300">{formatUserName(currentUser)}</strong>
               </div>
             )}
           </div>
@@ -692,7 +690,7 @@ export default function ApprovalsPage() {
                     <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
                       <div className="flex items-center gap-1">
                         <User className="w-3.5 h-3.5 text-slate-400" />
-                        <span className="font-medium text-slate-800">{req.user?.name}</span>
+                        <span className="font-medium text-slate-800">{formatUserName(req.user)}</span>
                         {req.user?.studentId && (
                           <span className="text-[10px] text-teal-700 bg-teal-50 px-1.5 py-0.2 rounded font-mono border border-teal-200">
                             {req.user.studentId}
@@ -712,12 +710,12 @@ export default function ApprovalsPage() {
                       {req.instructorAcknowledged ? (
                         <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                          <span>อาจารย์รับทราบแล้ว ({req.advisorName || req.course?.instructorName || 'อาจารย์'}{req.acknowledgedAt ? ` • ${new Date(req.acknowledgedAt).toLocaleDateString('th-TH')}` : ''})</span>
+                          <span>อาจารย์รับทราบแล้ว ({formatTeacherName(req.advisorName || req.course?.instructorName || 'อาจารย์')}{req.acknowledgedAt ? ` • ${new Date(req.acknowledgedAt).toLocaleDateString('th-TH')}` : ''})</span>
                         </div>
                       ) : (
                         <div className="flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full animate-pulse">
                           <Clock className="w-3.5 h-3.5 text-amber-600" />
-                          <span>รออาจารย์รับทราบ ({req.advisorName || req.course?.instructorName || 'อาจารย์ผู้สอน'})</span>
+                          <span>รออาจารย์รับทราบ ({formatTeacherName(req.advisorName || req.course?.instructorName || 'อาจารย์ผู้สอน')})</span>
                         </div>
                       )}
                     </div>
@@ -799,7 +797,7 @@ export default function ApprovalsPage() {
                         ) : (
                           <span className="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg font-medium inline-flex items-center gap-1">
                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                            อาจารย์ {req.advisorName || 'ผู้สอน'} รับทราบเรียบร้อยแล้ว
+                            {formatTeacherName(req.advisorName || 'อาจารย์ประจำวิชา')} รับทราบเรียบร้อยแล้ว
                           </span>
                         )}
                       </div>
@@ -921,16 +919,16 @@ export default function ApprovalsPage() {
                       <span className="font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded">
                         [{req.course?.code}] {req.course?.name}
                       </span>
-                      <span className="text-slate-500 font-medium">โดย {req.user?.name}</span>
+                      <span className="text-slate-500 font-medium">โดย {formatUserName(req.user)}</span>
                       {req.instructorAcknowledged ? (
                         <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                          <span>อาจารย์รับทราบแล้ว ({req.advisorName || req.course?.instructorName || 'อาจารย์'}{req.acknowledgedAt ? ` • ${new Date(req.acknowledgedAt).toLocaleDateString('th-TH')}` : ''})</span>
+                          <span>อาจารย์รับทราบแล้ว ({formatTeacherName(req.advisorName || req.course?.instructorName || 'อาจารย์')}{req.acknowledgedAt ? ` • ${new Date(req.acknowledgedAt).toLocaleDateString('th-TH')}` : ''})</span>
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full animate-pulse">
                           <Clock className="w-3.5 h-3.5 text-amber-600" />
-                          <span>รออาจารย์รับทราบ ({req.advisorName || req.course?.instructorName || 'อาจารย์ผู้รับผิดชอบ'})</span>
+                          <span>รออาจารย์รับทราบ ({formatTeacherName(req.advisorName || req.course?.instructorName || 'อาจารย์ผู้รับผิดชอบ')})</span>
                         </span>
                       )}
                     </div>
@@ -990,7 +988,7 @@ export default function ApprovalsPage() {
                         ) : (
                           <span className="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg font-medium inline-flex items-center gap-1">
                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                            อาจารย์ {req.advisorName || 'ผู้รับผิดชอบ'} รับทราบเรียบร้อยแล้ว
+                            {formatTeacherName(req.advisorName || 'อาจารย์ผู้รับผิดชอบ')} รับทราบเรียบร้อยแล้ว
                           </span>
                         )}
                       </div>
@@ -1132,7 +1130,7 @@ export default function ApprovalsPage() {
                     <div className="flex flex-wrap items-center gap-3 text-xs">
                       <div className="flex items-center gap-1 text-slate-600">
                         <User className="w-3.5 h-3.5 text-slate-400" />
-                        <span className="font-bold text-slate-800">{b.user?.name}</span>
+                        <span className="font-bold text-slate-800">{formatUserName(b.user)}</span>
                         {b.user?.studentId && (
                           <span className="text-[10px] text-teal-700 bg-teal-50 px-1.5 py-0.2 rounded font-mono border border-teal-200">
                             {b.user.studentId}
@@ -1147,7 +1145,7 @@ export default function ApprovalsPage() {
                       {b.advisorName && (
                         <span className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full">
                           <GraduationCap className="w-3.5 h-3.5 text-indigo-600" />
-                          <span>อาจารย์ผู้ดูแล: {b.advisorName}</span>
+                          <span>อาจารย์ผู้ดูแล: {formatTeacherName(b.advisorName)}</span>
                         </span>
                       )}
                     </div>
@@ -1290,7 +1288,7 @@ export default function ApprovalsPage() {
                       </div>
                       <div className="text-slate-500 flex items-center gap-1.5">
                         <User className="w-3.5 h-3.5 text-slate-400" />
-                        <span>ผู้จอง: <strong className="text-slate-700 dark:text-slate-300">{rm.user?.name || '-'}</strong></span>
+                        <span>ผู้จอง: <strong className="text-slate-700 dark:text-slate-300">{formatUserName(rm.user) || '-'}</strong></span>
                       </div>
                     </div>
 
@@ -1324,7 +1322,7 @@ export default function ApprovalsPage() {
                         {rm.advisorName && (
                           <div>
                             <span className="font-bold text-slate-500">อาจารย์ผู้รับผิดชอบ/ที่ปรึกษา: </span>
-                            <span className="text-slate-800 dark:text-slate-200 font-medium">{rm.advisorName}</span>
+                            <span className="text-slate-800 dark:text-slate-200 font-medium">{formatTeacherName(rm.advisorName)}</span>
                           </div>
                         )}
                         {rm.contactPhone && (

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCached, setCached, invalidateCache } from '@/lib/cache';
+import { formatTeacherName } from '@/lib/user-utils';
 
 export async function GET(req: Request) {
   try {
@@ -58,7 +59,7 @@ export async function GET(req: Request) {
     if (officerIds.length > 0) {
       const officers = await prisma.user.findMany({
         where: { id: { in: officerIds } },
-        select: { id: true, name: true, role: true },
+        select: { id: true, name: true, prefix: true, role: true },
       });
       officers.forEach((o) => officerMap.set(o.id, o));
     }
@@ -160,14 +161,14 @@ export async function POST(req: Request) {
     }
 
     // Find course instructor name if not provided
-    let advisorName = customAdvisorName || null;
+    let advisorName = customAdvisorName ? formatTeacherName(customAdvisorName) : null;
     if (!advisorName && courseId) {
       const course = await prisma.course.findUnique({
         where: { id: courseId },
         select: { instructorName: true },
       });
       if (course?.instructorName) {
-        advisorName = course.instructorName;
+        advisorName = formatTeacherName(course.instructorName);
       }
     }
 

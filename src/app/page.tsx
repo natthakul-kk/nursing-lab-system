@@ -25,6 +25,7 @@ import {
 
 import StudentDashboard from '@/components/dashboard/StudentDashboard';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { formatUserName } from '@/lib/user-utils';
 
 export default function DashboardPage() {
   const { currentUser, isOfficer, isApprover } = useAuth();
@@ -88,7 +89,7 @@ export default function DashboardPage() {
             ห้องปฏิบัติการทักษะและสถานการณ์จำลองทางการพยาบาล
           </div>
           <h2 className="text-2xl font-black tracking-tight">
-            สวัสดี, {currentUser?.name || 'ผู้ใช้งาน'}
+            สวัสดี, {formatUserName(currentUser) || 'ผู้ใช้งาน'}
           </h2>
           <p className="text-slate-300 text-xs mt-1">
             {currentUser?.department || 'คณะพยาบาลศาสตร์'} | ภาคเรียนที่ 1 / ปีการศึกษา 2569

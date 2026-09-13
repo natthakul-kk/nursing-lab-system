@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { formatTeacherName } from '@/lib/user-utils';
 
 // POST: Quick Request for a Practice Kit (Generates Borrow and/or Requisition requests)
 export async function POST(req: Request) {
@@ -64,6 +65,8 @@ export async function POST(req: Request) {
 
     const fullPurpose = 'ขอใช้ชุดฝึก: ' + kit.name + ' (' + setsRequested + ' ชุด) - ' + (purpose || 'สำหรับการฝึกปฏิบัติการเรียนการสอน');
 
+    const cleanAdvisorName = advisorName ? formatTeacherName(advisorName) : null;
+
     // 1. Create Borrow Request if equipment present
     if (equipmentItems.length > 0) {
       const count = await prisma.borrowRequest.count();
@@ -77,7 +80,7 @@ export async function POST(req: Request) {
           purpose: fullPurpose,
           borrowDate: defaultBorrowDate,
           expectedReturnDate: defaultReturnDate,
-          advisorName: advisorName || null,
+          advisorName: cleanAdvisorName,
           status: 'PENDING',
           items: {
             create: equipmentItems.map((eq) => ({
@@ -110,7 +113,7 @@ export async function POST(req: Request) {
             courseId: validCourseId,
             purpose: fullPurpose,
             dateNeeded: defaultBorrowDate,
-            advisorName: advisorName || null,
+            advisorName: cleanAdvisorName,
             status: 'PENDING',
             items: {
               create: consumableItems.map((cs) => ({

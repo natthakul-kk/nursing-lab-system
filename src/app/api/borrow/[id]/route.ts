@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { invalidateCache } from '@/lib/cache';
+import { formatUserName } from '@/lib/user-utils';
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -269,7 +270,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
                     where: { id: { in: availablePacks.map((p) => p.id) } },
                     data: {
                       status: 'DISPENSED',
-                      dispensedTo: borrow.user?.name ? `${borrow.user.name} (${borrow.requestNumber})` : borrow.requestNumber,
+                      dispensedTo: borrow.user ? `${formatUserName(borrow.user)} (${borrow.requestNumber})` : borrow.requestNumber,
                       dispensedAt: new Date(),
                     },
                   });
@@ -357,7 +358,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
                   sentDate: new Date(),
                   status: 'UNDER_REPAIR',
                   handledById: userId || null,
-                  technicianNote: `ตรวจพบชำรุดขณะตรวจรับคืนครุภัณฑ์ (ผู้ยืม: ${borrow.user?.name || 'ไม่ระบุ'})`,
+                  technicianNote: `ตรวจพบชำรุดขณะตรวจรับคืนครุภัณฑ์ (ผู้ยืม: ${formatUserName(borrow.user) || 'ไม่ระบุ'})`,
                 },
               });
             }
@@ -396,7 +397,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
                   sentDate: new Date(),
                   status: 'UNDER_REPAIR',
                   handledById: userId || null,
-                  technicianNote: `ตรวจพบชำรุดขณะตรวจรับคืนครุภัณฑ์ (ผู้ยืม: ${borrow.user?.name || 'ไม่ระบุ'})`,
+                  technicianNote: `ตรวจพบชำรุดขณะตรวจรับคืนครุภัณฑ์ (ผู้ยืม: ${formatUserName(borrow.user) || 'ไม่ระบุ'})`,
                 },
               });
             }

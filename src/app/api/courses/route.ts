@@ -34,7 +34,7 @@ export async function GET(req: Request) {
       include: {
         requisitionRequests: {
           include: {
-            user: { select: { id: true, name: true } },
+            user: { select: { id: true, name: true, prefix: true } },
             items: {
               include: { item: { select: { id: true, code: true, name: true, unit: true } } },
             },

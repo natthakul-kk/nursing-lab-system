@@ -28,10 +28,10 @@ import {
   Zap,
   FileText,
   CheckSquare,
-  MapPin,
-  Flame
+  Flame,
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { formatUserName, formatTeacherName } from '@/lib/user-utils';
 
 export default function PracticeKitsPage() {
   const { currentUser, isOfficer, isAdmin } = useAuth();
@@ -185,7 +185,7 @@ export default function PracticeKitsPage() {
           setsRequested: requestForm.setsRequested,
           userId: currentUser.id,
           courseId: requestForm.courseId,
-          advisorName: requestForm.advisorName,
+          advisorName: requestForm.advisorName ? formatTeacherName(requestForm.advisorName) : null,
           purpose: requestForm.purpose,
           borrowDate: requestForm.borrowDate,
           expectedReturnDate: requestForm.expectedReturnDate,
@@ -768,7 +768,7 @@ export default function PracticeKitsPage() {
                     <option value="">-- กรุณาเลือกรายวิชาที่จัดเตรียม --</option>
                     {courses.map((c) => (
                       <option key={c.id} value={c.id}>
-                        [{c.code}] {c.name} ({c.instructorName || 'อาจารย์ผู้รับผิดชอบ'})
+                        [{c.code}] {c.name} ({c.instructorName ? formatTeacherName(c.instructorName) : 'อาจารย์ผู้รับผิดชอบ'})
                       </option>
                     ))}
                   </select>
@@ -798,7 +798,7 @@ export default function PracticeKitsPage() {
                     <div className="p-2.5 bg-teal-50 border border-teal-200 rounded-xl text-xs flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
                         <GraduationCap className="w-4 h-4 text-teal-600" />
-                        <span className="font-bold text-teal-900">{prepareForm.instructorName || 'อาจารย์ประจำวิชา'}</span>
+                        <span className="font-bold text-teal-900">{formatTeacherName(prepareForm.instructorName || 'อาจารย์ประจำวิชา')}</span>
                         <span className="text-[10px] bg-teal-200/70 text-teal-800 px-1.5 py-0.5 rounded-md font-bold">
                           ขึ้นให้อัตโนมัติ
                         </span>
@@ -821,12 +821,12 @@ export default function PracticeKitsPage() {
                         <option value="">-- กรุณาเลือกอาจารย์ผู้สอนจากรายชื่อ --</option>
                         {prepareForm.instructorName && !instructors.some((t) => t.name === prepareForm.instructorName) && (
                           <option value={prepareForm.instructorName}>
-                            {prepareForm.instructorName} (อาจารย์ประจำวิชา)
+                            {formatTeacherName(prepareForm.instructorName)} (อาจารย์ประจำวิชา)
                           </option>
                         )}
                         {instructors.map((t) => (
-                          <option key={t.id} value={t.name}>
-                            {t.name} ({t.department || 'คณะพยาบาลศาสตร์'})
+                          <option key={t.id} value={formatTeacherName(t)}>
+                            {formatTeacherName(t)} ({t.department || 'คณะพยาบาลศาสตร์'})
                           </option>
                         ))}
                       </select>
@@ -836,12 +836,12 @@ export default function PracticeKitsPage() {
                             type="button"
                             onClick={() => {
                               const c = courses.find((x) => x.id === prepareForm.courseId);
-                              setPrepareForm({ ...prepareForm, instructorName: c?.instructorName || '' });
+                              setPrepareForm({ ...prepareForm, instructorName: c?.instructorName ? formatTeacherName(c.instructorName) : '' });
                               setIsEditingPrepareInstructor(false);
                             }}
-                            className="text-[10px] text-teal-700 hover:underline cursor-pointer"
+                            className="text-[11px] text-teal-600 hover:underline cursor-pointer mt-1"
                           >
-                            ↺ กลับไปใช้อาจารย์ประจำวิชา ({courses.find((x) => x.id === prepareForm.courseId)?.instructorName})
+                            รีเซ็ตกลับเป็นอาจารย์ประจำวิชา ({courses.find((x) => x.id === prepareForm.courseId)?.instructorName ? formatTeacherName(courses.find((x) => x.id === prepareForm.courseId)?.instructorName) : 'ไม่มีระบุ'})
                           </button>
                         </div>
                       )}
@@ -1454,7 +1454,7 @@ export default function PracticeKitsPage() {
                       setRequestForm({
                         ...requestForm,
                         courseId: cid,
-                        advisorName: c?.instructorName || (cid ? requestForm.advisorName : ''),
+                        advisorName: c?.instructorName ? formatTeacherName(c.instructorName) : (cid ? requestForm.advisorName : ''),
                       });
                       if (c?.instructorName) {
                         setIsEditingRequestAdvisor(false);
@@ -1466,7 +1466,7 @@ export default function PracticeKitsPage() {
                     <option value="">-- กรุณาเลือกรายวิชาที่นำชุดไปใช้ --</option>
                     {courses.map((c) => (
                       <option key={c.id} value={c.id}>
-                        [{c.code}] {c.name} ({c.instructorName || 'อาจารย์ผู้รับผิดชอบ'})
+                        [{c.code}] {c.name} ({c.instructorName ? formatTeacherName(c.instructorName) : 'อาจารย์ผู้รับผิดชอบ'})
                       </option>
                     ))}
                   </select>
@@ -1494,7 +1494,7 @@ export default function PracticeKitsPage() {
                       <div className="flex items-center gap-1.5">
                         <GraduationCap className="w-4 h-4 text-teal-600 dark:text-teal-400" />
                         <span className="font-bold text-teal-900 dark:text-teal-200">
-                          {requestForm.advisorName || 'อาจารย์ประจำวิชา'}
+                          {formatTeacherName(requestForm.advisorName || 'อาจารย์ประจำวิชา')}
                         </span>
                         <span className="text-[10px] bg-teal-200/70 dark:bg-teal-900/60 text-teal-800 dark:text-teal-300 px-1.5 py-0.5 rounded-md font-bold">
                           ขึ้นให้อัตโนมัติ
@@ -1518,12 +1518,12 @@ export default function PracticeKitsPage() {
                         <option value="">-- กรุณาเลือกอาจารย์จากรายชื่อ --</option>
                         {requestForm.advisorName && !instructors.some((t) => t.name === requestForm.advisorName) && (
                           <option value={requestForm.advisorName}>
-                            {requestForm.advisorName} (อาจารย์ประจำวิชา)
+                            {formatTeacherName(requestForm.advisorName)} (อาจารย์ประจำวิชา)
                           </option>
                         )}
                         {instructors.map((t) => (
-                          <option key={t.id} value={t.name}>
-                            {t.name} ({t.department || 'คณะพยาบาลศาสตร์'})
+                          <option key={t.id} value={formatTeacherName(t)}>
+                            {formatTeacherName(t)} ({t.department || 'คณะพยาบาลศาสตร์'})
                           </option>
                         ))}
                       </select>
@@ -1533,12 +1533,12 @@ export default function PracticeKitsPage() {
                             type="button"
                             onClick={() => {
                               const c = courses.find((x) => x.id === requestForm.courseId);
-                              setRequestForm({ ...requestForm, advisorName: c?.instructorName || '' });
+                              setRequestForm({ ...requestForm, advisorName: c?.instructorName ? formatTeacherName(c.instructorName) : '' });
                               setIsEditingRequestAdvisor(false);
                             }}
                             className="text-[10px] text-teal-700 dark:text-teal-400 hover:underline cursor-pointer"
                           >
-                            ↺ กลับไปใช้อาจารย์ประจำวิชา ({courses.find((x) => x.id === requestForm.courseId)?.instructorName})
+                            ↺ กลับไปใช้อาจารย์ประจำวิชา ({courses.find((x) => x.id === requestForm.courseId)?.instructorName ? formatTeacherName(courses.find((x) => x.id === requestForm.courseId)?.instructorName) : 'ไม่มีระบุ'})
                           </button>
                         </div>
                       )}

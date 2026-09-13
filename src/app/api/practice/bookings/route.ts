@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
 import { sendApprovalRequestEmail } from '@/lib/email';
+import { formatUserName, formatTeacherName } from '@/lib/user-utils';
 
 export async function GET(req: Request) {
   try {
@@ -147,14 +148,14 @@ export async function POST(req: Request) {
     const qrCodeToken = `SPK-${crypto.randomBytes(8).toString('hex').toUpperCase()}`;
 
     // 7. Resolve advisorName: from course if provided, otherwise from user selection
-    let finalAdvisorName = advisorName || null;
+    let finalAdvisorName = advisorName ? formatTeacherName(advisorName) : null;
     if (courseId && !finalAdvisorName) {
       const course = await prisma.course.findUnique({
         where: { id: courseId },
         select: { instructorName: true },
       });
       if (course?.instructorName) {
-        finalAdvisorName = course.instructorName;
+        finalAdvisorName = formatTeacherName(course.instructorName);
       }
     }
 
@@ -202,7 +203,7 @@ export async function POST(req: Request) {
         });
         if (advisorUser?.email) {
           approverEmail = advisorUser.email;
-          approverName = advisorUser.name;
+          approverName = formatTeacherName(advisorUser);
         }
       }
 
@@ -213,7 +214,7 @@ export async function POST(req: Request) {
         });
         if (fallbackApprover?.email) {
           approverEmail = fallbackApprover.email;
-          approverName = fallbackApprover.name;
+          approverName = formatTeacherName(fallbackApprover);
         }
       }
 
@@ -227,7 +228,7 @@ export async function POST(req: Request) {
         sendApprovalRequestEmail({
           approverEmail,
           approverName,
-          studentName: booking.user?.name || 'นิสิต',
+          studentName: formatUserName(booking.user) || 'นิสิต',
           studentId: booking.user?.studentId || undefined,
           type: 'PRACTICE',
           title: `คำขอจองห้องฝึกปฏิบัติการ (${bookingNumber})`,

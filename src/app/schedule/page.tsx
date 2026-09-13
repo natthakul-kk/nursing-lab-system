@@ -34,6 +34,7 @@ import {
   Building2
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { formatUserName, formatTeacherName } from '@/lib/user-utils';
 
 export default function SchedulePage() {
   const { currentUser, isOfficer, isAdmin, isApprover } = useAuth();
@@ -275,7 +276,7 @@ export default function SchedulePage() {
     // Aggregate Additional equipment
     if (p.additionalEquipment) {
       practiceSlotGroups[sId].additionalItems.push(
-        `${p.user?.name || 'นิสิต'}: ${p.additionalEquipment}`
+        `${formatUserName(p.user) || 'นิสิต'}: ${p.additionalEquipment}`
       );
     }
   });
@@ -441,7 +442,7 @@ export default function SchedulePage() {
     setEditingItem({
       id: task.id,
       type: task.type,
-      title: `${task.requestNumber} - ${task.user?.name || ''}`,
+      title: `${task.requestNumber} - ${formatUserName(task.user)}`,
       borrowDate: task.pickupDate,
       expectedReturnDate: task.returnDate,
     });
@@ -523,7 +524,7 @@ export default function SchedulePage() {
 
             <div className="text-xs text-slate-500 flex items-center gap-1.5">
               <User className="w-3.5 h-3.5 text-slate-400" />
-              <span className="font-bold text-slate-800 dark:text-slate-200">{task.user?.name}</span>
+              <span className="font-bold text-slate-800 dark:text-slate-200">{formatUserName(task.user)}</span>
               {task.user?.studentId && (
                 <span className="text-[10px] font-mono text-teal-700 bg-teal-50 px-1.5 py-0.2 rounded">
                   {task.user.studentId}
@@ -550,7 +551,7 @@ export default function SchedulePage() {
               {task.advisorName && (
                 <div className="text-indigo-700 font-medium flex items-center gap-1">
                   <GraduationCap className="w-3.5 h-3.5" />
-                  <span>อาจารย์: {task.advisorName}</span>
+                  <span>{formatTeacherName(task.advisorName)}</span>
                 </div>
               )}
               {task.equipmentNeeded && (
@@ -728,7 +729,7 @@ export default function SchedulePage() {
                         <div className="space-y-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-bold text-slate-900 dark:text-slate-100 text-sm">
-                              {studentBooking.user?.name}
+                              {formatUserName(studentBooking.user)}
                             </span>
                             {studentBooking.user?.studentId && (
                               <span className="font-mono text-[10px] text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/40 px-1.5 py-0.2 rounded border border-teal-200 dark:border-teal-800">
@@ -757,7 +758,7 @@ export default function SchedulePage() {
                             {studentBooking.advisorName && (
                               <span className="text-[11px] text-indigo-700 dark:text-indigo-300 font-medium flex items-center gap-1">
                                 <GraduationCap className="w-3.5 h-3.5 text-indigo-500" />
-                                <span>อาจารย์: {studentBooking.advisorName}</span>
+                                <span>{formatTeacherName(studentBooking.advisorName)}</span>
                               </span>
                             )}
                           </div>
@@ -882,7 +883,7 @@ export default function SchedulePage() {
           <div className="flex items-center gap-3 text-xs">
             <div className="flex items-center gap-1.5">
               <User className="w-3.5 h-3.5 text-slate-400" />
-              <span className="font-bold text-slate-800 dark:text-slate-200">{task.user?.name}</span>
+              <span className="font-bold text-slate-800 dark:text-slate-200">{formatUserName(task.user)}</span>
               {task.user?.studentId && (
                 <span className="text-[10px] font-mono text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/40 px-1.5 py-0.2 rounded border border-teal-200 dark:border-teal-800">
                   {task.user.studentId}
@@ -969,7 +970,7 @@ export default function SchedulePage() {
             {task.advisorName && (
               <div className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800 px-2 py-0.5 rounded-md">
                 <GraduationCap className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-                <span>อาจารย์: {task.advisorName}</span>
+                <span>{formatTeacherName(task.advisorName)}</span>
               </div>
             )}
             <div className="text-slate-600 dark:text-slate-400 line-clamp-2 text-xs">

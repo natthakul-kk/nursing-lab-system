@@ -60,6 +60,21 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       },
     });
 
+    if (code && code !== existing.code) {
+      const oldClean = existing.code.replace(/[^a-zA-Z0-9-]/g, '');
+      const newClean = code.replace(/[^a-zA-Z0-9-]/g, '');
+      const boxes = await prisma.stockLotBox.findMany({
+        where: { itemId: id, boxCode: { startsWith: oldClean } },
+      });
+      for (const box of boxes) {
+        const newBoxCode = box.boxCode.replace(oldClean, newClean);
+        await prisma.stockLotBox.update({
+          where: { id: box.id },
+          data: { boxCode: newBoxCode },
+        });
+      }
+    }
+
     invalidateCache('items:');
     invalidateCache('dashboard:');
     return NextResponse.json({ success: true, item: updated });

@@ -42,6 +42,7 @@ export async function PUT(
       instructorName,
       description,
       allocatedBudget,
+      studentCount,
       status,
     } = body;
 
@@ -77,6 +78,7 @@ export async function PUT(
         instructorName: formatTeacherName(instructorName),
         description: description !== undefined ? description : null,
         allocatedBudget: Number(allocatedBudget) >= 0 ? Number(allocatedBudget) : 0,
+        studentCount: Number(studentCount) >= 0 ? Math.round(Number(studentCount)) : 0,
         status: status === 'INACTIVE' ? 'INACTIVE' : 'ACTIVE',
       },
     });

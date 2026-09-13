@@ -53,6 +53,7 @@ model Course {
   instructorName  String
   description     String?
   allocatedBudget Float    @default(0)
+  studentCount    Int      @default(0) // จำนวนนิสิตในรายวิชา (คน)
   status          String   @default("ACTIVE") // "ACTIVE" or "INACTIVE"
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

@@ -13,6 +13,7 @@ import {
   Layers,
   Calendar,
   User,
+  Users,
   CheckCircle2,
   ChevronRight,
   PieChart,
@@ -54,6 +55,7 @@ export default function CoursesPage() {
     instructorName: '',
     description: '',
     allocatedBudget: 50000,
+    studentCount: 0,
     status: 'ACTIVE',
   });
   const [submitting, setSubmitting] = useState(false);
@@ -69,6 +71,7 @@ export default function CoursesPage() {
     instructorName: string;
     description: string;
     allocatedBudget: number;
+    studentCount: number;
     status: string;
   } | null>(null);
   const [isEditCustomInstructor, setIsEditCustomInstructor] = useState(false);
@@ -144,6 +147,7 @@ export default function CoursesPage() {
           instructorName: '',
           description: '',
           allocatedBudget: 50000,
+          studentCount: 0,
           status: 'ACTIVE',
         });
         setIsCustomInstructor(false);
@@ -175,6 +179,7 @@ export default function CoursesPage() {
       instructorName: formattedInst,
       description: course.description || '',
       allocatedBudget: course.allocatedBudget || 0,
+      studentCount: course.studentCount || 0,
       status: course.status || 'ACTIVE',
     });
     setIsEditCustomInstructor(!inList);
@@ -196,6 +201,7 @@ export default function CoursesPage() {
         body: JSON.stringify({
           ...editCourse,
           instructorName: formatTeacherName(editCourse.instructorName),
+          studentCount: Number(editCourse.studentCount) >= 0 ? Math.round(Number(editCourse.studentCount)) : 0,
         }),
       });
       const data = await res.json();
@@ -273,8 +279,10 @@ export default function CoursesPage() {
     csvContent += `ชื่อวิชา,${selectedCourse.name}\n`;
     csvContent += `ผู้ประสานงานรายวิชา,${selectedCourse.instructorName}\n`;
     csvContent += `ภาคเรียน/ปีการศึกษา,${selectedCourse.semester}/${selectedCourse.academicYear}\n`;
+    csvContent += `จำนวนนิสิต,${selectedCourse.studentCount || 0} คน\n`;
     csvContent += `งบประมาณที่ได้รับจัดสรร,${selectedCourse.allocatedBudget}\n`;
     csvContent += `ยอดใช้วัสดุจริงรวม,${selectedCourse.totalExpense}\n`;
+    csvContent += `ต้นทุนเฉลี่ยต่อนิสิต,${selectedCourse.costPerStudent || 0} บาท/คน\n`;
     csvContent += `งบประมาณคงเหลือ,${selectedCourse.remainingBudget}\n\n`;
 
     csvContent += `ลำดับ,รหัสวัสดุ,รายการวัสดุสิ้นเปลือง,จำนวนที่ใช้ไป,หน่วยนับ,ต้นทุนรวม (บาท)\n`;
@@ -469,7 +477,14 @@ export default function CoursesPage() {
                     </div>
 
                     <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-2 line-clamp-1">{c.name}</h4>
-                    <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">ผู้สอน: {formatTeacherName(c.instructorName)}</p>
+                    <div className="flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
+                      <span className="truncate">ผู้สอน: {formatTeacherName(c.instructorName)}</span>
+                      {c.studentCount > 0 && (
+                        <span className="shrink-0 font-medium text-slate-500 dark:text-slate-400">
+                          {c.studentCount} คน
+                        </span>
+                      )}
+                    </div>
 
                     {/* Mini Progress */}
                     <div className="mt-3">
@@ -518,9 +533,15 @@ export default function CoursesPage() {
                       )}
                       <h3 className="text-lg font-bold text-slate-900 dark:text-white">{selectedCourse.name}</h3>
                     </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      ผู้ประสานงาน: <span className="font-bold text-slate-700 dark:text-slate-300">{formatTeacherName(selectedCourse.instructorName)}</span> | ภาคเรียนที่{' '}
-                      {selectedCourse.semester}/{selectedCourse.academicYear}
+                    <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5 flex-wrap">
+                      <span>ผู้ประสานงาน: <strong className="text-slate-700 dark:text-slate-300">{formatTeacherName(selectedCourse.instructorName)}</strong></span>
+                      <span>•</span>
+                      <span>ภาคเรียนที่ {selectedCourse.semester}/{selectedCourse.academicYear}</span>
+                      <span>•</span>
+                      <span className="inline-flex items-center gap-1 text-teal-700 dark:text-teal-400 font-bold bg-teal-50 dark:bg-teal-950/60 px-2 py-0.5 rounded-md border border-teal-200 dark:border-teal-800">
+                        <Users className="w-3 h-3" />
+                        นิสิต {selectedCourse.studentCount || 0} คน
+                      </span>
                     </p>
 
                     {/* Action buttons: Edit & Toggle Status */}
@@ -570,8 +591,8 @@ export default function CoursesPage() {
                   </div>
                 </div>
 
-                {/* 3 Metric Pills */}
-                <div className="grid grid-cols-3 gap-3">
+                {/* 4 Metric Pills */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700 text-center">
                     <span className="text-[11px] font-bold text-slate-400 dark:text-slate-400 block">งบที่ได้รับจัดสรร</span>
                     <span className="text-sm font-bold text-slate-800 dark:text-slate-100">
@@ -583,6 +604,19 @@ export default function CoursesPage() {
                     <span className="text-sm font-bold text-emerald-800 dark:text-emerald-200">
                       ฿{selectedCourse.remainingBudget.toLocaleString('th-TH')} บาท
                     </span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-100 dark:border-sky-800 text-center">
+                    <span className="text-[11px] font-bold text-sky-700 dark:text-sky-300 block">จำนวนนิสิต</span>
+                    <div className="flex items-center justify-center gap-1">
+                      <span className="text-sm font-bold text-sky-800 dark:text-sky-200">
+                        {selectedCourse.studentCount || 0} คน
+                      </span>
+                    </div>
+                    {selectedCourse.studentCount > 0 && (
+                      <span className="text-[10px] text-sky-600 dark:text-sky-400 block mt-0.5">
+                        เฉลี่ย ฿{(selectedCourse.costPerStudent || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 })}/คน
+                      </span>
+                    )}
                   </div>
                   <div className="p-3 rounded-xl bg-teal-50 dark:bg-teal-950/40 border border-teal-100 dark:border-teal-800 text-center">
                     <span className="text-[11px] font-bold text-teal-700 dark:text-teal-300 block">จำนวนชนิดวัสดุที่ใช้</span>
@@ -732,7 +766,7 @@ export default function CoursesPage() {
             </div>
 
             <form onSubmit={handleCreateCourse} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     รหัสวิชา (Course Code) *
@@ -748,6 +782,36 @@ export default function CoursesPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    สถานะรายวิชาเริ่มต้น *
+                  </label>
+                  <select
+                    value={newCourse.status}
+                    onChange={(e) => setNewCourse({ ...newCourse, status: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-teal-500/20 cursor-pointer"
+                  >
+                    <option value="ACTIVE">🟢 เปิดการเรียนการสอน (ACTIVE)</option>
+                    <option value="INACTIVE">⚪ ปิดรายวิชาไว้ก่อน (INACTIVE)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    ภาคเรียน
+                  </label>
+                  <select
+                    value={newCourse.semester}
+                    onChange={(e) => setNewCourse({ ...newCourse, semester: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-teal-500/20 cursor-pointer"
+                  >
+                    <option value="1">ภาคเรียนที่ 1</option>
+                    <option value="2">ภาคเรียนที่ 2</option>
+                    <option value="3">ภาคฤดูร้อน</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     ปีการศึกษา
                   </label>
                   <input
@@ -755,6 +819,21 @@ export default function CoursesPage() {
                     required
                     value={newCourse.academicYear}
                     onChange={(e) => setNewCourse({ ...newCourse, academicYear: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-teal-500/20"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    จำนวนนิสิต (คน)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="เช่น 120"
+                    value={newCourse.studentCount || ''}
+                    onChange={(e) =>
+                      setNewCourse({ ...newCourse, studentCount: Number(e.target.value) || 0 })
+                    }
                     className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-teal-500/20"
                   />
                 </div>
@@ -842,20 +921,6 @@ export default function CoursesPage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  สถานะรายวิชาเริ่มต้น *
-                </label>
-                <select
-                  value={newCourse.status}
-                  onChange={(e) => setNewCourse({ ...newCourse, status: e.target.value })}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-teal-500/20 cursor-pointer"
-                >
-                  <option value="ACTIVE">🟢 เปิดการเรียนการสอน (ACTIVE)</option>
-                  <option value="INACTIVE">⚪ ปิดรายวิชาไว้ก่อน (INACTIVE)</option>
-                </select>
-              </div>
-
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
@@ -934,7 +999,7 @@ export default function CoursesPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     ภาคเรียน
@@ -958,6 +1023,21 @@ export default function CoursesPage() {
                     required
                     value={editCourse.academicYear}
                     onChange={(e) => setEditCourse({ ...editCourse, academicYear: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-teal-500/20"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    จำนวนนิสิต (คน)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="เช่น 120"
+                    value={editCourse.studentCount || ''}
+                    onChange={(e) =>
+                      setEditCourse({ ...editCourse, studentCount: Number(e.target.value) || 0 })
+                    }
                     className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-teal-500/20"
                   />
                 </div>

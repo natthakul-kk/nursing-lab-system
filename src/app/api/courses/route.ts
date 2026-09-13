@@ -33,6 +33,7 @@ export async function GET(req: Request) {
           name: true,
           instructorName: true,
           allocatedBudget: true,
+          studentCount: true,
           status: true,
         },
         orderBy: { code: 'asc' },
@@ -112,6 +113,15 @@ export async function GET(req: Request) {
         instructorName: course.instructorName,
         description: course.description,
         allocatedBudget: course.allocatedBudget,
+        studentCount: course.studentCount || 0,
+        costPerStudent:
+          (course.studentCount || 0) > 0
+            ? Math.round((totalExpense / course.studentCount) * 100) / 100
+            : 0,
+        budgetPerStudent:
+          (course.studentCount || 0) > 0
+            ? Math.round((course.allocatedBudget / course.studentCount) * 100) / 100
+            : 0,
         status: course.status || 'ACTIVE',
         totalExpense,
         remainingBudget,
@@ -144,6 +154,7 @@ export async function POST(req: Request) {
         instructorName: body.instructorName ? formatTeacherName(body.instructorName) : '',
         description: body.description,
         allocatedBudget: Number(body.allocatedBudget) || 0,
+        studentCount: Number(body.studentCount) >= 0 ? Math.round(Number(body.studentCount)) : 0,
         status: body.status || 'ACTIVE',
       },
     });

@@ -1,13 +1,23 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCached, setCached, invalidateCache } from '@/lib/cache';
+import { formatTeacherName } from '@/lib/user-utils';
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const compact = searchParams.get('compact') === 'true';
+    const status = searchParams.get('status'); // 'ACTIVE', 'INACTIVE', or 'all'
+    const includeInactive = searchParams.get('includeInactive') === 'true' || status === 'all';
 
-    const cacheKey = compact ? 'courses_compact' : 'courses_detailed';
+    const whereCondition: any = {};
+    if (!includeInactive && status !== 'all') {
+      whereCondition.status = status || 'ACTIVE';
+    } else if (status && status !== 'all') {
+      whereCondition.status = status;
+    }
+
+    const cacheKey = `courses_${compact ? 'compact' : 'detailed'}_${status || (includeInactive ? 'all' : 'ACTIVE')}`;
     const cached = getCached<any[]>(cacheKey);
     if (cached) {
       return NextResponse.json(cached);
@@ -16,12 +26,14 @@ export async function GET(req: Request) {
     if (compact) {
       // Fast path: Only fetch fields needed for dropdowns and selectors
       const courses = await prisma.course.findMany({
+        where: whereCondition,
         select: {
           id: true,
           code: true,
           name: true,
           instructorName: true,
           allocatedBudget: true,
+          status: true,
         },
         orderBy: { code: 'asc' },
       });
@@ -31,6 +43,7 @@ export async function GET(req: Request) {
 
     // Detailed analytics path
     const courses = await prisma.course.findMany({
+      where: whereCondition,
       include: {
         requisitionRequests: {
           include: {
@@ -99,6 +112,7 @@ export async function GET(req: Request) {
         instructorName: course.instructorName,
         description: course.description,
         allocatedBudget: course.allocatedBudget,
+        status: course.status || 'ACTIVE',
         totalExpense,
         remainingBudget,
         percentUsed:
@@ -127,9 +141,10 @@ export async function POST(req: Request) {
         name: body.name,
         semester: body.semester || '1',
         academicYear: body.academicYear || '2569',
-        instructorName: body.instructorName,
+        instructorName: body.instructorName ? formatTeacherName(body.instructorName) : '',
         description: body.description,
         allocatedBudget: Number(body.allocatedBudget) || 0,
+        status: body.status || 'ACTIVE',
       },
     });
 

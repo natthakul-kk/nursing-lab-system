@@ -53,6 +53,7 @@ model Course {
   instructorName  String
   description     String?
   allocatedBudget Float    @default(0)
+  status          String   @default("ACTIVE") // "ACTIVE" or "INACTIVE"
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -62,7 +63,7 @@ model Course {
   practiceBookings    PracticeBooking[]
   roomBookings        RoomBooking[]
 
-  @@index([semester, academicYear])
+  @@index([semester, academicYear, status])
 }
 
 model Category {

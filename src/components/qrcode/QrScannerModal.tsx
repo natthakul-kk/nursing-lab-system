@@ -77,9 +77,10 @@ export default function QrScannerModal({ isOpen, onClose }: QrScannerModalProps)
       return;
     }
 
-    // 4. Plain code check: if starts with CON-, RP-, SL-, or has -B / -P, it's a consumable
+    // 4. Plain code check: if starts with CON-, CS-, RP-, SL-, or has -B / -P, it's a consumable
     if (
       upperText.startsWith('CON-') ||
+      upperText.startsWith('CS-') ||
       upperText.startsWith('RP-') ||
       upperText.startsWith('SL-') ||
       upperText.includes('-B') ||

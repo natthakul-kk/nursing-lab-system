@@ -86,7 +86,15 @@ export default function CoursesPage() {
       if (coursesRes.ok) {
         const data = await coursesRes.json();
         setCourses(data);
-        if (data.length > 0 && !selectedCourseId) {
+        if (typeof window !== 'undefined') {
+          const urlParams = new URLSearchParams(window.location.search);
+          const cid = urlParams.get('courseId') || urlParams.get('id');
+          if (cid && data.some((c: any) => c.id === cid)) {
+            setSelectedCourseId(cid);
+          } else if (data.length > 0 && !selectedCourseId) {
+            setSelectedCourseId(data[0].id);
+          }
+        } else if (data.length > 0 && !selectedCourseId) {
           setSelectedCourseId(data[0].id);
         }
       }
@@ -328,7 +336,15 @@ export default function CoursesPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <a
+            href="/reports?tab=COST_ANALYTICS"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold border border-slate-200 dark:border-slate-700 shadow-sm transition cursor-pointer"
+            title="เปิดหน้ารายงานภาพรวมและวิเคราะห์ต้นทุนคณะ"
+          >
+            <BarChart3 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+            <span>รายงานภาพรวมคณะ</span>
+          </a>
           <button
             onClick={handleExportCSV}
             disabled={!selectedCourse}

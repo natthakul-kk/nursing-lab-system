@@ -104,6 +104,8 @@ export async function GET() {
     const courseCosts = courses.map((course) => {
       const totalExpense = course.stockTransactions.reduce((sum, tx) => sum + Math.abs(tx.totalCost), 0);
       const percentBudget = course.allocatedBudget > 0 ? (totalExpense / course.allocatedBudget) * 100 : 0;
+      const studentCount = course.studentCount || 0;
+      const costPerStudent = studentCount > 0 ? Number((totalExpense / studentCount).toFixed(2)) : 0;
       return {
         id: course.id,
         code: course.code,
@@ -112,6 +114,8 @@ export async function GET() {
         academicYear: course.academicYear,
         instructorName: course.instructorName,
         allocatedBudget: course.allocatedBudget,
+        studentCount,
+        costPerStudent,
         totalExpense,
         percentBudget: Math.round(percentBudget * 10) / 10,
         requisitionCount: course.requisitionRequests.length,

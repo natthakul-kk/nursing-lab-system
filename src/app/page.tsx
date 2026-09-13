@@ -294,8 +294,18 @@ export default function DashboardPage() {
                             {course.name}
                           </span>
                         </div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                          ผู้สอน: {course.instructorName} | เบิกแล้ว {course.requisitionCount} ครั้ง
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1.5 flex-wrap">
+                          <span>ผู้สอน: {course.instructorName}</span>
+                          <span>•</span>
+                          <span>เบิกแล้ว {course.requisitionCount} ครั้ง</span>
+                          {course.studentCount > 0 && (
+                            <>
+                              <span>•</span>
+                              <span className="text-teal-700 dark:text-teal-400 font-semibold">
+                                นิสิต {course.studentCount} คน (เฉลี่ย ฿{course.costPerStudent?.toLocaleString('th-TH', { minimumFractionDigits: 2 })}/คน)
+                              </span>
+                            </>
+                          )}
                         </p>
                       </div>
 

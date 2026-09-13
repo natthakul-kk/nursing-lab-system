@@ -129,6 +129,14 @@ export async function GET(req: Request) {
     const [courses, practiceKits] = await Promise.all([
       prisma.course.findMany({
         include: {
+          stockTransactions: {
+            where: { type: 'OUT_REQUISITION' },
+            select: {
+              itemId: true,
+              quantity: true,
+              totalCost: true,
+            },
+          },
           practiceBookings: {
             where: { status: { in: ['CONFIRMED', 'CHECKED_OUT', 'COMPLETED'] } },
             include: {
@@ -212,17 +220,21 @@ export async function GET(req: Request) {
     const courseAnalytics = courses.map((course) => {
       totalFacultyAllocatedBudget += course.allocatedBudget || 0;
 
-      // Requisition items cost
-      let requisitionCost = 0;
-      course.requisitionRequests.forEach((req) => {
-        req.items.forEach((reqItem) => {
-          const lots = reqItem.item.stockLots || [];
-          const avgCost = lots.length > 0
-            ? lots.reduce((a, l) => a + l.unitCost, 0) / lots.length
-            : 0;
-          requisitionCost += (reqItem.quantityDispensed || reqItem.quantityRequested) * avgCost;
+      // Actual recorded requisition cost from stock transactions, fallback to requisition items
+      const txExpense = course.stockTransactions.reduce(
+        (sum, tx) => sum + Math.abs(tx.totalCost),
+        0
+      );
+      let requisitionCost = txExpense;
+      if (requisitionCost === 0 && course.requisitionRequests.length > 0) {
+        course.requisitionRequests.forEach((req) => {
+          req.items.forEach((reqItem) => {
+            requisitionCost +=
+              Number(reqItem.totalCost) ||
+              (reqItem.quantityDispensed || reqItem.quantityRequested) * (reqItem.unitCost || 0);
+          });
         });
-      });
+      }
 
       // Practice kits cost
       let practiceKitsCost = 0;
@@ -237,11 +249,18 @@ export async function GET(req: Request) {
       const totalCost = requisitionCost + practiceKitsCost;
       totalFacultyConsumableSpent += totalCost;
 
-      const studentCount = uniqueStudentIds.size || (course.practiceBookings.length > 0 ? course.practiceBookings.length : 1);
-      const costPerStudent = totalCost / studentCount;
-      const budgetUtilization = course.allocatedBudget > 0
-        ? (totalCost / course.allocatedBudget) * 100
-        : 0;
+      // Effective student count: priority to course.studentCount entered in system, fallback to unique student bookings
+      const studentCount =
+        course.studentCount && course.studentCount > 0
+          ? course.studentCount
+          : uniqueStudentIds.size;
+
+      const costPerStudent =
+        studentCount > 0 ? Number((totalCost / studentCount).toFixed(2)) : 0;
+      const budgetUtilization =
+        course.allocatedBudget > 0
+          ? (totalCost / course.allocatedBudget) * 100
+          : 0;
 
       return {
         id: course.id,
@@ -255,7 +274,8 @@ export async function GET(req: Request) {
         practiceKitsCost,
         totalCost,
         totalBookings: course.practiceBookings.length,
-        studentCount: uniqueStudentIds.size,
+        studentCount,
+        studentTrainedCount: uniqueStudentIds.size,
         costPerStudent,
         budgetUtilization,
       };

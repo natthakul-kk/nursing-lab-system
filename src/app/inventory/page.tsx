@@ -551,9 +551,12 @@ export default function InventoryPage() {
       }
     }
 
-    // หาเลขรหัสสูงสุดในกลุ่มนี้
-    const prefix = `${type === 'CONSUMABLE' ? 'CON' : 'EQ'}-${group}-`;
-    const existingInGroup = currentItems.filter((i) => i.code && i.code.startsWith(prefix));
+    // หาเลขรหัสสูงสุดในกลุ่มนี้ (แนะนำใช้ CS- สำหรับวัสดุสิ้นเปลือง และ EQ- สำหรับครุภัณฑ์)
+    const prefix = `${type === 'CONSUMABLE' ? 'CS' : 'EQ'}-${group}-`;
+    const altPrefix = type === 'CONSUMABLE' ? `CON-${group}-` : '';
+    const existingInGroup = currentItems.filter(
+      (i) => i.code && (i.code.startsWith(prefix) || (altPrefix && i.code.startsWith(altPrefix)))
+    );
     let maxNum = 0;
     existingInGroup.forEach((i) => {
       const parts = i.code.split('-');
@@ -1777,7 +1780,7 @@ export default function InventoryPage() {
                   <input
                     type="text"
                     required
-                    placeholder="เช่น CON-IV-005, CON-PPE-002"
+                    placeholder="เช่น CS-IV-005, CS-PPE-002"
                     value={newItem.code}
                     onChange={(e) =>
                       setNewItem({ ...newItem, code: e.target.value })

@@ -1090,7 +1090,7 @@ export default function InventoryPage() {
                                   {item.usageUnit && <span>(ซองละ {item.conversionRatio || 1} {item.usageUnit})</span>}
                                 </span>
                               ) : (
-                                item.usageUnit ? (
+                                item.usageUnit && (item.conversionRatio > 1 || item.unit !== item.usageUnit) ? (
                                   <span className="text-[10px] font-bold text-teal-700 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-200">
                                     1 {item.unit} = {item.conversionRatio || 1} {item.usageUnit}
                                   </span>
@@ -1166,7 +1166,7 @@ export default function InventoryPage() {
                                 </span>
                                 <span className="text-slate-500 text-xs">{item.unit}</span>
                               </div>
-                              {item.totalPiecesRemaining > 0 && item.usageUnit && (
+                              {(item.conversionRatio > 1 || item.unit !== item.usageUnit) && item.totalPiecesRemaining > 0 && item.usageUnit && (
                                 <div className="text-[10px] text-teal-700 dark:text-teal-400 font-bold mt-0.5">
                                   รวม ~{item.totalPiecesRemaining.toLocaleString()} {item.usageUnit}
                                 </div>
@@ -1607,7 +1607,7 @@ export default function InventoryPage() {
                                                       title="พิมพ์สติกเกอร์ประจำกล่อง/หน่วยย่อยของล็อตนี้"
                                                     >
                                                       <Box className="w-3.5 h-3.5" />
-                                                      <span>สติกเกอร์ราย{unitLabel} ({lot.boxes.length})</span>
+                                                      <span>สติกเกอร์ราย{unitLabel} ({lot.boxes.filter((b: any) => b.status === 'IN_STOCK' || b.status === 'IN_USE').length})</span>
                                                     </button>
                                                   )}
                                                   <button

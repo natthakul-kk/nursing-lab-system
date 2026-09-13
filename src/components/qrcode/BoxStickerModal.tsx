@@ -35,9 +35,9 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
   const [boxQrs, setBoxQrs] = useState<{ [key: string]: string }>({});
   const [labelSize, setLabelSize] = useState<'compact' | 'mini'>('compact');
   const [showDepleted, setShowDepleted] = useState(false);
-  // Default: only select in-stock boxes (exclude DEPLETED)
+  // Default: only select in-stock boxes (exclude DEPLETED and DISPENSED)
   const [selectedBoxIds, setSelectedBoxIds] = useState<string[]>(() =>
-    boxes.filter((b) => b.status !== 'DEPLETED').map((b) => b.id)
+    boxes.filter((b) => b.status !== 'DEPLETED' && b.status !== 'DISPENSED').map((b) => b.id)
   );
 
   const totalLotBoxes = lot.quantityInitial || boxes.length;
@@ -473,7 +473,7 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
                 onChange={(e) => setShowDepleted(e.target.checked)}
                 className="w-3.5 h-3.5 rounded text-teal-600 focus:ring-teal-500 border-slate-300"
               />
-              <span>รวมกล่องที่ใช้หมดแล้ว</span>
+              <span>รวมกล่องที่เบิกจ่ายแล้ว / ใช้หมดแล้ว</span>
             </label>
           </div>
         </div>
@@ -504,7 +504,7 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
         {/* Scrollable Preview Grid of Boxes */}
         <div className="flex-1 overflow-y-auto pr-1 space-y-2 max-h-[50vh]">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            {boxes.filter((b) => showDepleted ? true : b.status !== 'DEPLETED').map((box) => {
+            {boxes.filter((b) => showDepleted ? true : (b.status !== 'DEPLETED' && b.status !== 'DISPENSED')).map((box) => {
               const isChecked = selectedBoxIds.includes(box.id);
               const qrUrl = boxQrs[box.boxCode];
 
@@ -541,7 +541,15 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
                   <div className="overflow-hidden flex-1 leading-tight space-y-0.5">
                     <div className="font-mono font-black text-xs text-teal-900 dark:text-teal-300 flex items-center justify-between">
                       <span>👉 {unitLabel}ที่ #{box.boxNumberInYear} • B{String(box.boxNumberInYear).padStart(3, '0')}</span>
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">({box.boxNumberInLot}/{totalLotBoxes})</span>
+                      <div className="flex items-center gap-1">
+                        {box.status === 'DISPENSED' && (
+                          <span className="text-[9px] px-1 py-0.2 rounded bg-amber-100 text-amber-800 font-bold">เบิกแล้ว</span>
+                        )}
+                        {box.status === 'DEPLETED' && (
+                          <span className="text-[9px] px-1 py-0.2 rounded bg-slate-200 text-slate-700 font-bold">หมดแล้ว</span>
+                        )}
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">({box.boxNumberInLot}/{totalLotBoxes})</span>
+                      </div>
                     </div>
                     <div className="font-bold text-slate-800 dark:text-slate-200 text-[11px] truncate">
                       {item.name}

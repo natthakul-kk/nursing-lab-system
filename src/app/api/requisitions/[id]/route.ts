@@ -173,14 +173,35 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
           const deductFromThisLot = Math.min(lot.quantityRemaining, remainingToDeduct);
           const costForThisDeduction = deductFromThisLot * lot.unitCost;
+          const pSize = Number(lot.packSize) > 0 ? Number(lot.packSize) : 1;
+          const newQty = Math.max(0, lot.quantityRemaining - deductFromThisLot);
+          const newPieces = Math.max(0, newQty * pSize);
 
           // Update lot
           await prisma.stockLot.update({
             where: { id: lot.id },
             data: {
-              quantityRemaining: lot.quantityRemaining - deductFromThisLot,
+              quantityRemaining: newQty,
+              piecesRemaining: newPieces,
             },
           });
+
+          // Update individual StockLotBoxes in sequential order (1..N)
+          const availableBoxes = await prisma.stockLotBox.findMany({
+            where: {
+              lotId: lot.id,
+              status: { in: ['IN_STOCK', 'IN_USE'] },
+            },
+            orderBy: { boxNumberInLot: 'asc' },
+            take: deductFromThisLot,
+          });
+
+          if (availableBoxes.length > 0) {
+            await prisma.stockLotBox.updateMany({
+              where: { id: { in: availableBoxes.map((b) => b.id) } },
+              data: { status: 'DISPENSED' },
+            });
+          }
 
           // Create stock transaction
           await prisma.stockTransaction.create({

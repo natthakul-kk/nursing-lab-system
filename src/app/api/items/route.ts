@@ -218,7 +218,11 @@ export async function GET(req: Request) {
         item.type === 'CONSUMABLE'
           ? item.stockLots.reduce((sum, lot) => {
               const pSize = Number(lot.packSize) > 0 ? Number(lot.packSize) : (Number(item.conversionRatio) || 1);
-              const pPieces = typeof lot.piecesRemaining === 'number' ? lot.piecesRemaining : (lot.quantityRemaining * pSize);
+              const pPieces = lot.quantityRemaining > 0
+                ? (typeof lot.piecesRemaining === 'number' && lot.piecesRemaining <= lot.quantityRemaining * pSize
+                    ? lot.piecesRemaining
+                    : lot.quantityRemaining * pSize)
+                : 0;
               return sum + pPieces + (lot.openPackRemainder || 0);
             }, 0)
           : 0;

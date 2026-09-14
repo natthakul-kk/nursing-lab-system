@@ -23,13 +23,30 @@ import {
   Info,
   ChevronLeft,
   Sparkles,
-  PackageCheck
+  PackageCheck,
+  Scissors
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 export default function PublicConsumablePage() {
   const params = useParams();
-  const rawCode = params?.code ? String(params.code) : '';
+  const rawCode = React.useMemo(() => {
+    if (!params?.code) return '';
+    if (Array.isArray(params.code)) {
+      return params.code.map((c) => {
+        try {
+          return decodeURIComponent(c);
+        } catch {
+          return c;
+        }
+      }).join('/');
+    }
+    try {
+      return decodeURIComponent(String(params.code));
+    } catch {
+      return String(params.code);
+    }
+  }, [params?.code]);
 
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -43,7 +60,8 @@ export default function PublicConsumablePage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`/api/consumables/public/${encodeURIComponent(rawCode)}`);
+        const encoded = encodeURIComponent(rawCode);
+        const res = await fetch(`/api/consumables/public/${encoded}?code=${encoded}`);
         if (res.ok) {
           const resData = await res.json();
           setData(resData);
@@ -158,6 +176,12 @@ export default function PublicConsumablePage() {
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/50 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-xs font-bold">
                   <Layers className="w-3.5 h-3.5" />
                   <span>ล็อตคงคลัง (Stock Lot)</span>
+                </span>
+              )}
+              {type === 'SUBLOT' && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-50 dark:bg-cyan-950/50 text-cyan-800 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800 text-xs font-bold">
+                  <Scissors className="w-3.5 h-3.5" />
+                  <span>ป้ายชุด Sub-lot แบ่งบรรจุ (Repack Sub-lot)</span>
                 </span>
               )}
               {type === 'ITEM' && (
@@ -339,6 +363,63 @@ export default function PublicConsumablePage() {
                 )}
                 <div className="flex items-center gap-1.5">
                   <MapPin className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 flex-shrink-0" />
+                  <span><strong>สถานที่จัดเก็บ:</strong> {item.location || 'ตู้เก็บของปลอดเชื้อ ห้องแล็บพยาบาล'}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* SPECIFIC DETAILS: SUBLOT HEADER */}
+          {type === 'SUBLOT' && (
+            <div className="space-y-3">
+              <div className="p-3.5 rounded-2xl bg-cyan-50 dark:bg-cyan-950/50 border border-cyan-200 dark:border-cyan-800 text-cyan-950 dark:text-cyan-200 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-cyan-600 text-white flex items-center justify-center font-bold flex-shrink-0">
+                  <Scissors className="w-5 h-5" />
+                </div>
+                <div className="flex-1">
+                  <div className="font-black text-sm">
+                    ชุด Sub-lot: {data.repackRecord.subLotNumber}
+                  </div>
+                  <div className="text-xs font-semibold text-cyan-800 dark:text-cyan-300">
+                    พร้อมใช้งาน {data.repackRecord.availablePacks} จากทั้งหมด {data.repackRecord.totalPacksProduced} ซอง (ซองละ {data.repackRecord.unitsPerPack} {item.usageUnit || 'ชิ้น'})
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200/80 dark:border-slate-700">
+                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 block">วันที่แพ็ค/อบ</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-200">
+                    {data.repackRecord.packedDate ? new Date(data.repackRecord.packedDate).toLocaleDateString('th-TH') : '-'}
+                  </span>
+                </div>
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200/80 dark:border-slate-700">
+                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 block">วันหมดอายุความปลอดเชื้อ</span>
+                  <span className="font-bold text-rose-600 dark:text-rose-400">
+                    {data.repackRecord.sterileExpiryDate ? new Date(data.repackRecord.sterileExpiryDate).toLocaleDateString('th-TH') : '-'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-3 bg-cyan-50/40 dark:bg-cyan-950/40 rounded-xl border border-cyan-100 dark:border-cyan-800 text-xs text-slate-700 dark:text-slate-300 space-y-1">
+                <div className="flex items-center gap-1.5">
+                  <Flame className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                  <span><strong>วิธีฆ่าเชื้อ:</strong> {data.repackRecord.sterilizeMethod || 'Autoclave ไอน้ำแรงดันสูง'}</span>
+                </div>
+                {data.repackRecord.operatorName && (
+                  <div className="flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400 flex-shrink-0" />
+                    <span><strong>ผู้จัดเตรียม/อบ:</strong> {data.repackRecord.operatorName}</span>
+                  </div>
+                )}
+                {data.repackRecord.sourceLotNumber && (
+                  <div className="flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400 flex-shrink-0" />
+                    <span><strong>ผลิตจาก Lot ต้นทาง:</strong> {data.repackRecord.sourceLotNumber}</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400 flex-shrink-0" />
                   <span><strong>สถานที่จัดเก็บ:</strong> {item.location || 'ตู้เก็บของปลอดเชื้อ ห้องแล็บพยาบาล'}</span>
                 </div>
               </div>

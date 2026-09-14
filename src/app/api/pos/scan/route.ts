@@ -124,6 +124,107 @@ export async function GET(req: Request) {
       });
     }
 
+    // 3.5 ตรวจสอบว่าตรงกับรหัสชุด Sub-lot ของการ Repack หรือไม่
+    const repack = await prisma.repackRecord.findFirst({
+      where: {
+        OR: [
+          { subLotNumber: { in: candidates } },
+          { recordNumber: { in: candidates } },
+        ],
+      },
+      include: {
+        targetItem: { include: { category: true } },
+        sourceItem: { include: { category: true } },
+        sourceLot: true,
+        packItems: {
+          where: { status: 'AVAILABLE' },
+          orderBy: { packNumber: 'asc' },
+        },
+      },
+    });
+
+    if (repack) {
+      const displayItem = repack.targetItem || repack.sourceItem;
+      const nextPack = repack.packItems[0] || null;
+      const unitCostPerPiece = repack.sourceLot?.unitCost && repack.unitsPerPack
+        ? repack.sourceLot.unitCost / repack.unitsPerPack
+        : (repack.sourceLot?.unitCost || 0);
+
+      return NextResponse.json({
+        type: 'SUBLOT',
+        record: {
+          id: repack.id,
+          repackCode: repack.subLotNumber || repack.recordNumber,
+          expiryDate: repack.sterileExpiryDate,
+          unitCostPerPiece,
+          totalPacksProduced: repack.totalPacksProduced,
+          availablePacksCount: repack.packItems.length,
+          unitsPerPack: repack.unitsPerPack,
+        },
+        nextPack: nextPack
+          ? {
+              id: nextPack.id,
+              packCode: nextPack.packCode,
+              packNumber: nextPack.packNumber,
+              status: nextPack.status,
+              piecesPerPack: nextPack.unitsCount,
+            }
+          : null,
+        item: displayItem,
+      });
+    }
+
+    // 3.8 ตรวจสอบว่าตรงกับรหัสล็อตพัสดุ (StockLot: เช่น อว 6501.38/1429 หรือ LOT-001) หรือไม่
+    const lot = await prisma.stockLot.findFirst({
+      where: {
+        OR: [
+          { lotNumber: { in: candidates } },
+          { id: { in: candidates } },
+        ],
+      },
+      include: {
+        item: { include: { category: true } },
+        boxes: {
+          where: { status: { in: ['IN_STOCK', 'IN_USE'] } },
+          orderBy: [
+            { status: 'desc' }, // IN_USE first
+            { boxNumberInLot: 'asc' },
+          ],
+        },
+      },
+    });
+
+    if (lot) {
+      const nextBox =
+        lot.boxes.find((b) => b.status === 'IN_USE') ||
+        lot.boxes.find((b) => b.status === 'IN_STOCK') ||
+        null;
+
+      return NextResponse.json({
+        type: 'LOT',
+        lot: {
+          id: lot.id,
+          lotNumber: lot.lotNumber,
+          unitCost: lot.unitCost,
+          packSize: lot.packSize,
+          expiryDate: lot.expiryDate,
+          quantityRemaining: lot.quantityRemaining,
+          openPackRemainder: lot.openPackRemainder,
+        },
+        box: nextBox
+          ? {
+              id: nextBox.id,
+              boxCode: nextBox.boxCode,
+              boxNumberInLot: nextBox.boxNumberInLot,
+              boxNumberInYear: nextBox.boxNumberInYear,
+              status: nextBox.status,
+              year: nextBox.year,
+            }
+          : null,
+        item: lot.item,
+      });
+    }
+
     // 4. ตรวจสอบว่าตรงกับรหัสครุภัณฑ์รายชิ้น (EquipmentAsset: เช่น EQ-MNK-001) หรือไม่
     const asset = await prisma.equipmentAsset.findFirst({
       where: {

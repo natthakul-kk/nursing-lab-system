@@ -35,6 +35,7 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
   const [boxQrs, setBoxQrs] = useState<{ [key: string]: string }>({});
   const [labelSize, setLabelSize] = useState<'compact' | 'mini'>('compact');
   const [showDepleted, setShowDepleted] = useState(false);
+  const [includeLotSticker, setIncludeLotSticker] = useState(true);
   // Default: only select in-stock boxes (exclude DEPLETED and DISPENSED)
   const [selectedBoxIds, setSelectedBoxIds] = useState<string[]>(() =>
     boxes.filter((b) => b.status !== 'DEPLETED' && b.status !== 'DISPENSED').map((b) => b.id)
@@ -48,6 +49,21 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
       const qrs: { [key: string]: string } = {};
       const origin = typeof window !== 'undefined' ? window.location.origin : '';
 
+      // 1. Generate Lot Header QR
+      if (lot?.lotNumber) {
+        try {
+          const lotPayload = `${origin}/consumable/${encodeURIComponent(lot.lotNumber)}`;
+          qrs[lot.lotNumber] = await QRCode.toDataURL(lotPayload, {
+            width: 160,
+            margin: 1,
+            color: { dark: '#0f172a', light: '#ffffff' },
+          });
+        } catch (e) {
+          console.error('Error generating lot QR', e);
+        }
+      }
+
+      // 2. Generate Box QRs
       for (const box of boxes) {
         try {
           const payload = `${origin}/consumable/${encodeURIComponent(box.boxCode)}`;
@@ -69,7 +85,7 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
     if (boxes && boxes.length > 0) {
       generateAllQrs();
     }
-  }, [boxes]);
+  }, [boxes, lot]);
 
   const toggleSelectAll = () => {
     if (selectedBoxIds.length === boxes.length) {
@@ -207,7 +223,22 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
         }
       `;
 
-      cardsHtml = boxesToPrint
+      let lotMiniHtml = '';
+      if (includeLotSticker && lot?.lotNumber) {
+        lotMiniHtml = `
+        <div class="box-card-mini" style="border: 1.5px solid #0f766e; background: #f0fdfa;">
+          <img src="${boxQrs[lot.lotNumber] || ''}" class="box-qr-mini" />
+          <div class="box-info-mini">
+            <div class="box-title-mini">${item.name}</div>
+            <div class="box-num-mini font-mono">🏷️ ป้ายประจำล็อต: ${lot.lotNumber}</div>
+            <div class="box-code-mini">รวม ${totalLotBoxes} ${unitLabel} (รหัสพัสดุ: ${item.code})</div>
+            <div class="box-dates-mini"><span class="box-exp">EXP: ${formattedExpiry}</span> (รับ ${formattedReceived})</div>
+          </div>
+        </div>
+        `;
+      }
+
+      cardsHtml = lotMiniHtml + boxesToPrint
         .map(
           (box) => `
         <div class="box-card-mini">
@@ -355,7 +386,30 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
         }
       `;
 
-      cardsHtml = boxesToPrint
+      let lotCompactHtml = '';
+      if (includeLotSticker && lot?.lotNumber) {
+        lotCompactHtml = `
+        <div class="box-card-compact" style="border: 1.5px solid #0f766e; background: #f0fdfa;">
+          <div class="box-header-compact" style="background: #0f766e; color: #fff;">
+            <span class="box-org-text" style="color: #fff;">คณะพยาบาลศาสตร์ มหาวิทยาลัยเกษตรศาสตร์</span>
+            <span class="box-org-sub" style="background: #14b8a6; color: #fff; padding: 1px 5px; border-radius: 3px;">🏷️ ป้ายประจำล็อต</span>
+          </div>
+          <div class="box-body-compact">
+            <img src="${boxQrs[lot.lotNumber] || ''}" class="box-qr-compact" />
+            <div class="box-info-compact">
+              <div class="box-title-compact">${item.name}</div>
+              <div class="box-num-compact font-mono">LOT: ${lot.lotNumber}</div>
+              <div class="box-code-compact">รหัสพัสดุ: ${item.code} • ทั้งหมด ${totalLotBoxes} ${unitLabel}</div>
+              <div class="box-meta-compact">
+                <span class="box-exp">EXP: ${formattedExpiry}</span> | รับเข้า: ${formattedReceived}
+              </div>
+            </div>
+          </div>
+        </div>
+        `;
+      }
+
+      cardsHtml = lotCompactHtml + boxesToPrint
         .map(
           (box) => `
         <div class="box-card-compact">
@@ -473,7 +527,16 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
                 onChange={(e) => setShowDepleted(e.target.checked)}
                 className="w-3.5 h-3.5 rounded text-teal-600 focus:ring-teal-500 border-slate-300"
               />
-              <span>รวมกล่องที่เบิกจ่ายแล้ว / ใช้หมดแล้ว</span>
+              <span>รวมกล่องที่เบิกจ่ายแล้ว</span>
+            </label>
+            <label className="flex items-center gap-1.5 text-xs font-bold text-teal-900 dark:text-teal-200 bg-teal-100/60 dark:bg-teal-900/40 px-2 py-1 rounded-lg border border-teal-200 dark:border-teal-700 cursor-pointer select-none ml-1">
+              <input
+                type="checkbox"
+                checked={includeLotSticker}
+                onChange={(e) => setIncludeLotSticker(e.target.checked)}
+                className="w-3.5 h-3.5 rounded text-teal-600 focus:ring-teal-500 border-slate-300"
+              />
+              <span>🏷️ พิมพ์ป้ายประจำล็อตด้วย</span>
             </label>
           </div>
         </div>

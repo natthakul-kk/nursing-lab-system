@@ -216,6 +216,75 @@ export default function PosPage() {
         return;
       }
 
+      if (data.type === 'SUBLOT') {
+        // สแกนจากป้ายชุด Sub-lot ของการแบ่งบรรจุ
+        if (data.nextPack) {
+          const exists = cart.find((c) => c.type === 'PACK' && c.targetId === data.nextPack.id);
+          if (exists) {
+            setScanMessage({ type: 'error', text: `ซองถัดไปของชุดนี้ (${data.nextPack.packCode}) อยู่ในตะกร้าแล้ว` });
+            return;
+          }
+
+          const cost = (data.record.unitCostPerPiece || 0) * (data.nextPack.piecesPerPack || 1);
+          setCart((prev) => [
+            ...prev,
+            {
+              id: `pack_${data.nextPack.id}_${Date.now()}`,
+              type: 'PACK',
+              targetId: data.nextPack.id,
+              code: data.nextPack.packCode,
+              name: `${data.item.name} (ซองสเตอร์ไรด์ #${data.nextPack.packNumber})`,
+              unit: 'ซอง',
+              quantity: 1,
+              unitCost: cost,
+              expiryDate: data.record.expiryDate,
+              packNumber: data.nextPack.packNumber,
+              piecesPerPack: data.nextPack.piecesPerPack,
+            },
+          ]);
+          setScanMessage({ type: 'success', text: `เพิ่มซองจาก Sub-lot: ${data.nextPack.packCode} (${data.item.name})` });
+          return;
+        } else {
+          playBeep(320, 0.25, 'sawtooth');
+          setScanMessage({ type: 'error', text: `ชุด Sub-lot "${data.record.repackCode}" ไม่มีซองพร้อมใช้งานในสต็อกแล้ว` });
+          return;
+        }
+      }
+
+      if (data.type === 'LOT') {
+        // สแกนจากป้ายประจำล็อตวัสดุสิ้นเปลือง
+        if (data.box) {
+          const exists = cart.find((c) => c.type === 'BOX' && c.targetId === data.box.id);
+          if (exists) {
+            setScanMessage({ type: 'error', text: `กล่องถัดไปของล็อตนี้ (${data.box.boxCode}) อยู่ในตะกร้าแล้ว` });
+            return;
+          }
+
+          setCart((prev) => [
+            ...prev,
+            {
+              id: `box_${data.box.id}_${Date.now()}`,
+              type: 'BOX',
+              targetId: data.box.id,
+              code: data.box.boxCode,
+              name: `${data.item.name} (${data.box.boxCode})`,
+              unit: data.item.unit || 'กล่อง',
+              quantity: 1,
+              unitCost: data.lot.unitCost || 0,
+              lotNumber: data.lot.lotNumber,
+              expiryDate: data.lot.expiryDate,
+              boxNumberInYear: data.box.boxNumberInYear,
+            },
+          ]);
+          setScanMessage({ type: 'success', text: `เพิ่มกล่องจากล็อต: ${data.box.boxCode} (${data.item.name})` });
+          return;
+        } else {
+          playBeep(320, 0.25, 'sawtooth');
+          setScanMessage({ type: 'error', text: `ล็อต "${data.lot.lotNumber}" (${data.item.name}) ไม่มีกล่องคงเหลือในสต็อก` });
+          return;
+        }
+      }
+
       if (data.type === 'ASSET') {
         // ครุภัณฑ์คงทน (สลับเป็นยืมด่วน)
         if (data.asset.status === 'BORROWED') {

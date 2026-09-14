@@ -70,31 +70,47 @@ export function extractCleanCode(rawInput: string | null | undefined): ParsedSca
   if (isUrl) {
     try {
       // 3.1 ตรวจสอบ URL พัสดุครุภัณฑ์ /asset/[code]
-      const assetMatch = text.match(/\/asset\/([^\/\?#]+)/i);
+      const assetMatch = text.match(/\/asset\/(.+?)(?:[\?#]|$)/i);
       if (assetMatch && assetMatch[1]) {
-        const decoded = decodeURIComponent(assetMatch[1]).trim();
-        return { raw: rawInput, cleanCode: decoded, detectedType: 'ASSET' };
+        try {
+          const decoded = decodeURIComponent(assetMatch[1]).trim();
+          return { raw: rawInput, cleanCode: decoded, detectedType: 'ASSET' };
+        } catch {
+          return { raw: rawInput, cleanCode: assetMatch[1].trim(), detectedType: 'ASSET' };
+        }
       }
 
       // 3.2 ตรวจสอบ URL ครุภัณฑ์ /equipment/[code]
-      const equipMatch = text.match(/\/equipment\/([^\/\?#]+)/i);
+      const equipMatch = text.match(/\/equipment\/(.+?)(?:[\?#]|$)/i);
       if (equipMatch && equipMatch[1]) {
-        const decoded = decodeURIComponent(equipMatch[1]).trim();
-        return { raw: rawInput, cleanCode: decoded, detectedType: 'ASSET' };
+        try {
+          const decoded = decodeURIComponent(equipMatch[1]).trim();
+          return { raw: rawInput, cleanCode: decoded, detectedType: 'ASSET' };
+        } catch {
+          return { raw: rawInput, cleanCode: equipMatch[1].trim(), detectedType: 'ASSET' };
+        }
       }
 
-      // 3.3 ตรวจสอบ URL วัสดุสิ้นเปลือง / กล่อง / ซอง /consumable/[code]
-      const consumableMatch = text.match(/\/consumable\/([^\/\?#]+)/i);
+      // 3.3 ตรวจสอบ URL วัสดุสิ้นเปลือง / กล่อง / ซอง / ล็อต /consumable/[code]
+      const consumableMatch = text.match(/\/consumable\/(.+?)(?:[\?#]|$)/i);
       if (consumableMatch && consumableMatch[1]) {
-        const decoded = decodeURIComponent(consumableMatch[1]).trim();
-        return { raw: rawInput, cleanCode: decoded, detectedType: 'CONSUMABLE' };
+        try {
+          const decoded = decodeURIComponent(consumableMatch[1]).trim();
+          return { raw: rawInput, cleanCode: decoded, detectedType: 'CONSUMABLE' };
+        } catch {
+          return { raw: rawInput, cleanCode: consumableMatch[1].trim(), detectedType: 'CONSUMABLE' };
+        }
       }
 
       // 3.4 ตรวจสอบ URL ฝึกปฏิบัติ OSCE / Practice Token
       const practiceTokenMatch = text.match(/[?&]token=([^\/\?#&]+)/i);
       if (practiceTokenMatch && practiceTokenMatch[1]) {
-        const decoded = decodeURIComponent(practiceTokenMatch[1]).trim();
-        return { raw: rawInput, cleanCode: decoded, detectedType: 'PRACTICE' };
+        try {
+          const decoded = decodeURIComponent(practiceTokenMatch[1]).trim();
+          return { raw: rawInput, cleanCode: decoded, detectedType: 'PRACTICE' };
+        } catch {
+          return { raw: rawInput, cleanCode: practiceTokenMatch[1].trim(), detectedType: 'PRACTICE' };
+        }
       }
 
       // 3.5 กรณีเป็น URL ทั่วไปที่ลงท้ายด้วยรหัส เช่น http://.../item/ABC-123
@@ -142,8 +158,10 @@ function detectTypeFromCode(code: string): 'ASSET' | 'CONSUMABLE' | 'PRACTICE' |
     return 'USER'; // Student ID (8-11 digits)
   }
 
-  // Consumable Box / Repack Pack / Lot
+  // Consumable Box / Repack Pack / Lot (รวมรหัสล็อตราชการที่มี อว. และเลขคำสั่ง)
   if (
+    code.startsWith('อว') ||
+    upper.startsWith('LOT') ||
     upper.startsWith('CON-') ||
     upper.startsWith('CS-') ||
     upper.startsWith('RP-') ||
@@ -154,7 +172,7 @@ function detectTypeFromCode(code: string): 'ASSET' | 'CONSUMABLE' | 'PRACTICE' |
     return 'CONSUMABLE';
   }
 
-  // Equipment Asset
+  // Equipment Asset (รวมรหัสครุภัณฑ์ราชการ เช่น 7440-001-0001/2569)
   if (
     upper.startsWith('EQ-') ||
     upper.startsWith('MED-') ||
@@ -163,7 +181,7 @@ function detectTypeFromCode(code: string): 'ASSET' | 'CONSUMABLE' | 'PRACTICE' |
     upper.startsWith('AED-') ||
     upper.startsWith('KD-') ||
     upper.startsWith('AMM-') ||
-    upper.includes('/') // Gov Asset Code เช่น 7440-001-0001/2569
+    (/^\d{4}/.test(code) && code.includes('/')) // Gov Asset Code เช่น 7440-001-0001/2569
   ) {
     return 'ASSET';
   }

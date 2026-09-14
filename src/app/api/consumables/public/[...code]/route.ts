@@ -3,15 +3,43 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET(
   req: Request,
-  { params }: { params: Promise<{ code: string }> }
+  { params }: { params: Promise<{ code?: string | string[] }> }
 ) {
   try {
-    const { code } = await params;
-    if (!code) {
-      return NextResponse.json({ error: 'ไม่พบรหัสที่ระบุ' }, { status: 400 });
+    const resolvedParams = await params;
+    const { searchParams } = new URL(req.url);
+    const queryCode = searchParams.get('code');
+
+    let decodedCode = '';
+    if (resolvedParams?.code) {
+      if (Array.isArray(resolvedParams.code)) {
+        decodedCode = resolvedParams.code.map((c) => {
+          try {
+            return decodeURIComponent(c);
+          } catch {
+            return c;
+          }
+        }).join('/');
+      } else {
+        try {
+          decodedCode = decodeURIComponent(resolvedParams.code);
+        } catch {
+          decodedCode = resolvedParams.code;
+        }
+      }
+    } else if (queryCode) {
+      try {
+        decodedCode = decodeURIComponent(queryCode);
+      } catch {
+        decodedCode = queryCode;
+      }
     }
 
-    const decodedCode = decodeURIComponent(code).trim();
+    decodedCode = decodedCode.trim();
+
+    if (!decodedCode) {
+      return NextResponse.json({ error: 'ไม่พบรหัสที่ระบุ' }, { status: 400 });
+    }
 
     // 1. Check if it's a StockLotBox (e.g. CON-PPE-001-2569-B001)
     const box = await prisma.stockLotBox.findFirst({
@@ -114,6 +142,57 @@ export async function GET(
           usageUnit: activeItem.usageUnit || pack.repackRecord.sourceItem.usageUnit,
           location: activeItem.location || pack.repackRecord.sourceItem.location,
           imageUrl: activeItem.imageUrl || pack.repackRecord.sourceItem.imageUrl,
+          categoryName: activeItem.category?.name,
+        },
+      });
+    }
+
+    // 2.5 Check if it's a RepackRecord (Sub-lot header e.g. SL-CON-PPE-001-260905-01)
+    const repack = await prisma.repackRecord.findFirst({
+      where: {
+        OR: [
+          { subLotNumber: decodedCode },
+          { subLotNumber: { equals: decodedCode, mode: 'insensitive' } },
+        ],
+      },
+      include: {
+        sourceItem: { include: { category: true } },
+        targetItem: { include: { category: true } },
+        sourceLot: true,
+        operator: { select: { name: true } },
+        packItems: {
+          orderBy: { packNumber: 'asc' },
+        },
+      },
+    });
+
+    if (repack) {
+      const activeItem = repack.targetItem || repack.sourceItem;
+      const availablePacks = repack.packItems.filter((p) => p.status === 'AVAILABLE').length;
+      return NextResponse.json({
+        type: 'SUBLOT',
+        repackRecord: {
+          id: repack.id,
+          subLotNumber: repack.subLotNumber,
+          recordNumber: repack.recordNumber,
+          totalPacksProduced: repack.totalPacksProduced,
+          unitsPerPack: repack.unitsPerPack,
+          availablePacks,
+          packedDate: repack.packedDate,
+          sterileExpiryDate: repack.sterileExpiryDate,
+          sterilizeMethod: repack.sterilizeMethod,
+          operatorName: repack.operator?.name,
+          sourceLotNumber: repack.sourceLot?.lotNumber,
+          packs: repack.packItems.slice(0, 10),
+        },
+        item: {
+          id: activeItem.id,
+          name: activeItem.name,
+          code: activeItem.code,
+          unit: activeItem.unit,
+          usageUnit: activeItem.usageUnit || repack.sourceItem.usageUnit,
+          location: activeItem.location || repack.sourceItem.location,
+          imageUrl: activeItem.imageUrl || repack.sourceItem.imageUrl,
           categoryName: activeItem.category?.name,
         },
       });

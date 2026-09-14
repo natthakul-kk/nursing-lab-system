@@ -221,7 +221,7 @@ export default function BatchConsumableStickerModal({
           const lotBoxes = lot.boxes?.filter((b) => selectedBoxIds.includes(b.id)) || [];
           if (lotBoxes.length > 0) {
             if (includeLotStickers) {
-              const lotPayload = `${origin}/consumable/${encodeURIComponent(lot.lotNumber)}`;
+              const lotPayload = `${origin}/consumable/${encodeURIComponent(item.code)}?lot=${encodeURIComponent(lot.lotNumber)}`;
               if (!qrs[lotPayload]) payloadsToGen.push(lotPayload);
             }
             lotBoxes.forEach((b) => {
@@ -261,7 +261,7 @@ export default function BatchConsumableStickerModal({
 
           // 1. Prepend Lot Header Label if enabled
           if (includeLotStickers) {
-            const lotQrUrl = qrs[`${origin}/consumable/${encodeURIComponent(lot.lotNumber)}`] || '';
+            const lotQrUrl = qrs[`${origin}/consumable/${encodeURIComponent(item.code)}?lot=${encodeURIComponent(lot.lotNumber)}`] || '';
 
             if (labelSize === 'mini') {
               cardsHtml += `

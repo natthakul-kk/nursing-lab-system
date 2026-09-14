@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { formatImageUrl } from '@/lib/image-helper';
 import {
   Box,
@@ -22,6 +22,8 @@ import {
   User,
   Info,
   ChevronLeft,
+  ChevronRight,
+  Search,
   Sparkles,
   PackageCheck,
   Scissors
@@ -30,6 +32,9 @@ import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 export default function PublicConsumablePage() {
   const params = useParams();
+  const searchParams = useSearchParams();
+  const lotQuery = searchParams?.get('lot') || '';
+
   const rawCode = React.useMemo(() => {
     if (!params?.code) return '';
     if (Array.isArray(params.code)) {
@@ -52,6 +57,7 @@ export default function PublicConsumablePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [lotSearch, setLotSearch] = useState('');
 
   useEffect(() => {
     if (!rawCode) return;
@@ -61,7 +67,8 @@ export default function PublicConsumablePage() {
       setError(null);
       try {
         const encoded = encodeURIComponent(rawCode);
-        const res = await fetch(`/api/consumables/public/${encoded}?code=${encoded}`);
+        const lotParamStr = lotQuery ? `&lot=${encodeURIComponent(lotQuery)}` : '';
+        const res = await fetch(`/api/consumables/public/${encoded}?code=${encoded}${lotParamStr}`);
         if (res.ok) {
           const resData = await res.json();
           setData(resData);
@@ -116,6 +123,134 @@ export default function PublicConsumablePage() {
             </Link>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (data?.type === 'LOT_MULTIPLE') {
+    const filteredLots = (data.lots || []).filter((entry: any) => {
+      const q = lotSearch.toLowerCase().trim();
+      if (!q) return true;
+      return (
+        entry.item?.name?.toLowerCase().includes(q) ||
+        entry.item?.code?.toLowerCase().includes(q) ||
+        (entry.item?.categoryName && entry.item.categoryName.toLowerCase().includes(q))
+      );
+    });
+
+    return (
+      <div className="min-h-screen bg-slate-100/70 dark:bg-slate-950 pb-12">
+        <header className="bg-white dark:bg-slate-900 border-b border-slate-200/80 dark:border-slate-800 sticky top-0 z-20 backdrop-blur-md bg-white/90 dark:bg-slate-900/90">
+          <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-teal-600 text-white flex items-center justify-center shadow-md shadow-teal-600/20">
+                <BriefcaseMedical className="w-5 h-5" />
+              </div>
+              <div>
+                <h1 className="text-xs font-black text-slate-900 dark:text-slate-100 leading-tight">
+                  คณะพยาบาลศาสตร์
+                </h1>
+                <p className="text-[10px] font-bold text-teal-700 dark:text-teal-400 tracking-wider">
+                  ระบบข้อมูลเวชภัณฑ์และคลังพัสดุ
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={handleShare}
+              className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition flex items-center gap-1.5 text-xs font-bold cursor-pointer"
+            >
+              <Share2 className="w-4 h-4" />
+              <span className="hidden sm:inline">{copied ? 'คัดลอกแล้ว!' : 'แชร์'}</span>
+            </button>
+          </div>
+        </header>
+
+        <main className="max-w-2xl mx-auto px-4 pt-4 space-y-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/50 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-xs font-bold">
+                <Layers className="w-3.5 h-3.5" />
+                <span>งวดจัดซื้อร่วม ({data.totalItemsCount} รายการ)</span>
+              </span>
+            </div>
+
+            <div>
+              <h2 className="text-base font-black text-slate-900 dark:text-slate-100">
+                พบพัสดุ {data.totalItemsCount} รายการในเลขที่จัดซื้อนี้
+              </h2>
+              <div className="font-mono text-xs text-teal-800 dark:text-teal-400 font-bold mt-0.5">
+                เลขที่เอกสาร / Lot: {data.lotNumber}
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                เนื่องจากเลขที่นี้เป็นการจัดซื้อพัสดุหลายรายการร่วมกัน กรุณาแตะเลือกรายการที่ท่านต้องการดูข้อมูล:
+              </p>
+            </div>
+
+            {/* Quick Search */}
+            <div className="relative">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={lotSearch}
+                onChange={(e) => setLotSearch(e.target.value)}
+                placeholder="พิมพ์ชื่อหรือรหัสพัสดุเพื่อกรอง..."
+                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-teal-500"
+              />
+            </div>
+
+            {/* Items List */}
+            <div className="space-y-2 max-h-[58vh] overflow-y-auto pr-1">
+              {filteredLots.map((entry: any) => (
+                <Link
+                  key={entry.lotId}
+                  href={`/consumable/${encodeURIComponent(entry.item.code)}?lot=${encodeURIComponent(data.lotNumber)}`}
+                  className="block p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-850 hover:bg-teal-50/50 dark:hover:bg-teal-950/30 hover:border-teal-300 dark:hover:border-teal-700 transition group cursor-pointer"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold text-xs text-slate-900 dark:text-slate-100 group-hover:text-teal-700 dark:group-hover:text-teal-300 transition truncate">
+                        {entry.item.name}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                        <span className="font-mono font-bold text-slate-700 dark:text-slate-300">{entry.item.code}</span>
+                        {entry.item.categoryName && (
+                          <span>• {entry.item.categoryName}</span>
+                        )}
+                        <span className="text-teal-700 dark:text-teal-400 font-bold">
+                          • คงเหลือ {entry.quantityRemaining} {entry.item.unit}
+                        </span>
+                      </div>
+                      {entry.expiryDate && (
+                        <div className="text-[10px] text-rose-600 dark:text-rose-400 mt-0.5 font-medium">
+                          วันหมดอายุ: {new Date(entry.expiryDate).toLocaleDateString('th-TH')}
+                        </div>
+                      )}
+                    </div>
+                    <div className="w-8 h-8 rounded-xl bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 flex items-center justify-center text-slate-400 group-hover:text-teal-600 group-hover:border-teal-400 transition flex-shrink-0">
+                      <ChevronRight className="w-4 h-4" />
+                    </div>
+                  </div>
+                </Link>
+              ))}
+              {filteredLots.length === 0 && (
+                <div className="text-center py-6 text-xs text-slate-400">
+                  ไม่พบรายการพัสดุที่ตรงกับคำค้นหา
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="pt-2 text-center">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 transition"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              <span>กลับสู่หน้าหลักห้องแล็บ</span>
+            </Link>
+          </div>
+        </main>
       </div>
     );
   }

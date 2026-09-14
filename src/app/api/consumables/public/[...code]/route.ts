@@ -9,6 +9,7 @@ export async function GET(
     const resolvedParams = await params;
     const { searchParams } = new URL(req.url);
     const queryCode = searchParams.get('code');
+    const lotParam = searchParams.get('lot');
 
     let decodedCode = '';
     if (resolvedParams?.code) {
@@ -39,6 +40,84 @@ export async function GET(
 
     if (!decodedCode) {
       return NextResponse.json({ error: 'ไม่พบรหัสที่ระบุ' }, { status: 400 });
+    }
+
+    // 0. ตรวจสอบกรณีเป็น Composite (Item Code + lot Query Parameter เช่น /consumable/CS-GAU-0303?lot=อว 6501.38/1429)
+    if (lotParam) {
+      let cleanLotParam = '';
+      try {
+        cleanLotParam = decodeURIComponent(lotParam).trim();
+      } catch {
+        cleanLotParam = lotParam.trim();
+      }
+
+      if (cleanLotParam) {
+        const itemWithLot = await prisma.item.findFirst({
+          where: {
+            OR: [
+              { code: decodedCode },
+              { code: { equals: decodedCode, mode: 'insensitive' } },
+            ],
+          },
+          include: {
+            category: true,
+            stockLots: {
+              where: {
+                OR: [
+                  { lotNumber: cleanLotParam },
+                  { lotNumber: { equals: cleanLotParam, mode: 'insensitive' } },
+                ],
+              },
+              include: {
+                boxes: {
+                  orderBy: { boxNumberInLot: 'asc' },
+                },
+              },
+            },
+          },
+        });
+
+        if (itemWithLot && itemWithLot.stockLots.length > 0) {
+          const lot = itemWithLot.stockLots[0];
+          const nextBox =
+            lot.boxes.find((b) => b.status === 'IN_USE') ||
+            lot.boxes.find((b) => b.status === 'IN_STOCK');
+
+          return NextResponse.json({
+            type: 'LOT',
+            lot: {
+              id: lot.id,
+              lotNumber: lot.lotNumber,
+              expiryDate: lot.expiryDate,
+              receivedDate: lot.receivedDate,
+              quantityInitial: lot.quantityInitial,
+              quantityRemaining: lot.quantityRemaining,
+              openPackRemainder: lot.openPackRemainder,
+              supplier: lot.supplier,
+              totalBoxes: lot.boxes.length,
+              nextBox: nextBox
+                ? {
+                    boxCode: nextBox.boxCode,
+                    boxNumberInLot: nextBox.boxNumberInLot,
+                    boxNumberInYear: nextBox.boxNumberInYear,
+                    status: nextBox.status,
+                  }
+                : null,
+            },
+            item: {
+              id: itemWithLot.id,
+              name: itemWithLot.name,
+              code: itemWithLot.code,
+              unit: itemWithLot.unit,
+              usageUnit: itemWithLot.usageUnit,
+              location: itemWithLot.location,
+              description: itemWithLot.description,
+              imageUrl: itemWithLot.imageUrl,
+              categoryName: itemWithLot.category?.name,
+            },
+          });
+        }
+      }
     }
 
     // 1. Check if it's a StockLotBox (e.g. CON-PPE-001-2569-B001)
@@ -199,7 +278,7 @@ export async function GET(
     }
 
     // 3. Check if it's a StockLot (e.g. GLV-S7-889 or SL-...)
-    const lot = await prisma.stockLot.findFirst({
+    const matchingLots = await prisma.stockLot.findMany({
       where: {
         OR: [
           { lotNumber: decodedCode },
@@ -214,7 +293,8 @@ export async function GET(
       },
     });
 
-    if (lot) {
+    if (matchingLots.length === 1) {
+      const lot = matchingLots[0];
       const nextBox =
         lot.boxes.find((b) => b.status === 'IN_USE') ||
         lot.boxes.find((b) => b.status === 'IN_STOCK');
@@ -251,6 +331,45 @@ export async function GET(
           imageUrl: lot.item.imageUrl,
           categoryName: lot.item.category?.name,
         },
+      });
+    } else if (matchingLots.length > 1) {
+      // มีวัสดุหลายชนิดสั่งซื้อในเลขที่เดียวกัน (Shared Lot / Purchase Order)
+      return NextResponse.json({
+        type: 'LOT_MULTIPLE',
+        lotNumber: decodedCode,
+        totalItemsCount: matchingLots.length,
+        lots: matchingLots.map((lot) => {
+          const nextBox =
+            lot.boxes.find((b) => b.status === 'IN_USE') ||
+            lot.boxes.find((b) => b.status === 'IN_STOCK');
+
+          return {
+            lotId: lot.id,
+            lotNumber: lot.lotNumber,
+            quantityRemaining: lot.quantityRemaining,
+            openPackRemainder: lot.openPackRemainder,
+            expiryDate: lot.expiryDate,
+            receivedDate: lot.receivedDate,
+            totalBoxes: lot.boxes.length,
+            nextBox: nextBox
+              ? {
+                  boxCode: nextBox.boxCode,
+                  boxNumberInLot: nextBox.boxNumberInLot,
+                  status: nextBox.status,
+                }
+              : null,
+            item: {
+              id: lot.item.id,
+              name: lot.item.name,
+              code: lot.item.code,
+              unit: lot.item.unit,
+              usageUnit: lot.item.usageUnit,
+              location: lot.item.location,
+              imageUrl: lot.item.imageUrl,
+              categoryName: lot.item.category?.name,
+            },
+          };
+        }),
       });
     }
 

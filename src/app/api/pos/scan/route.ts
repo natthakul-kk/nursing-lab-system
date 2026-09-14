@@ -10,10 +10,70 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'กรุณาระบุรหัสที่ต้องการค้นหา' }, { status: 400 });
     }
 
-    const { cleanCode, detectedType } = extractCleanCode(rawCode);
+    const parsed = extractCleanCode(rawCode);
+    const { cleanCode, detectedType } = parsed;
     const code = cleanCode || rawCode.trim();
     const rawTrim = rawCode.trim();
     const candidates = Array.from(new Set([code, rawTrim])).filter(Boolean);
+
+    // 0. ตรวจสอบกรณีเป็น Composite Item + Lot (เช่น CS-GAU-0303?lot=อว 6501.38/1429)
+    if (parsed.itemCode && parsed.lotNumber) {
+      const lot = await prisma.stockLot.findFirst({
+        where: {
+          OR: [
+            { lotNumber: parsed.lotNumber },
+            { lotNumber: { equals: parsed.lotNumber, mode: 'insensitive' } },
+          ],
+          item: {
+            OR: [
+              { code: parsed.itemCode },
+              { code: { equals: parsed.itemCode, mode: 'insensitive' } },
+            ],
+          },
+        },
+        include: {
+          item: { include: { category: true } },
+          boxes: {
+            where: { status: { in: ['IN_STOCK', 'IN_USE'] } },
+            orderBy: [
+              { status: 'desc' },
+              { boxNumberInLot: 'asc' },
+            ],
+          },
+        },
+      });
+
+      if (lot) {
+        const nextBox =
+          lot.boxes.find((b) => b.status === 'IN_USE') ||
+          lot.boxes.find((b) => b.status === 'IN_STOCK') ||
+          null;
+
+        return NextResponse.json({
+          type: 'LOT',
+          lot: {
+            id: lot.id,
+            lotNumber: lot.lotNumber,
+            unitCost: lot.unitCost,
+            packSize: lot.packSize,
+            expiryDate: lot.expiryDate,
+            quantityRemaining: lot.quantityRemaining,
+            openPackRemainder: lot.openPackRemainder,
+          },
+          box: nextBox
+            ? {
+                id: nextBox.id,
+                boxCode: nextBox.boxCode,
+                boxNumberInLot: nextBox.boxNumberInLot,
+                boxNumberInYear: nextBox.boxNumberInYear,
+                status: nextBox.status,
+                year: nextBox.year,
+              }
+            : null,
+          item: lot.item,
+        });
+      }
+    }
 
     // 1. ตรวจสอบว่าตรงกับรหัสผู้ใช้งาน (Student ID หรือ Email) หรือไม่
     const user = await prisma.user.findFirst({
@@ -175,7 +235,7 @@ export async function GET(req: Request) {
     }
 
     // 3.8 ตรวจสอบว่าตรงกับรหัสล็อตพัสดุ (StockLot: เช่น อว 6501.38/1429 หรือ LOT-001) หรือไม่
-    const lot = await prisma.stockLot.findFirst({
+    const matchingLots = await prisma.stockLot.findMany({
       where: {
         OR: [
           { lotNumber: { in: candidates } },
@@ -194,7 +254,8 @@ export async function GET(req: Request) {
       },
     });
 
-    if (lot) {
+    if (matchingLots.length === 1) {
+      const lot = matchingLots[0];
       const nextBox =
         lot.boxes.find((b) => b.status === 'IN_USE') ||
         lot.boxes.find((b) => b.status === 'IN_STOCK') ||
@@ -222,6 +283,44 @@ export async function GET(req: Request) {
             }
           : null,
         item: lot.item,
+      });
+    } else if (matchingLots.length > 1) {
+      // มีวัสดุหลายชนิดที่จัดซื้อในเลขที่ล็อตเดียวกัน
+      return NextResponse.json({
+        type: 'LOT_MULTIPLE',
+        lotNumber: code,
+        totalItemsCount: matchingLots.length,
+        items: matchingLots.map((l) => {
+          const nextBox =
+            l.boxes.find((b) => b.status === 'IN_USE') ||
+            l.boxes.find((b) => b.status === 'IN_STOCK') ||
+            null;
+
+          return {
+            lotId: l.id,
+            lotNumber: l.lotNumber,
+            unitCost: l.unitCost,
+            expiryDate: l.expiryDate,
+            quantityRemaining: l.quantityRemaining,
+            box: nextBox
+              ? {
+                  id: nextBox.id,
+                  boxCode: nextBox.boxCode,
+                  boxNumberInLot: nextBox.boxNumberInLot,
+                  boxNumberInYear: nextBox.boxNumberInYear,
+                  status: nextBox.status,
+                  year: nextBox.year,
+                }
+              : null,
+            item: {
+              id: l.item.id,
+              code: l.item.code,
+              name: l.item.name,
+              unit: l.item.unit,
+              categoryName: l.item.category?.name,
+            },
+          };
+        }),
       });
     }
 

@@ -7,6 +7,8 @@ export interface ParsedScanResult {
   raw: string;
   cleanCode: string;
   detectedType: 'ASSET' | 'CONSUMABLE' | 'PRACTICE' | 'USER' | 'UNKNOWN';
+  itemCode?: string;
+  lotNumber?: string;
 }
 
 /**
@@ -96,6 +98,26 @@ export function extractCleanCode(rawInput: string | null | undefined): ParsedSca
       if (consumableMatch && consumableMatch[1]) {
         try {
           const decoded = decodeURIComponent(consumableMatch[1]).trim();
+          const lotMatch = text.match(/[?&]lot=([^&#]+)/i);
+          let lotNumber: string | undefined = undefined;
+          if (lotMatch && lotMatch[1]) {
+            try {
+              lotNumber = decodeURIComponent(lotMatch[1]).trim();
+            } catch {
+              lotNumber = lotMatch[1].trim();
+            }
+          }
+
+          if (lotNumber) {
+            return {
+              raw: rawInput,
+              cleanCode: `${decoded}?lot=${lotNumber}`,
+              itemCode: decoded,
+              lotNumber,
+              detectedType: 'CONSUMABLE',
+            };
+          }
+
           return { raw: rawInput, cleanCode: decoded, detectedType: 'CONSUMABLE' };
         } catch {
           return { raw: rawInput, cleanCode: consumableMatch[1].trim(), detectedType: 'CONSUMABLE' };

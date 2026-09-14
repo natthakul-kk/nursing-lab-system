@@ -27,6 +27,9 @@ import {
   ShieldCheck,
   RotateCcw,
   Sparkles,
+  Layers,
+  X,
+  Info,
 } from 'lucide-react';
 import PosReceiptModal from '@/components/pos/PosReceiptModal';
 import QrScannerModal from '@/components/qrcode/QrScannerModal';
@@ -62,7 +65,7 @@ export default function PosPage() {
   // Scanner State
   const [scanInput, setScanInput] = useState<string>('');
   const [scanLoading, setScanLoading] = useState(false);
-  const [scanMessage, setScanMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [scanMessage, setScanMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
   const [showCameraScanner, setShowCameraScanner] = useState(false);
   const scannerInputRef = useRef<HTMLInputElement>(null);
 
@@ -79,6 +82,66 @@ export default function PosPage() {
   const [returnNote, setReturnNote] = useState('');
   const [returnSubmitting, setReturnSubmitting] = useState(false);
   const [returnSuccessMsg, setReturnSuccessMsg] = useState<string | null>(null);
+
+  // Multi-item lot selector state
+  const [multiLotModalData, setMultiLotModalData] = useState<{
+    lotNumber: string;
+    items: Array<any>;
+  } | null>(null);
+  const [multiLotSearch, setMultiLotSearch] = useState('');
+
+  const handleSelectMultiLotItem = (entry: any) => {
+    if (entry.box) {
+      const exists = cart.find((c) => c.type === 'BOX' && c.targetId === entry.box.id);
+      if (exists) {
+        setScanMessage({ type: 'error', text: `กล่องนี้ (${entry.box.boxCode}) อยู่ในตะกร้าแล้ว` });
+        setMultiLotModalData(null);
+        return;
+      }
+
+      setCart((prev) => [
+        ...prev,
+        {
+          id: `box_${entry.box.id}_${Date.now()}`,
+          type: 'BOX',
+          targetId: entry.box.id,
+          code: entry.box.boxCode,
+          name: `${entry.item.name} (${entry.box.boxCode})`,
+          unit: entry.item.unit || 'กล่อง',
+          quantity: 1,
+          unitCost: entry.unitCost || 0,
+          lotNumber: entry.lotNumber,
+          expiryDate: entry.expiryDate,
+          boxNumberInYear: entry.box.boxNumberInYear,
+        },
+      ]);
+      setScanMessage({ type: 'success', text: `เพิ่มกล่อง: ${entry.box.boxCode} (${entry.item.name})` });
+    } else {
+      const existingIdx = cart.findIndex((c) => c.type === 'ITEM' && c.targetId === entry.item.id);
+      if (existingIdx >= 0) {
+        const updated = [...cart];
+        updated[existingIdx].quantity += 1;
+        setCart(updated);
+      } else {
+        setCart((prev) => [
+          ...prev,
+          {
+            id: `item_${entry.item.id}_${Date.now()}`,
+            type: 'ITEM',
+            targetId: entry.item.id,
+            code: entry.item.code,
+            name: entry.item.name,
+            unit: entry.item.unit || 'ชิ้น',
+            quantity: 1,
+            unitCost: entry.unitCost || 0,
+          },
+        ]);
+      }
+      setScanMessage({ type: 'success', text: `เพิ่มพัสดุ: ${entry.item.name} (+1)` });
+    }
+    setMultiLotModalData(null);
+    scannerInputRef.current?.focus();
+  };
 
   // Audio Feedback using Web Audio API
   const playBeep = (freq = 880, duration = 0.1, type: OscillatorType = 'sine') => {
@@ -283,6 +346,20 @@ export default function PosPage() {
           setScanMessage({ type: 'error', text: `ล็อต "${data.lot.lotNumber}" (${data.item.name}) ไม่มีกล่องคงเหลือในสต็อก` });
           return;
         }
+      }
+
+      if (data.type === 'LOT_MULTIPLE') {
+        playBeep(660, 0.15, 'sine');
+        setMultiLotModalData({
+          lotNumber: data.lotNumber,
+          items: data.items || [],
+        });
+        setMultiLotSearch('');
+        setScanMessage({
+          type: 'info',
+          text: `พบวัสดุ ${data.items?.length || 0} รายการในงวดจัดซื้อ "${data.lotNumber}" กรุณาเลือกรายการที่ต้องการ`,
+        });
+        return;
       }
 
       if (data.type === 'ASSET') {
@@ -721,11 +798,15 @@ export default function PosPage() {
                   className={`p-2.5 rounded-xl text-xs font-bold flex items-center gap-2 animate-fadeIn ${
                     scanMessage.type === 'success'
                       ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200'
+                      : scanMessage.type === 'info'
+                      ? 'bg-blue-50 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200'
                       : 'bg-rose-50 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200'
                   }`}
                 >
                   {scanMessage.type === 'success' ? (
                     <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-600" />
+                  ) : scanMessage.type === 'info' ? (
+                    <Info className="w-4 h-4 flex-shrink-0 text-blue-600" />
                   ) : (
                     <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-600" />
                   )}
@@ -1135,6 +1216,102 @@ export default function PosPage() {
           receipt={completedReceipt}
           onClose={() => setCompletedReceipt(null)}
         />
+      )}
+
+      {/* Multi-Lot Matching Items Selector Modal */}
+      {multiLotModalData && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-800 space-y-4 max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-teal-50 dark:bg-teal-950/50 text-teal-600 dark:text-teal-400 flex items-center justify-center">
+                  <Layers className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                    เลือกรายการวัสดุสิ้นเปลือง
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    งวดจัดซื้อเลขที่: <strong className="font-mono text-teal-700 dark:text-teal-300">{multiLotModalData.lotNumber}</strong> (พบ {multiLotModalData.items.length} รายการ)
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMultiLotModalData(null)}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Filter Search */}
+            <div className="relative">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={multiLotSearch}
+                onChange={(e) => setMultiLotSearch(e.target.value)}
+                placeholder="พิมพ์ชื่อหรือรหัสพัสดุเพื่อค้นหา..."
+                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-teal-500"
+                autoFocus
+              />
+            </div>
+
+            {/* List of matching items */}
+            <div className="flex-1 overflow-y-auto pr-1 space-y-2 max-h-[50vh]">
+              {multiLotModalData.items
+                .filter((entry: any) => {
+                  const q = multiLotSearch.toLowerCase().trim();
+                  if (!q) return true;
+                  return (
+                    entry.item?.name?.toLowerCase().includes(q) ||
+                    entry.item?.code?.toLowerCase().includes(q) ||
+                    (entry.item?.categoryName && entry.item.categoryName.toLowerCase().includes(q))
+                  );
+                })
+                .map((entry: any) => (
+                  <button
+                    key={entry.lotId}
+                    type="button"
+                    onClick={() => handleSelectMultiLotItem(entry)}
+                    className="w-full text-left p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-850 hover:bg-teal-50/60 dark:hover:bg-teal-950/40 hover:border-teal-300 dark:hover:border-teal-700 transition flex items-center justify-between gap-3 group cursor-pointer"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold text-xs text-slate-900 dark:text-slate-100 group-hover:text-teal-700 dark:group-hover:text-teal-300 transition truncate">
+                        {entry.item.name}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                        <span className="font-mono font-bold text-slate-700 dark:text-slate-300">{entry.item.code}</span>
+                        {entry.item.categoryName && <span>• {entry.item.categoryName}</span>}
+                        <span className="text-teal-700 dark:text-teal-400 font-bold">
+                          • คงเหลือ {entry.quantityRemaining} {entry.item.unit}
+                        </span>
+                        {entry.box && (
+                          <span className="text-emerald-700 dark:text-emerald-400 font-mono">
+                            • 👉 {entry.box.boxCode}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="px-3 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-sm transition flex-shrink-0">
+                      เลือกรายการนี้
+                    </div>
+                  </button>
+                ))}
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setMultiLotModalData(null)}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+              >
+                ยกเลิก
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -52,7 +52,7 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
       // 1. Generate Lot Header QR
       if (lot?.lotNumber) {
         try {
-          const lotPayload = `${origin}/consumable/${encodeURIComponent(lot.lotNumber)}`;
+          const lotPayload = `${origin}/consumable/${encodeURIComponent(item.code)}?lot=${encodeURIComponent(lot.lotNumber)}`;
           qrs[lot.lotNumber] = await QRCode.toDataURL(lotPayload, {
             width: 160,
             margin: 1,

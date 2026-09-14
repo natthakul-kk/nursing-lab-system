@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { extractCleanCode } from '@/lib/scanner-utils';
 
 export async function GET(req: Request) {
   try {
@@ -9,15 +10,18 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'กรุณาระบุรหัสที่ต้องการค้นหา' }, { status: 400 });
     }
 
-    const code = rawCode.trim();
+    const { cleanCode, detectedType } = extractCleanCode(rawCode);
+    const code = cleanCode || rawCode.trim();
+    const rawTrim = rawCode.trim();
+    const candidates = Array.from(new Set([code, rawTrim])).filter(Boolean);
 
     // 1. ตรวจสอบว่าตรงกับรหัสผู้ใช้งาน (Student ID หรือ Email) หรือไม่
     const user = await prisma.user.findFirst({
       where: {
         OR: [
-          { studentId: code },
-          { email: code.toLowerCase() },
-          { id: code },
+          { studentId: { in: candidates } },
+          { email: { in: candidates.map((c) => c.toLowerCase()) } },
+          { id: { in: candidates } },
         ],
       },
       select: {
@@ -38,8 +42,10 @@ export async function GET(req: Request) {
     }
 
     // 2. ตรวจสอบว่าตรงกับรหัสกล่องพัสดุ (StockLotBox: เช่น CS-SHP-01-2569-B001) หรือไม่
-    const box = await prisma.stockLotBox.findUnique({
-      where: { boxCode: code },
+    const box = await prisma.stockLotBox.findFirst({
+      where: {
+        boxCode: { in: candidates },
+      },
       include: {
         lot: {
           include: {
@@ -73,8 +79,10 @@ export async function GET(req: Request) {
     }
 
     // 3. ตรวจสอบว่าตรงกับรหัสซองย่อยสเตอร์ไรด์ (RepackPackItem: เช่น SL-CS-...) หรือไม่
-    const pack = await prisma.repackPackItem.findUnique({
-      where: { packCode: code },
+    const pack = await prisma.repackPackItem.findFirst({
+      where: {
+        packCode: { in: candidates },
+      },
       include: {
         repackRecord: {
           include: {
@@ -120,9 +128,9 @@ export async function GET(req: Request) {
     const asset = await prisma.equipmentAsset.findFirst({
       where: {
         OR: [
-          { assetCode: code },
-          { govAssetCode: code },
-          { id: code },
+          { assetCode: { in: candidates } },
+          { govAssetCode: { in: candidates } },
+          { id: { in: candidates } },
         ],
       },
       include: {
@@ -183,8 +191,8 @@ export async function GET(req: Request) {
     const item = await prisma.item.findFirst({
       where: {
         OR: [
-          { code: code },
-          { id: code },
+          { code: { in: candidates } },
+          { id: { in: candidates } },
         ],
       },
       include: {

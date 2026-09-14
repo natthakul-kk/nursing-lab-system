@@ -7,6 +7,8 @@ import ConsumableQrModal from '@/components/qrcode/ConsumableQrModal';
 import BoxStickerModal from '@/components/qrcode/BoxStickerModal';
 import BatchConsumableStickerModal from '@/components/qrcode/BatchConsumableStickerModal';
 import BatchAssetStickerModal from '@/components/qrcode/BatchAssetStickerModal';
+import QrScannerModal from '@/components/qrcode/QrScannerModal';
+import { extractCleanCode } from '@/lib/scanner-utils';
 import { formatImageUrl } from '@/lib/image-helper';
 import {
   Boxes,
@@ -64,6 +66,7 @@ export default function InventoryPage() {
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [showSearchScanner, setShowSearchScanner] = useState(false);
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
@@ -675,13 +678,28 @@ export default function InventoryPage() {
   };
 
   const filteredItems = useMemo(() => {
+    const { cleanCode } = extractCleanCode(searchQuery);
+    const q = (cleanCode || searchQuery).toLowerCase().trim();
+
     return items.filter((item) => {
-      const matchesType =
-        filterType === 'ALL' || item.type === filterType;
+      const matchesType = filterType === 'ALL' || item.type === filterType;
+      if (!q) return matchesType;
+
       const matchesSearch =
-        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.category?.name.toLowerCase().includes(searchQuery.toLowerCase());
+        item.name.toLowerCase().includes(q) ||
+        item.code.toLowerCase().includes(q) ||
+        item.category?.name?.toLowerCase().includes(q) ||
+        (item.assets && Array.isArray(item.assets) && item.assets.some((a: any) =>
+          a.assetCode?.toLowerCase().includes(q) ||
+          a.govAssetCode?.toLowerCase().includes(q) ||
+          a.serialNumber?.toLowerCase().includes(q) ||
+          a.location?.toLowerCase().includes(q)
+        )) ||
+        (item.stockLots && Array.isArray(item.stockLots) && item.stockLots.some((l: any) =>
+          l.lotNumber?.toLowerCase().includes(q) ||
+          (l.boxes && Array.isArray(l.boxes) && l.boxes.some((b: any) => b.boxCode?.toLowerCase().includes(q)))
+        ));
+
       return matchesType && matchesSearch;
     });
   }, [items, filterType, searchQuery]);
@@ -1033,16 +1051,35 @@ export default function InventoryPage() {
             </button>
           )}
 
-          {/* Search Input */}
-          <div className="relative w-full md:w-60">
+          {/* Search Input with Scanner Button */}
+          <div className="relative w-full md:w-72 flex items-center">
             <input
               type="text"
-              placeholder="ค้นหาชื่อ, รหัส, หมวดหมู่..."
+              placeholder="ค้นหาชื่อ, รหัส, ยิง Barcode/QR..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl py-2 pl-9 pr-4 text-xs focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val.includes('http') || val.includes('/asset/') || val.includes('/equipment/') || val.includes('/consumable/') || val.startsWith('{')) {
+                  const { cleanCode } = extractCleanCode(val);
+                  if (cleanCode) {
+                    setSearchQuery(cleanCode);
+                    return;
+                  }
+                }
+                setSearchQuery(val);
+              }}
+              className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl py-2 pl-9 pr-14 text-xs focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
             />
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+            <button
+              type="button"
+              onClick={() => setShowSearchScanner(true)}
+              title="เปิดกล้องสแกน Barcode / QR Code เพื่อค้นหาพัสดุทันที"
+              className="absolute right-1.5 top-1.5 bottom-1.5 px-2 rounded-lg bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 dark:hover:bg-teal-900/80 text-teal-700 dark:text-teal-300 text-[11px] font-bold flex items-center gap-1 border border-teal-200/80 dark:border-teal-800 transition cursor-pointer"
+            >
+              <QrCode className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">สแกน</span>
+            </button>
           </div>
         </div>
       </div>
@@ -3589,6 +3626,20 @@ export default function InventoryPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Quick QR & Barcode Scanner Modal for Inventory Search */}
+      {showSearchScanner && (
+        <QrScannerModal
+          isOpen={showSearchScanner}
+          onClose={() => setShowSearchScanner(false)}
+          onScan={(scannedCode) => {
+            setShowSearchScanner(false);
+            if (scannedCode) {
+              setSearchQuery(scannedCode);
+            }
+          }}
+        />
       )}
 
     </div>

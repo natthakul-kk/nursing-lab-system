@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import PosReceiptModal from '@/components/pos/PosReceiptModal';
 import QrScannerModal from '@/components/qrcode/QrScannerModal';
+import { extractCleanCode } from '@/lib/scanner-utils';
 
 interface CartItem {
   id: string; // unique cart entry ID
@@ -134,7 +135,8 @@ export default function PosPage() {
 
   // Process Barcode / QR scan
   const handleProcessScan = async (codeToScan: string) => {
-    const raw = codeToScan.trim();
+    const { cleanCode } = extractCleanCode(codeToScan);
+    const raw = cleanCode || codeToScan.trim();
     if (!raw) return;
     setScanLoading(true);
     setScanMessage(null);
@@ -364,7 +366,8 @@ export default function PosPage() {
 
   // Quick Return Handlers
   const handleSearchAssetToReturn = async (code: string) => {
-    const raw = code.trim();
+    const { cleanCode } = extractCleanCode(code);
+    const raw = cleanCode || code.trim();
     if (!raw) return;
     setReturnSearching(true);
     setReturnSuccessMsg(null);
@@ -618,9 +621,19 @@ export default function PosPage() {
                 <input
                   ref={scannerInputRef}
                   type="text"
-                  placeholder="ยิงบาร์โค้ดที่นี่ (Beep & Scan)..."
+                  placeholder="ยิง Barcode หรือสแกน QR Code ที่นี่ (Beep & Scan)..."
                   value={scanInput}
-                  onChange={(e) => setScanInput(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val.includes('http') || val.includes('/asset/') || val.includes('/equipment/') || val.includes('/consumable/') || val.startsWith('{')) {
+                      const { cleanCode } = extractCleanCode(val);
+                      if (cleanCode) {
+                        setScanInput(cleanCode);
+                        return;
+                      }
+                    }
+                    setScanInput(val);
+                  }}
                   disabled={scanLoading}
                   className="w-full bg-white dark:bg-slate-950 border-2 border-teal-400 dark:border-teal-700 rounded-2xl pl-10 pr-20 py-3 text-sm font-mono font-bold text-slate-900 dark:text-white shadow-inner focus:outline-none focus:ring-4 focus:ring-teal-500/20"
                 />
@@ -652,7 +665,7 @@ export default function PosPage() {
               )}
 
               <div className="text-[10px] text-slate-400 dark:text-slate-500 leading-relaxed">
-                💡 รองรับทั้ง: <b>บัตรนิสิต</b>, <b>กล่องพัสดุ (Box)</b>, <b>ซองสเตอร์ไรด์ (Pack)</b>, <b>รหัสทั่วไป (Item)</b>, และ <b>ครุภัณฑ์ (Asset)</b>
+                💡 รองรับการสแกนทั้ง <b>Barcode</b> และ <b>QR Code</b> ทุกรูปแบบ: บัตรนิสิต, กล่องพัสดุ (Box), ซองสเตอร์ไรด์ (Pack), รหัสทั่วไป (Item), และ ครุภัณฑ์ (Asset)
               </div>
             </div>
           </div>
@@ -880,9 +893,19 @@ export default function PosPage() {
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="เช่น EQ-MNK-001, 7440-001-0001..."
+                  placeholder="สแกน QR Code หรือยิง Barcode เช่น EQ-MNK-001..."
                   value={returnAssetCode}
-                  onChange={(e) => setReturnAssetCode(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val.includes('http') || val.includes('/asset/') || val.includes('/equipment/') || val.startsWith('{')) {
+                      const { cleanCode } = extractCleanCode(val);
+                      if (cleanCode) {
+                        setReturnAssetCode(cleanCode);
+                        return;
+                      }
+                    }
+                    setReturnAssetCode(val);
+                  }}
                   disabled={returnSearching}
                   className="w-full bg-slate-50 dark:bg-slate-950 border-2 border-indigo-400 dark:border-indigo-700 rounded-2xl pl-10 pr-24 py-3 text-sm font-mono font-bold text-slate-900 dark:text-white focus:ring-4 focus:ring-indigo-500/20"
                 />

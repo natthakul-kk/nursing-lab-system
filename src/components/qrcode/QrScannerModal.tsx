@@ -14,6 +14,8 @@ import {
   Sparkles
 } from 'lucide-react';
 
+import { extractCleanCode } from '@/lib/scanner-utils';
+
 interface QrScannerModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -29,77 +31,32 @@ export default function QrScannerModal({ isOpen, onClose, onScan }: QrScannerMod
   const scannerRef = useRef<any>(null);
   const readerElementId = 'qr-reader-video-container';
 
-  // Helper to extract asset code from scanned text (URL, JSON, or plain code)
+  // Helper to extract clean code from scanned text (URL, JSON, or plain barcode)
   const processScannedResult = (decodedText: string) => {
     if (!decodedText) return;
-    const cleanText = decodedText.trim();
+    const { cleanCode, detectedType } = extractCleanCode(decodedText);
+    if (!cleanCode) return;
 
     if (onScan) {
       stopScanner();
       onClose();
-      onScan(cleanText);
+      onScan(cleanCode);
       return;
     }
 
-    // 1. Check if it's a URL like http.../asset/[code]
-    const assetUrlMatch = cleanText.match(/\/asset\/([^\/\?#]+)/);
-    if (assetUrlMatch && assetUrlMatch[1]) {
-      const code = decodeURIComponent(assetUrlMatch[1]);
-      stopScannerAndNavigate(`/asset/${encodeURIComponent(code)}`);
+    // Standalone Navigation
+    if (detectedType === 'PRACTICE' || decodedText.includes('/practice')) {
+      stopScannerAndNavigate(`/practice?token=${encodeURIComponent(cleanCode)}`);
       return;
     }
 
-    // Check if it's a URL like http.../consumable/[code]
-    const consumableUrlMatch = cleanText.match(/\/consumable\/([^\/\?#]+)/);
-    if (consumableUrlMatch && consumableUrlMatch[1]) {
-      const code = decodeURIComponent(consumableUrlMatch[1]);
-      stopScannerAndNavigate(`/consumable/${encodeURIComponent(code)}`);
+    if (detectedType === 'CONSUMABLE' || decodedText.includes('/consumable/')) {
+      stopScannerAndNavigate(`/consumable/${encodeURIComponent(cleanCode)}`);
       return;
     }
 
-    // 2. Check if it's JSON
-    if (cleanText.startsWith('{') && cleanText.endsWith('}')) {
-      try {
-        const parsed = JSON.parse(cleanText);
-        if (parsed.assetCode) {
-          stopScannerAndNavigate(`/asset/${encodeURIComponent(parsed.assetCode)}`);
-          return;
-        }
-        if (parsed.boxCode || parsed.packCode || parsed.lotNumber) {
-          stopScannerAndNavigate(`/consumable/${encodeURIComponent(parsed.boxCode || parsed.packCode || parsed.lotNumber)}`);
-          return;
-        }
-      } catch (e) {
-        // ignore
-      }
-    }
-
-    // 3. Practice Booking check-in QR code check (SPK-..., SPB-..., or URL containing /practice)
-    const upperText = cleanText.toUpperCase();
-    if (
-      upperText.startsWith('SPK-') ||
-      upperText.startsWith('SPB-') ||
-      cleanText.includes('/practice')
-    ) {
-      stopScannerAndNavigate(`/practice?token=${encodeURIComponent(cleanText)}`);
-      return;
-    }
-
-    // 4. Plain code check: if starts with CON-, CS-, RP-, SL-, or has -B / -P, it's a consumable
-    if (
-      upperText.startsWith('CON-') ||
-      upperText.startsWith('CS-') ||
-      upperText.startsWith('RP-') ||
-      upperText.startsWith('SL-') ||
-      upperText.includes('-B') ||
-      upperText.includes('-P')
-    ) {
-      stopScannerAndNavigate(`/consumable/${encodeURIComponent(cleanText)}`);
-      return;
-    }
-
-    // Default to asset code
-    stopScannerAndNavigate(`/asset/${encodeURIComponent(cleanText)}`);
+    // Default to Asset
+    stopScannerAndNavigate(`/asset/${encodeURIComponent(cleanCode)}`);
   };
 
   const stopScannerAndNavigate = (targetUrl: string) => {
@@ -147,7 +104,14 @@ export default function QrScannerModal({ isOpen, onClose, onScan }: QrScannerMod
           { facingMode: 'environment' }, // prefer rear camera
           {
             fps: 15,
-            qrbox: { width: 250, height: 250 },
+            qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
+              const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+              const qrboxSize = Math.floor(minEdge * 0.75);
+              return {
+                width: Math.max(qrboxSize, 220),
+                height: Math.max(qrboxSize, 220),
+              };
+            },
             aspectRatio: 1.0,
           },
           (decodedText) => {

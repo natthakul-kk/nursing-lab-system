@@ -164,7 +164,7 @@ export default function BatchAssetStickerModal({
 
       // Generate QRs
       for (const { asset } of assetsToPrint) {
-        const payload = `${origin}/equipment/${encodeURIComponent(asset.assetCode || asset.govAssetCode)}`;
+        const payload = `${origin}/asset/${encodeURIComponent(asset.assetCode || asset.govAssetCode)}`;
         if (!qrs[payload]) {
           qrs[payload] = await QRCode.toDataURL(payload, {
             width: 200,

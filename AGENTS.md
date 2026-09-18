@@ -12,3 +12,7 @@
 4. **Never touch or save files to the User's Desktop (`C:\Users\...\Desktop`)**:
    - Strictly keep ALL generated files, exports, documents, diagrams, and assets inside the project repository `d:\LAB-system\` (e.g., `d:\LAB-system\system_flow\`, `d:\LAB-system\manual\`).
    - Never place, copy, or move files to the Desktop or any user folders outside `d:\LAB-system`.
+5. **Terminology Policy: Strictly use "นิสิต" (Never use "นักศึกษา")**:
+   - Always and strictly refer to students as **"นิสิต"** across all UI labels, messages, placeholder texts, code comments, notifications, user manuals, documentation, responses, and generated content.
+   - **Never** use the word **"นักศึกษา"** under any circumstances.
+

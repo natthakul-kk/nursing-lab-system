@@ -20,7 +20,7 @@ import {
   QrCode
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
-import { formatUserName, formatTeacherName } from '@/lib/user-utils';
+import { formatUserName, formatTeacherName, formatApproverDisplay, formatAcknowledgeDisplay } from '@/lib/user-utils';
 
 export default function StudentDashboard() {
   const { currentUser } = useAuth();
@@ -361,12 +361,15 @@ export default function StudentDashboard() {
                           วิชา {req.course.code} - {req.course.name}
                         </span>
                       )}
-                      {req.instructorAcknowledged ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                          <span>อาจารย์รับทราบแล้ว ({formatTeacherName(req.advisorName || req.course?.instructorName || 'อาจารย์')})</span>
-                        </span>
-                      ) : (
+                      {req.instructorAcknowledged ? (() => {
+                        const ack = formatAcknowledgeDisplay(req.advisorName || req.course?.instructorName);
+                        return (
+                          <span className={`inline-flex items-center gap-1 text-[11px] font-bold ${ack.colorClass} ${ack.bgClass} border ${ack.borderClass} px-2.5 py-0.5 rounded-full`}>
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>{ack.label} ({ack.name})</span>
+                          </span>
+                        );
+                      })() : (
                         <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
                           <GraduationCap className="w-3.5 h-3.5 text-amber-600" />
                           <span>รออาจารย์รับทราบ ({formatTeacherName(req.advisorName || req.course?.instructorName || 'อาจารย์ประจำวิชา')})</span>
@@ -385,7 +388,7 @@ export default function StudentDashboard() {
                             : 'bg-rose-100 text-rose-800 border-rose-200'
                         }`}
                       >
-                        {req.status === 'APPROVED' && 'อนุมัติแล้ว (รอรับของ)'}
+                        {req.status === 'APPROVED' && `อนุมัติแล้ว (รอรับของ)${req.approver ? ` • โดย ${formatApproverDisplay(req.approver)}` : ''}`}
                         {req.status === 'BORROWED' && 'กำลังยืมใช้งาน'}
                         {req.status === 'PENDING' && 'รอพิจารณาอนุมัติ'}
                         {(req.status === 'RETURNED' || req.status === 'RETURNED_COMPLETE') && 'ส่งคืนสมบูรณ์'}

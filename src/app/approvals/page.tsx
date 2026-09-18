@@ -26,7 +26,7 @@ import {
   Building2
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
-import { formatUserName, formatTeacherName, stripAllPrefixes } from '@/lib/user-utils';
+import { formatUserName, formatTeacherName, stripAllPrefixes, formatApproverDisplay, formatAcknowledgeDisplay } from '@/lib/user-utils';
 
 export default function ApprovalsPage() {
   const { currentUser, isApprover, isAdmin, isOfficer, isTeacher } = useAuth();
@@ -141,7 +141,9 @@ export default function ApprovalsPage() {
         body: JSON.stringify({
           action: 'ACKNOWLEDGE',
           userId: currentUser?.id,
-          advisorName: formatTeacherName(currentUser),
+          advisorName: (isAdmin || isOfficer || currentUser?.role === 'ADMIN' || currentUser?.role === 'OFFICER')
+            ? `${formatUserName(currentUser)} (แอดมิน)`
+            : formatTeacherName(currentUser),
         }),
       });
 
@@ -707,12 +709,15 @@ export default function ApprovalsPage() {
                           <Sparkles className="w-3 h-3 text-indigo-600" /> คำขอรวม One-Stop
                         </span>
                       )}
-                      {req.instructorAcknowledged ? (
-                        <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                          <span>อาจารย์รับทราบแล้ว ({formatTeacherName(req.advisorName || req.course?.instructorName || 'อาจารย์')}{req.acknowledgedAt ? ` • ${new Date(req.acknowledgedAt).toLocaleDateString('th-TH')}` : ''})</span>
-                        </div>
-                      ) : (
+                      {req.instructorAcknowledged ? (() => {
+                        const ack = formatAcknowledgeDisplay(req.advisorName || req.course?.instructorName);
+                        return (
+                          <div className={`flex items-center gap-1 text-[11px] font-bold ${ack.colorClass} ${ack.bgClass} border ${ack.borderClass} px-2.5 py-0.5 rounded-full`}>
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>{ack.label} ({ack.name}{req.acknowledgedAt ? ` • ${new Date(req.acknowledgedAt).toLocaleDateString('th-TH')}` : ''})</span>
+                          </div>
+                        );
+                      })() : (
                         <div className="flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full animate-pulse">
                           <Clock className="w-3.5 h-3.5 text-amber-600" />
                           <span>รออาจารย์รับทราบ ({formatTeacherName(req.advisorName || req.course?.instructorName || 'อาจารย์ผู้สอน')})</span>
@@ -794,12 +799,15 @@ export default function ApprovalsPage() {
                             <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
                             คำขอนี้ยังไม่ได้รับการกดรับทราบจากอาจารย์ประจำวิชา
                           </span>
-                        ) : (
-                          <span className="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg font-medium inline-flex items-center gap-1">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                            {formatTeacherName(req.advisorName || 'อาจารย์ประจำวิชา')} รับทราบเรียบร้อยแล้ว
-                          </span>
-                        )}
+                        ) : (() => {
+                          const ack = formatAcknowledgeDisplay(req.advisorName || req.course?.instructorName);
+                          return (
+                            <span className={`text-[11px] ${ack.colorClass} ${ack.bgClass} border ${ack.borderClass} px-2.5 py-1 rounded-lg font-medium inline-flex items-center gap-1`}>
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              {ack.name} รับทราบเรียบร้อยแล้ว
+                            </span>
+                          );
+                        })()}
                       </div>
 
                       <div className="flex flex-wrap items-center justify-end gap-2">
@@ -815,7 +823,7 @@ export default function ApprovalsPage() {
                             ) : (
                               <GraduationCap className="w-3.5 h-3.5 text-indigo-600" />
                             )}
-                            <span>{acknowledgingId === req.id ? 'กำลังบันทึกการรับทราบ...' : 'อาจารย์กดรับทราบคำขอ'}</span>
+                            <span>{acknowledgingId === req.id ? 'กำลังบันทึกการรับทราบ...' : (isAdmin || isOfficer ? 'รับทราบคำขอ (แอดมิน)' : 'อาจารย์กดรับทราบคำขอ')}</span>
                           </button>
                         )}
 
@@ -865,14 +873,47 @@ export default function ApprovalsPage() {
                     </div>
                   ) : statusFilter === 'APPROVED' ? (
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                        อนุมัติแล้ว {req.approvedAt ? `(${new Date(req.approvedAt).toLocaleDateString('th-TH')})` : ''}
-                      </span>
-                      {req.approver?.name && (
-                        <span className="text-slate-500 font-medium">
-                          ผู้อนุมัติ: <strong className="text-slate-700">{req.approver.name}</strong>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          อนุมัติแล้ว {req.approvedAt ? `(${new Date(req.approvedAt).toLocaleDateString('th-TH')})` : ''}
                         </span>
+                        {req.approver && (
+                          <span className="text-slate-700 font-medium bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px]">
+                            ผู้อนุมัติ: <strong className="text-teal-700 dark:text-teal-400">{formatApproverDisplay(req.approver)}</strong>
+                          </span>
+                        )}
+                        {!req.instructorAcknowledged ? (
+                          <span className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-lg font-medium inline-flex items-center gap-1">
+                            <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
+                            ⚠️ รออาจารย์ประจำวิชา ({formatTeacherName(req.course?.instructorName || req.advisorName || 'อาจารย์')}) รับทราบ
+                          </span>
+                        ) : (() => {
+                          const ack = formatAcknowledgeDisplay(req.advisorName || req.course?.instructorName);
+                          return (
+                            <span className={`text-[11px] ${ack.colorClass} ${ack.bgClass} border ${ack.borderClass} px-2.5 py-1 rounded-lg font-medium inline-flex items-center gap-1`}>
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              {ack.name} รับทราบแล้ว
+                            </span>
+                          );
+                        })()}
+                      </div>
+
+                      {/* Late acknowledgment button for teacher or admin */}
+                      {!req.instructorAcknowledged && (isTeacher || canApprove) && (
+                        <button
+                          disabled={acknowledgingId === req.id || submitting}
+                          onClick={() => handleAcknowledge(req.id, 'BORROW')}
+                          className="px-3.5 py-1.5 rounded-xl text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed border border-indigo-200 shadow-sm transition cursor-pointer flex items-center gap-1.5"
+                          title="อาจารย์ประจำวิชาสามารถกดรับทราบย้อนหลังได้"
+                        >
+                          {acknowledgingId === req.id ? (
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin text-indigo-600" />
+                          ) : (
+                            <GraduationCap className="w-3.5 h-3.5 text-indigo-600" />
+                          )}
+                          <span>{acknowledgingId === req.id ? 'กำลังบันทึก...' : (isAdmin || isOfficer ? 'รับทราบคำขอ (แอดมิน)' : 'อาจารย์กดรับทราบคำขอ')}</span>
+                        </button>
                       )}
                     </div>
                   ) : (
@@ -920,12 +961,15 @@ export default function ApprovalsPage() {
                         [{req.course?.code}] {req.course?.name}
                       </span>
                       <span className="text-slate-500 font-medium">โดย {formatUserName(req.user)}</span>
-                      {req.instructorAcknowledged ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                          <span>อาจารย์รับทราบแล้ว ({formatTeacherName(req.advisorName || req.course?.instructorName || 'อาจารย์')}{req.acknowledgedAt ? ` • ${new Date(req.acknowledgedAt).toLocaleDateString('th-TH')}` : ''})</span>
-                        </span>
-                      ) : (
+                      {req.instructorAcknowledged ? (() => {
+                        const ack = formatAcknowledgeDisplay(req.advisorName || req.course?.instructorName);
+                        return (
+                          <span className={`inline-flex items-center gap-1 text-[11px] font-bold ${ack.colorClass} ${ack.bgClass} border ${ack.borderClass} px-2.5 py-0.5 rounded-full`}>
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>{ack.label} ({ack.name}{req.acknowledgedAt ? ` • ${new Date(req.acknowledgedAt).toLocaleDateString('th-TH')}` : ''})</span>
+                          </span>
+                        );
+                      })() : (
                         <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full animate-pulse">
                           <Clock className="w-3.5 h-3.5 text-amber-600" />
                           <span>รออาจารย์รับทราบ ({formatTeacherName(req.advisorName || req.course?.instructorName || 'อาจารย์ผู้รับผิดชอบ')})</span>
@@ -985,12 +1029,15 @@ export default function ApprovalsPage() {
                             <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
                             คำขอนี้ยังไม่ได้รับการกดรับทราบจากอาจารย์ประจำวิชา
                           </span>
-                        ) : (
-                          <span className="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg font-medium inline-flex items-center gap-1">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                            {formatTeacherName(req.advisorName || 'อาจารย์ผู้รับผิดชอบ')} รับทราบเรียบร้อยแล้ว
-                          </span>
-                        )}
+                        ) : (() => {
+                          const ack = formatAcknowledgeDisplay(req.advisorName || req.course?.instructorName);
+                          return (
+                            <span className={`text-[11px] ${ack.colorClass} ${ack.bgClass} border ${ack.borderClass} px-2.5 py-1 rounded-lg font-medium inline-flex items-center gap-1`}>
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              {ack.name} รับทราบเรียบร้อยแล้ว
+                            </span>
+                          );
+                        })()}
                       </div>
 
                       <div className="flex flex-wrap items-center justify-end gap-2">
@@ -1006,7 +1053,7 @@ export default function ApprovalsPage() {
                             ) : (
                               <GraduationCap className="w-3.5 h-3.5 text-indigo-600" />
                             )}
-                            <span>{acknowledgingId === req.id ? 'กำลังบันทึกการรับทราบ...' : 'อาจารย์กดรับทราบคำขอ'}</span>
+                            <span>{acknowledgingId === req.id ? 'กำลังบันทึกการรับทราบ...' : (isAdmin || isOfficer ? 'รับทราบคำขอ (แอดมิน)' : 'อาจารย์กดรับทราบคำขอ')}</span>
                           </button>
                         )}
 
@@ -1052,14 +1099,47 @@ export default function ApprovalsPage() {
                     </div>
                   ) : statusFilter === 'APPROVED' ? (
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                        อนุมัติแล้ว {req.approvedAt ? `(${new Date(req.approvedAt).toLocaleDateString('th-TH')})` : ''}
-                      </span>
-                      {req.approver?.name && (
-                        <span className="text-slate-500 font-medium">
-                          ผู้อนุมัติ: <strong className="text-slate-700">{req.approver.name}</strong>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          อนุมัติแล้ว {req.approvedAt ? `(${new Date(req.approvedAt).toLocaleDateString('th-TH')})` : ''}
                         </span>
+                        {req.approver && (
+                          <span className="text-slate-700 font-medium bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px]">
+                            ผู้อนุมัติ: <strong className="text-teal-700 dark:text-teal-400">{formatApproverDisplay(req.approver)}</strong>
+                          </span>
+                        )}
+                        {!req.instructorAcknowledged ? (
+                          <span className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-lg font-medium inline-flex items-center gap-1">
+                            <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
+                            ⚠️ รออาจารย์ประจำวิชา ({formatTeacherName(req.course?.instructorName || req.advisorName || 'อาจารย์')}) รับทราบ
+                          </span>
+                        ) : (() => {
+                          const ack = formatAcknowledgeDisplay(req.advisorName || req.course?.instructorName);
+                          return (
+                            <span className={`text-[11px] ${ack.colorClass} ${ack.bgClass} border ${ack.borderClass} px-2.5 py-1 rounded-lg font-medium inline-flex items-center gap-1`}>
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              {ack.name} รับทราบแล้ว
+                            </span>
+                          );
+                        })()}
+                      </div>
+
+                      {/* Late acknowledgment button for teacher or admin */}
+                      {!req.instructorAcknowledged && (isTeacher || canApprove) && (
+                        <button
+                          disabled={acknowledgingId === req.id || submitting}
+                          onClick={() => handleAcknowledge(req.id, 'REQUISITION')}
+                          className="px-3.5 py-1.5 rounded-xl text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed border border-indigo-200 shadow-sm transition cursor-pointer flex items-center gap-1.5"
+                          title="อาจารย์ประจำวิชาสามารถกดรับทราบย้อนหลังได้"
+                        >
+                          {acknowledgingId === req.id ? (
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin text-indigo-600" />
+                          ) : (
+                            <GraduationCap className="w-3.5 h-3.5 text-indigo-600" />
+                          )}
+                          <span>{acknowledgingId === req.id ? 'กำลังบันทึก...' : (isAdmin || isOfficer ? 'รับทราบคำขอ (แอดมิน)' : 'อาจารย์กดรับทราบคำขอ')}</span>
+                        </button>
                       )}
                     </div>
                   ) : (

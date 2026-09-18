@@ -139,8 +139,6 @@ export async function GET(req: Request) {
           where: { id },
           data: {
             status: 'APPROVED',
-            instructorAcknowledged: true,
-            acknowledgedAt: new Date(),
             approvedAt: new Date(),
           },
         });
@@ -151,8 +149,6 @@ export async function GET(req: Request) {
             where: { id: borrow.requisitionRequestId },
             data: {
               status: 'APPROVED',
-              instructorAcknowledged: true,
-              acknowledgedAt: new Date(),
               approvedAt: new Date(),
             },
           }).catch((err) => console.error('Failed to sync linked requisition in email quick action:', err));

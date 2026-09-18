@@ -62,8 +62,6 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           status: 'APPROVED',
           approverId: userId,
           approvedAt: new Date(),
-          instructorAcknowledged: true,
-          acknowledgedAt: requisition.acknowledgedAt || new Date(),
         },
       });
 
@@ -75,8 +73,6 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
             status: 'APPROVED',
             approverId: userId,
             approvedAt: new Date(),
-            instructorAcknowledged: true,
-            acknowledgedAt: new Date(),
           },
         }).catch((e) => console.error('Failed to sync linked borrow approve:', e));
       }

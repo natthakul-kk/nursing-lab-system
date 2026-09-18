@@ -32,7 +32,7 @@ import LoadingSpinner from '@/components/common/LoadingSpinner';
 import UnifiedRequestModal from '@/components/requests/UnifiedRequestModal';
 import NewAllocationModal from '@/components/borrow/NewAllocationModal';
 import BulkAllocationReturnModal from '@/components/borrow/BulkAllocationReturnModal';
-import { formatUserName, formatTeacherName } from '@/lib/user-utils';
+import { formatUserName, formatTeacherName, formatApproverDisplay, formatAcknowledgeDisplay } from '@/lib/user-utils';
 
 export default function BorrowPage() {
   const { currentUser, isOfficer, isApprover, isAdmin, isTeacher } = useAuth();
@@ -341,7 +341,9 @@ export default function BorrowPage() {
         body: JSON.stringify({
           action: 'ACKNOWLEDGE',
           userId: currentUser?.id,
-          advisorName: formatTeacherName(currentUser),
+          advisorName: (isAdmin || isOfficer || currentUser?.role === 'ADMIN' || currentUser?.role === 'OFFICER')
+            ? `${formatUserName(currentUser)} (แอดมิน)`
+            : formatTeacherName(currentUser),
         }),
       });
 
@@ -623,6 +625,11 @@ export default function BorrowPage() {
                     {req.requestNumber}
                   </span>
                   <div>{getStatusBadge(req.status)}</div>
+                  {req.status === 'APPROVED' && req.approver && (
+                    <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-full border border-slate-200 dark:border-slate-700">
+                      ผู้อนุมัติ: <strong className="text-teal-700 dark:text-teal-300">{formatApproverDisplay(req.approver)}</strong>
+                    </span>
+                  )}
                   {req.requisitionRequest && (
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-teal-50 to-indigo-50 dark:from-teal-950/60 dark:to-indigo-950/60 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
                       <Sparkles className="w-3 h-3 text-indigo-600 dark:text-indigo-400" /> คำขอรวม One-Stop
@@ -646,12 +653,15 @@ export default function BorrowPage() {
                       <span>{req.course.code}</span>
                     </div>
                   )}
-                  {req.instructorAcknowledged ? (
-                    <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200 dark:border-emerald-800 px-2.5 py-0.5 rounded-full">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                      <span>อ.รับทราบแล้ว ({formatTeacherName(req.advisorName || req.course?.instructorName || 'อาจารย์')}{req.acknowledgedAt ? ` • ${new Date(req.acknowledgedAt).toLocaleDateString('th-TH')}` : ''})</span>
-                    </div>
-                  ) : (
+                  {req.instructorAcknowledged ? (() => {
+                    const ack = formatAcknowledgeDisplay(req.advisorName || req.course?.instructorName);
+                    return (
+                      <div className={`flex items-center gap-1 text-[11px] font-bold ${ack.colorClass} ${ack.bgClass} border ${ack.borderClass} px-2.5 py-0.5 rounded-full`}>
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>{ack.label} ({ack.name}{req.acknowledgedAt ? ` • ${new Date(req.acknowledgedAt).toLocaleDateString('th-TH')}` : ''})</span>
+                      </div>
+                    );
+                  })() : (
                     <div className="flex items-center gap-1 text-[11px] font-medium text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/70 border border-amber-200 dark:border-amber-800 px-2.5 py-0.5 rounded-full">
                       <Clock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                       <span>รออาจารย์รับทราบ ({formatTeacherName(req.advisorName || req.course?.instructorName || 'อาจารย์ผู้สอน')})</span>
@@ -819,12 +829,12 @@ export default function BorrowPage() {
                 )}
               </div>
 
-              {/* Instructor Acknowledgment Button for Pending Requests */}
-              {req.status === 'PENDING' && !req.instructorAcknowledged && (isTeacher || isApprover || isAdmin) && (
+              {/* Instructor Acknowledgment Button (shown whenever not yet acknowledged, even if already approved) */}
+              {!req.instructorAcknowledged && req.status !== 'REJECTED' && req.status !== 'CANCELLED' && req.status !== 'RETURNED_COMPLETE' && (isTeacher || isApprover || isAdmin) && (
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-3 border-t border-slate-100 bg-indigo-50/40 -mx-5 -mb-5 p-3.5 rounded-b-2xl">
                   <span className="text-xs text-indigo-900 font-medium flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5 text-indigo-600" />
-                    คำขอนี้ยังรอยืนยันการรับทราบจากอาจารย์ประจำวิชา
+                    คำขอนี้ยังรอยืนยันการรับทราบจากอาจารย์ประจำวิชา ({formatTeacherName(req.course?.instructorName || req.advisorName || 'อาจารย์ประจำวิชา')})
                   </span>
                   <button
                     disabled={acknowledgingId === req.id || submitting}
@@ -839,7 +849,7 @@ export default function BorrowPage() {
                     ) : (
                       <>
                         <GraduationCap className="w-4 h-4" />
-                        <span>อาจารย์กดรับทราบคำขอ (Acknowledge)</span>
+                        <span>{isAdmin || isOfficer ? 'รับทราบคำขอ (แอดมิน)' : 'อาจารย์กดรับทราบคำขอ (Acknowledge)'}</span>
                       </>
                     )}
                   </button>

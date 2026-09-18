@@ -1017,7 +1017,7 @@ export default function UsersPage() {
                   onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
                   className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-teal-500/20 cursor-pointer"
                 >
-                  <option value="USER">นิสิต / นักศึกษา (Student)</option>
+                  <option value="USER">นิสิต (Student)</option>
                   <option value="TEACHER">อาจารย์ผู้สอน / ที่ปรึกษา (Teacher)</option>
                   <option value="APPROVER">ผู้อนุมัติ / หัวหน้าภาค (Approver)</option>
                   <option value="OFFICER">เจ้าหน้าที่ห้องแล็บ (Officer)</option>
@@ -1160,7 +1160,7 @@ export default function UsersPage() {
                     onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
                     className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-teal-500/20 cursor-pointer"
                   >
-                    <option value="USER">นิสิต / นักศึกษา (Student)</option>
+                    <option value="USER">นิสิต (Student)</option>
                     <option value="TEACHER">อาจารย์ผู้สอน / ที่ปรึกษา (Teacher)</option>
                     <option value="APPROVER">ผู้อนุมัติ / หัวหน้าภาค (Approver)</option>
                     <option value="OFFICER">เจ้าหน้าที่ห้องแล็บ (Officer)</option>

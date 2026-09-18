@@ -15,7 +15,7 @@ export async function POST(req: Request) {
       roomOrLocation,
       note,
       useOpenPackFirst = true,     // ดึงจากเศษซองเปิดก่อนถ้ามี
-      giveRemainderAsBonus = false, // แถมเศษที่เหลือในซองให้นักศึกษาไปด้วย (เคลียร์ซองเปิด)
+      giveRemainderAsBonus = false, // แถมเศษที่เหลือในซองให้นิสิตไปด้วย (เคลียร์ซองเปิด)
     } = body;
 
     if (!kitId || !setsToPrepare || Number(setsToPrepare) < 1) {

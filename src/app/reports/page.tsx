@@ -905,7 +905,7 @@ export default function ReportsPage() {
         </div>
       )}
 
-      {/* TAB 3: COST ANALYTICS (ต้นทุนต่อหัวนักศึกษาและหัตถการ) */}
+      {/* TAB 3: COST ANALYTICS (ต้นทุนต่อหัวนิสิตและหัตถการ) */}
       {activeTab === 'COST_ANALYTICS' && (
         <div className="space-y-6">
           {/* Executive KPI Overview Cards */}
@@ -969,10 +969,10 @@ export default function ReportsPage() {
               <div>
                 <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                   <GraduationCap className="w-4 h-4 text-indigo-600" />
-                  <span>การคำนวณต้นทุนต่อหัวนักศึกษาจำแนกตามรายวิชา (Cost per Student by Course)</span>
+                  <span>การคำนวณต้นทุนต่อหัวนิสิตจำแนกตามรายวิชา (Cost per Student by Course)</span>
                 </h3>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                  วิเคราะห์ต้นทุนการเบิกจ่ายจริงเฉลี่ยต่อนักศึกษา และสัดส่วนการใช้งบประมาณรายวิชา (เชื่อมโยงข้อมูลจริงกับหน้ารายวิชา)
+                  วิเคราะห์ต้นทุนการเบิกจ่ายจริงเฉลี่ยต่อนิสิต และสัดส่วนการใช้งบประมาณรายวิชา (เชื่อมโยงข้อมูลจริงกับหน้ารายวิชา)
                 </p>
               </div>
               <a

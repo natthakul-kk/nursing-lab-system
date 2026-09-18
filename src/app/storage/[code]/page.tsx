@@ -1,0 +1,504 @@
+﻿'use client';
+
+import React, { useEffect, useState, useMemo } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import {
+  Archive,
+  Layers,
+  Search,
+  AlertTriangle,
+  CheckCircle2,
+  XCircle,
+  Package,
+  Wrench,
+  ArrowLeft,
+  MapPin,
+  Building,
+  RefreshCw,
+  ExternalLink,
+  QrCode,
+  Tag,
+  Share2,
+  Calendar,
+  Sparkles,
+} from 'lucide-react';
+
+export default function CabinetStoragePage() {
+  const params = useParams();
+  const router = useRouter();
+  const codeParam = (params?.code as string) || '';
+
+  const [data, setData] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedFilter, setSelectedFilter] = useState<'ALL' | 'CONSUMABLE' | 'EQUIPMENT' | 'ALERT'>('ALL');
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchCabinetData = async (isManual = false) => {
+    if (isManual) setRefreshing(true);
+    else setLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch(`/api/storage/public/${encodeURIComponent(codeParam)}`);
+      if (!res.ok) {
+        const errJson = await res.json();
+        throw new Error(errJson.error || 'ไม่พบข้อมูลตู้หรือจุดจัดเก็บ');
+      }
+      const json = await res.json();
+      setData(json);
+    } catch (err: any) {
+      setError(err.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูล');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    if (codeParam) {
+      fetchCabinetData();
+    }
+  }, [codeParam]);
+
+  const typeLabels: Record<string, string> = {
+    CABINET: 'ตู้เก็บอุปกรณ์',
+    SHELF: 'ชั้นวางของ',
+    DRAWER: 'ลิ้นชัก',
+    CART: 'รถเข็นหัตถการ',
+    ROOM: 'ห้องเก็บของย่อย',
+  };
+
+  const filteredItems = useMemo(() => {
+    if (!data?.items) return [];
+    return data.items.filter((item: any) => {
+      const matchesSearch =
+        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (item.categoryName && item.categoryName.toLowerCase().includes(searchQuery.toLowerCase()));
+
+      if (!matchesSearch) return false;
+
+      if (selectedFilter === 'CONSUMABLE') return item.type === 'CONSUMABLE';
+      if (selectedFilter === 'EQUIPMENT') return item.type === 'EQUIPMENT';
+      if (selectedFilter === 'ALERT') return item.stockStatus === 'LOW_STOCK' || item.stockStatus === 'OUT_OF_STOCK';
+
+      return true;
+    });
+  }, [data?.items, searchQuery, selectedFilter]);
+
+  const filteredAssets = useMemo(() => {
+    if (!data?.assets) return [];
+    if (selectedFilter === 'CONSUMABLE') return [];
+    return data.assets.filter((asset: any) => {
+      const matchesSearch =
+        asset.assetCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        asset.itemName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (asset.serialNumber && asset.serialNumber.toLowerCase().includes(searchQuery.toLowerCase()));
+
+      return matchesSearch;
+    });
+  }, [data?.assets, searchQuery, selectedFilter]);
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${data?.storage?.name || 'ตู้จัดเก็บ'} (${data?.storage?.code})`,
+          text: `รายการสิ่งของในตู้ ${data?.storage?.name} ห้อง ${data?.room?.name || data?.storage?.roomName}`,
+          url: window.location.href,
+        });
+      } catch {}
+    } else {
+      navigator.clipboard.writeText(window.location.href);
+      alert('คัดลอกลิงก์เรียบร้อยแล้ว');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-4">
+        <div className="w-12 h-12 rounded-2xl bg-teal-500/10 flex items-center justify-center mb-4">
+          <RefreshCw className="w-6 h-6 text-teal-600 animate-spin" />
+        </div>
+        <p className="text-sm font-medium text-slate-600 dark:text-slate-400">กำลังเชื่อมต่อฐานข้อมูลตู้จัดเก็บ...</p>
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white dark:bg-slate-900 rounded-3xl p-6 text-center shadow-xl border border-slate-200/80 dark:border-slate-800">
+          <div className="w-14 h-14 bg-rose-50 dark:bg-rose-950/50 text-rose-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <XCircle className="w-8 h-8" />
+          </div>
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-1">ไม่พบข้อมูลจุดจัดเก็บ</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">{error || 'รหัส QR Code อาจไม่ถูกต้องหรือจุดจัดเก็บนี้ถูกยกเลิกแล้ว'}</p>
+          <button
+            onClick={() => router.push('/inventory')}
+            className="w-full py-2.5 px-4 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold transition shadow-md shadow-teal-600/20"
+          >
+            ไปยังหน้าทะเบียนพัสดุหลัก
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const { storage, room, stats } = data;
+
+  return (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 pb-16">
+      {/* Top Banner / Breadcrumb */}
+      <div className="bg-gradient-to-r from-teal-700 via-teal-800 to-slate-900 text-white px-4 py-5 shadow-lg">
+        <div className="max-w-4xl mx-auto space-y-3">
+          {room && (
+            <Link
+              href={`/storage/room/${room.code || room.qrCodeToken}`}
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-teal-200 hover:text-white transition bg-teal-900/50 px-3 py-1.5 rounded-lg border border-teal-600/40 backdrop-blur-sm"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>ดูตู้ทั้งหมดในห้อง: {room.name} ({room.code})</span>
+            </Link>
+          )}
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-mono text-xs font-black tracking-wider bg-white/20 text-white px-2.5 py-0.5 rounded-md border border-white/30 backdrop-blur-md">
+                  {storage.code}
+                </span>
+                <span className="text-[11px] font-semibold bg-teal-500/30 text-teal-200 px-2 py-0.5 rounded-md border border-teal-400/30">
+                  {typeLabels[storage.type] || storage.type}
+                </span>
+              </div>
+              <h1 className="text-xl sm:text-2xl font-black mt-1.5 tracking-tight text-white flex items-center gap-2">
+                <Archive className="w-6 h-6 text-teal-300 inline-block shrink-0" />
+                <span>{storage.name}</span>
+              </h1>
+              <p className="text-xs text-teal-100/80 flex items-center gap-2 mt-1">
+                <MapPin className="w-3.5 h-3.5 text-teal-300 shrink-0" />
+                <span>
+                  {storage.building} • {storage.floor} • {room ? room.name : storage.roomName || 'ห้องปฏิบัติการ'}
+                </span>
+              </p>
+              {storage.description && (
+                <p className="text-[11px] text-teal-200/90 mt-1.5 bg-black/10 px-2.5 py-1 rounded-lg inline-block">
+                  💡 {storage.description}
+                </p>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
+              <button
+                onClick={() => fetchCabinetData(true)}
+                disabled={refreshing}
+                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition cursor-pointer border border-white/10 disabled:opacity-60"
+                title="รีเฟรชยอดสต็อกล่าสุด"
+              >
+                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+              </button>
+              <button
+                onClick={handleShare}
+                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition cursor-pointer border border-white/10"
+                title="แชร์ลิงก์ตู้นี้"
+              >
+                <Share2 className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Container */}
+      <div className="max-w-4xl mx-auto px-4 mt-4 space-y-4">
+        {/* Real-time KPI Stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <div className="bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-teal-50 dark:bg-teal-950/60 text-teal-600 flex items-center justify-center shrink-0">
+              <Package className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="text-base font-black text-slate-900 dark:text-white leading-none">{stats.totalItems}</div>
+              <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">รายการวัสดุ</div>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center shrink-0">
+              <CheckCircle2 className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="text-base font-black text-emerald-600 dark:text-emerald-400 leading-none">{stats.inStockCount}</div>
+              <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">พร้อมใช้ปกติ</div>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="text-base font-black text-amber-600 dark:text-amber-400 leading-none">
+                {stats.lowStockCount + stats.outOfStockCount}
+              </div>
+              <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">ใกล้หมด / หมด</div>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 flex items-center justify-center shrink-0">
+              <Wrench className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="text-base font-black text-indigo-600 dark:text-indigo-400 leading-none">{stats.totalAssets}</div>
+              <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">ชิ้นครุภัณฑ์</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Search & Filter Bar */}
+        <div className="bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-3">
+          <div className="relative">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+            <input
+              type="text"
+              placeholder="ค้นหาชื่อวัสดุ, รหัสพัสดุ, หรือครุภัณฑ์ในตู้นี้..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl py-2 pl-9 pr-3 text-xs focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
+            />
+          </div>
+
+          {/* Filter Chips */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs font-semibold">
+            <button
+              onClick={() => setSelectedFilter('ALL')}
+              className={`px-3 py-1.5 rounded-lg shrink-0 transition cursor-pointer ${
+                selectedFilter === 'ALL'
+                  ? 'bg-teal-600 text-white shadow-sm'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+              }`}
+            >
+              ทั้งหมด ({data.items.length + data.assets.length})
+            </button>
+            <button
+              onClick={() => setSelectedFilter('CONSUMABLE')}
+              className={`px-3 py-1.5 rounded-lg shrink-0 transition cursor-pointer ${
+                selectedFilter === 'CONSUMABLE'
+                  ? 'bg-teal-600 text-white shadow-sm'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+              }`}
+            >
+              วัสดุสิ้นเปลือง ({data.items.filter((i: any) => i.type === 'CONSUMABLE').length})
+            </button>
+            <button
+              onClick={() => setSelectedFilter('EQUIPMENT')}
+              className={`px-3 py-1.5 rounded-lg shrink-0 transition cursor-pointer ${
+                selectedFilter === 'EQUIPMENT'
+                  ? 'bg-teal-600 text-white shadow-sm'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+              }`}
+            >
+              ครุภัณฑ์ ({data.assets.length + data.items.filter((i: any) => i.type === 'EQUIPMENT').length})
+            </button>
+            <button
+              onClick={() => setSelectedFilter('ALERT')}
+              className={`px-3 py-1.5 rounded-lg shrink-0 transition cursor-pointer ${
+                selectedFilter === 'ALERT'
+                  ? 'bg-amber-600 text-white shadow-sm'
+                  : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100'
+              }`}
+            >
+              ⚠️ ต้องเติมสต็อก ({stats.lowStockCount + stats.outOfStockCount})
+            </button>
+          </div>
+        </div>
+
+        {/* Item List Header */}
+        <div className="flex items-center justify-between text-xs font-bold text-slate-600 dark:text-slate-400 px-1">
+          <span>รายการสิ่งของในตู้นี้ ({filteredItems.length + filteredAssets.length} รายการ)</span>
+          <span className="text-[11px] font-normal text-slate-400">อัปเดตแบบเรียลไทม์</span>
+        </div>
+
+        {/* Items Grid */}
+        {filteredItems.length === 0 && filteredAssets.length === 0 ? (
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-8 text-center">
+            <Package className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
+            <p className="text-xs text-slate-500 dark:text-slate-400">ไม่พบสิ่งของที่ตรงกับคำค้นหาในตู้นี้</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {/* Consumable & Equipment Items */}
+            {filteredItems.map((item: any) => {
+              const isInStock = item.stockStatus === 'IN_STOCK';
+              const isLowStock = item.stockStatus === 'LOW_STOCK';
+              const isOutOfStock = item.stockStatus === 'OUT_OF_STOCK';
+
+              return (
+                <div
+                  key={item.id}
+                  className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-4 hover:border-teal-500/40 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                >
+                  <div className="flex items-start gap-3.5">
+                    {/* Item Image or Placeholder */}
+                    <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 border border-slate-200/60 dark:border-slate-700 overflow-hidden">
+                      {item.imageUrl ? (
+                        <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <Package className="w-5 h-5 text-slate-400" />
+                      )}
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-mono text-[10px] font-bold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/70 px-1.5 py-0.5 rounded border border-teal-200/60 dark:border-teal-800">
+                          {item.code}
+                        </span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                          {item.categoryName}
+                        </span>
+                      </div>
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
+                        {item.name}
+                      </h3>
+
+                      {/* Active Lots Details */}
+                      {item.lots && item.lots.length > 0 && (
+                        <div className="flex items-center gap-2 flex-wrap pt-0.5">
+                          {item.lots.map((lot: any, idx: number) => (
+                            <span
+                              key={idx}
+                              className="inline-flex items-center gap-1 text-[10px] font-mono text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/80 px-2 py-0.5 rounded border border-slate-200/60 dark:border-slate-700"
+                            >
+                              <Calendar className="w-3 h-3 text-teal-500" />
+                              <span>Lot: {lot.lotNumber}</span>
+                              {lot.expiryDate && (
+                                <span className="text-slate-400">EXP: {lot.expiryDate}</span>
+                              )}
+                              <span className="font-bold text-teal-600 dark:text-teal-400">({lot.remainingQuantity})</span>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Stock Quantity & Status Badge */}
+                  <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-800 shrink-0">
+                    <div className="text-right">
+                      <div className="text-base font-black text-slate-900 dark:text-white">
+                        {item.totalQuantity}{' '}
+                        <span className="text-xs font-normal text-slate-500 dark:text-slate-400">{item.unit || 'ชิ้น'}</span>
+                      </div>
+                      <div>
+                        {isInStock && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            พร้อมใช้งาน
+                          </span>
+                        )}
+                        {isLowStock && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-full">
+                            <AlertTriangle className="w-3 h-3 text-amber-500" />
+                            ใกล้หมดสต็อก
+                          </span>
+                        )}
+                        {isOutOfStock && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 px-2 py-0.5 rounded-full">
+                            <XCircle className="w-3 h-3 text-rose-500" />
+                            ของหมดตู้
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Quick Requisition Link */}
+                    <Link
+                      href={item.type === 'CONSUMABLE' ? `/requisition?itemId=${item.id}` : `/borrow?itemId=${item.id}`}
+                      className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 dark:hover:bg-teal-900/80 text-teal-700 dark:text-teal-300 text-xs font-bold transition border border-teal-200/80 dark:border-teal-800 cursor-pointer"
+                    >
+                      <span>{item.type === 'CONSUMABLE' ? 'ขอเบิก' : 'ขอยืม'}</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Individual Assets */}
+            {filteredAssets.map((asset: any) => {
+              const isAvailable = asset.status === 'AVAILABLE';
+              return (
+                <div
+                  key={asset.id}
+                  className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-4 hover:border-teal-500/40 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                >
+                  <div className="flex items-start gap-3.5">
+                    <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-100 dark:border-indigo-900">
+                      <Wrench className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-mono text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/80 px-2 py-0.5 rounded border border-indigo-200 dark:border-indigo-800">
+                          {asset.assetCode}
+                        </span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                          {asset.categoryName}
+                        </span>
+                      </div>
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white mt-1">
+                        {asset.itemName}
+                      </h3>
+                      {asset.serialNumber && (
+                        <p className="text-[11px] font-mono text-slate-400 mt-0.5">S/N: {asset.serialNumber}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-800 shrink-0">
+                    <div>
+                      {isAvailable ? (
+                        <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 rounded-full">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                          พร้อมใช้งานในตู้
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-2.5 py-1 rounded-full">
+                          <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                          {asset.status === 'BORROWED' ? 'กำลังถูกยืม' : asset.status}
+                        </span>
+                      )}
+                    </div>
+
+                    <Link
+                      href={`/borrow?assetCode=${asset.assetCode}`}
+                      className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/80 text-indigo-700 dark:text-indigo-300 text-xs font-bold transition border border-indigo-200/80 dark:border-indigo-800 cursor-pointer"
+                    >
+                      <span>ขอยืมเครื่องนี้</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Bottom Helper Card */}
+        <div className="bg-slate-100 dark:bg-slate-900/60 rounded-2xl p-4 text-center text-xs text-slate-500 dark:text-slate-400 space-y-1">
+          <p className="font-semibold text-slate-700 dark:text-slate-300 flex items-center justify-center gap-1.5">
+            <Sparkles className="w-4 h-4 text-teal-600" />
+            ระบบสแกนตรวจสอบพัสดุและครุภัณฑ์ประจำตู้แบบเรียลไทม์
+          </p>
+          <p className="text-[11px]">
+            ข้อมูลเชื่อมตรงกับฐานข้อมูลคลังพัสดุกลาง คณะพยาบาลศาสตร์ • หากพบพัสดุไม่ตรงตู้กรุณาติดต่อเจ้าหน้าที่ห้องปฏิบัติการ
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -8,9 +8,11 @@ import BoxStickerModal from '@/components/qrcode/BoxStickerModal';
 import BatchConsumableStickerModal from '@/components/qrcode/BatchConsumableStickerModal';
 import BatchAssetStickerModal from '@/components/qrcode/BatchAssetStickerModal';
 import QrScannerModal from '@/components/qrcode/QrScannerModal';
+import StorageManagementTab from '@/components/storage/StorageManagementTab';
 import { extractCleanCode } from '@/lib/scanner-utils';
 import { formatImageUrl } from '@/lib/image-helper';
 import {
+  Archive,
   Boxes,
   Box,
   Search,
@@ -1023,10 +1025,22 @@ export default function InventoryPage() {
           >
             วัสดุสิ้นเปลือง ({items.filter((i) => i.type === 'CONSUMABLE').length})
           </button>
+          <button
+            onClick={() => setFilterType('STORAGE')}
+            className={`flex-1 md:flex-initial px-4 py-1.5 text-xs font-bold rounded-lg transition cursor-pointer flex items-center gap-1.5 ${
+              filterType === 'STORAGE'
+                ? 'bg-white dark:bg-slate-700 text-teal-700 dark:text-teal-300 shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <Archive className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+            <span>ตู้และจุดจัดเก็บ (QR Code)</span>
+          </button>
         </div>
 
         {/* Right side: Batch Printing & Search */}
-        <div className="flex items-center gap-2.5 w-full md:w-auto flex-wrap justify-end">
+        {filterType !== 'STORAGE' && (
+          <div className="flex items-center gap-2.5 w-full md:w-auto flex-wrap justify-end">
           {/* Batch Print Consumables Button */}
           {(filterType === 'ALL' || filterType === 'CONSUMABLE') && (
             <button
@@ -1082,10 +1096,14 @@ export default function InventoryPage() {
             </button>
           </div>
         </div>
+        )}
       </div>
 
-      {/* Items Table */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
+      {filterType === 'STORAGE' ? (
+        <StorageManagementTab onRefreshInventory={() => fetchItems(true)} />
+      ) : (
+        /* Items Table */
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs text-slate-600 dark:text-slate-300">
             <thead className="bg-slate-50/80 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-bold uppercase text-[11px] tracking-wider">
@@ -1759,6 +1777,7 @@ export default function InventoryPage() {
           )}
         </div>
       </div>
+      )}
 
       {/* Modal: Add New Item */}
       {showAddModal && (

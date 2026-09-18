@@ -98,6 +98,9 @@ model Item {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  storageLocationId String?
+  storageLocation   StorageLocation?   @relation(fields: [storageLocationId], references: [id], onDelete: SetNull)
+
   assets            EquipmentAsset[]
   stockLots         StockLot[]
   stockTransactions StockTransaction[]
@@ -109,6 +112,7 @@ model Item {
 
   @@index([type, status])
   @@index([categoryId])
+  @@index([storageLocationId])
 }
 
 model EquipmentAsset {
@@ -135,11 +139,15 @@ model EquipmentAsset {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
+  storageLocationId String?
+  storageLocation   StorageLocation? @relation(fields: [storageLocationId], references: [id], onDelete: SetNull)
+
   borrowItems     BorrowItem[]
   maintenanceLogs MaintenanceLog[]
 
   @@index([itemId, status])
   @@index([status])
+  @@index([storageLocationId])
 }
 
 model MaintenanceLog {
@@ -405,13 +413,40 @@ model PracticeRoom {
   description String?
   isActive    Boolean        @default(true)
   closeReason String?        // เหตุผลหากปิดห้อง เช่น "ปิดปรับปรุงระบบปรับอากาศ", "ซ่อมบำรุงประจำปี"
+  qrCodeToken String?        @unique @default(cuid())
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
-  slots        PracticeSlot[]
-  roomBookings RoomBooking[]
+  slots            PracticeSlot[]
+  roomBookings     RoomBooking[]
+  storageLocations StorageLocation[]
 
   @@index([isActive])
+}
+
+model StorageLocation {
+  id          String         @id @default(cuid())
+  code        String         @unique // เช่น "CAB-01", "SHELF-A1", "DRAWER-01", "CART-EMERGENCY"
+  name        String         // เช่น "ตู้เก็บเวชภัณฑ์ทำแผลและผ่าตัด"
+  type        String         @default("CABINET") // "CABINET" (ตู้), "SHELF" (ชั้น), "DRAWER" (ลิ้นชัก), "CART" (รถเข็น), "ROOM" (ห้องเก็บของ)
+  
+  roomId      String?
+  room        PracticeRoom?  @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  
+  roomName    String?        // ชื่อห้องสำรอง (เช่น "ห้องเก็บของ ชั้น 3 อาคารวิทยบริการ")
+  floor       String?        @default("ชั้น 3")
+  building    String?        @default("อาคารวิทยบริการ")
+  description String?
+  qrCodeToken String         @unique @default(cuid())
+  status      String         @default("ACTIVE") // "ACTIVE", "INACTIVE"
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  items       Item[]
+  assets      EquipmentAsset[]
+
+  @@index([roomId, status])
+  @@index([type, status])
 }
 
 model PracticeSlot {

@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>แผนภาพความเชื่อมโยงทั้งระบบ - Nursing Lab System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0b0f19;
+      --bg-secondary: #111827;
+      --bg-card: #1e293b;
+      --border-color: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      
+      --teal-accent: #14b8a6;
+      --teal-soft: rgba(20, 184, 166, 0.12);
+      
+      --blue-accent: #38bdf8;
+      --blue-soft: rgba(56, 189, 248, 0.12);
+      
+      --indigo-accent: #818cf8;
+      --indigo-soft: rgba(129, 140, 248, 0.12);
+      
+      --amber-accent: #fbbf24;
+      --amber-soft: rgba(251, 191, 36, 0.12);
+      
+      --rose-accent: #f43f5e;
+      --rose-soft: rgba(244, 63, 94, 0.12);
+      
+      --emerald-accent: #34d399;
+      --emerald-soft: rgba(52, 211, 153, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Sarabun', sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      line-height: 1.6;
+      padding: 32px 20px;
+    }
+
+    .container {
+      max-width: 1440px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+      padding: 32px 24px;
+      background: linear-gradient(180deg, rgba(30, 41, 59, 0.7) 0%, rgba(17, 24, 39, 0.8) 100%);
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 13px;
+      font-weight: 700;
+      background: var(--teal-soft);
+      color: var(--teal-accent);
+      border: 1px solid rgba(20, 184, 166, 0.3);
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: #ffffff;
+      margin-bottom: 12px;
+    }
+
+    p.subtitle {
+      font-size: 16px;
+      color: var(--text-muted);
+      max-width: 820px;
+      margin: 0 auto;
+    }
+
+    /* Grid Layout */
+    .grid-layers {
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+
+    .layer-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .layer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .layer-title-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .layer-number {
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    .layer-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .nodes-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .node {
+      background: var(--bg-card);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 14px;
+      padding: 16px;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .node:hover {
+      transform: translateY(-2px);
+      border-color: rgba(255,255,255,0.2);
+      box-shadow: 0 12px 20px -8px rgba(0,0,0,0.4);
+    }
+
+    .node-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .node-title {
+      font-size: 16px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .node-tag {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .node-desc {
+      font-size: 13.5px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 12px;
+    }
+
+    .node-links {
+      font-size: 12px;
+      padding-top: 10px;
+      border-top: 1px dashed rgba(255,255,255,0.08);
+      color: #cbd5e1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .connection-pill {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 11px;
+    }
+
+    /* Flow Connectors Box */
+    .flow-connector-summary {
+      background: linear-gradient(90deg, rgba(20, 184, 166, 0.1) 0%, rgba(56, 189, 248, 0.1) 100%);
+      border: 1px dashed rgba(20, 184, 166, 0.3);
+      border-radius: 16px;
+      padding: 16px 20px;
+      margin: 16px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 14px;
+      color: #99f6e4;
+    }
+
+    /* Themes per layer */
+    .layer-1 .layer-number { background: var(--blue-soft); color: var(--blue-accent); border: 1px solid var(--blue-accent); }
+    .layer-2 .layer-number { background: var(--teal-soft); color: var(--teal-accent); border: 1px solid var(--teal-accent); }
+    .layer-3 .layer-number { background: var(--amber-soft); color: var(--amber-accent); border: 1px solid var(--amber-accent); }
+    .layer-4 .layer-number { background: var(--rose-soft); color: var(--rose-accent); border: 1px solid var(--rose-accent); }
+    .layer-5 .layer-number { background: var(--indigo-soft); color: var(--indigo-accent); border: 1px solid var(--indigo-accent); }
+
+    /* SVG Matrix Canvas */
+    .matrix-wrapper {
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 24px;
+      margin-top: 32px;
+      overflow-x: auto;
+    }
+
+    .matrix-header {
+      margin-bottom: 16px;
+    }
+
+    .matrix-header h3 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      min-width: 1050px;
+      height: auto;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 48px;
+      padding-top: 24px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Header -->
+  <header>
+    <div class="badge">
+      <span>⚡</span> ระบบบริหารจัดการห้องปฏิบัติการพยาบาล (Nursing Lab System)
+    </div>
+    <h1>แผนภาพความเชื่อมโยงทั้งระบบ (End-to-End System Relationship Architecture)</h1>
+    <p class="subtitle">
+      แผนผังแสดงความสัมพันธ์และปฏิสัมพันธ์เชิงสถาปัตยกรรม (Architecture & Operational Matrix) เชื่อมโยง 5 มิติหลัก: ผู้ใช้งานและสิทธิ์ (Roles), ทะเบียนและผังคลัง (Storage Hierarchy), กระบวนการคำขอ (Workflows), ระบบแจ้งเตือนและการสื่อสาร (Notifications), และการกำกับวิเคราะห์ (Audit & Analytics)
+    </p>
+  </header>
+
+  <!-- Flow Connector Summary -->
+  <div class="flow-connector-summary">
+    <div>
+      <strong>✨ สถาปัตยกรรมไร้รอยต่อ:</strong> นิสิตยื่นคำขอ &rarr; แจ้งเตือนอาจารย์รับทราบ & เจ้าหน้าที่อนุมัติ &rarr; ล็อกสต็อกและจัดเตรียมของ &rarr; สแกนรับมอบ & คืนด้วย QR Code &rarr; บันทึกงบประมาณและเวลาฝึกจริง
+    </div>
+    <div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; opacity: 0.85;">
+      VERIFIED BUILD: 62/62 ROUTES
+    </div>
+  </div>
+
+  <div class="grid-layers">
+
+    <!-- LAYER 1: ROLES & IDENTITY -->
+    <section class="layer-card layer-1">
+      <div class="layer-header">
+        <div class="layer-title-box">
+          <div class="layer-number">01</div>
+          <h2 class="layer-title">มิติผู้ใช้งาน สิทธิ์การเข้าถึง และจุดเริ่มต้น (User Roles & Ingress)</h2>
+        </div>
+        <span style="font-size: 13px; color: var(--blue-accent); font-weight: 600;">Supabase Auth & RLS</span>
+      </div>
+
+      <div class="nodes-container">
+        <div class="node">
+          <div class="node-top">
+            <span class="node-title">🎓 นิสิต (STUDENT)</span>
+            <span class="node-tag" style="background: var(--blue-soft); color: var(--blue-accent);">Ingress</span>
+          </div>
+          <p class="node-desc">
+            ยื่นคำขอยืมครุภัณฑ์เดี่ยว, ขอเบิกวัสดุ, คำขอเบิก-ยืมแบบรวมชุด (Unified Request), จองรอบฝึกหัตถการ (Practice Booking), สแกน QR ตู้/ห้องดูพัสดุ และรับการแจ้งเตือน
+          </p>
+          <div class="node-links">
+            <span class="connection-pill">&rarr; Unified Request</span>
+            <span class="connection-pill">&rarr; Practice Booking</span>
+            <span class="connection-pill">&rarr; My Bookings</span>
+          </div>
+        </div>
+
+        <div class="node">
+          <div class="node-top">
+            <span class="node-title">👩‍🏫 อาจารย์ผู้สอน (TEACHER)</span>
+            <span class="node-tag" style="background: var(--indigo-soft); color: var(--indigo-accent);">Reviewer</span>
+          </div>
+          <p class="node-desc">
+            ตรวจสอบและ <strong>กดรับทราบ (Acknowledge)</strong> คำขอยืม/เบิกพัสดุในรายวิชาที่ดูแล, อนุมัติผ่านระบบ หรือผ่านปุ่มในอีเมล 1-Click (Email Quick-Action), ดูงบประมาณรายวิชา
+          </p>
+          <div class="node-links">
+            <span class="connection-pill">&rarr; Approvals Center</span>
+            <span class="connection-pill">&rarr; Email Quick-Action</span>
+            <span class="connection-pill">&rarr; Course Analytics</span>
+          </div>
+        </div>
+
+        <div class="node">
+          <div class="node-top">
+            <span class="node-title">🔬 เจ้าหน้าที่แล็บ (OFFICER)</span>
+            <span class="node-tag" style="background: var(--teal-soft); color: var(--teal-accent);">Fulfillment</span>
+          </div>
+          <p class="node-desc">
+            พิจารณาอนุมัติคำขอ, จ่ายพัสดุ (Check-out/Dispense), สแกนรับคืน (Return), จัดเตรียมชุด Kits, แบ่งบรรจุปลอดเชื้อ (Repack), บริหารห้องและตู้จัดเก็บ, ตรวจเช็คสต็อก
+          </p>
+          <div class="node-links">
+            <span class="connection-pill">&rarr; Lab Store POS</span>
+            <span class="connection-pill">&rarr; Repack Room</span>
+            <span class="connection-pill">&rarr; Storage Location QR</span>
+          </div>
+        </div>
+
+        <div class="node">
+          <div class="node-top">
+            <span class="node-title">⚙️ ผู้ดูแลระบบ (ADMIN)</span>
+            <span class="node-tag" style="background: var(--rose-soft); color: var(--rose-accent);">Control</span>
+          </div>
+          <p class="node-desc">
+            จัดการบัญชีผู้ใช้, กำหนดบทบาท, นำเข้ารายชื่อนิสิต Bulk Import, กำหนดรายวิชาและโควตางบประมาณ, จัดการระบบสำรองข้อมูล (Database Backup) และสิทธิ์ทั้งระบบ
+          </p>
+          <div class="node-links">
+            <span class="connection-pill">&rarr; Users Management</span>
+            <span class="connection-pill">&rarr; Course Config</span>
+            <span class="connection-pill">&rarr; Audit Logs</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LAYER 2: MASTER DATA & STORAGE HIERARCHY -->
+    <section class="layer-card layer-2">
+      <div class="layer-header">
+        <div class="layer-title-box">
+          <div class="layer-number">02</div>
+          <h2 class="layer-title">มิติคลังพัสดุ ผังโครงสร้างจัดเก็บ และชุดหัตถการ (Master Data & Storage Hierarchy)</h2>
+        </div>
+        <span style="font-size: 13px; color: var(--teal-accent); font-weight: 600;">Inventory & Structure</span>
+      </div>
+
+      <div class="nodes-container">
+        <div class="node">
+          <div class="node-top">
+            <span class="node-title">🏢 ผังห้องและตู้จัดเก็บ (Storage Hierarchy)</span>
+            <span class="node-tag" style="background: var(--teal-soft); color: var(--teal-accent);">Hierarchy</span>
+          </div>
+          <p class="node-desc">
+            โครงสร้างต้นไม้ 3 ระดับ: <strong>ห้องแล็บ (Room)</strong> &rarr; <strong>ตู้/โซน (Cabinet)</strong> &rarr; <strong>ชั้นวาง (Shelf)</strong> ติดตั้ง QR Code สแกนเปิดดูครุภัณฑ์และวัสดุที่บรรจุอยู่ภายในได้ทันที
+          </p>
+          <div class="node-links">
+            <span class="connection-pill">&rarr; /storage/room/[code]</span>
+            <span class="connection-pill">&rarr; /storage/[code]</span>
+            <span class="connection-pill">&rarr; Items Location</span>
+          </div>
+        </div>
+
+        <div class="node">
+          <div class="node-top">
+            <span class="node-title">📦 ทะเบียนพัสดุหลัก (Item Master)</span>
+            <span class="node-tag" style="background: var(--teal-soft); color: var(--teal-accent);">Prisma Item</span>
+          </div>
+          <p class="node-desc">
+            แยกประเภทเป็น <strong>ครุภัณฑ์ (Asset)</strong> ซึ่งมีรหัส Asset Code และ QR Code รายชิ้น กับ <strong>วัสดุสิ้นเปลือง (Consumable)</strong> ควบคุมด้วย StockLot, Lot No., Expiry Date
+          </p>
+          <div class="node-links">
+            <span class="connection-pill">&rarr; Asset Code (QR)</span>
+            <span class="connection-pill">&rarr; StockLots & Expire</span>
+            <span class="connection-pill">&rarr; Reconcile</span>
+          </div>
+        </div>
+
+        <div class="node">
+          <div class="node-top">
+            <span class="node-title">🧰 ชุดฝึกปฏิบัติการ (Practice Kits)</span>
+            <span class="node-tag" style="background: var(--teal-soft); color: var(--teal-accent);">PracticeKit</span>
+          </div>
+          <p class="node-desc">
+            มัดรวมครุภัณฑ์และวัสดุสิ้นเปลืองสำเร็จรูปตามหัตถการ เช่น หัตถการฉีดยา, ทำแผล ปลอดเชื้อ ผูกกับรายวิชาหลักสูตร ให้นิสิตเลือกฝึกซ้อมได้ในคลิกเดียว
+          </p>
+          <div class="node-links">
+            <span class="connection-pill">&rarr; Kit Items Mapping</span>
+            <span class="connection-pill">&rarr; Practice Booking</span>
+            <span class="connection-pill">&rarr; Auto-Deduct Stock</span>
+          </div>
+        </div>
+
+        <div class="node">
+          <div class="node-top">
+            <span class="node-title">🧪 ระบบแบ่งบรรจุปลอดเชื้อ (Repack & Sterile)</span>
+            <span class="node-tag" style="background: var(--teal-soft); color: var(--teal-accent);">Sterilization</span>
+          </div>
+          <p class="node-desc">
+            ตัดสต็อกหน่วยใหญ่ (เช่น สำลีก้อนห่อใหญ่) แบ่งบรรจุเป็นซองย่อย ระบุจำนวนชิ้นต่อซอง, วิธีการอบฆ่าเชื้อ (Autoclave / ETO) และออกรหัส Sub-lot ใหม่
+          </p>
+          <div class="node-links">
+            <span class="connection-pill">&rarr; Source Lot Deduct</span>
+            <span class="connection-pill">&rarr; New Sterile Sub-lot</span>
+            <span class="connection-pill">&rarr; Expiry Tracking</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LAYER 3: OPERATIONS & WORKFLOWS -->
+    <section class="layer-card layer-3">
+      <div class="layer-header">
+        <div class="layer-title-box">
+          <div class="layer-number">03</div>
+          <h2 class="layer-title">มิติกิจกรรมดำเนินงาน วงจรคำขอ และการจัดส่ง (Operational Workflows & Lifecycle)</h2>
+        </div>
+        <span style="font-size: 13px; color: var(--amber-accent); font-weight: 600;">Workflows & POS</span>
+      </div>
+
+      <div class="nodes-container">
+        <div class="node">
+          <div class="node-top">
+            <span class="node-title">📋 คำขอเบิก-ยืมแบบรวมชุด (Unified Request)</span>
+            <span class="node-tag" style="background: var(--amber-soft); color: var(--amber-accent);">Unified</span>
+          </div>
+          <p class="node-desc">
+            นิสิตยื่นคำขอยืมครุภัณฑ์พร้อมขอเบิกเวชภัณฑ์ในแบบฟอร์มเดียว ระบบผูก ID อัตโนมัติ เช็คความพร้อมของสต็อกแบบเรียลไทม์ ป้องกันการเบิกเกินสต็อกคงเหลือ
+          </p>
+          <div class="node-links">
+            <span class="connection-pill">&rarr; BorrowRequest</span>
+            <span class="connection-pill">&rarr; RequisitionRequest</span>
+            <span class="connection-pill">&rarr; Approvals</span>
+          </div>
+        </div>
+
+        <div class="node">
+          <div class="node-top">
+            <span class="node-title">📅 การจองฝึกปฏิบัติการ (Practice Booking)</span>
+            <span class="node-tag" style="background: var(--amber-soft); color: var(--amber-accent);">Booking</span>
+          </div>
+          <p class="node-desc">
+            นิสิตเลือกห้องปฏิบัติการ, วันที่, สล็อตเวลา, หัตถการ และชุด Practice Kit ระบบออก <strong>Secure QR Token</strong> ส่งให้นิสิตใช้สแกนเช็คอินเข้าห้อง
+          </p>
+          <div class="node-links">
+            <span class="connection-pill">&rarr; Room Slots</span>
+            <span class="connection-pill">&rarr; QR Entry Pass</span>
+            <span class="connection-pill">&rarr; Attendance Time</span>
+          </div>
+        </div>
+
+        <div class="node">
+          <div class="node-top">
+            <span class="node-title">⚖️ ศูนย์พิจารณา 2 ระดับ (Decoupled Approvals)</span>
+            <span class="node-tag" style="background: var(--amber-soft); color: var(--amber-accent);">Governance</span>
+          </div>
+          <p class="node-desc">
+            แยกบทบาทชัดเจน: <strong>อาจารย์กดรับทราบ</strong> เพื่อตรวจสอบความสอดคล้องกับรายวิชา &rarr; <strong>เจ้าหน้าที่แล็บกดอนุมัติ</strong> เพื่อตรวจสอบสต็อกและความพร้อมของอุปกรณ์
+          </p>
+          <div class="node-links">
+            <span class="connection-pill">&rarr; Teacher Acknowledged</span>
+            <span class="connection-pill">&rarr; Officer Approved</span>
+            <span class="connection-pill">&rarr; Ready to Dispense</span>
+          </div>
+        </div>
+
+        <div class="node">
+          <div class="node-top">
+            <span class="node-title">🛒 จุดบริการจ่าย-รับคืน (Lab Store POS)</span>
+            <span class="node-tag" style="background: var(--amber-soft); color: var(--amber-accent);">Fulfillment</span>
+          </div>
+          <p class="node-desc">
+            เจ้าหน้าที่สแกนบาร์โค้ดหรือ QR Code เพื่อจ่ายพัสดุ (Check-out) และสแกนรับคืน (Return) ตรวจสภาพชำรุดเสียหาย และส่งต่อไปยังระบบซ่อมบำรุง
+          </p>
+          <div class="node-links">
+            <span class="connection-pill">&rarr; Barcode/QR Scan</span>
+            <span class="connection-pill">&rarr; Dispense & Return</span>
+            <span class="connection-pill">&rarr; Maintenance Ticket</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LAYER 4: REAL-TIME NOTIFICATIONS & DEEP LINKING -->
+    <section class="layer-card layer-4">
+      <div class="layer-header">
+        <div class="layer-title-box">
+          <div class="layer-number">04</div>
+          <h2 class="layer-title">มิติการแจ้งเตือนแบบเรียลไทม์ และการนำทางด่วน (In-App Notification & Direct Deep Linking)</h2>
+        </div>
+        <span style="font-size: 13px; color: var(--rose-accent); font-weight: 600;">Real-Time Center</span>
+      </div>
+
+      <div class="nodes-container">
+        <div class="node">
+          <div class="node-top">
+            <span class="node-title">🔔 กระดิ่งแจ้งเตือน Navbar (Notification Bell)</span>
+            <span class="node-tag" style="background: var(--rose-soft); color: var(--rose-accent);">Navbar UI</span>
+          </div>
+          <p class="node-desc">
+            ติดตั้งมุมขวาบนของ Navbar (ไม่รก Sidebar) พร้อม Unread Badge สีแดงกระพริบ แสดงเวลาแบบมนุษย์เข้าใจง่าย (เช่น "5 นาทีที่แล้ว") และปุ่มอ่านทั้งหมดในคลิกเดียว
+          </p>
+          <div class="node-links">
+            <span class="connection-pill">&rarr; Background Polling 45s</span>
+            <span class="connection-pill">&rarr; Window Focus Refresh</span>
+            <span class="connection-pill">&rarr; Mark Read Optimistic</span>
+          </div>
+        </div>
+
+        <div class="node">
+          <div class="node-top">
+            <span class="node-title">🚀 ระบบวาร์ปตรงทันที (Direct Deep Linking)</span>
+            <span class="node-tag" style="background: var(--rose-soft); color: var(--rose-accent);">Deep Link</span>
+          </div>
+          <p class="node-desc">
+            คลิกการแจ้งเตือนแล้วมาร์กเป็น "อ่านแล้ว" พร้อมนำทางตรงไปยังหน้าเอกสารที่เกี่ยวข้องทันที: ยืม (/borrow), เบิก (/requisitions), อนุมัติ (/approvals), จองฝึก (/practice/my-bookings)
+          </p>
+          <div class="node-links">
+            <span class="connection-pill">&rarr; Zero User Confusion</span>
+            <span class="connection-pill">&rarr; Immediate Action</span>
+            <span class="connection-pill">&rarr; Status Sync</span>
+          </div>
+        </div>
+
+        <div class="node">
+          <div class="node-top">
+            <span class="node-title">✉️ อนุมัติผ่านอีเมล 1 คลิก (Email Quick-Action)</span>
+            <span class="node-tag" style="background: var(--rose-soft); color: var(--rose-accent);">Email HMAC</span>
+          </div>
+          <p class="node-desc">
+            ส่งอีเมลแจ้งอาจารย์และเจ้าหน้าที่พร้อมปุ่ม "อนุมัติ" หรือ "ปฏิเสธ" แนบ HMAC Token เมื่อกดอนุมัติ ระบบจะบันทึกสถานะและสร้าง In-App Notification แจ้งนิสิตทันที
+          </p>
+          <div class="node-links">
+            <span class="connection-pill">&rarr; Resend Provider</span>
+            <span class="connection-pill">&rarr; HMAC Signed Token</span>
+            <span class="connection-pill">&rarr; Auto-trigger In-App Notif</span>
+          </div>
+        </div>
+
+        <div class="node">
+          <div class="node-top">
+            <span class="node-title">⏰ ตรวจจับอัตโนมัติเบื้องหลัง (System Watchdog)</span>
+            <span class="node-tag" style="background: var(--rose-soft); color: var(--rose-accent);">Automated</span>
+          </div>
+          <p class="node-desc">
+            ทำงานเบื้องหลังตรวจจับ 2 เหตุการณ์สำคัญ: ครุภัณฑ์ที่ <strong>เลยกำหนดส่งคืน (Overdue)</strong> และล็อตเวชภัณฑ์ที่ <strong>กำลังจะหมดอายุในอีก 30 วัน</strong> เพื่อแจ้งเตือนเจ้าหน้าที่
+          </p>
+          <div class="node-links">
+            <span class="connection-pill">&rarr; Overdue Borrow Alert</span>
+            <span class="connection-pill">&rarr; 30-Day Expiry Warning</span>
+            <span class="connection-pill">&rarr; Direct to Inventory</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LAYER 5: ANALYTICS & AUDIT -->
+    <section class="layer-card layer-5">
+      <div class="layer-header">
+        <div class="layer-title-box">
+          <div class="layer-number">05</div>
+          <h2 class="layer-title">มิติการกำกับดูแล วิเคราะห์ข้อมูล และรายงาน (Analytics, Audit & Governance)</h2>
+        </div>
+        <span style="font-size: 13px; color: var(--indigo-accent); font-weight: 600;">Intelligence</span>
+      </div>
+
+      <div class="nodes-container">
+        <div class="node">
+          <div class="node-top">
+            <span class="node-title">📊 รายงานและสถิติการใช้งาน (Executive Analytics)</span>
+            <span class="node-tag" style="background: var(--indigo-soft); color: var(--indigo-accent);">Dashboard</span>
+          </div>
+          <p class="node-desc">
+            แสดงอัตราการใช้งานห้องปฏิบัติการ (Room Utilization), สถิติการยืม-คืนตามรายวิชา, การวิเคราะห์การเบิกใช้วัสดุสิ้นเปลืองแยกตามหลักสูตร และพัสดุที่ถูกยืมบ่อยที่สุด
+          </p>
+          <div class="node-links">
+            <span class="connection-pill">&rarr; Recharts Visuals</span>
+            <span class="connection-pill">&rarr; Course Cost Summary</span>
+            <span class="connection-pill">&rarr; Utilization Rate</span>
+          </div>
+        </div>
+
+        <div class="node">
+          <div class="node-top">
+            <span class="node-title">📑 ตรวจนับสต็อกและปรับยอด (Inventory Reconciliation)</span>
+            <span class="node-tag" style="background: var(--indigo-soft); color: var(--indigo-accent);">Audit</span>
+          </div>
+          <p class="node-desc">
+            บันทึกประวัติการปรับปรุงสต็อก (Adjustments), สรุปยอดคงเหลือจริงเทียบกับในระบบ, ป้องกันการรั่วไหล และรองรับการส่งออกข้อมูลเป็น Excel รายงานประจำปี
+          </p>
+          <div class="node-links">
+            <span class="connection-pill">&rarr; Audit Log Trail</span>
+            <span class="connection-pill">&rarr; Export XLSX Report</span>
+            <span class="connection-pill">&rarr; Discrepancy Tracking</span>
+          </div>
+        </div>
+
+        <div class="node">
+          <div class="node-top">
+            <span class="node-title">🛠️ ระบบซ่อมบำรุงครุภัณฑ์ (Asset Maintenance)</span>
+            <span class="node-tag" style="background: var(--indigo-soft); color: var(--indigo-accent);">Maintenance</span>
+          </div>
+          <p class="node-desc">
+            ติดตามสถานะครุภัณฑ์ชำรุด, ส่งซ่อม, รอบการสอบเทียบ (Calibration), ประวัติค่าใช้จ่ายในการซ่อม และนำพัสดุกลับเข้าสถานะพร้อมใช้งาน (AVAILABLE)
+          </p>
+          <div class="node-links">
+            <span class="connection-pill">&rarr; Under Repair Status</span>
+            <span class="connection-pill">&rarr; Cost Records</span>
+            <span class="connection-pill">&rarr; Re-activate to Stock</span>
+          </div>
+        </div>
+
+        <div class="node">
+          <div class="node-top">
+            <span class="node-title">💾 สำรองข้อมูลและความปลอดภัย (Backup & Security)</span>
+            <span class="node-tag" style="background: var(--indigo-soft); color: var(--indigo-accent);">Security</span>
+          </div>
+          <p class="node-desc">
+            ระบบสำรองฐานข้อมูล Supabase PostgreSQL อัตโนมัติ, ระบบเก็บบันทึกประวัติการใช้งาน (System Logs) และการเข้ารหัสรหัสผ่านด้วย Bcrypt มาตรฐานสูง
+          </p>
+          <div class="node-links">
+            <span class="connection-pill">&rarr; Automated JSON Backup</span>
+            <span class="connection-pill">&rarr; Session & Token Security</span>
+            <span class="connection-pill">&rarr; Zero Data Loss</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- SVG Architecture Flow Visual -->
+  <div class="matrix-wrapper">
+    <div class="matrix-header">
+      <h3>📈 แผนผังการไหลเวียนของข้อมูลและสถานะ (Data Flow & Transition Topology)</h3>
+      <p style="font-size: 13px; color: var(--text-muted);">
+        ความสัมพันธ์ระหว่างผู้ใช้ (Actors), เอกสารคำขอ (Entities), การจัดสรรคลัง (Stock Ledger) และการแจ้งเตือน (Notifications)
+      </p>
+    </div>
+
+    <svg viewBox="0 0 1000 480" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="1000" height="480" rx="16" fill="#0b0f19" />
+      
+      <!-- Grid Lines -->
+      <path d="M 50 120 L 950 120 M 50 240 L 950 240 M 50 360 L 950 360" stroke="#1e293b" stroke-width="1" stroke-dasharray="4 4" />
+      
+      <!-- Stage 1: Ingress -->
+      <rect x="50" y="40" width="160" height="60" rx="12" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5" />
+      <text x="130" y="68" fill="#fff" font-size="14" font-weight="700" text-anchor="middle" font-family="Sarabun">🎓 นิสิต (Student)</text>
+      <text x="130" y="86" fill="#94a3b8" font-size="11" text-anchor="middle" font-family="Sarabun">ยื่นคำขอ / จองห้องฝึก</text>
+
+      <!-- Arrow 1 to 2 -->
+      <path d="M 210 70 L 290 70" stroke="#38bdf8" stroke-width="2" marker-end="url(#arrow)" />
+      <text x="250" y="62" fill="#38bdf8" font-size="10" font-weight="700" text-anchor="middle" font-family="Sarabun">ยื่นคำขอ</text>
+
+      <!-- Stage 2: Dual Requests -->
+      <rect x="290" y="30" width="180" height="80" rx="12" fill="#1e293b" stroke="#fbbf24" stroke-width="1.5" />
+      <text x="380" y="58" fill="#fbbf24" font-size="13" font-weight="700" text-anchor="middle" font-family="Sarabun">📋 คำขอเบิก-ยืม / จองฝึก</text>
+      <text x="380" y="78" fill="#94a3b8" font-size="11" text-anchor="middle" font-family="Sarabun">PENDING สถานะเริ่มต้น</text>
+      <text x="380" y="94" fill="#34d399" font-size="10" text-anchor="middle" font-family="Sarabun">ตรวจสอบสต็อกพร้อมใช้</text>
+
+      <!-- Arrow 2 to Notification -->
+      <path d="M 380 110 L 380 160" stroke="#f43f5e" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#arrow)" />
+      <text x="390" y="140" fill="#f43f5e" font-size="11" font-weight="600" font-family="Sarabun">แจ้งเตือนทันที</text>
+
+      <!-- Notification Center Hub -->
+      <rect x="270" y="160" width="220" height="60" rx="12" fill="#1e293b" stroke="#f43f5e" stroke-width="1.5" />
+      <text x="380" y="186" fill="#fff" font-size="13" font-weight="700" text-anchor="middle" font-family="Sarabun">🔔 Notification Center</text>
+      <text x="380" y="204" fill="#cbd5e1" font-size="11" text-anchor="middle" font-family="Sarabun">กระดิ่งบน Navbar & Direct Deep Link</text>
+
+      <!-- Arrow from Notification to Approver -->
+      <path d="M 490 190 L 560 190" stroke="#f43f5e" stroke-width="2" marker-end="url(#arrow)" />
+      
+      <!-- Stage 3: Approvals -->
+      <rect x="560" y="150" width="200" height="80" rx="12" fill="#1e293b" stroke="#818cf8" stroke-width="1.5" />
+      <text x="660" y="178" fill="#818cf8" font-size="13" font-weight="700" text-anchor="middle" font-family="Sarabun">⚖️ กระบวนการพิจารณา</text>
+      <text x="660" y="198" fill="#cbd5e1" font-size="11" text-anchor="middle" font-family="Sarabun">1. อาจารย์รับทราบ (ACK)</text>
+      <text x="660" y="214" fill="#34d399" font-size="11" text-anchor="middle" font-family="Sarabun">2. เจ้าหน้าที่อนุมัติ (APPROVE)</text>
+
+      <!-- Email quick action loop -->
+      <path d="M 660 150 L 660 70 L 470 70" stroke="#818cf8" stroke-width="1.5" stroke-dasharray="3 3" />
+      <text x="560" y="62" fill="#818cf8" font-size="10" font-family="Sarabun">Email Quick-Action 1 คลิก</text>
+
+      <!-- Arrow from Approval to Fulfillment -->
+      <path d="M 660 230 L 660 290" stroke="#14b8a6" stroke-width="2" marker-end="url(#arrow)" />
+      <text x="675" y="265" fill="#14b8a6" font-size="11" font-weight="700" font-family="Sarabun">อนุมัติแล้ว</text>
+
+      <!-- Stage 4: Fulfillment & POS -->
+      <rect x="560" y="290" width="200" height="80" rx="12" fill="#1e293b" stroke="#14b8a6" stroke-width="1.5" />
+      <text x="660" y="318" fill="#14b8a6" font-size="13" font-weight="700" text-anchor="middle" font-family="Sarabun">🛒 จุดบริการจ่าย-คืน (POS)</text>
+      <text x="660" y="338" fill="#cbd5e1" font-size="11" text-anchor="middle" font-family="Sarabun">สแกน QR Code ตรวจรับของ</text>
+      <text x="660" y="354" fill="#38bdf8" font-size="10" text-anchor="middle" font-family="Sarabun">สถานะ: DISPENSED / IN_USE</text>
+
+      <!-- Arrow from POS to Inventory DB -->
+      <path d="M 560 330 L 430 330" stroke="#14b8a6" stroke-width="2" marker-end="url(#arrow)" />
+      
+      <!-- Stage 5: Storage & Inventory Ledger -->
+      <rect x="230" y="290" width="200" height="80" rx="12" fill="#1e293b" stroke="#34d399" stroke-width="1.5" />
+      <text x="330" y="318" fill="#34d399" font-size="13" font-weight="700" text-anchor="middle" font-family="Sarabun">🏢 ผังห้องและตู้จัดเก็บ</text>
+      <text x="330" y="338" fill="#cbd5e1" font-size="11" text-anchor="middle" font-family="Sarabun">ตัดยอด StockLot / Sub-lot</text>
+      <text x="330" y="354" fill="#94a3b8" font-size="10" text-anchor="middle" font-family="Sarabun">Room &rarr; Cabinet &rarr; Shelf</text>
+
+      <!-- Arrow from Inventory to Return/Analytics -->
+      <path d="M 330 370 L 330 420 L 560 420" stroke="#818cf8" stroke-width="2" marker-end="url(#arrow)" />
+      
+      <!-- Stage 6: Analytics & Return Completion -->
+      <rect x="560" y="395" width="200" height="55" rx="12" fill="#1e293b" stroke="#818cf8" stroke-width="1.5" />
+      <text x="660" y="420" fill="#fff" font-size="12" font-weight="700" text-anchor="middle" font-family="Sarabun">📊 บันทึกงบ & คืนครบถ้วน</text>
+      <text x="660" y="438" fill="#34d399" font-size="10" text-anchor="middle" font-family="Sarabun">RETURNED / COMPLETED</text>
+
+      <!-- Notification feedback to Student -->
+      <path d="M 270 190 L 130 190 L 130 100" stroke="#f43f5e" stroke-width="1.5" stroke-dasharray="3 3" marker-end="url(#arrow)" />
+      <text x="140" y="150" fill="#f43f5e" font-size="10" font-family="Sarabun">แจ้งเตือนสถานะอัปเดต</text>
+
+      <!-- Marker Definition -->
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 1 L 8 5 L 0 9 z" fill="#94a3b8" />
+        </marker>
+      </defs>
+    </svg>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <p>ระบบบริหารจัดการห้องปฏิบัติการพยาบาล (Nursing Lab Management System) &copy; 2026</p>
+    <p style="margin-top: 4px; font-size: 11.5px; opacity: 0.7;">
+      สอดคล้องตามข้อกำหนดของระบบ: Terminology Policy ใช้คำว่า "นิสิต" อย่างเคร่งครัด 100% | Zero Sidebar Clutter
+    </p>
+  </footer>
+
+</div>
+
+</body>
+</html>

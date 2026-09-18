@@ -25,6 +25,8 @@ import {
 
 import StudentDashboard from '@/components/dashboard/StudentDashboard';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import CourseBudgetDonut from '@/components/dashboard/CourseBudgetDonut';
+import DashboardCharts from '@/components/dashboard/DashboardCharts';
 import { formatUserName } from '@/lib/user-utils';
 
 export default function DashboardPage() {
@@ -253,6 +255,15 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Visual Analytics & Mini Charts Grid */}
+      <DashboardCharts
+        courseCosts={data?.courseCosts}
+        monthlyTrends={data?.monthlyTrends}
+        assetBreakdown={data?.assetBreakdown}
+        categoryDistribution={data?.categoryDistribution}
+        totalAssets={data?.totalAssets}
+      />
+
       {/* Main Grid: Course Costs Breakdown + Alerts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left 2 Cols: Course Costs Summary */}
@@ -284,13 +295,14 @@ export default function DashboardPage() {
                     key={course.id}
                     className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 hover:border-teal-200 dark:hover:border-teal-800/80 hover:bg-teal-50/30 dark:hover:bg-slate-800 transition group"
                   >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                      <div>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      {/* Left: Course details */}
+                      <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="px-2 py-0.5 text-[11px] font-bold rounded bg-teal-100 dark:bg-teal-950/80 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800/60">
                             {course.code}
                           </span>
-                          <span className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-teal-800 dark:group-hover:text-teal-300 transition">
+                          <span className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-teal-800 dark:group-hover:text-teal-300 transition truncate">
                             {course.name}
                           </span>
                         </div>
@@ -309,12 +321,26 @@ export default function DashboardPage() {
                         </p>
                       </div>
 
-                      <div className="text-right">
-                        <div className="text-sm font-black text-slate-900 dark:text-white">
-                          ฿{course.totalExpense.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท
-                        </div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400">
-                          จากงบ ฿{course.allocatedBudget.toLocaleString('th-TH')} บาท ({course.percentBudget}%)
+                      {/* Right: Course Donut Chart & Financial Numbers */}
+                      <div className="flex items-center gap-3 sm:gap-4 self-end sm:self-center">
+                        <CourseBudgetDonut
+                          allocatedBudget={course.allocatedBudget}
+                          totalExpense={course.totalExpense}
+                          percentBudget={course.percentBudget}
+                          courseCode={course.code}
+                          size={54}
+                        />
+
+                        <div className="text-right">
+                          <div className="text-sm font-black text-slate-900 dark:text-white">
+                            ฿{course.totalExpense.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท
+                          </div>
+                          <div className="text-xs text-slate-500 dark:text-slate-400">
+                            จากงบ ฿{course.allocatedBudget.toLocaleString('th-TH')} บาท ({course.percentBudget}%)
+                          </div>
+                          <div className="text-[11px] text-teal-700 dark:text-teal-400 font-medium">
+                            คงเหลือ ฿{Math.max(0, course.allocatedBudget - course.totalExpense).toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                          </div>
                         </div>
                       </div>
                     </div>

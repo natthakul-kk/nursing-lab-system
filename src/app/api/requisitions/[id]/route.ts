@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { invalidateCache } from '@/lib/cache';
+import { createNotification } from '@/lib/notifications';
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -52,6 +53,17 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         }).catch((e) => console.error('Failed to sync linked borrow acknowledge:', e));
       }
 
+      // Notify student
+      createNotification({
+        userId: requisition.userId,
+        title: 'อาจารย์รับทราบคำขอเบิกแล้ว',
+        message: `อาจารย์ ${body.advisorName || requisition.advisorName || 'ผู้สอน'} ได้กดรับทราบคำขอเบิกเลขที่ ${requisition.requestNumber} แล้ว`,
+        type: 'INSTRUCTOR_ACK',
+        linkUrl: '/requisitions',
+        entityType: 'REQUISITION',
+        entityId: requisition.id,
+      }).catch(() => {});
+
       return respondUpdated(updated);
     }
 
@@ -77,6 +89,18 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         }).catch((e) => console.error('Failed to sync linked borrow approve:', e));
       }
 
+      // Notify student
+      createNotification({
+        userId: requisition.userId,
+        title: 'คำขอเบิกพัสดุได้รับการอนุมัติแล้ว 🎉',
+        message: `คำขอเบิกเลขที่ ${requisition.requestNumber} ได้รับการอนุมัติแล้ว กรุณาติดต่อรับพัสดุที่ห้องแล็บ`,
+        type: 'APPROVAL',
+        priority: 'HIGH',
+        linkUrl: '/requisitions',
+        entityType: 'REQUISITION',
+        entityId: requisition.id,
+      }).catch(() => {});
+
       return respondUpdated(updated);
     }
 
@@ -101,6 +125,18 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           },
         }).catch((e) => console.error('Failed to sync linked borrow reject:', e));
       }
+
+      // Notify student
+      createNotification({
+        userId: requisition.userId,
+        title: 'คำขอเบิกพัสดุไม่ได้รับการอนุมัติ',
+        message: `คำขอเบิกเลขที่ ${requisition.requestNumber} ไม่ได้รับการอนุมัติ: ${reason || 'ไม่อนุมัติ'}`,
+        type: 'REJECTION',
+        priority: 'HIGH',
+        linkUrl: '/requisitions',
+        entityType: 'REQUISITION',
+        entityId: requisition.id,
+      }).catch(() => {});
 
       return respondUpdated(updated);
     }
@@ -268,6 +304,17 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           course: true,
         },
       });
+
+      // Notify student
+      createNotification({
+        userId: requisition.userId,
+        title: 'จ่ายพัสดุเรียบร้อยแล้ว 📦',
+        message: `เจ้าหน้าที่ได้จ่ายพัสดุตามคำขอเบิกเลขที่ ${requisition.requestNumber} เรียบร้อยแล้ว`,
+        type: 'APPROVAL',
+        linkUrl: '/requisitions',
+        entityType: 'REQUISITION',
+        entityId: requisition.id,
+      }).catch(() => {});
 
       invalidateCache('items:');
       invalidateCache('dashboard:');

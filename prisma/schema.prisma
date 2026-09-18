@@ -39,6 +39,7 @@ model User {
   approvedBookings    PracticeBooking[]    @relation("ApproverPracticeBookings")
   roomBookings        RoomBooking[]        @relation("UserRoomBookings")
   approvedRoomBookings RoomBooking[]       @relation("ApproverRoomBookings")
+  notifications       Notification[]       @relation("UserNotifications")
 
   @@index([role, status])
   @@index([studentId])
@@ -549,3 +550,27 @@ model RoomBooking {
   @@index([roomId, bookingDate])
   @@index([userId, status])
 }
+
+model Notification {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  
+  title       String
+  message     String
+  type        String    // "APPROVAL", "STOCK_ALERT", "DUE_REMINDER", "INSTRUCTOR_ACK", "REQUEST_SUBMITTED", "MAINTENANCE", "SYSTEM"
+  priority    String    @default("NORMAL") // "LOW", "NORMAL", "HIGH", "URGENT"
+  
+  linkUrl     String?
+  entityType  String?   // "BORROW", "REQUISITION", "ITEM", "STORAGE", "BOOKING"
+  entityId    String?
+  
+  isRead      Boolean   @default(false)
+  readAt      DateTime?
+  
+  createdAt   DateTime  @default(now())
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+}
+

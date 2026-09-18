@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
 import { sendApprovalRequestEmail } from '@/lib/email';
 import { formatUserName, formatTeacherName } from '@/lib/user-utils';
+import { notifyRoles, notifyAdvisorByName } from '@/lib/notifications';
 
 export async function GET(req: Request) {
   try {
@@ -245,6 +246,28 @@ export async function POST(req: Request) {
       }
     } catch (emailErr) {
       console.error('Failed to trigger approval email:', emailErr);
+    }
+
+    // In-app notifications
+    notifyRoles(['OFFICER', 'ADMIN'], {
+      title: 'มีคำขอจองห้องฝึกปฏิบัติการใหม่ 🏢',
+      message: `นิสิต ${booking.user?.name || ''} ยื่นคำขอจองเลขที่ ${booking.bookingNumber} (${booking.skillTopic})`,
+      type: 'REQUEST_SUBMITTED',
+      linkUrl: '/practice/bookings',
+      entityType: 'PRACTICE',
+      entityId: booking.id,
+    }).catch(() => {});
+
+    if (finalAdvisorName) {
+      notifyAdvisorByName(finalAdvisorName, {
+        title: 'มีคำขอจองห้องฝึกปฏิบัติการรอกดรับทราบ 👩‍🏫',
+        message: `นิสิต ${booking.user?.name || ''} ยื่นคำขอจอง ${booking.bookingNumber} (${booking.skillTopic}) รออาจารย์รับทราบ`,
+        type: 'REQUEST_SUBMITTED',
+        priority: 'HIGH',
+        linkUrl: '/approvals',
+        entityType: 'PRACTICE',
+        entityId: booking.id,
+      }).catch(() => {});
     }
 
     return NextResponse.json(booking);

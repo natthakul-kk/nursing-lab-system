@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { sendApprovalRequestEmail } from '@/lib/email';
 import { getCached, setCached, invalidateCache } from '@/lib/cache';
 import { formatUserName, formatTeacherName } from '@/lib/user-utils';
+import { notifyRoles, notifyAdvisorByName } from '@/lib/notifications';
 
 export async function GET(req: Request) {
   try {
@@ -217,6 +218,28 @@ export async function POST(req: Request) {
       }
     } catch (emailErr) {
       console.error('Failed to trigger borrow email:', emailErr);
+    }
+
+    // In-app notifications
+    notifyRoles(['OFFICER', 'ADMIN'], {
+      title: 'มีคำขอยืมครุภัณฑ์ใหม่ 📋',
+      message: `นิสิต ${borrow.user?.name || ''} ยื่นคำขอยืมเลขที่ ${borrow.requestNumber} (${borrow.purpose})`,
+      type: 'REQUEST_SUBMITTED',
+      linkUrl: '/approvals',
+      entityType: 'BORROW',
+      entityId: borrow.id,
+    }).catch(() => {});
+
+    if (finalAdvisorName) {
+      notifyAdvisorByName(finalAdvisorName, {
+        title: 'มีคำขอยืมครุภัณฑ์รอกดรับทราบ 👩‍🏫',
+        message: `นิสิต ${borrow.user?.name || ''} ยื่นคำขอยืมเลขที่ ${borrow.requestNumber} ในรายวิชา ${borrow.course?.name || ''} รออาจารย์รับทราบ`,
+        type: 'REQUEST_SUBMITTED',
+        priority: 'HIGH',
+        linkUrl: '/approvals',
+        entityType: 'BORROW',
+        entityId: borrow.id,
+      }).catch(() => {});
     }
 
     invalidateCache('borrow:');

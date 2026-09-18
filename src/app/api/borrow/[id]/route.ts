@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { invalidateCache } from '@/lib/cache';
 import { formatUserName } from '@/lib/user-utils';
+import { createNotification } from '@/lib/notifications';
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -57,6 +58,17 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         }).catch((e) => console.error('Failed to sync linked requisition acknowledge:', e));
       }
 
+      // Notify student
+      createNotification({
+        userId: borrow.userId,
+        title: 'อาจารย์รับทราบคำขอยืมแล้ว',
+        message: `อาจารย์ ${body.advisorName || borrow.advisorName || 'ผู้สอน'} ได้กดรับทราบคำขอยืมเลขที่ ${borrow.requestNumber} แล้ว`,
+        type: 'INSTRUCTOR_ACK',
+        linkUrl: '/borrow',
+        entityType: 'BORROW',
+        entityId: borrow.id,
+      }).catch(() => {});
+
       return respondUpdated(updated);
     }
 
@@ -82,6 +94,18 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         }).catch((e) => console.error('Failed to sync linked requisition approve:', e));
       }
 
+      // Notify student
+      createNotification({
+        userId: borrow.userId,
+        title: 'คำขอยืมได้รับการอนุมัติแล้ว 🎉',
+        message: `คำขอยืมเลขที่ ${borrow.requestNumber} ได้รับการอนุมัติแล้ว กรุณาติดต่อรับอุปกรณ์ที่ห้องแล็บ`,
+        type: 'APPROVAL',
+        priority: 'HIGH',
+        linkUrl: '/borrow',
+        entityType: 'BORROW',
+        entityId: borrow.id,
+      }).catch(() => {});
+
       return respondUpdated(updated);
     }
 
@@ -106,6 +130,18 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           },
         }).catch((e) => console.error('Failed to sync linked requisition reject:', e));
       }
+
+      // Notify student
+      createNotification({
+        userId: borrow.userId,
+        title: 'คำขอยืมไม่ได้รับการอนุมัติ',
+        message: `คำขอยืมเลขที่ ${borrow.requestNumber} ไม่ได้รับการอนุมัติ: ${reason || 'ไม่อนุมัติ'}`,
+        type: 'REJECTION',
+        priority: 'HIGH',
+        linkUrl: '/borrow',
+        entityType: 'BORROW',
+        entityId: borrow.id,
+      }).catch(() => {});
 
       return respondUpdated(updated);
     }
@@ -311,6 +347,18 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           checkedOutAt: new Date(),
         },
       });
+
+      // Notify student
+      createNotification({
+        userId: borrow.userId,
+        title: 'จ่ายครุภัณฑ์เรียบร้อยแล้ว 📦',
+        message: `เจ้าหน้าที่ได้จ่ายครุภัณฑ์ตามคำขอ ${borrow.requestNumber} แล้ว กำหนดคืนวันที่ ${new Date(borrow.expectedReturnDate).toLocaleDateString('th-TH')}`,
+        type: 'DUE_REMINDER',
+        linkUrl: '/borrow',
+        entityType: 'BORROW',
+        entityId: borrow.id,
+      }).catch(() => {});
+
       return respondUpdated(updated);
     }
 
@@ -341,7 +389,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
               data: {
                 status: itemCond === 'DAMAGED' ? 'MAINTENANCE' : 'AVAILABLE',
                 condition: itemCond,
-                note: itemRet.note || (itemCond === 'DAMAGED' ? 'ชำรุดจากการยืม' : undefined),
+                note: itemRet.note ? `ส่งคืนเมื่อ ${new Date().toLocaleDateString('th-TH')}: ${itemRet.note}` : undefined,
               },
             });
 
@@ -350,7 +398,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
               await prisma.maintenanceLog.create({
                 data: {
                   assetId: updatedBItem.assetId,
-                  issue: itemRet.note || returnNote || `ชำรุดจากการยืมใช้งานตามคำขอ ${borrow.requestNumber}`,
+                  issue: itemRet.note || `ชำรุดจากการยืมใช้งานตามคำขอ ${borrow.requestNumber}`,
                   sentDate: new Date(),
                   status: 'UNDER_REPAIR',
                   handledById: userId || null,
@@ -411,6 +459,21 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           returnNote: returnNote || null,
         },
       });
+
+      // Notify student
+      createNotification({
+        userId: borrow.userId,
+        title: hasAnyDamaged ? 'ตรวจรับคืนครุภัณฑ์ (พบรายการชำรุด)' : 'คืนครุภัณฑ์เรียบร้อยแล้ว ✅',
+        message: hasAnyDamaged
+          ? `เจ้าหน้าที่ตรวจรับคืนคำขอ ${borrow.requestNumber} แล้ว โดยพบอุปกรณ์ชำรุด กรุณาติดต่อเจ้าหน้าที่ห้องแล็บ`
+          : `เจ้าหน้าที่ได้ตรวจรับคืนครุภัณฑ์ตามคำขอ ${borrow.requestNumber} เรียบร้อยแล้ว ขอบคุณที่ดูแลอุปกรณ์`,
+        type: hasAnyDamaged ? 'REJECTION' : 'APPROVAL',
+        priority: hasAnyDamaged ? 'HIGH' : 'NORMAL',
+        linkUrl: '/borrow',
+        entityType: 'BORROW',
+        entityId: borrow.id,
+      }).catch(() => {});
+
       return respondUpdated(updated);
     }
 

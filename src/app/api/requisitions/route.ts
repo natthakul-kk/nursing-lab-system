@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCached, setCached, invalidateCache } from '@/lib/cache';
 import { formatTeacherName } from '@/lib/user-utils';
+import { notifyRoles, notifyAdvisorByName } from '@/lib/notifications';
 
 export async function GET(req: Request) {
   try {
@@ -192,6 +193,28 @@ export async function POST(req: Request) {
         user: true,
       },
     });
+
+    // In-app notifications
+    notifyRoles(['OFFICER', 'ADMIN'], {
+      title: 'มีคำขอเบิกพัสดุใหม่ 📋',
+      message: `นิสิต ${reqRecord.user?.name || ''} ยื่นคำขอเบิกเลขที่ ${reqRecord.requestNumber} (${reqRecord.purpose})`,
+      type: 'REQUEST_SUBMITTED',
+      linkUrl: '/approvals',
+      entityType: 'REQUISITION',
+      entityId: reqRecord.id,
+    }).catch(() => {});
+
+    if (advisorName) {
+      notifyAdvisorByName(advisorName, {
+        title: 'มีคำขอเบิกพัสดุรอกดรับทราบ 👩‍🏫',
+        message: `นิสิต ${reqRecord.user?.name || ''} ยื่นคำขอเบิกเลขที่ ${reqRecord.requestNumber} ในรายวิชา ${reqRecord.course?.name || ''} รออาจารย์รับทราบ`,
+        type: 'REQUEST_SUBMITTED',
+        priority: 'HIGH',
+        linkUrl: '/approvals',
+        entityType: 'REQUISITION',
+        entityId: reqRecord.id,
+      }).catch(() => {});
+    }
 
     invalidateCache('requisitions:');
     invalidateCache('dashboard:');

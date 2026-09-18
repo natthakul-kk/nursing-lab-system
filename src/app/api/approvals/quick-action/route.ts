@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendApprovalNotificationWithQrEmail } from '@/lib/email';
 import { invalidateCache } from '@/lib/cache';
+import { createNotification, notifyRoles } from '@/lib/notifications';
 
 export async function GET(req: Request) {
   try {
@@ -95,6 +96,28 @@ export async function GET(req: Request) {
           }).catch((err) => console.error('Background email failed:', err));
         }
 
+        // In-app notifications
+        if (booking.userId) {
+          createNotification({
+            userId: booking.userId,
+            title: 'คำขอจองห้องฝึกได้รับการอนุมัติแล้ว 🎉',
+            message: `คำขอจอง ${booking.bookingNumber} (${booking.skillTopic}) ได้รับการอนุมัติแล้ว พร้อมรับ QR เข้าห้อง`,
+            type: 'STATUS_UPDATE',
+            linkUrl: '/practice/my-bookings',
+            entityType: 'PRACTICE',
+            entityId: booking.id,
+          }).catch(() => {});
+        }
+
+        notifyRoles(['OFFICER', 'ADMIN'], {
+          title: 'คำขอจองห้องฝึกได้รับการอนุมัติ ✅',
+          message: `คำขอจอง ${booking.bookingNumber} (${booking.user?.name || 'นิสิต'}) ได้รับการอนุมัติผ่านอีเมลเรียบร้อยแล้ว`,
+          type: 'STATUS_UPDATE',
+          linkUrl: '/practice/bookings',
+          entityType: 'PRACTICE',
+          entityId: booking.id,
+        }).catch(() => {});
+
         return renderResponseHtml({
           success: true,
           title: 'อนุมัติคำขอจองสำเร็จเรียบร้อย! 🎉',
@@ -109,6 +132,29 @@ export async function GET(req: Request) {
             rejectionReason: 'ไม่อนุมัติผ่านอีเมล',
           },
         });
+
+        // In-app notifications
+        if (booking.userId) {
+          createNotification({
+            userId: booking.userId,
+            title: 'คำขอจองห้องฝึกไม่ได้รับการอนุมัติ ❌',
+            message: `คำขอจอง ${booking.bookingNumber} (${booking.skillTopic}) ไม่ได้รับการอนุมัติผ่านอีเมล`,
+            type: 'STATUS_UPDATE',
+            priority: 'HIGH',
+            linkUrl: '/practice/my-bookings',
+            entityType: 'PRACTICE',
+            entityId: booking.id,
+          }).catch(() => {});
+        }
+
+        notifyRoles(['OFFICER', 'ADMIN'], {
+          title: 'คำขอจองห้องฝึกถูกปฏิเสธ ❌',
+          message: `คำขอจอง ${booking.bookingNumber} (${booking.user?.name || 'นิสิต'}) ถูกปฏิเสธผ่านอีเมล`,
+          type: 'STATUS_UPDATE',
+          linkUrl: '/practice/bookings',
+          entityType: 'PRACTICE',
+          entityId: booking.id,
+        }).catch(() => {});
 
         return renderResponseHtml({
           success: true,
@@ -154,6 +200,28 @@ export async function GET(req: Request) {
           }).catch((err) => console.error('Failed to sync linked requisition in email quick action:', err));
         }
 
+        // In-app notifications
+        if (borrow.userId) {
+          createNotification({
+            userId: borrow.userId,
+            title: 'คำขอยืมครุภัณฑ์ได้รับการอนุมัติแล้ว 🎉',
+            message: `คำขอ ${borrow.requestNumber} ได้รับการอนุมัติแล้ว เจ้าหน้าที่เตรียมจัดอุปกรณ์ให้ท่าน`,
+            type: 'STATUS_UPDATE',
+            linkUrl: '/borrow',
+            entityType: 'BORROW',
+            entityId: borrow.id,
+          }).catch(() => {});
+        }
+
+        notifyRoles(['OFFICER', 'ADMIN'], {
+          title: 'คำขอยืมครุภัณฑ์ได้รับการอนุมัติ ✅',
+          message: `คำขอยืมเลขที่ ${borrow.requestNumber} (${borrow.user?.name || 'นิสิต'}) ได้รับการอนุมัติผ่านอีเมลเรียบร้อยแล้ว`,
+          type: 'STATUS_UPDATE',
+          linkUrl: '/approvals',
+          entityType: 'BORROW',
+          entityId: borrow.id,
+        }).catch(() => {});
+
         invalidateCache('borrow:');
         invalidateCache('requisitions:');
         invalidateCache('dashboard:');
@@ -183,6 +251,29 @@ export async function GET(req: Request) {
             },
           }).catch((err) => console.error('Failed to sync linked requisition in email quick action:', err));
         }
+
+        // In-app notifications
+        if (borrow.userId) {
+          createNotification({
+            userId: borrow.userId,
+            title: 'คำขอยืมครุภัณฑ์ไม่ได้รับการอนุมัติ ❌',
+            message: `คำขอ ${borrow.requestNumber} ไม่ได้รับการอนุมัติผ่านอีเมล`,
+            type: 'STATUS_UPDATE',
+            priority: 'HIGH',
+            linkUrl: '/borrow',
+            entityType: 'BORROW',
+            entityId: borrow.id,
+          }).catch(() => {});
+        }
+
+        notifyRoles(['OFFICER', 'ADMIN'], {
+          title: 'คำขอยืมครุภัณฑ์ถูกปฏิเสธ ❌',
+          message: `คำขอยืมเลขที่ ${borrow.requestNumber} (${borrow.user?.name || 'นิสิต'}) ถูกปฏิเสธผ่านอีเมล`,
+          type: 'STATUS_UPDATE',
+          linkUrl: '/approvals',
+          entityType: 'BORROW',
+          entityId: borrow.id,
+        }).catch(() => {});
 
         invalidateCache('borrow:');
         invalidateCache('requisitions:');

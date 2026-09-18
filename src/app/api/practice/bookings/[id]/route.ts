@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendApprovalNotificationWithQrEmail } from '@/lib/email';
+import { createNotification } from '@/lib/notifications';
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -100,6 +101,19 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         }).catch((err) => console.error('Background student QR email failed:', err));
       }
 
+      // In-app notification
+      if (updated.userId) {
+        createNotification({
+          userId: updated.userId,
+          title: 'คำขอจองห้องฝึกได้รับการอนุมัติแล้ว 🎉',
+          message: `คำขอจอง ${updated.bookingNumber} (${updated.skillTopic}) ได้รับการอนุมัติแล้ว พร้อมรับ QR เข้าห้อง`,
+          type: 'STATUS_UPDATE',
+          linkUrl: '/practice/my-bookings',
+          entityType: 'PRACTICE',
+          entityId: updated.id,
+        }).catch(() => {});
+      }
+
       return NextResponse.json(updated);
     }
 
@@ -117,6 +131,21 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           approver: true,
         },
       });
+
+      // In-app notification
+      if (updated.userId) {
+        createNotification({
+          userId: updated.userId,
+          title: 'คำขอจองห้องฝึกไม่ได้รับการอนุมัติ ❌',
+          message: `คำขอจอง ${updated.bookingNumber} (${updated.skillTopic}) ไม่ได้รับการอนุมัติ: ${updated.rejectionReason || 'ไม่อนุมัติ'}`,
+          type: 'STATUS_UPDATE',
+          priority: 'HIGH',
+          linkUrl: '/practice/my-bookings',
+          entityType: 'PRACTICE',
+          entityId: updated.id,
+        }).catch(() => {});
+      }
+
       return NextResponse.json(updated);
     }
 
@@ -177,6 +206,20 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           approver: true,
         },
       });
+
+      // In-app notification
+      if (updated.userId) {
+        createNotification({
+          userId: updated.userId,
+          title: 'เช็คอินเข้าห้องฝึกสำเร็จ 🏥',
+          message: `เช็คอินเข้า ${updated.slot?.room?.name || 'ห้องปฏิบัติการ'} เรียบร้อย ขอให้ฝึกซ้อมอย่างมีประสิทธิภาพ`,
+          type: 'SYSTEM',
+          linkUrl: '/practice/my-bookings',
+          entityType: 'PRACTICE',
+          entityId: updated.id,
+        }).catch(() => {});
+      }
+
       return NextResponse.json({ message: 'เช็คอินเข้าห้องปฏิบัติการสำเร็จ', booking: updated });
     }
 
@@ -207,6 +250,20 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           approver: true,
         },
       });
+
+      // In-app notification
+      if (updated.userId) {
+        createNotification({
+          userId: updated.userId,
+          title: 'เช็คเอาท์เสร็จสิ้น บันทึกเวลาฝึกเรียบร้อย ✅',
+          message: `บันทึกเวลาการฝึกปฏิบัติ ${updated.actualMinutes || 0} นาที เรียบร้อยแล้ว`,
+          type: 'SYSTEM',
+          linkUrl: '/practice/my-bookings',
+          entityType: 'PRACTICE',
+          entityId: updated.id,
+        }).catch(() => {});
+      }
+
       return NextResponse.json({ message: 'เช็คเอาท์เสร็จสิ้น บันทึกเวลาการฝึกเรียบร้อย', booking: updated });
     }
 

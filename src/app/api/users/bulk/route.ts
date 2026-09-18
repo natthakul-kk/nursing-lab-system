@@ -73,7 +73,7 @@ function extractUserFromRow(row: Record<string, any>) {
     map['รหัสนิสิต'] ||
     map['รหัสประจำตัว'] ||
     map['รหัสบุคลากร'] ||
-    map['รหัสนักศึกษา'] ||
+    map['รหัสผู้เรียน'] ||
     map['รหัส'] ||
     map['studentid'] ||
     map['studentcode'] ||

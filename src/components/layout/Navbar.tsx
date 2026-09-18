@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import ProfileModal from '@/components/profile/ProfileModal';
 import QrScannerModal from '@/components/qrcode/QrScannerModal';
+import NotificationBell from '@/components/notifications/NotificationBell';
 import ThemeToggle from '@/components/common/ThemeToggle';
 import { formatUserName } from '@/lib/user-utils';
 
@@ -128,6 +129,9 @@ export default function Navbar({ onToggleMobileMenu, isMobileMenuOpen }: NavbarP
           <Camera className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
           <span className="hidden md:inline">สแกน QR</span>
         </button>
+
+        {/* Notification Bell */}
+        <NotificationBell />
 
         {/* Dark / Light Mode Toggle Button */}
         <ThemeToggle />

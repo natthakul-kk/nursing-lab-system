@@ -534,11 +534,41 @@ export default function InventoryPage() {
     let group = cat?.code ? cat.code.toUpperCase() : '';
     if (!group) {
       if (type === 'CONSUMABLE') {
-        if (catName.includes('ฉีด') || catName.includes('สารน้ำ') || catName.includes('IV')) {
-          group = 'IV';
+        if (catName.includes('ก๊อซ')) {
+          group = 'GAU';
+        } else if (catName.includes('แอลกอฮอล์')) {
+          group = 'ALC';
+        } else if (catName.includes('ถุงขยะ')) {
+          group = 'BIN';
+        } else if (catName.includes('พันแผล') || catName.includes('พันเคล็ด')) {
+          group = 'BDG';
+        } else if (catName.includes('สำลีก้อน') || catName.includes('สำลี')) {
+          group = 'CTB';
+        } else if (catName.includes('สารน้ำ') || catName.includes('ฉีด') || catName.includes('IV')) {
+          group = 'IVF';
+        } else if (catName.includes('FEED') || catName.includes('ให้อาหาร')) {
+          group = 'FED';
+        } else if (catName.includes('เทป') || catName.includes('พลาสเตอร์')) {
+          group = 'TAP';
+        } else if (catName.includes('ถุงมือ')) {
+          group = 'GLV';
+        } else if (catName.includes('เข็ม')) {
+          group = 'NDL';
+        } else if (catName.includes('หน้ากาก')) {
+          group = 'MSK';
+        } else if (catName.includes('NG')) {
+          group = 'NGT';
+        } else if (catName.includes('SUCTION') || catName.includes('ดูดเสมหะ')) {
+          group = 'SUC';
+        } else if (catName.includes('ไซริงค์')) {
+          group = 'SYR';
+        } else if (catName.includes('Urine') || catName.includes('ปัสสาวะ')) {
+          group = 'URN';
+        } else if (catName.includes('ไม้พันสำลี')) {
+          group = 'WDS';
         } else if (catName.includes('แผล') || catName.includes('ผ่าตัด') || catName.includes('ฆ่าเชื้อ')) {
           group = 'WD';
-        } else if (catName.includes('ป้องกัน') || catName.includes('PPE') || catName.includes('ถุงมือ')) {
+        } else if (catName.includes('ป้องกัน') || catName.includes('PPE')) {
           group = 'PPE';
         } else {
           group = 'GEN';
@@ -591,14 +621,24 @@ export default function InventoryPage() {
   const handleSaveCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!categoryForm.name.trim()) return;
+
+    if (categoryForm.type === 'EQUIPMENT' && !categoryForm.code?.trim()) {
+      alert('กรุณากรอกรหัสหมวดหมู่สำหรับครุภัณฑ์ (เช่น BED, AED, CPR)');
+      return;
+    }
+
     setCategorySubmitting(true);
     try {
       const url = isEditingCategory ? `/api/categories/${categoryForm.id}` : '/api/categories';
       const method = isEditingCategory ? 'PUT' : 'POST';
+      const payload = {
+        ...categoryForm,
+        code: categoryForm.code?.trim() || null,
+      };
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(categoryForm),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (res.ok) {
@@ -3289,13 +3329,23 @@ export default function InventoryPage() {
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <div className="sm:col-span-1">
                   <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    รหัสหมวดหมู่ (Code) *
+                    {categoryForm.type === 'EQUIPMENT' ? (
+                      <>
+                        รหัสหมวดหมู่ (Code) <span className="text-rose-500">*</span>
+                      </>
+                    ) : (
+                      <>รหัสหมวดหมู่ (ไม่บังคับ)</>
+                    )}
                   </label>
                   <input
                     type="text"
-                    required
+                    required={categoryForm.type === 'EQUIPMENT'}
                     maxLength={10}
-                    placeholder="เช่น IV, PPE, WD"
+                    placeholder={
+                      categoryForm.type === 'EQUIPMENT'
+                        ? 'เช่น BED, AED, CPR'
+                        : 'ปล่อยว่างได้ หรือเช่น GU, ALC'
+                    }
                     value={categoryForm.code}
                     onChange={(e) =>
                       setCategoryForm({
@@ -3306,7 +3356,9 @@ export default function InventoryPage() {
                     className="w-full font-mono uppercase bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-teal-700 dark:text-teal-400 focus:ring-2 focus:ring-teal-500"
                   />
                   <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
-                    เช่น IV, WD (ใช้นำหน้ารหัสพัสดุ)
+                    {categoryForm.type === 'EQUIPMENT'
+                      ? 'จำเป็นสำหรับครุภัณฑ์ (นำหน้ารหัส EQ-...)'
+                      : 'วัสดุสิ้นเปลืองปล่อยว่างได้ (ระบบมี Fallback อัตโนมัติ)'}
                   </p>
                 </div>
 
@@ -3364,9 +3416,13 @@ export default function InventoryPage() {
                   >
                     <div className="space-y-0.5">
                       <div className="font-bold text-slate-900 dark:text-slate-100 text-xs flex items-center gap-2">
-                        {cat.code && (
+                        {cat.code ? (
                           <span className="font-mono text-[11px] font-black px-1.5 py-0.5 rounded bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-400 border border-teal-200 dark:border-teal-800">
                             [{cat.code}]
+                          </span>
+                        ) : (
+                          <span className="font-mono text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 border border-slate-200 dark:border-slate-700">
+                            [ไม่มีรหัส]
                           </span>
                         )}
                         <span>{cat.name}</span>

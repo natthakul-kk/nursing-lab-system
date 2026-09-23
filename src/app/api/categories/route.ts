@@ -39,7 +39,15 @@ export async function POST(req: Request) {
     }
 
     const categoryType = type === 'EQUIPMENT' ? 'EQUIPMENT' : 'CONSUMABLE';
-    const categoryCode = code ? code.trim().toUpperCase() : null;
+    const categoryCode = code && code.trim() ? code.trim().toUpperCase() : null;
+
+    // For EQUIPMENT: category code is mandatory as before
+    if (categoryType === 'EQUIPMENT' && !categoryCode) {
+      return NextResponse.json(
+        { error: 'กรุณากรอกรหัสหมวดหมู่สำหรับครุภัณฑ์ (เช่น BED, AED, CPR)' },
+        { status: 400 }
+      );
+    }
 
     // Check duplicate name
     const existingName = await prisma.category.findFirst({

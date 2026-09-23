@@ -24,10 +24,14 @@ import {
   Sparkles,
   Package,
   X,
+  MapPin,
+  Info,
+  FileText,
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import UnifiedRequestModal from '@/components/requests/UnifiedRequestModal';
 import { formatUserName, formatTeacherName, formatApproverDisplay, formatAcknowledgeDisplay } from '@/lib/user-utils';
+import { formatLocationDisplay } from '@/lib/location-utils';
 
 export default function RequisitionsPage() {
   const { currentUser, isOfficer, isApprover, isAdmin, isTeacher } = useAuth();
@@ -67,8 +71,12 @@ export default function RequisitionsPage() {
     quantity: number;
     allowed: boolean;
     currentStock: number;
+    location?: string | null;
+    storageLocation?: any;
+    stockLots?: any[];
     recommendedPacks?: any;
   }[]>([]);
+  const [dispenseNote, setDispenseNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [acknowledgingId, setAcknowledgingId] = useState<string | null>(null);
 
@@ -216,12 +224,14 @@ export default function RequisitionsPage() {
           action: 'DISPENSE',
           userId: currentUser?.id,
           itemAdjustments: dispenseItems,
+          dispenseNote: dispenseNote ? dispenseNote.trim() : undefined,
         }),
       });
 
       if (res.ok) {
         setActiveReqForDispense(null);
         setDispenseItems([]);
+        setDispenseNote('');
         fetchRequisitions();
       } else {
         const err = await res.json();
@@ -503,6 +513,13 @@ export default function RequisitionsPage() {
                 </div>
               )}
 
+              {req.dispenseNote && (
+                <div className="mt-2.5 p-2 rounded-lg bg-teal-50/70 dark:bg-teal-950/40 border border-teal-100 dark:border-teal-900/60 text-xs text-teal-800 dark:text-teal-300 font-medium flex items-start gap-1.5">
+                  <Info className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 flex-shrink-0 mt-0.5" />
+                  <span><strong>หมายเหตุตอนจ่ายของ:</strong> {req.dispenseNote}</span>
+                </div>
+              )}
+
               {/* Instructor Acknowledgment Button (shown whenever not yet acknowledged, even if already approved) */}
               {!req.instructorAcknowledged && req.status !== 'REJECTED' && req.status !== 'CANCELLED' && req.status !== 'DISPENSED' && (isTeacher || isApprover || isAdmin) && (
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-3 border-t border-slate-100 bg-indigo-50/40 -mx-5 -mb-5 p-3.5 rounded-b-2xl">
@@ -536,6 +553,7 @@ export default function RequisitionsPage() {
                   <button
                     onClick={() => {
                       setActiveReqForDispense(req);
+                      setDispenseNote('');
                       setDispenseItems(
                         (req.items || []).map((it: any) => {
                           const matchC = consumables.find((c) => c.id === it.itemId);
@@ -548,6 +566,9 @@ export default function RequisitionsPage() {
                             quantity: it.quantityRequested,
                             allowed: true,
                             currentStock: it.item?.currentStock ?? matchC?.currentStock ?? 0,
+                            location: it.item?.location ?? matchC?.location,
+                            storageLocation: it.item?.storageLocation ?? matchC?.storageLocation,
+                            stockLots: it.item?.stockLots ?? matchC?.stockLots ?? [],
                             recommendedPacks: matchC?.nextRecommendedPacks || null,
                           };
                         })
@@ -974,97 +995,146 @@ export default function RequisitionsPage() {
                 </span>
               </div>
 
-              {dispenseItems.map((it, idx) => (
-                <div
-                  key={it.id || idx}
-                  className={`p-3 rounded-xl border transition text-xs ${
-                    it.allowed
-                      ? 'bg-white dark:bg-slate-800/90 border-teal-100 dark:border-teal-900/60 shadow-sm'
-                      : 'bg-rose-50/60 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900/50 opacity-80'
-                  }`}
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <div>
-                      <div className="font-bold text-slate-800 dark:text-slate-200">{it.name}</div>
-                      <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                        ขอมา: {it.requestedQty} {it.unit}
-                        <span className="ml-1.5 text-[10px] text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 px-1.5 py-0.5 rounded border border-teal-200 dark:border-teal-800/60">
-                          คงคลัง: {it.currentStock} {it.unit}
-                        </span>
+              {dispenseItems.map((it, idx) => {
+                const locText = formatLocationDisplay(it);
+
+                return (
+                  <div
+                    key={it.id || idx}
+                    className={`p-3 rounded-xl border transition text-xs space-y-2 ${
+                      it.allowed
+                        ? 'bg-white dark:bg-slate-800/90 border-teal-100 dark:border-teal-900/60 shadow-sm'
+                        : 'bg-rose-50/60 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900/50 opacity-80'
+                    }`}
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <div className="font-bold text-slate-800 dark:text-slate-200 text-sm">{it.name}</div>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                          ขอมา: {it.requestedQty} {it.unit}
+                          <span className="ml-1.5 text-[10px] text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 px-1.5 py-0.5 rounded border border-teal-200 dark:border-teal-800/60">
+                            คงคลัง: {it.currentStock} {it.unit}
+                          </span>
+                        </div>
+                        <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px]">
+                          <span className="inline-flex items-center gap-1 text-slate-600 dark:text-slate-300">
+                            <MapPin className="w-3 h-3 text-rose-500 shrink-0" />
+                            พิกัดจัดเก็บ: <strong className="text-slate-800 dark:text-slate-200">{locText}</strong>
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 self-start sm:self-center">
+                        {it.allowed && (
+                          <div className="flex items-center gap-1">
+                            <span className="text-[11px] text-slate-500 dark:text-slate-400">จ่าย:</span>
+                            <input
+                              type="number"
+                              min="1"
+                              max={it.requestedQty}
+                              value={it.quantity}
+                              onChange={(e) => {
+                                const val = Math.max(1, Number(e.target.value));
+                                setDispenseItems((prev) =>
+                                  prev.map((item, i) => (i === idx ? { ...item, quantity: val } : item))
+                                );
+                              }}
+                              className="w-14 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-1 text-xs font-bold text-center text-slate-900 dark:text-slate-100"
+                            />
+                            <span className="text-[11px] text-slate-500 dark:text-slate-400">{it.unit}</span>
+                          </div>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDispenseItems((prev) =>
+                              prev.map((item, i) => (i === idx ? { ...item, allowed: !item.allowed } : item))
+                            );
+                          }}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                            it.allowed
+                              ? 'bg-teal-100 dark:bg-teal-950/60 text-teal-800 dark:text-teal-300 hover:bg-teal-200 dark:hover:bg-teal-900/60 border border-teal-300 dark:border-teal-800/60'
+                              : 'bg-rose-600 text-white hover:bg-rose-700'
+                          }`}
+                        >
+                          {it.allowed ? (
+                            <>
+                              <Check className="w-3.5 h-3.5" />
+                              <span>ให้เบิก</span>
+                            </>
+                          ) : (
+                            <>
+                              <X className="w-3.5 h-3.5" />
+                              <span>ไม่อนุญาต</span>
+                            </>
+                          )}
+                        </button>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      {it.allowed && (
-                        <div className="flex items-center gap-1">
-                          <span className="text-[11px] text-slate-500 dark:text-slate-400">จ่าย:</span>
-                          <input
-                            type="number"
-                            min="1"
-                            max={it.requestedQty}
-                            value={it.quantity}
-                            onChange={(e) => {
-                              const val = Math.max(1, Number(e.target.value));
-                              setDispenseItems((prev) =>
-                                prev.map((item, i) => (i === idx ? { ...item, quantity: val } : item))
-                              );
-                            }}
-                            className="w-14 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-1 text-xs font-bold text-center text-slate-900 dark:text-slate-100"
-                          />
-                          <span className="text-[11px] text-slate-500 dark:text-slate-400">{it.unit}</span>
-                        </div>
-                      )}
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setDispenseItems((prev) =>
-                            prev.map((item, i) => (i === idx ? { ...item, allowed: !item.allowed } : item))
-                          );
-                        }}
-                        className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
-                          it.allowed
-                            ? 'bg-teal-100 dark:bg-teal-950/60 text-teal-800 dark:text-teal-300 hover:bg-teal-200 dark:hover:bg-teal-900/60 border border-teal-300 dark:border-teal-800/60'
-                            : 'bg-rose-600 text-white hover:bg-rose-700'
-                        }`}
-                      >
-                        {it.allowed ? (
-                          <>
-                            <Check className="w-3.5 h-3.5" />
-                            <span>ให้เบิก</span>
-                          </>
-                        ) : (
-                          <>
-                            <X className="w-3.5 h-3.5" />
-                            <span>ไม่อนุญาต</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Sterile Repack Recommendation */}
-                  {it.recommendedPacks && it.allowed && (
-                    <div className="mt-2 pt-2 border-t border-teal-100/80 dark:border-teal-900/60 flex flex-wrap items-center justify-between gap-1 text-[11px] text-teal-900 dark:text-teal-200 bg-teal-50/80 dark:bg-teal-950/40 px-2.5 py-1.5 rounded-lg">
-                      <span className="font-bold flex items-center gap-1.5">
-                        <Package className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-                        📦 แนะนำหยิบซองปลอดเชื้อตามลำดับ (FEFO):
-                      </span>
-                      <span className="font-mono font-bold text-teal-800 dark:text-teal-300 bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-teal-200 dark:border-teal-800/60">
-                        {it.recommendedPacks.packs
-                          .slice(0, it.quantity)
-                          .map((p: any) => `#${p.packNumber} (${p.packCode})`)
-                          .join(', ')}
-                      </span>
-                      {it.recommendedPacks.expiryDate && (
-                        <span className="text-[10px] text-teal-700 dark:text-teal-400">
-                          วันหมดอายุ: {new Date(it.recommendedPacks.expiryDate).toLocaleDateString('th-TH')}
+                    {/* Consumable Recommended FIFO Lot */}
+                    {it.allowed && it.stockLots && it.stockLots.length > 0 && (
+                      <div className="p-2 rounded-lg bg-teal-50/70 dark:bg-teal-950/40 border border-teal-100 dark:border-teal-900/60 flex flex-wrap items-center gap-2 text-[11px] text-teal-900 dark:text-teal-200">
+                        <span className="font-semibold flex items-center gap-1">
+                          <Package className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                          📦 แนะนำตัดสต็อก (FIFO):
                         </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))}
+                        <span className="font-mono font-bold text-teal-800 dark:text-teal-300 bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-teal-200 dark:border-teal-800">
+                          Lot {it.stockLots[0].lotNumber}
+                        </span>
+                        {it.stockLots[0].expiryDate && (
+                          <span className="text-[10px] text-teal-700 dark:text-teal-400">
+                            (EXP: {new Date(it.stockLots[0].expiryDate).toLocaleDateString('th-TH')})
+                          </span>
+                        )}
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                          คงเหลือในล็อต: {it.stockLots[0].quantityRemaining} {it.unit}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Sterile Repack Recommendation */}
+                    {it.recommendedPacks && it.allowed && (
+                      <div className="mt-2 pt-2 border-t border-teal-100/80 dark:border-teal-900/60 flex flex-wrap items-center justify-between gap-1 text-[11px] text-teal-900 dark:text-teal-200 bg-teal-50/80 dark:bg-teal-950/40 px-2.5 py-1.5 rounded-lg">
+                        <span className="font-bold flex items-center gap-1.5">
+                          <Package className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                          📦 แนะนำหยิบซองปลอดเชื้อตามลำดับ (FEFO):
+                        </span>
+                        <span className="font-mono font-bold text-teal-800 dark:text-teal-300 bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-teal-200 dark:border-teal-800/60">
+                          {it.recommendedPacks.packs
+                            .slice(0, it.quantity)
+                            .map((p: any) => `#${p.packNumber} (${p.packCode})`)
+                            .join(', ')}
+                        </span>
+                        {it.recommendedPacks.expiryDate && (
+                          <span className="text-[10px] text-teal-700 dark:text-teal-400">
+                            วันหมดอายุ: {new Date(it.recommendedPacks.expiryDate).toLocaleDateString('th-TH')}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Dispense Note Input Field */}
+            <div className="space-y-1.5 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
+              <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                <FileText className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                <span>หมายเหตุการจ่ายของ (ถ้ามี):</span>
+              </label>
+              <textarea
+                rows={2}
+                value={dispenseNote}
+                onChange={(e) => setDispenseNote(e.target.value)}
+                placeholder="เช่น จ่ายตามขนาดทดแทนที่ตกลงกับอาจารย์ผู้สอน, นิสิตตัวแทนกลุ่มมารับแทน, บรรจุภัณฑ์มีรอยเปิดก่อนจ่าย..."
+                className="w-full text-xs p-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500"
+              />
+              <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                * ข้อความนี้จะถูกบันทึกในประวัติคำขอและแสดงให้นิสิตผู้เบิกทราบ เพื่อเป็นหลักฐานการส่งมอบร่วมกัน
+              </p>
             </div>
 
             <p className="text-[11px] text-slate-500 leading-relaxed bg-amber-50 p-2.5 rounded-xl border border-amber-200 text-amber-800">

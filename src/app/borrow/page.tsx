@@ -27,12 +27,16 @@ import {
   Tag,
   Edit3,
   Building2,
+  MapPin,
+  Info,
+  FileText,
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import UnifiedRequestModal from '@/components/requests/UnifiedRequestModal';
 import NewAllocationModal from '@/components/borrow/NewAllocationModal';
 import BulkAllocationReturnModal from '@/components/borrow/BulkAllocationReturnModal';
 import { formatUserName, formatTeacherName, formatApproverDisplay, formatAcknowledgeDisplay } from '@/lib/user-utils';
+import { formatLocationDisplay } from '@/lib/location-utils';
 
 export default function BorrowPage() {
   const { currentUser, isOfficer, isApprover, isAdmin, isTeacher } = useAuth();
@@ -69,6 +73,7 @@ export default function BorrowPage() {
   const [actionType, setActionType] = useState<'CHECKOUT' | 'RETURN' | null>(null);
   const [returnCondition, setReturnCondition] = useState<'GOOD' | 'DAMAGED'>('GOOD');
   const [returnNote, setReturnNote] = useState('');
+  const [checkoutNote, setCheckoutNote] = useState('');
   const [itemReturns, setItemReturns] = useState<{ id: string; condition: 'GOOD' | 'DAMAGED'; note: string }[]>([]);
   const [consumablesList, setConsumablesList] = useState<any[]>([]);
   const [checkoutBorrowItems, setCheckoutBorrowItems] = useState<{
@@ -301,6 +306,7 @@ export default function BorrowPage() {
           userId: currentUser?.id,
           returnCondition: actionType === 'RETURN' ? returnCondition : undefined,
           returnNote: actionType === 'RETURN' ? returnNote : undefined,
+          checkoutNote: actionType === 'CHECKOUT' ? checkoutNote : undefined,
           itemReturns: actionType === 'RETURN' ? itemReturns : undefined,
           borrowItemAdjustments: actionType === 'CHECKOUT' ? checkoutBorrowItems : undefined,
           assignedAssets:
@@ -317,6 +323,7 @@ export default function BorrowPage() {
         setActiveBorrowForAction(null);
         setActionType(null);
         setReturnNote('');
+        setCheckoutNote('');
         setItemReturns([]);
         setCheckoutBorrowItems([]);
         setCheckoutReqItems([]);
@@ -821,6 +828,13 @@ export default function BorrowPage() {
                   </div>
                 )}
 
+                {req.checkoutNote && (
+                  <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700 text-xs text-indigo-800 dark:text-indigo-300 font-medium flex items-start gap-1.5 bg-indigo-50/60 dark:bg-indigo-950/40 p-2 rounded-lg">
+                    <Info className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 flex-shrink-0 mt-0.5" />
+                    <span><strong>หมายเหตุตอนส่งมอบ:</strong> {req.checkoutNote}</span>
+                  </div>
+                )}
+
                 {req.returnNote && (
                   <div className="mt-2 pt-2 border-t border-slate-200 text-xs text-rose-700 font-medium flex items-start gap-1.5">
                     <AlertTriangle className="w-3.5 h-3.5 text-rose-600 flex-shrink-0 mt-0.5" />
@@ -864,18 +878,24 @@ export default function BorrowPage() {
                       onClick={() => {
                         setActiveBorrowForAction(req);
                         setActionType('CHECKOUT');
+                        setCheckoutNote('');
                         setCheckoutBorrowItems(
-                          (req.items || []).map((it: any) => ({
-                            id: it.id,
-                            itemId: it.itemId,
-                            name: it.item?.name || 'ครุภัณฑ์',
-                            unit: it.item?.unit || 'ชิ้น',
-                            requestedQty: it.quantity,
-                            quantity: it.quantity,
-                            allowed: true,
-                            assetId: it.assetId || null,
-                            assetCode: it.asset?.assetCode || null,
-                          }))
+                          (req.items || []).map((it: any) => {
+                            const matchEq = equipmentList.find((e) => e.id === it.itemId);
+                            const availableAssets = matchEq?.availableAssets || [];
+                            const defaultAsset = it.asset || (availableAssets.length > 0 ? availableAssets[0] : null);
+                            return {
+                              id: it.id,
+                              itemId: it.itemId,
+                              name: it.item?.name || 'ครุภัณฑ์',
+                              unit: it.item?.unit || 'ชิ้น',
+                              requestedQty: it.quantity,
+                              quantity: it.quantity,
+                              allowed: true,
+                              assetId: it.assetId || defaultAsset?.id || null,
+                              assetCode: it.asset?.assetCode || defaultAsset?.assetCode || null,
+                            };
+                          })
                         );
                         setCheckoutReqItems(
                           (req.requisitionRequest?.items || []).map((it: any) => ({
@@ -1618,11 +1638,13 @@ export default function BorrowPage() {
                     {checkoutBorrowItems.map((it, idx) => {
                       const matchEq = equipmentList.find((e) => e.id === it.itemId);
                       const availableAssets = matchEq?.availableAssets || [];
+                      const selectedAsset = availableAssets.find((a: any) => a.assetCode === it.assetCode);
+                      const locText = formatLocationDisplay(selectedAsset || matchEq);
 
                       return (
                         <div
                           key={it.id}
-                          className={`p-2.5 rounded-xl border transition text-xs ${
+                          className={`p-3 rounded-xl border transition text-xs space-y-2 ${
                             it.allowed
                               ? 'bg-white dark:bg-slate-900 border-indigo-100 dark:border-indigo-900/60 shadow-sm'
                               : 'bg-rose-50/60 dark:bg-rose-950/40 border-rose-200 dark:border-rose-900 opacity-80'
@@ -1630,8 +1652,8 @@ export default function BorrowPage() {
                         >
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                             <div>
-                              <div className="font-bold text-slate-800 dark:text-slate-200">{it.name}</div>
-                              <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                              <div className="font-bold text-slate-800 dark:text-slate-200 text-sm">{it.name}</div>
+                              <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                                 ขอมา: {it.requestedQty} {it.unit}
                                 {it.assetCode && (
                                   <span className="ml-1.5 font-mono text-[10px] bg-indigo-50 dark:bg-indigo-950/80 border border-indigo-200 dark:border-indigo-800 px-1.5 py-0.5 rounded text-indigo-700 dark:text-indigo-300 font-bold">
@@ -1639,9 +1661,15 @@ export default function BorrowPage() {
                                   </span>
                                 )}
                               </div>
+                              <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px]">
+                                <span className="inline-flex items-center gap-1 text-slate-600 dark:text-slate-300">
+                                  <MapPin className="w-3 h-3 text-rose-500 shrink-0" />
+                                  พิกัดจัดเก็บ: <strong className="text-slate-800 dark:text-slate-200">{locText}</strong>
+                                </span>
+                              </div>
                             </div>
 
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 self-start sm:self-center">
                               {it.allowed && (
                                 <div className="flex items-center gap-1">
                                   <span className="text-[11px] text-slate-500 dark:text-slate-400">จ่าย:</span>
@@ -1690,19 +1718,64 @@ export default function BorrowPage() {
                             </div>
                           </div>
 
+                          {/* Smart Asset Recommendation */}
+                          {it.allowed && availableAssets.length > 0 && (
+                            <div className="p-2 rounded-lg bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/60 flex flex-wrap items-center justify-between gap-1.5">
+                              <div className="flex items-center gap-1.5 text-[11px] text-indigo-900 dark:text-indigo-200">
+                                <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                                <span>แนะนำหยิบเครื่อง:</span>
+                                <span className="font-mono font-bold text-indigo-800 dark:text-indigo-300 bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-indigo-200 dark:border-indigo-800">
+                                  {availableAssets[0].assetCode}
+                                  {availableAssets[0].serialNumber ? ` (S/N: ${availableAssets[0].serialNumber})` : ''}
+                                </span>
+                                {availableAssets[0].location && (
+                                  <span className="text-[10px] text-indigo-600 dark:text-indigo-400">
+                                    ({availableAssets[0].location})
+                                  </span>
+                                )}
+                              </div>
+                              {(!it.assetCode || it.assetCode !== availableAssets[0].assetCode) && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setCheckoutBorrowItems((prev) =>
+                                      prev.map((item, i) =>
+                                        i === idx
+                                          ? {
+                                              ...item,
+                                              assetCode: availableAssets[0].assetCode,
+                                              assetId: availableAssets[0].id,
+                                            }
+                                          : item
+                                      )
+                                    );
+                                  }}
+                                  className="text-[10px] px-2 py-0.5 rounded font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition cursor-pointer"
+                                >
+                                  เลือกเครื่องนี้
+                                </button>
+                              )}
+                            </div>
+                          )}
+
                           {/* Asset Selection Dropdown for Specific Serial/AssetCode */}
                           {it.allowed && availableAssets.length > 0 && (
-                            <div className="mt-2 pt-2 border-t border-indigo-100 dark:border-indigo-900/60 flex flex-col sm:flex-row sm:items-center gap-2">
-                              <span className="text-[11px] text-indigo-900 dark:text-indigo-300 font-semibold flex items-center gap-1">
+                            <div className="pt-2 border-t border-indigo-100 dark:border-indigo-900/60 flex flex-col sm:flex-row sm:items-center gap-2">
+                              <span className="text-[11px] text-indigo-900 dark:text-indigo-300 font-semibold flex items-center gap-1 shrink-0">
                                 <Tag className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
-                                ระบุหมายเลขเครื่องเฉพาะ (ถ้าต้องการ):
+                                ระบุหมายเลขเครื่องเฉพาะ:
                               </span>
                               <select
                                 value={it.assetCode || ''}
                                 onChange={(e) => {
                                   const val = e.target.value;
+                                  const found = availableAssets.find((a: any) => a.assetCode === val);
                                   setCheckoutBorrowItems((prev) =>
-                                    prev.map((item, i) => (i === idx ? { ...item, assetCode: val } : item))
+                                    prev.map((item, i) =>
+                                      i === idx
+                                        ? { ...item, assetCode: val || null, assetId: found?.id || null }
+                                        : item
+                                    )
                                   );
                                 }}
                                 className="bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-800 dark:text-slate-200 flex-1"
@@ -1739,11 +1812,12 @@ export default function BorrowPage() {
                       {checkoutReqItems.map((it, idx) => {
                         const matchCons = consumablesList.find((c) => c.id === it.itemId);
                         const recPacks = matchCons?.nextRecommendedPacks;
+                        const consLoc = formatLocationDisplay(matchCons);
 
                         return (
                           <div
                             key={it.id}
-                            className={`p-2.5 rounded-xl border transition text-xs ${
+                            className={`p-3 rounded-xl border transition text-xs space-y-2 ${
                               it.allowed
                                 ? 'bg-white dark:bg-slate-900 border-teal-100 dark:border-teal-900/60 shadow-sm'
                                 : 'bg-rose-50/60 dark:bg-rose-950/40 border-rose-200 dark:border-rose-900 opacity-80'
@@ -1751,8 +1825,8 @@ export default function BorrowPage() {
                           >
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                               <div>
-                                <div className="font-bold text-slate-800 dark:text-slate-200">{it.name}</div>
-                                <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                                <div className="font-bold text-slate-800 dark:text-slate-200 text-sm">{it.name}</div>
+                                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                                   ขอมา: {it.requestedQty} {it.unit}
                                   {it.currentStock !== undefined && (
                                     <span className="ml-1.5 text-[10px] text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 px-1.5 py-0.5 rounded border border-teal-200 dark:border-teal-800">
@@ -1760,9 +1834,15 @@ export default function BorrowPage() {
                                     </span>
                                   )}
                                 </div>
+                                <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px]">
+                                  <span className="inline-flex items-center gap-1 text-slate-600 dark:text-slate-300">
+                                    <MapPin className="w-3 h-3 text-rose-500 shrink-0" />
+                                    พิกัดจัดเก็บ: <strong className="text-slate-800 dark:text-slate-200">{consLoc}</strong>
+                                  </span>
+                                </div>
                               </div>
 
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 self-start sm:self-center">
                                 {it.allowed && (
                                   <div className="flex items-center gap-1">
                                     <span className="text-[11px] text-slate-500 dark:text-slate-400">จ่าย:</span>
@@ -1811,6 +1891,27 @@ export default function BorrowPage() {
                               </div>
                             </div>
 
+                            {/* Consumable Recommended FIFO Lot */}
+                            {it.allowed && matchCons?.stockLots && matchCons.stockLots.length > 0 && (
+                              <div className="p-2 rounded-lg bg-teal-50/70 dark:bg-teal-950/40 border border-teal-100 dark:border-teal-900/60 flex flex-wrap items-center gap-2 text-[11px] text-teal-900 dark:text-teal-200">
+                                <span className="font-semibold flex items-center gap-1">
+                                  <Package className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                                  📦 แนะนำตัดสต็อก (FIFO):
+                                </span>
+                                <span className="font-mono font-bold text-teal-800 dark:text-teal-300 bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-teal-200 dark:border-teal-800">
+                                  Lot {matchCons.stockLots[0].lotNumber}
+                                </span>
+                                {matchCons.stockLots[0].expiryDate && (
+                                  <span className="text-[10px] text-teal-700 dark:text-teal-400">
+                                    (EXP: {new Date(matchCons.stockLots[0].expiryDate).toLocaleDateString('th-TH')})
+                                  </span>
+                                )}
+                                <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                                  คงเหลือ: {matchCons.stockLots[0].quantityRemaining} {it.unit}
+                                </span>
+                              </div>
+                            )}
+
                             {/* Sterile Repack Recommendation */}
                             {recPacks && it.allowed && (
                               <div className="mt-2 pt-2 border-t border-teal-100/80 dark:border-teal-900/60 flex flex-wrap items-center justify-between gap-1 text-[11px] text-teal-900 dark:text-teal-200 bg-teal-50/80 dark:bg-teal-950/40 px-2.5 py-1.5 rounded-lg">
@@ -1834,6 +1935,24 @@ export default function BorrowPage() {
                     </div>
                   </div>
                 )}
+
+                {/* Checkout Note Input Field */}
+                <div className="space-y-1.5 p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800">
+                  <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                    <span>หมายเหตุการส่งมอบ / การจ่ายของ (ถ้ามี):</span>
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={checkoutNote}
+                    onChange={(e) => setCheckoutNote(e.target.value)}
+                    placeholder="เช่น ส่งมอบพร้อมสาย AC 1 เส้นและกระเป๋า, ตัวเครื่องมีรอยขีดข่วนเดิมที่ฐาน, นิสิตตัวแทนกลุ่มมารับแทน..."
+                    className="w-full text-xs p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                    * ข้อความนี้จะถูกบันทึกในประวัติคำขอและแสดงให้นิสิตผู้ยืมทราบ เพื่อเป็นหลักฐานการส่งมอบร่วมกัน
+                  </p>
+                </div>
 
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed bg-amber-50 dark:bg-amber-950/30 p-2.5 rounded-xl border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200">
                   💡 เมื่อกดยืนยัน ระบบจะส่งมอบเฉพาะรายการที่ <b>"อนุญาต"</b> เท่านั้น พร้อมตัดสต็อกวัสดุสิ้นเปลืองอัตโนมัติ (FIFO) ตามจำนวนที่จ่ายจริง

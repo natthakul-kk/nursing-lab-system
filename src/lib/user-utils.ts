@@ -157,8 +157,7 @@ export function formatTeacherName(
     role === 'OFFICER' ||
     rawName.includes('แอดมิน') ||
     rawName.includes('เจ้าหน้าที่') ||
-    rawName.includes('ผู้ดูแลระบบ') ||
-    rawName.includes('ณัฐกุล');
+    rawName.includes('ผู้ดูแลระบบ');
 
   // 2. Check academic ranks in prefix
   const isAcademicPrefix = ACADEMIC_PREFIXES.some(
@@ -248,8 +247,7 @@ export function formatAcknowledgeDisplay(advisorName?: string | null): {
   const isStaff =
     str.includes('แอดมิน') ||
     str.includes('เจ้าหน้าที่') ||
-    str.includes('ผู้ดูแลระบบ') ||
-    str.includes('ณัฐกุล');
+    str.includes('ผู้ดูแลระบบ');
 
   if (isStaff) {
     const clean = str.replace(/^อาจารย์\s*/, '');

@@ -432,6 +432,14 @@ export default function StudentDashboard() {
                       ))}
                     </div>
 
+                    {/* Officer checkout note */}
+                    {req.checkoutNote && (
+                      <div className="text-xs text-indigo-800 dark:text-indigo-300 font-medium bg-indigo-50/70 dark:bg-indigo-950/40 p-2 rounded-lg border border-indigo-100 dark:border-indigo-900/60 flex items-start gap-1.5">
+                        <Info className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 flex-shrink-0 mt-0.5" />
+                        <span><strong>หมายเหตุส่งมอบ:</strong> {req.checkoutNote}</span>
+                      </div>
+                    )}
+
                     {/* Return note if damaged items */}
                     {req.returnNote && (
                       <div className="text-xs text-rose-700 font-medium bg-rose-50/60 p-2 rounded-lg border border-rose-100 flex items-start gap-1.5">

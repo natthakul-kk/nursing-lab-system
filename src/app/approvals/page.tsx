@@ -463,8 +463,28 @@ export default function ApprovalsPage() {
               </span>
             </div>
             {currentUser && (
-              <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                อาจารย์ผู้ใช้งาน: <strong className="text-slate-700 dark:text-slate-300">{formatUserName(currentUser)}</strong>
+              <div className="text-[11px] text-slate-500 dark:text-slate-400 flex flex-wrap items-center gap-1.5">
+                <span>
+                  {currentUser.role === 'ADMIN'
+                    ? 'ผู้ดูแลระบบ (Admin):'
+                    : currentUser.role === 'APPROVER'
+                    ? 'ผู้อนุมัติ:'
+                    : currentUser.role === 'TEACHER'
+                    ? 'อาจารย์ผู้รับผิดชอบ:'
+                    : currentUser.role === 'OFFICER'
+                    ? 'เจ้าหน้าที่ห้องปฏิบัติการ:'
+                    : 'ผู้ใช้งาน:'}
+                </span>
+                <strong className="text-slate-700 dark:text-slate-300">
+                  {currentUser.role === 'TEACHER' || currentUser.role === 'APPROVER'
+                    ? formatTeacherName(currentUser)
+                    : formatUserName(currentUser)}
+                </strong>
+                {currentUser.department && (
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-normal">
+                    ({currentUser.department})
+                  </span>
+                )}
               </div>
             )}
           </div>

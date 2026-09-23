@@ -7,7 +7,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   try {
     const { id } = await params;
     const body = await req.json();
-    const { action, userId, reason, itemAdjustments } = body;
+    const { action, userId, reason, itemAdjustments, dispenseNote } = body;
 
     const requisition = await prisma.requisitionRequest.findUnique({
       where: { id },
@@ -247,7 +247,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
               courseId: requisition.courseId,
               referenceNumber: requisition.requestNumber,
               createdById: userId,
-              note: `จ่ายตามคำขอ ${requisition.requestNumber} (วิชา ${requisition.course?.code || ''})`,
+              note: dispenseNote
+                ? `จ่ายตามคำขอ ${requisition.requestNumber} (วิชา ${requisition.course?.code || ''}) | หมายเหตุ: ${String(dispenseNote).trim()}`
+                : `จ่ายตามคำขอ ${requisition.requestNumber} (วิชา ${requisition.course?.code || ''})`,
             },
           });
 
@@ -297,6 +299,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           status: 'DISPENSED',
           officerId: userId,
           dispensedAt: new Date(),
+          dispenseNote: dispenseNote ? String(dispenseNote).trim() : null,
           totalCost: actualTotalCost,
         },
         include: {
@@ -304,6 +307,16 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           course: true,
         },
       });
+
+      // Synchronize with linked borrow request if unified
+      if (requisition.borrowRequest) {
+        await prisma.borrowRequest.update({
+          where: { id: requisition.borrowRequest.id },
+          data: {
+            checkoutNote: dispenseNote ? String(dispenseNote).trim() : undefined,
+          },
+        }).catch((e) => console.error('Failed to sync linked borrow checkout note:', e));
+      }
 
       // Notify student
       createNotification({

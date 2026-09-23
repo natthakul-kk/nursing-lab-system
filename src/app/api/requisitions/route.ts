@@ -42,6 +42,7 @@ export async function GET(req: Request) {
           include: {
             item: {
               include: {
+                storageLocation: true,
                 stockLots: {
                   where: { quantityRemaining: { gt: 0 } },
                   orderBy: { expiryDate: 'asc' },

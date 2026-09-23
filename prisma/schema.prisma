@@ -242,6 +242,7 @@ model BorrowRequest {
   officerId          String?
   checkedOutAt       DateTime?
   checkedInAt        DateTime?
+  checkoutNote       String?
   returnNote         String?
 
   // Optional 1-to-1 linkage with RequisitionRequest for unified one-stop requests
@@ -292,6 +293,7 @@ model RequisitionRequest {
 
   officerId       String?
   dispensedAt     DateTime?
+  dispenseNote    String?
   totalCost       Float     @default(0)
 
   // Back-relation to unified BorrowRequest (if created together)

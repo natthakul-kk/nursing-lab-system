@@ -15,6 +15,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       assignedAssets,
       returnCondition,
       returnNote,
+      checkoutNote,
       borrowItemAdjustments,
       requisitionItemAdjustments,
     } = body;
@@ -283,7 +284,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
                     courseId: linkedReq.courseId,
                     referenceNumber: linkedReq.requestNumber,
                     createdById: userId,
-                    note: `จ่ายตามคำขอเบิก-ยืม ${borrow.requestNumber} (วิชา ${linkedReq.course?.code || ''})`,
+                    note: checkoutNote
+                      ? `จ่ายตามคำขอเบิก-ยืม ${borrow.requestNumber} (วิชา ${linkedReq.course?.code || ''}) | หมายเหตุ: ${String(checkoutNote).trim()}`
+                      : `จ่ายตามคำขอเบิก-ยืม ${borrow.requestNumber} (วิชา ${linkedReq.course?.code || ''})`,
                   },
                 });
 
@@ -321,6 +324,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
                   totalCost: itemCost,
                 },
               });
+
               reqActualTotalCost += itemCost;
             }
 
@@ -330,6 +334,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
                 status: 'DISPENSED',
                 officerId: userId,
                 dispensedAt: new Date(),
+                dispenseNote: checkoutNote ? String(checkoutNote).trim() : null,
                 totalCost: reqActualTotalCost,
               },
             });
@@ -345,6 +350,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           status: 'BORROWED',
           officerId: userId,
           checkedOutAt: new Date(),
+          checkoutNote: checkoutNote ? String(checkoutNote).trim() : null,
         },
       });
 

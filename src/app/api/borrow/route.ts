@@ -29,15 +29,31 @@ export async function GET(req: Request) {
         approver: true,
         items: {
           include: {
-            item: true,
-            asset: true,
+            item: {
+              include: {
+                storageLocation: true,
+              },
+            },
+            asset: {
+              include: {
+                storageLocation: true,
+              },
+            },
           },
         },
         requisitionRequest: {
           include: {
             items: {
               include: {
-                item: true,
+                item: {
+                  include: {
+                    storageLocation: true,
+                    stockLots: {
+                      where: { quantityRemaining: { gt: 0 } },
+                      orderBy: { expiryDate: 'asc' },
+                    },
+                  },
+                },
               },
             },
           },

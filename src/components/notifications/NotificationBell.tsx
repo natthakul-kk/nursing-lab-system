@@ -89,6 +89,17 @@ export default function NotificationBell() {
       const sub = await reg.pushManager.getSubscription();
       if (sub && Notification.permission === 'granted') {
         setPushStatus('ENABLED');
+        if (currentUser?.id) {
+          fetch('/api/notifications/push/subscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: currentUser.id,
+              subscription: sub.toJSON(),
+              userAgent: navigator.userAgent,
+            }),
+          }).catch(() => {});
+        }
       } else {
         setPushStatus('DISABLED');
       }
@@ -105,22 +116,31 @@ export default function NotificationBell() {
   }, [isOpen]);
 
   const handleEnablePushFromBell = async () => {
+    if (!currentUser?.id) return;
     setIsSubscribingPush(true);
     setPushFeedback(null);
     try {
       const permission = await Notification.requestPermission();
       if (permission === 'granted') {
-        const reg = await navigator.serviceWorker.register('/sw.js');
+        const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
         await navigator.serviceWorker.ready;
         const sub = await reg.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
         });
-        await fetch('/api/notifications/push/subscribe', {
+        const res = await fetch('/api/notifications/push/subscribe', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ subscription: sub.toJSON(), userAgent: navigator.userAgent }),
+          body: JSON.stringify({
+            userId: currentUser.id,
+            subscription: sub.toJSON(),
+            userAgent: navigator.userAgent,
+          }),
         });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || 'บันทึกอุปกรณ์ไม่สำเร็จ');
+        }
         localStorage.setItem('push_prompt_setup_done', 'true');
         setPushStatus('ENABLED');
         setPushFeedback({ success: true, message: 'เปิดรับแจ้งเตือนบนอุปกรณ์นี้สำเร็จแล้ว ✅' });
@@ -298,7 +318,7 @@ export default function NotificationBell() {
 
       {/* Dropdown Panel */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-3xl bg-white dark:bg-slate-900 shadow-2xl border border-slate-200/90 dark:border-slate-800 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-x-2 top-16 sm:absolute sm:inset-auto sm:right-0 sm:mt-2 w-auto sm:w-96 max-w-[calc(100vw-16px)] sm:max-w-none rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 shadow-2xl border border-slate-200/90 dark:border-slate-800 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150 max-h-[82vh] flex flex-col">
           {/* Header */}
           <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/60 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -415,7 +435,7 @@ export default function NotificationBell() {
           </div>
 
           {/* List of Notifications */}
-          <div className="max-h-[380px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+          <div className="overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 max-h-[calc(82vh-170px)] sm:max-h-[380px]">
             {displayedNotifications.length === 0 ? (
               <div className="py-12 text-center text-slate-400 dark:text-slate-500 space-y-2">
                 <Bell className="w-8 h-8 mx-auto text-slate-300 dark:text-slate-600" />

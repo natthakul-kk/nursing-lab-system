@@ -65,11 +65,12 @@ export default function PushNotificationManager() {
         });
       }
 
-      if (sub) {
+      if (sub && currentUser?.id) {
         await fetch('/api/notifications/push/subscribe', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            userId: currentUser.id,
             subscription: sub.toJSON(),
             userAgent: navigator.userAgent,
           }),
@@ -81,11 +82,12 @@ export default function PushNotificationManager() {
   };
 
   const handleEnablePush = async () => {
+    if (!currentUser?.id) return;
     setLoading(true);
     try {
       const permission = await Notification.requestPermission();
       if (permission === 'granted') {
-        const reg = await navigator.serviceWorker.register('/sw.js');
+        const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
         await navigator.serviceWorker.ready;
 
         const sub = await reg.pushManager.subscribe({
@@ -93,14 +95,20 @@ export default function PushNotificationManager() {
           applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
         });
 
-        await fetch('/api/notifications/push/subscribe', {
+        const res = await fetch('/api/notifications/push/subscribe', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            userId: currentUser.id,
             subscription: sub.toJSON(),
             userAgent: navigator.userAgent,
           }),
         });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || 'Failed to save subscription');
+        }
 
         localStorage.setItem('push_prompt_setup_done', 'true');
         setIsSuccess(true);
@@ -130,7 +138,7 @@ export default function PushNotificationManager() {
   return (
     <aside
       aria-label="การแจ้งเตือนผลการอนุมัติ"
-      className="fixed bottom-20 md:bottom-6 right-3 md:right-6 z-[70] max-w-md w-[calc(100%-1.5rem)] md:w-auto bg-white dark:bg-slate-900 border border-teal-500/30 rounded-2xl md:rounded-3xl shadow-2xl p-4 md:p-5 text-slate-800 dark:text-slate-100 animate-in fade-in slide-in-from-bottom-5 duration-300 backdrop-blur-md"
+      className="fixed bottom-20 md:bottom-6 left-3 right-3 md:left-auto md:right-6 md:w-96 z-[70] bg-white dark:bg-slate-900 border border-teal-500/30 rounded-2xl md:rounded-3xl shadow-2xl p-4 md:p-5 text-slate-800 dark:text-slate-100 animate-in fade-in slide-in-from-bottom-5 duration-300 backdrop-blur-md"
     >
       <div className="flex items-start gap-3.5">
         <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-teal-500 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-teal-500/20">

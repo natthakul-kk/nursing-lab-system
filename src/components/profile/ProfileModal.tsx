@@ -311,6 +311,17 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
       const sub = await reg.pushManager.getSubscription();
       if (sub && Notification.permission === 'granted') {
         setPushStatus('ENABLED');
+        if (currentUser?.id) {
+          fetch('/api/notifications/push/subscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: currentUser.id,
+              subscription: sub.toJSON(),
+              userAgent: navigator.userAgent,
+            }),
+          }).catch(() => {});
+        }
       } else {
         setPushStatus('DISABLED');
       }
@@ -327,23 +338,32 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   }, [activeTab]);
 
   const handleEnablePush = async () => {
+    if (!currentUser?.id) return;
     setIsPushWorking(true);
     setErrorMsg(null);
     setSuccessMsg(null);
     try {
       const permission = await Notification.requestPermission();
       if (permission === 'granted') {
-        const reg = await navigator.serviceWorker.register('/sw.js');
+        const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
         await navigator.serviceWorker.ready;
         const sub = await reg.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
         });
-        await fetch('/api/notifications/push/subscribe', {
+        const res = await fetch('/api/notifications/push/subscribe', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ subscription: sub.toJSON(), userAgent: navigator.userAgent }),
+          body: JSON.stringify({
+            userId: currentUser.id,
+            subscription: sub.toJSON(),
+            userAgent: navigator.userAgent,
+          }),
         });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || 'บันทึกอุปกรณ์ไม่สำเร็จ');
+        }
         localStorage.setItem('push_prompt_setup_done', 'true');
         setPushStatus('ENABLED');
         setSuccessMsg('เปิดรับการแจ้งเตือนบนอุปกรณ์นี้เรียบร้อยแล้ว ✅');
@@ -428,7 +448,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         </div>
 
         {/* Tab Selector */}
-        <div className="flex border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/40 px-6 pt-3 gap-2">
+        <div className="flex border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/40 px-3 sm:px-6 pt-3 gap-2 overflow-x-auto no-scrollbar">
           <button
             type="button"
             onClick={() => {
@@ -436,7 +456,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
               setErrorMsg(null);
               setSuccessMsg(null);
             }}
-            className={`pb-3 px-3 text-xs font-bold transition border-b-2 cursor-pointer flex items-center gap-1.5 ${
+            className={`pb-3 px-3 text-xs font-bold transition border-b-2 cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
               activeTab === 'PROFILE'
                 ? 'border-teal-600 text-teal-700 dark:text-teal-400'
                 : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
@@ -452,7 +472,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
               setErrorMsg(null);
               setSuccessMsg(null);
             }}
-            className={`pb-3 px-3 text-xs font-bold transition border-b-2 cursor-pointer flex items-center gap-1.5 ${
+            className={`pb-3 px-3 text-xs font-bold transition border-b-2 cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
               activeTab === 'PASSWORD'
                 ? 'border-teal-600 text-teal-700 dark:text-teal-400'
                 : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
@@ -468,7 +488,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
               setErrorMsg(null);
               setSuccessMsg(null);
             }}
-            className={`pb-3 px-3 text-xs font-bold transition border-b-2 cursor-pointer flex items-center gap-1.5 ${
+            className={`pb-3 px-3 text-xs font-bold transition border-b-2 cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
               activeTab === 'NOTIFICATIONS'
                 ? 'border-teal-600 text-teal-700 dark:text-teal-400'
                 : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'

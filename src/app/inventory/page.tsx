@@ -50,6 +50,7 @@ import {
   Building2,
   ShieldCheck,
   ClipboardCheck,
+  Sparkles,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { TableLoadingRow } from '@/components/common/LoadingSpinner';
@@ -525,63 +526,193 @@ export default function InventoryPage() {
   }, []);
 
 
-  // ฟังก์ชันสร้างรหัสพัสดุอัตโนมัติตามประเภทและหมวดหมู่
-  const generateSuggestedItemCode = (type: string, categoryId: string, currentItems: any[]) => {
+  // ตารางความสัมพันธ์หมวดหมู่วัสดุสิ้นเปลืองกับรหัสย่อยที่ใช้งานจริงในห้องปฏิบัติการ
+  const CONSUMABLE_SUBCODES_MAP: Record<string, { code: string; label: string }[]> = {
+    'สารน้ำ': [
+      { code: 'D5W', label: 'D-5-W' },
+      { code: 'NSS', label: 'Normal Saline (NSS)' },
+      { code: 'IVF', label: 'สารน้ำทั่วไป' },
+    ],
+    'ผ้าพันแผล พันเคล็ด': [
+      { code: 'CBD', label: 'Conform (CBD)' },
+      { code: 'EBD', label: 'Elastic Bandage (EBD)' },
+      { code: 'BDG', label: 'ผ้าพันแผลทั่วไป' },
+    ],
+    'พลาสเตอร์ เทป': [
+      { code: 'FXM', label: 'Fixomull (FXM)' },
+      { code: 'MIC', label: 'Micropore (MIC)' },
+      { code: 'TSP', label: 'Transpore (TSP)' },
+      { code: 'TAP', label: 'เทปทั่วไป' },
+    ],
+    'ผ้าก๊อซ': [
+      { code: 'GAU', label: 'ผ้าก๊อซทั่วไป (GAU)' },
+      { code: 'SGAU', label: 'ก๊อซปลอดเชื้อ (SGAU)' },
+      { code: 'TGAU', label: 'ก๊อซหุ้มสำลี (TGAU)' },
+      { code: 'GU', label: 'รหัสหมวดหมู่ (GU)' },
+    ],
+    'Urine': [
+      { code: 'URB', label: 'ถุงปัสสาวะ (URB)' },
+      { code: 'URC', label: 'สายสวนปัสสาวะ (URC)' },
+    ],
+    'วัสดุทั่วไป': [
+      { code: 'GEN', label: 'พัสดุทั่วไป (GEN)' },
+      { code: 'ZIP', label: 'ถุงซิป (ZIP)' },
+    ],
+    'แอลกอฮอล์': [
+      { code: 'ALC', label: 'แอลกอฮอล์/สำลี (ALC)' },
+      { code: 'GALC', label: 'เจลแอลกอฮอล์ (GALC)' },
+    ],
+    'ถุงขยะ': [
+      { code: 'BIN', label: 'ถุงขยะ (BIN)' },
+      { code: 'BAGM', label: 'ถุงขยะ M' },
+      { code: 'BAGS', label: 'ถุงขยะ S' },
+    ],
+    'FEED': [
+      { code: 'FEED', label: 'อาหารทางสาย (FEED)' },
+      { code: 'BAG', label: 'ถุงอาหาร (BAG)' },
+      { code: 'TUBE', label: 'สายอาหาร (TUBE)' },
+    ],
+    'ไม้พันสำลี': [
+      { code: 'WDS', label: 'ไม้พันสำลี (WDS)' },
+      { code: 'WDS-STR', label: 'ปลอดเชื้อ (STR)' },
+      { code: 'WDS-NSR', label: 'ไม่ปลอดเชื้อ (NSR)' },
+    ],
+    'ถุงมือทางการแพทย์': [
+      { code: 'GLV', label: 'ถุงมือตรวจโรค (GLV)' },
+    ],
+    'ถุงมือปลอดเชื้อ': [
+      { code: 'GLVS', label: 'ถุงมือปลอดเชื้อ (GLVS)' },
+    ],
+    'เข็ม IV': [
+      { code: 'IVC', label: 'เข็มให้สารน้ำ (IVC)' },
+    ],
+    'เข็มฉีดยา': [
+      { code: 'NDL', label: 'เข็มฉีดยา (NDL)' },
+    ],
+    'หน้ากากอนามัย': [
+      { code: 'MASK', label: 'หน้ากากอนามัย (MASK)' },
+    ],
+    'สาย NG': [
+      { code: 'NG', label: 'สายให้อาหารจมูก (NG)' },
+    ],
+    'SUCTION': [
+      { code: 'SUC', label: 'สายดูดเสมหะ (SUC)' },
+    ],
+    'ไซริงค์': [
+      { code: 'SYR', label: 'ไซริงค์ (SYR)' },
+    ],
+    'สำลีก้อน': [
+      { code: 'CTB', label: 'สำลีก้อน (CTB)' },
+    ],
+    'อุปกรณ์ทางการแพทย์': [
+      { code: 'SHP', label: 'ถังทิ้งเข็ม (SHP)' },
+      { code: 'MED', label: 'อุปกรณ์การแพทย์ (MED)' },
+    ],
+  };
+
+  const getAvailableSubCodesForCategory = (cat: any) => {
+    if (!cat) return [];
+    const list: { code: string; label: string }[] = [];
+    const seen = new Set<string>();
+
+    if (CONSUMABLE_SUBCODES_MAP[cat.name]) {
+      for (const sc of CONSUMABLE_SUBCODES_MAP[cat.name]) {
+        if (!seen.has(sc.code)) {
+          seen.add(sc.code);
+          list.push(sc);
+        }
+      }
+    }
+
+    if (cat.code && !seen.has(cat.code)) {
+      seen.add(cat.code);
+      list.push({ code: cat.code, label: `รหัสหมวดหมู่ (${cat.code})` });
+    }
+
+    if (cat.description && cat.description.includes('รหัสย่อย:')) {
+      const match = cat.description.match(/รหัสย่อย:\s*([A-Za-z0-9_,\s-]+)/);
+      if (match && match[1]) {
+        const parts = match[1].split(',').map((s: string) => s.trim()).filter(Boolean);
+        for (const p of parts) {
+          if (!seen.has(p)) {
+            seen.add(p);
+            list.push({ code: p, label: p });
+          }
+        }
+      }
+    }
+
+    return list;
+  };
+
+  // ฟังก์ชันสร้างรหัสพัสดุอัตโนมัติตามประเภท หมวดหมู่ และรหัสย่อย (ถ้ามี)
+  const generateSuggestedItemCode = (
+    type: string,
+    categoryId: string,
+    currentItems: any[],
+    customPrefix?: string
+  ) => {
     const cat = categories.find((c) => c.id === categoryId);
     const catName = cat?.name || '';
     
-    // ใช้รหัสหมวดหมู่ภาษาอังกฤษที่ผู้ใช้กำหนด (ถ้ามี) มิฉะนั้นใช้การจับคู่คำอัตโนมัติ
-    let group = cat?.code ? cat.code.toUpperCase() : '';
+    let group = customPrefix ? customPrefix.trim().toUpperCase() : '';
     if (!group) {
-      if (type === 'CONSUMABLE') {
-        if (catName.includes('ก๊อซ')) {
-          group = 'GAU';
-        } else if (catName.includes('แอลกอฮอล์')) {
-          group = 'ALC';
-        } else if (catName.includes('ถุงขยะ')) {
-          group = 'BIN';
-        } else if (catName.includes('พันแผล') || catName.includes('พันเคล็ด')) {
-          group = 'BDG';
-        } else if (catName.includes('สำลีก้อน') || catName.includes('สำลี')) {
-          group = 'CTB';
-        } else if (catName.includes('สารน้ำ') || catName.includes('ฉีด') || catName.includes('IV')) {
-          group = 'IVF';
-        } else if (catName.includes('FEED') || catName.includes('ให้อาหาร')) {
-          group = 'FED';
-        } else if (catName.includes('เทป') || catName.includes('พลาสเตอร์')) {
-          group = 'TAP';
-        } else if (catName.includes('ถุงมือ')) {
-          group = 'GLV';
-        } else if (catName.includes('เข็ม')) {
-          group = 'NDL';
-        } else if (catName.includes('หน้ากาก')) {
-          group = 'MSK';
-        } else if (catName.includes('NG')) {
-          group = 'NGT';
-        } else if (catName.includes('SUCTION') || catName.includes('ดูดเสมหะ')) {
-          group = 'SUC';
-        } else if (catName.includes('ไซริงค์')) {
-          group = 'SYR';
-        } else if (catName.includes('Urine') || catName.includes('ปัสสาวะ')) {
-          group = 'URN';
-        } else if (catName.includes('ไม้พันสำลี')) {
-          group = 'WDS';
-        } else if (catName.includes('แผล') || catName.includes('ผ่าตัด') || catName.includes('ฆ่าเชื้อ')) {
-          group = 'WD';
-        } else if (catName.includes('ป้องกัน') || catName.includes('PPE')) {
-          group = 'PPE';
-        } else {
-          group = 'GEN';
-        }
+      if (cat?.code) {
+        group = cat.code.toUpperCase();
       } else {
-        if (catName.includes('หุ่น') || catName.includes('โมเดล')) {
-          group = 'MNK';
-        } else if (catName.includes('สัญญาณชีพ') || catName.includes('ตรวจ')) {
-          group = 'MED';
-        } else if (catName.includes('หัตถการ')) {
-          group = 'PRO';
+        const subCodes = getAvailableSubCodesForCategory(cat);
+        if (subCodes.length > 0) {
+          group = subCodes[0].code;
+        } else if (type === 'CONSUMABLE') {
+          if (catName.includes('ก๊อซ')) {
+            group = 'GAU';
+          } else if (catName.includes('แอลกอฮอล์')) {
+            group = 'ALC';
+          } else if (catName.includes('ถุงขยะ')) {
+            group = 'BIN';
+          } else if (catName.includes('พันแผล') || catName.includes('พันเคล็ด')) {
+            group = 'BDG';
+          } else if (catName.includes('สำลีก้อน') || catName.includes('สำลี')) {
+            group = 'CTB';
+          } else if (catName.includes('สารน้ำ') || catName.includes('ฉีด') || catName.includes('IV')) {
+            group = 'IVF';
+          } else if (catName.includes('FEED') || catName.includes('ให้อาหาร')) {
+            group = 'FED';
+          } else if (catName.includes('เทป') || catName.includes('พลาสเตอร์')) {
+            group = 'TAP';
+          } else if (catName.includes('ถุงมือ')) {
+            group = 'GLV';
+          } else if (catName.includes('เข็ม')) {
+            group = 'NDL';
+          } else if (catName.includes('หน้ากาก')) {
+            group = 'MSK';
+          } else if (catName.includes('NG')) {
+            group = 'NGT';
+          } else if (catName.includes('SUCTION') || catName.includes('ดูดเสมหะ')) {
+            group = 'SUC';
+          } else if (catName.includes('ไซริงค์')) {
+            group = 'SYR';
+          } else if (catName.includes('Urine') || catName.includes('ปัสสาวะ')) {
+            group = 'URN';
+          } else if (catName.includes('ไม้พันสำลี')) {
+            group = 'WDS';
+          } else if (catName.includes('แผล') || catName.includes('ผ่าตัด') || catName.includes('ฆ่าเชื้อ')) {
+            group = 'WD';
+          } else if (catName.includes('ป้องกัน') || catName.includes('PPE')) {
+            group = 'PPE';
+          } else {
+            group = 'GEN';
+          }
         } else {
-          group = 'EQ';
+          if (catName.includes('หุ่น') || catName.includes('โมเดล')) {
+            group = 'MNK';
+          } else if (catName.includes('สัญญาณชีพ') || catName.includes('ตรวจ')) {
+            group = 'MED';
+          } else if (catName.includes('หัตถการ')) {
+            group = 'PRO';
+          } else {
+            group = 'EQ';
+          }
         }
       }
     }
@@ -595,8 +726,9 @@ export default function InventoryPage() {
     let maxNum = 0;
     existingInGroup.forEach((i) => {
       const parts = i.code.split('-');
-      const num = parseInt(parts[parts.length - 1], 10);
-      if (!isNaN(num) && num > maxNum) maxNum = num;
+      const lastPart = parts[parts.length - 1];
+      const num = parseInt(lastPart, 10);
+      if (!isNaN(num) && num > maxNum && num < 1000) maxNum = num;
     });
     return `${prefix}${String(maxNum + 1).padStart(3, '0')}`;
   };
@@ -1977,6 +2109,50 @@ export default function InventoryPage() {
                   />
                 </div>
               </div>
+
+              {/* Consumable Sub-Code Selection Chips */}
+              {newItem.type === 'CONSUMABLE' && newItem.categoryId && (() => {
+                const currentCat = categories.find((c) => c.id === newItem.categoryId);
+                const subCodes = getAvailableSubCodesForCategory(currentCat);
+                if (subCodes.length === 0) return null;
+
+                return (
+                  <div className="p-3 bg-teal-50/70 dark:bg-teal-950/40 border border-teal-200/80 dark:border-teal-800/60 rounded-xl space-y-1.5 animate-fadeIn">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-bold text-teal-900 dark:text-teal-200 flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-teal-600" />
+                        <span>เลือกโค้ดย่อยในหมวดนี้ (คลิกเพื่อนำไปสร้างรหัสพัสดุอัตโนมัติ):</span>
+                      </label>
+                      <span className="text-[10px] text-teal-700/70 dark:text-teal-400/70 font-semibold">
+                        {subCodes.length} รหัสย่อย
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {subCodes.map((sc) => {
+                        const isSelected = newItem.code.includes(`-${sc.code}-`) || newItem.code.endsWith(`-${sc.code}`);
+                        return (
+                          <button
+                            key={sc.code}
+                            type="button"
+                            onClick={() => {
+                              const suggested = generateSuggestedItemCode(newItem.type, newItem.categoryId, items, sc.code);
+                              setNewItem({ ...newItem, code: suggested });
+                            }}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition cursor-pointer border flex items-center gap-1.5 ${
+                              isSelected
+                                ? 'bg-teal-600 text-white border-teal-600 shadow-sm shadow-teal-600/30'
+                                : 'bg-white dark:bg-slate-900 text-teal-800 dark:text-teal-300 border-teal-200 dark:border-teal-800/80 hover:bg-teal-100/70 dark:hover:bg-teal-950/60'
+                            }`}
+                          >
+                            <span>[{sc.code}]</span>
+                            <span className="font-sans font-medium text-[11px] opacity-90">{sc.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -3389,6 +3565,19 @@ export default function InventoryPage() {
                     <option value="EQUIPMENT">ครุภัณฑ์คงทน</option>
                   </select>
                 </div>
+
+                <div className="sm:col-span-4">
+                  <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    คำอธิบาย / รหัสย่อยที่เกี่ยวข้อง (ไม่บังคับ เช่น รหัสย่อย: D5W, NSS)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="เช่น หมวดหมู่วัสดุสิ้นเปลือง (รหัสย่อย: D5W, NSS)"
+                    value={categoryForm.description}
+                    onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500"
+                  />
+                </div>
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-1">
@@ -3436,7 +3625,12 @@ export default function InventoryPage() {
                           {cat.type === 'EQUIPMENT' ? 'ครุภัณฑ์คงทน' : 'วัสดุสิ้นเปลือง'}
                         </span>
                       </div>
-                      <div className="text-[11px] text-slate-400">
+                      {cat.description && (
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                          {cat.description}
+                        </div>
+                      )}
+                      <div className="text-[10px] text-slate-400">
                         มีพัสดุในหมวดนี้: <b>{cat._count?.items ?? items.filter((i) => i.categoryId === cat.id).length}</b> รายการ
                       </div>
                     </div>

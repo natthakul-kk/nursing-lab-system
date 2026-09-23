@@ -59,6 +59,7 @@ export async function PUT(
       dataToUpdate.password = await hashPassword(body.password);
     }
     if (body.status !== undefined) dataToUpdate.status = body.status;
+    if (body.approvalScopes !== undefined) dataToUpdate.approvalScopes = body.approvalScopes;
 
     const updatedUser = await prisma.user.update({
       where: { id },

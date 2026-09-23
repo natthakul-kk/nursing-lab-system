@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { invalidateCache } from '@/lib/cache';
+import { canUserApprove } from '@/lib/approval-scope';
 
 export async function GET(
   req: Request,
@@ -48,6 +49,19 @@ export async function PUT(
     }
 
     if (action === 'APPROVE') {
+      if (userId) {
+        const approverUser = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { role: true, approvalScopes: true },
+        });
+        if (approverUser && !canUserApprove(approverUser, 'ROOM')) {
+          return NextResponse.json(
+            { error: 'ท่านไม่มีสิทธิ์อนุมัติการจองห้องปฏิบัติการ (อยู่นอกเหนือขอบเขตความรับผิดชอบ)' },
+            { status: 403 }
+          );
+        }
+      }
+
       // Re-check conflict to prevent double booking
       const conflicting = await prisma.roomBooking.findFirst({
         where: {

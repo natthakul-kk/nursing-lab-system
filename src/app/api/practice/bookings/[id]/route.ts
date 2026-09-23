@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendApprovalNotificationWithQrEmail } from '@/lib/email';
 import { createNotification } from '@/lib/notifications';
+import { canUserApprove } from '@/lib/approval-scope';
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -68,6 +69,19 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     }
 
     if (action === 'APPROVE') {
+      if (userId) {
+        const approverUser = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { role: true, approvalScopes: true },
+        });
+        if (approverUser && !canUserApprove(approverUser, 'PRACTICE')) {
+          return NextResponse.json(
+            { error: 'ท่านไม่มีสิทธิ์อนุมัติการจองห้องฝึกทักษะ (อยู่นอกเหนือขอบเขตความรับผิดชอบ)' },
+            { status: 403 }
+          );
+        }
+      }
+
       const updated = await prisma.practiceBooking.update({
         where: { id: booking.id },
         data: {

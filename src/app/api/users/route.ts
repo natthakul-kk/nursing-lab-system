@@ -52,6 +52,7 @@ export async function GET(req: Request) {
         phone: true,
         avatar: true,
         status: true,
+        approvalScopes: true,
       },
       orderBy: { name: 'asc' },
     });
@@ -96,6 +97,7 @@ export async function POST(req: Request) {
         studentId: trimmedStudentId,
         phone: body.phone,
         status: body.status || 'ACTIVE',
+        approvalScopes: body.approvalScopes || 'ALL',
       },
     });
 

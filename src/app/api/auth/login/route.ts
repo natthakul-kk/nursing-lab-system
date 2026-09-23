@@ -73,6 +73,7 @@ export async function POST(req: Request) {
       phone: user.phone,
       avatar: user.avatar,
       status: user.status,
+      approvalScopes: user.approvalScopes || 'ALL',
     };
 
     return NextResponse.json({

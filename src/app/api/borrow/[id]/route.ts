@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { invalidateCache } from '@/lib/cache';
 import { formatUserName } from '@/lib/user-utils';
 import { createNotification } from '@/lib/notifications';
+import { canUserApprove } from '@/lib/approval-scope';
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -90,6 +91,19 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     }
 
     if (action === 'APPROVE') {
+      if (userId) {
+        const approverUser = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { role: true, approvalScopes: true },
+        });
+        if (approverUser && !canUserApprove(approverUser, 'BORROW')) {
+          return NextResponse.json(
+            { error: 'ท่านไม่มีสิทธิ์อนุมัติรายการยืมครุภัณฑ์ (อยู่นอกเหนือขอบเขตความรับผิดชอบ)' },
+            { status: 403 }
+          );
+        }
+      }
+
       if (borrow.status !== 'PENDING') {
         return NextResponse.json(
           {

@@ -37,6 +37,7 @@ import {
 import * as XLSX from 'xlsx';
 import { TableLoadingRow } from '@/components/common/LoadingSpinner';
 import { COMMON_USER_PREFIXES, formatUserName } from '@/lib/user-utils';
+import { formatApprovalScopeBadge, ApprovalScopeType } from '@/lib/approval-scope';
 
 export default function UsersPage() {
   const { availableUsers, isAdmin } = useAuth();
@@ -59,7 +60,31 @@ export default function UsersPage() {
     department: '',
     studentId: '',
     phone: '',
+    approvalScopes: 'ALL',
   });
+
+  const handleToggleScope = (
+    scope: ApprovalScopeType,
+    checked: boolean,
+    target: any,
+    setter: (val: any) => void
+  ) => {
+    let list: string[] = [];
+    if (!target.approvalScopes || target.approvalScopes === 'ALL') {
+      list = ['BORROW', 'REQUISITION', 'PRACTICE', 'ROOM'];
+    } else {
+      list = target.approvalScopes.split(',').map((s: string) => s.trim().toUpperCase());
+    }
+
+    if (checked) {
+      if (!list.includes(scope)) list.push(scope);
+    } else {
+      list = list.filter((s: string) => s !== scope);
+    }
+
+    const newScopes = list.length >= 4 ? 'ALL' : list.join(',');
+    setter({ ...target, approvalScopes: newScopes });
+  };
   const [editingUser, setEditingUser] = useState<any | null>(null);
   const [resettingUser, setResettingUser] = useState<any | null>(null);
   const [newResetPassword, setNewResetPassword] = useState<string>('');
@@ -119,6 +144,7 @@ export default function UsersPage() {
           department: '',
           studentId: '',
           phone: '',
+          approvalScopes: 'ALL',
         });
         fetchUsers();
       } else {
@@ -854,7 +880,16 @@ export default function UsersPage() {
                   <td className="py-3.5 px-4 text-slate-500 dark:text-slate-400">
                     {u.phone || '-'}
                   </td>
-                  <td className="py-3.5 px-4">{getRoleBadge(u.role)}</td>
+                  <td className="py-3.5 px-4">
+                    {getRoleBadge(u.role)}
+                    {(u.role === 'APPROVER' || u.role === 'OFFICER' || u.role === 'ADMIN') && (
+                      <div className="mt-1">
+                        <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                          {formatApprovalScopeBadge(u.approvalScopes)}
+                        </span>
+                      </div>
+                    )}
+                  </td>
                   <td className="py-3.5 px-4">
                     {u.status === 'INACTIVE' ? (
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
@@ -1025,6 +1060,57 @@ export default function UsersPage() {
                 </select>
               </div>
 
+              {(newUser.role === 'APPROVER' || newUser.role === 'OFFICER' || newUser.role === 'ADMIN') && (
+                <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                      ขอบเขตการอนุมัติ (Approval Scopes)
+                    </label>
+                    <span className="text-[10px] text-teal-700 dark:text-teal-300 font-bold bg-teal-50 dark:bg-teal-950/60 px-2 py-0.5 rounded-full border border-teal-200 dark:border-teal-800">
+                      {formatApprovalScopeBadge(newUser.approvalScopes)}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <label className="flex items-center gap-2 p-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer hover:border-teal-400 transition">
+                      <input
+                        type="checkbox"
+                        checked={newUser.approvalScopes === 'ALL' || !newUser.approvalScopes || newUser.approvalScopes.split(',').includes('BORROW')}
+                        onChange={(e) => handleToggleScope('BORROW', e.target.checked, newUser, setNewUser)}
+                        className="rounded text-teal-600 focus:ring-teal-500 cursor-pointer"
+                      />
+                      <span className="text-slate-700 dark:text-slate-300 font-medium">ยืมครุภัณฑ์</span>
+                    </label>
+                    <label className="flex items-center gap-2 p-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer hover:border-teal-400 transition">
+                      <input
+                        type="checkbox"
+                        checked={newUser.approvalScopes === 'ALL' || !newUser.approvalScopes || newUser.approvalScopes.split(',').includes('REQUISITION')}
+                        onChange={(e) => handleToggleScope('REQUISITION', e.target.checked, newUser, setNewUser)}
+                        className="rounded text-teal-600 focus:ring-teal-500 cursor-pointer"
+                      />
+                      <span className="text-slate-700 dark:text-slate-300 font-medium">เบิกวัสดุสิ้นเปลือง</span>
+                    </label>
+                    <label className="flex items-center gap-2 p-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer hover:border-teal-400 transition">
+                      <input
+                        type="checkbox"
+                        checked={newUser.approvalScopes === 'ALL' || !newUser.approvalScopes || newUser.approvalScopes.split(',').includes('PRACTICE')}
+                        onChange={(e) => handleToggleScope('PRACTICE', e.target.checked, newUser, setNewUser)}
+                        className="rounded text-teal-600 focus:ring-teal-500 cursor-pointer"
+                      />
+                      <span className="text-slate-700 dark:text-slate-300 font-medium">ห้องฝึกทักษะ</span>
+                    </label>
+                    <label className="flex items-center gap-2 p-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer hover:border-teal-400 transition">
+                      <input
+                        type="checkbox"
+                        checked={newUser.approvalScopes === 'ALL' || !newUser.approvalScopes || newUser.approvalScopes.split(',').includes('ROOM')}
+                        onChange={(e) => handleToggleScope('ROOM', e.target.checked, newUser, setNewUser)}
+                        className="rounded text-teal-600 focus:ring-teal-500 cursor-pointer"
+                      />
+                      <span className="text-slate-700 dark:text-slate-300 font-medium">ห้องปฏิบัติการ</span>
+                    </label>
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   หน่วยงาน / ภาควิชา / ชั้นปี
@@ -1181,6 +1267,57 @@ export default function UsersPage() {
                   </select>
                 </div>
               </div>
+
+              {(editingUser.role === 'APPROVER' || editingUser.role === 'OFFICER' || editingUser.role === 'ADMIN') && (
+                <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                      ขอบเขตการอนุมัติ (Approval Scopes)
+                    </label>
+                    <span className="text-[10px] text-teal-700 dark:text-teal-300 font-bold bg-teal-50 dark:bg-teal-950/60 px-2 py-0.5 rounded-full border border-teal-200 dark:border-teal-800">
+                      {formatApprovalScopeBadge(editingUser.approvalScopes)}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <label className="flex items-center gap-2 p-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer hover:border-teal-400 transition">
+                      <input
+                        type="checkbox"
+                        checked={editingUser.approvalScopes === 'ALL' || !editingUser.approvalScopes || editingUser.approvalScopes.split(',').includes('BORROW')}
+                        onChange={(e) => handleToggleScope('BORROW', e.target.checked, editingUser, setEditingUser)}
+                        className="rounded text-teal-600 focus:ring-teal-500 cursor-pointer"
+                      />
+                      <span className="text-slate-700 dark:text-slate-300 font-medium">ยืมครุภัณฑ์</span>
+                    </label>
+                    <label className="flex items-center gap-2 p-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer hover:border-teal-400 transition">
+                      <input
+                        type="checkbox"
+                        checked={editingUser.approvalScopes === 'ALL' || !editingUser.approvalScopes || editingUser.approvalScopes.split(',').includes('REQUISITION')}
+                        onChange={(e) => handleToggleScope('REQUISITION', e.target.checked, editingUser, setEditingUser)}
+                        className="rounded text-teal-600 focus:ring-teal-500 cursor-pointer"
+                      />
+                      <span className="text-slate-700 dark:text-slate-300 font-medium">เบิกวัสดุสิ้นเปลือง</span>
+                    </label>
+                    <label className="flex items-center gap-2 p-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer hover:border-teal-400 transition">
+                      <input
+                        type="checkbox"
+                        checked={editingUser.approvalScopes === 'ALL' || !editingUser.approvalScopes || editingUser.approvalScopes.split(',').includes('PRACTICE')}
+                        onChange={(e) => handleToggleScope('PRACTICE', e.target.checked, editingUser, setEditingUser)}
+                        className="rounded text-teal-600 focus:ring-teal-500 cursor-pointer"
+                      />
+                      <span className="text-slate-700 dark:text-slate-300 font-medium">ห้องฝึกทักษะ</span>
+                    </label>
+                    <label className="flex items-center gap-2 p-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer hover:border-teal-400 transition">
+                      <input
+                        type="checkbox"
+                        checked={editingUser.approvalScopes === 'ALL' || !editingUser.approvalScopes || editingUser.approvalScopes.split(',').includes('ROOM')}
+                        onChange={(e) => handleToggleScope('ROOM', e.target.checked, editingUser, setEditingUser)}
+                        className="rounded text-teal-600 focus:ring-teal-500 cursor-pointer"
+                      />
+                      <span className="text-slate-700 dark:text-slate-300 font-medium">ห้องปฏิบัติการ</span>
+                    </label>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">

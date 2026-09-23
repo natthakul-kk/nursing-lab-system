@@ -20,6 +20,7 @@ model User {
   phone       String?
   avatar      String?
   status      String   @default("ACTIVE")
+  approvalScopes String? @default("ALL") // "ALL" or comma-separated: "BORROW,REQUISITION,PRACTICE,ROOM"
   resetToken  String?
   resetTokenExpiry DateTime?
   pendingEmail    String?

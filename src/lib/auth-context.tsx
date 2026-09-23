@@ -14,6 +14,7 @@ export interface User {
   department?: string | null;
   studentId?: string | null;
   phone?: string | null;
+  approvalScopes?: string | null;
 }
 
 // Session timeout constants

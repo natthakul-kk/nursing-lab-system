@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import UnifiedRequestModal from '@/components/requests/UnifiedRequestModal';
+import EditRequestModal from '@/components/requests/EditRequestModal';
 import { formatUserName, formatTeacherName, formatApproverDisplay, formatAcknowledgeDisplay } from '@/lib/user-utils';
 import { formatLocationDisplay } from '@/lib/location-utils';
 
@@ -46,6 +47,8 @@ export default function RequisitionsPage() {
   // New Requisition Modal State
   const [showNewModal, setShowNewModal] = useState(false);
   const [showUnifiedModal, setShowUnifiedModal] = useState(false);
+  const [editingRequest, setEditingRequest] = useState<any | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [newReq, setNewReq] = useState<{
     courseId: string;
     advisorName: string;
@@ -586,6 +589,26 @@ export default function RequisitionsPage() {
                         <span>{isAdmin || isOfficer ? 'รับทราบคำขอ (แอดมิน)' : 'อาจารย์กดรับทราบคำขอ (Acknowledge)'}</span>
                       </>
                     )}
+                  </button>
+                </div>
+              )}
+
+              {/* Edit Request Button (Available for Requester / Officer / Admin in PENDING or APPROVED) */}
+              {((req.status === 'PENDING' || req.status === 'APPROVED') && (currentUser?.id === req.userId || isOfficer || isAdmin)) && (
+                <div className="flex items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                    {req.status === 'APPROVED' ? '⚡ อนุมัติแล้ว (หากแก้ไขจะปรับกลับเป็นรออนุมัติ)' : 'สามารถแก้ไขรายการหรือจำนวนได้ก่อนจ่ายของ'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingRequest(req);
+                      setShowEditModal(true);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-300 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-200 text-xs font-bold transition shadow-xs cursor-pointer"
+                  >
+                    <Edit3 className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                    <span>✏️ แก้ไขคำขอ</span>
                   </button>
                 </div>
               )}
@@ -1329,6 +1352,22 @@ export default function RequisitionsPage() {
         onClose={() => setShowUnifiedModal(false)}
         onSuccess={fetchRequisitions}
       />
+
+      {/* Edit Request Modal */}
+      {editingRequest && (
+        <EditRequestModal
+          isOpen={showEditModal}
+          onClose={() => {
+            setShowEditModal(false);
+            setEditingRequest(null);
+          }}
+          onSuccess={() => {
+            fetchRequisitions();
+          }}
+          initialData={editingRequest}
+          requestType={editingRequest.borrowRequest ? 'UNIFIED' : 'REQUISITION'}
+        />
+      )}
     </div>
   );
 }

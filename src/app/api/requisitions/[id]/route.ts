@@ -27,6 +27,22 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       return NextResponse.json({ error: 'ไม่พบรายการคำขอเบิก' }, { status: 404 });
     }
 
+    // Optimistic Concurrency Control (OCC) Check
+    if (body.lastKnownUpdatedAt) {
+      const dbTime = new Date(requisition.updatedAt).getTime();
+      const clientTime = new Date(body.lastKnownUpdatedAt).getTime();
+      if (Math.abs(dbTime - clientTime) > 1000) {
+        return NextResponse.json(
+          {
+            error: 'CONCURRENCY_CONFLICT',
+            message: '⚠️ ข้อมูลคำขอมีการเปลี่ยนแปลง กรุณาตรวจสอบใหม่อีกครั้ง',
+            currentUpdatedAt: requisition.updatedAt,
+          },
+          { status: 409 }
+        );
+      }
+    }
+
     const respondUpdated = (data: any) => {
       invalidateCache('requisitions:');
       invalidateCache('borrow:');
@@ -72,6 +88,17 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     }
 
     if (action === 'APPROVE') {
+      if (requisition.status !== 'PENDING') {
+        return NextResponse.json(
+          {
+            error: 'CONCURRENCY_CONFLICT',
+            message: '⚠️ ข้อมูลคำขอมีการเปลี่ยนแปลง กรุณาตรวจสอบใหม่อีกครั้ง',
+            currentStatus: requisition.status,
+          },
+          { status: 409 }
+        );
+      }
+
       const updated = await prisma.requisitionRequest.update({
         where: { id },
         data: {

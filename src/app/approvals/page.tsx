@@ -101,6 +101,13 @@ export default function ApprovalsPage() {
     setApprovingId(id);
     setSubmitting(true);
     try {
+      let itemKnownUpdatedAt: string | undefined;
+      if (type === 'BORROW') {
+        itemKnownUpdatedAt = allBorrows.find((b) => b.id === id)?.updatedAt;
+      } else if (type === 'REQUISITION') {
+        itemKnownUpdatedAt = allRequisitions.find((r) => r.id === id)?.updatedAt;
+      }
+
       const endpoint =
         type === 'BORROW'
           ? `/api/borrow/${id}`
@@ -115,13 +122,20 @@ export default function ApprovalsPage() {
         body: JSON.stringify({
           action: 'APPROVE',
           userId: currentUser?.id,
+          lastKnownUpdatedAt: itemKnownUpdatedAt,
         }),
       });
 
       if (res.ok) {
         fetchData();
       } else {
-        alert('เกิดข้อผิดพลาดในการอนุมัติ');
+        const errorData = await res.json().catch(() => ({}));
+        if (res.status === 409 || errorData.error === 'CONCURRENCY_CONFLICT') {
+          alert(errorData.message || '⚠️ ข้อมูลคำขอมีการเปลี่ยนแปลง กรุณาตรวจสอบใหม่อีกครั้ง');
+          await fetchData();
+        } else {
+          alert(errorData.error || errorData.message || 'เกิดข้อผิดพลาดในการอนุมัติ');
+        }
       }
     } catch (err) {
       alert('Network error');

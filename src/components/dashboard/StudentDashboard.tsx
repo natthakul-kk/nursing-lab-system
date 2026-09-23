@@ -17,9 +17,11 @@ import {
   Check,
   GraduationCap,
   Sparkles,
-  QrCode
+  QrCode,
+  Edit3,
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import EditRequestModal from '@/components/requests/EditRequestModal';
 import { formatUserName, formatTeacherName, formatApproverDisplay, formatAcknowledgeDisplay } from '@/lib/user-utils';
 
 export default function StudentDashboard() {
@@ -28,6 +30,8 @@ export default function StudentDashboard() {
   const [practiceStats, setPracticeStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
+  const [editingRequest, setEditingRequest] = useState<any | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -63,32 +67,30 @@ export default function StudentDashboard() {
     } catch {}
 
     // 2. Fetch fresh in background
-    async function fetchMyData() {
-      try {
-        const [borrowRes, practiceRes] = await Promise.all([
-          fetch(`/api/borrow?userId=${currentUser?.id}`),
-          fetch(`/api/practice/stats?userId=${currentUser?.id}`),
-        ]);
-
-        if (borrowRes.ok) {
-          const data = await borrowRes.json();
-          setBorrowRequests(data);
-          if (currentUser?.id) {
-            sessionStorage.setItem(`cached_borrows_${currentUser.id}`, JSON.stringify(data));
-          }
-        }
-        if (practiceRes.ok) {
-          const pData = await practiceRes.json();
-          setPracticeStats(pData);
-        }
-      } catch (err) {
-        console.error('Failed to fetch student records', err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchMyData();
+    refetchData().finally(() => setLoading(false));
   }, [currentUser]);
+
+  const refetchData = async () => {
+    if (!currentUser?.id) return;
+    try {
+      const [borrowRes, practiceRes] = await Promise.all([
+        fetch(`/api/borrow?userId=${currentUser.id}`),
+        fetch(`/api/practice/stats?userId=${currentUser.id}`),
+      ]);
+
+      if (borrowRes.ok) {
+        const data = await borrowRes.json();
+        setBorrowRequests(data);
+        sessionStorage.setItem(`cached_borrows_${currentUser.id}`, JSON.stringify(data));
+      }
+      if (practiceRes.ok) {
+        const pData = await practiceRes.json();
+        setPracticeStats(pData);
+      }
+    } catch (err) {
+      console.error('Failed to fetch student records', err);
+    }
+  };
 
   // Calculate return date status
   const getReturnStatus = (expectedReturnDateStr: string, status: string) => {
@@ -476,6 +478,21 @@ export default function StudentDashboard() {
                       {!isOverdue && !isDueToday && <Info className="w-3.5 h-3.5 text-slate-500" />}
                       <span>{returnInfo.label}</span>
                     </div>
+
+                    {/* Edit Request Button for Student in PENDING or APPROVED */}
+                    {(req.status === 'PENDING' || req.status === 'APPROVED') && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingRequest(req);
+                          setShowEditModal(true);
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl border border-amber-300 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-200 text-xs font-bold transition shadow-xs cursor-pointer mt-1"
+                      >
+                        <Edit3 className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                        <span>✏️ แก้ไขคำขอ</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -483,6 +500,22 @@ export default function StudentDashboard() {
           </div>
         )}
       </div>
+
+      {/* Edit Request Modal */}
+      {editingRequest && (
+        <EditRequestModal
+          isOpen={showEditModal}
+          onClose={() => {
+            setShowEditModal(false);
+            setEditingRequest(null);
+          }}
+          onSuccess={() => {
+            refetchData();
+          }}
+          initialData={editingRequest}
+          requestType={editingRequest.requisitionRequest ? 'UNIFIED' : 'BORROW'}
+        />
+      )}
 
       {/* Helpful Student Instructions Card */}
       <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 flex flex-col sm:flex-row items-start gap-4 text-xs text-slate-600">

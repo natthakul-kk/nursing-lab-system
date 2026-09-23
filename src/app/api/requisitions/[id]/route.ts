@@ -12,7 +12,11 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     const requisition = await prisma.requisitionRequest.findUnique({
       where: { id },
       include: {
-        items: true,
+        items: {
+          include: {
+            item: true,
+          },
+        },
         course: true,
         borrowRequest: true,
         user: true,
@@ -182,16 +186,26 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         const requestedTarget = remainingToDeduct;
         let itemTotalCost = 0;
 
+        const isSub = reqItem.isSubUnit === true;
+        const ratio = Number(reqItem.item?.conversionRatio) > 0 ? Number(reqItem.item?.conversionRatio) : 1;
+
         // Fetch lots FIFO: sorted by expiryDate ascending
         const whereLots: any = {
           itemId: reqItem.itemId,
-          quantityRemaining: { gt: 0 },
+          OR: [
+            { quantityRemaining: { gt: 0 } },
+            { openPackRemainder: { gt: 0 } },
+          ],
         };
         // Strict safety lock: if requested for human use, NEVER deduct expired lots
         if (requisition.useTarget === 'HUMAN') {
-          whereLots.OR = [
-            { expiryDate: null },
-            { expiryDate: { gte: new Date() } },
+          whereLots.AND = [
+            {
+              OR: [
+                { expiryDate: null },
+                { expiryDate: { gte: new Date() } },
+              ],
+            },
           ];
         }
 
@@ -200,82 +214,287 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           orderBy: [{ expiryDate: 'asc' }, { receivedDate: 'asc' }],
         });
 
-        for (const lot of availableLots) {
-          if (remainingToDeduct <= 0) break;
+        if (!isSub) {
+          // ==========================================
+          // Case 1: Whole Pack Requisition
+          // ==========================================
+          // Deduct whole packs from lot.quantityRemaining, keeping openPackRemainder intact for sub-unit users
+          for (const lot of availableLots) {
+            if (remainingToDeduct <= 0) break;
+            if (lot.quantityRemaining <= 0) continue;
 
-          const deductFromThisLot = Math.min(lot.quantityRemaining, remainingToDeduct);
-          const costForThisDeduction = deductFromThisLot * lot.unitCost;
-          const pSize = Number(lot.packSize) > 0 ? Number(lot.packSize) : 1;
-          const newQty = Math.max(0, lot.quantityRemaining - deductFromThisLot);
-          const newPieces = Math.max(0, newQty * pSize);
+            const deductFromThisLot = Math.min(lot.quantityRemaining, remainingToDeduct);
+            const costForThisDeduction = deductFromThisLot * lot.unitCost;
+            const newQty = Math.max(0, lot.quantityRemaining - deductFromThisLot);
+            const openRem = lot.openPackRemainder || 0;
+            const newPieces = Math.max(0, (newQty * ratio) + openRem);
 
-          // Update lot
-          await prisma.stockLot.update({
-            where: { id: lot.id },
-            data: {
-              quantityRemaining: newQty,
-              piecesRemaining: newPieces,
-            },
-          });
-
-          // Update individual StockLotBoxes in sequential order (1..N)
-          const availableBoxes = await prisma.stockLotBox.findMany({
-            where: {
-              lotId: lot.id,
-              status: { in: ['IN_STOCK', 'IN_USE'] },
-            },
-            orderBy: { boxNumberInLot: 'asc' },
-            take: deductFromThisLot,
-          });
-
-          if (availableBoxes.length > 0) {
-            await prisma.stockLotBox.updateMany({
-              where: { id: { in: availableBoxes.map((b) => b.id) } },
-              data: { status: 'DISPENSED' },
-            });
-          }
-
-          // Create stock transaction
-          await prisma.stockTransaction.create({
-            data: {
-              itemId: reqItem.itemId,
-              lotId: lot.id,
-              type: 'OUT_REQUISITION',
-              quantity: -deductFromThisLot,
-              unitCost: lot.unitCost,
-              totalCost: costForThisDeduction,
-              courseId: requisition.courseId,
-              referenceNumber: requisition.requestNumber,
-              createdById: userId,
-              note: dispenseNote
-                ? `จ่ายตามคำขอ ${requisition.requestNumber} (วิชา ${requisition.course?.code || ''}) | หมายเหตุ: ${String(dispenseNote).trim()}`
-                : `จ่ายตามคำขอ ${requisition.requestNumber} (วิชา ${requisition.course?.code || ''})`,
-            },
-          });
-
-          // Update individual RepackPackItems in sequential order (1..N) if this lot belongs to a repack sub-lot
-          const availablePacks = await prisma.repackPackItem.findMany({
-            where: {
-              repackRecord: { subLotNumber: lot.lotNumber },
-              status: 'AVAILABLE',
-            },
-            orderBy: { packNumber: 'asc' },
-            take: deductFromThisLot,
-          });
-
-          if (availablePacks.length > 0) {
-            await prisma.repackPackItem.updateMany({
-              where: { id: { in: availablePacks.map((p) => p.id) } },
+            // Update lot
+            await prisma.stockLot.update({
+              where: { id: lot.id },
               data: {
-                status: 'DISPENSED',
-                dispensedTo: requisition.user ? `${requisition.user.name} (${requisition.requestNumber})` : requisition.requestNumber,
-                dispensedAt: new Date(),
+                quantityRemaining: newQty,
+                piecesRemaining: newPieces,
               },
             });
+
+            // Update individual StockLotBoxes in sequential order (1..N)
+            const availableBoxes = await prisma.stockLotBox.findMany({
+              where: {
+                lotId: lot.id,
+                status: { in: ['IN_STOCK', 'IN_USE'] },
+              },
+              orderBy: { boxNumberInLot: 'asc' },
+              take: deductFromThisLot,
+            });
+
+            if (availableBoxes.length > 0) {
+              await prisma.stockLotBox.updateMany({
+                where: { id: { in: availableBoxes.map((b) => b.id) } },
+                data: { status: 'DISPENSED' },
+              });
+            }
+
+            // Create stock transaction
+            await prisma.stockTransaction.create({
+              data: {
+                itemId: reqItem.itemId,
+                lotId: lot.id,
+                type: 'OUT_REQUISITION',
+                quantity: -deductFromThisLot,
+                unitCost: lot.unitCost,
+                totalCost: costForThisDeduction,
+                courseId: requisition.courseId,
+                referenceNumber: requisition.requestNumber,
+                createdById: userId,
+                note: dispenseNote
+                  ? `จ่ายตามคำขอ ${requisition.requestNumber} (วิชา ${requisition.course?.code || ''}) | หมายเหตุ: ${String(dispenseNote).trim()}`
+                  : `จ่ายตามคำขอ ${requisition.requestNumber} (วิชา ${requisition.course?.code || ''})`,
+              },
+            });
+
+            // Update individual RepackPackItems in sequential order (1..N) if this lot belongs to a repack sub-lot
+            const availablePacks = await prisma.repackPackItem.findMany({
+              where: {
+                repackRecord: { subLotNumber: lot.lotNumber },
+                status: 'AVAILABLE',
+              },
+              orderBy: { packNumber: 'asc' },
+              take: deductFromThisLot,
+            });
+
+            if (availablePacks.length > 0) {
+              await prisma.repackPackItem.updateMany({
+                where: { id: { in: availablePacks.map((p) => p.id) } },
+                data: {
+                  status: 'DISPENSED',
+                  dispensedTo: requisition.user ? `${requisition.user.name} (${requisition.requestNumber})` : requisition.requestNumber,
+                  dispensedAt: new Date(),
+                },
+              });
+            }
+
+            itemTotalCost += costForThisDeduction;
+            remainingToDeduct -= deductFromThisLot;
+          }
+        } else {
+          // ==========================================
+          // Case 2: Sub-Unit Requisition (Option A)
+          // ==========================================
+          // remainingToDeduct is in sub-units (e.g. 10 or 100 or 110 pieces)
+          let piecesNeeded = remainingToDeduct;
+          const wholePacksNeeded = ratio > 1 ? Math.floor(piecesNeeded / ratio) : 0;
+          let wholePacksRemainingToDeduct = wholePacksNeeded;
+
+          // Step 1 (Option A Priority): If >= ratio, prioritize dispensing whole sealed packs first!
+          if (wholePacksRemainingToDeduct > 0) {
+            for (const lot of availableLots) {
+              if (wholePacksRemainingToDeduct <= 0) break;
+              if (lot.quantityRemaining <= 0) continue;
+
+              const deductPacks = Math.min(lot.quantityRemaining, wholePacksRemainingToDeduct);
+              const costForPacks = deductPacks * lot.unitCost;
+              const newQty = lot.quantityRemaining - deductPacks;
+              const openRem = lot.openPackRemainder || 0;
+              const newPieces = Math.max(0, (newQty * ratio) + openRem);
+
+              lot.quantityRemaining = newQty;
+
+              await prisma.stockLot.update({
+                where: { id: lot.id },
+                data: {
+                  quantityRemaining: newQty,
+                  piecesRemaining: newPieces,
+                },
+              });
+
+              // Update StockLotBox
+              const availableBoxes = await prisma.stockLotBox.findMany({
+                where: { lotId: lot.id, status: { in: ['IN_STOCK', 'IN_USE'] } },
+                orderBy: { boxNumberInLot: 'asc' },
+                take: deductPacks,
+              });
+              if (availableBoxes.length > 0) {
+                await prisma.stockLotBox.updateMany({
+                  where: { id: { in: availableBoxes.map((b) => b.id) } },
+                  data: { status: 'DISPENSED' },
+                });
+              }
+
+              // Repack items
+              const availablePacks = await prisma.repackPackItem.findMany({
+                where: { repackRecord: { subLotNumber: lot.lotNumber }, status: 'AVAILABLE' },
+                orderBy: { packNumber: 'asc' },
+                take: deductPacks,
+              });
+              if (availablePacks.length > 0) {
+                await prisma.repackPackItem.updateMany({
+                  where: { id: { in: availablePacks.map((p) => p.id) } },
+                  data: {
+                    status: 'DISPENSED',
+                    dispensedTo: requisition.user ? `${requisition.user.name} (${requisition.requestNumber})` : requisition.requestNumber,
+                    dispensedAt: new Date(),
+                  },
+                });
+              }
+
+              // Stock transaction
+              await prisma.stockTransaction.create({
+                data: {
+                  itemId: reqItem.itemId,
+                  lotId: lot.id,
+                  type: 'OUT_REQUISITION',
+                  quantity: -deductPacks,
+                  unitCost: lot.unitCost,
+                  totalCost: costForPacks,
+                  courseId: requisition.courseId,
+                  referenceNumber: requisition.requestNumber,
+                  createdById: userId,
+                  note: dispenseNote
+                    ? `จ่ายแพ็คเต็ม (Option A: เบิกย่อย ${deductPacks * ratio} ${reqItem.requestedUnit || reqItem.item?.usageUnit || 'ชิ้น'}) ตามคำขอ ${requisition.requestNumber} | ${String(dispenseNote).trim()}`
+                    : `จ่ายแพ็คเต็ม (Option A: เบิกย่อย ${deductPacks * ratio} ${reqItem.requestedUnit || reqItem.item?.usageUnit || 'ชิ้น'}) ตามคำขอ ${requisition.requestNumber}`,
+                },
+              });
+
+              itemTotalCost += costForPacks;
+              wholePacksRemainingToDeduct -= deductPacks;
+              piecesNeeded -= deductPacks * ratio;
+            }
           }
 
-          itemTotalCost += costForThisDeduction;
-          remainingToDeduct -= deductFromThisLot;
+          // Step 2: Fulfill remaining fractional pieces (or any remaining pieces if whole packs ran out)
+          if (piecesNeeded > 0) {
+            // Step 2A: Check loose pieces in open pack (openPackRemainder > 0)
+            for (const lot of availableLots) {
+              if (piecesNeeded <= 0) break;
+              const currentOpen = lot.openPackRemainder || 0;
+              if (currentOpen <= 0) continue;
+
+              const takeFromOpen = Math.min(currentOpen, piecesNeeded);
+              const newOpen = currentOpen - takeFromOpen;
+              const pieceCost = lot.unitCost / ratio;
+              const costForLoose = takeFromOpen * pieceCost;
+              const newPieces = Math.max(0, (lot.quantityRemaining * ratio) + newOpen);
+
+              lot.openPackRemainder = newOpen;
+
+              await prisma.stockLot.update({
+                where: { id: lot.id },
+                data: {
+                  openPackRemainder: newOpen,
+                  piecesRemaining: newPieces,
+                },
+              });
+
+              await prisma.stockTransaction.create({
+                data: {
+                  itemId: reqItem.itemId,
+                  lotId: lot.id,
+                  type: 'OUT_REQUISITION',
+                  quantity: -(takeFromOpen / ratio),
+                  unitCost: lot.unitCost,
+                  totalCost: costForLoose,
+                  courseId: requisition.courseId,
+                  referenceNumber: requisition.requestNumber,
+                  createdById: userId,
+                  note: dispenseNote
+                    ? `จ่ายจากเศษแพ็คเปิด ${takeFromOpen} ${reqItem.requestedUnit || reqItem.item?.usageUnit || 'ชิ้น'} ตามคำขอ ${requisition.requestNumber} | ${String(dispenseNote).trim()}`
+                    : `จ่ายจากเศษแพ็คเปิด ${takeFromOpen} ${reqItem.requestedUnit || reqItem.item?.usageUnit || 'ชิ้น'} ตามคำขอ ${requisition.requestNumber}`,
+                },
+              });
+
+              itemTotalCost += costForLoose;
+              piecesNeeded -= takeFromOpen;
+            }
+
+            // Step 2B: If still need pieces, open 1 new whole pack and keep leftover in openPackRemainder
+            if (piecesNeeded > 0) {
+              for (const lot of availableLots) {
+                if (piecesNeeded <= 0) break;
+                if (lot.quantityRemaining <= 0) continue;
+
+                const packsToOpen = Math.min(lot.quantityRemaining, Math.ceil(piecesNeeded / ratio));
+                const piecesProvided = packsToOpen * ratio;
+                const piecesToDeduct = Math.min(piecesProvided, piecesNeeded);
+                const leftoverPieces = piecesProvided - piecesToDeduct;
+
+                const newQty = lot.quantityRemaining - packsToOpen;
+                const currentOpen = lot.openPackRemainder || 0;
+                const newOpen = currentOpen + leftoverPieces;
+                const newPieces = Math.max(0, (newQty * ratio) + newOpen);
+
+                lot.quantityRemaining = newQty;
+                lot.openPackRemainder = newOpen;
+
+                await prisma.stockLot.update({
+                  where: { id: lot.id },
+                  data: {
+                    quantityRemaining: newQty,
+                    openPackRemainder: newOpen,
+                    piecesRemaining: newPieces,
+                  },
+                });
+
+                // Update StockLotBox for opened pack
+                const availableBoxes = await prisma.stockLotBox.findMany({
+                  where: { lotId: lot.id, status: { in: ['IN_STOCK'] } },
+                  orderBy: { boxNumberInLot: 'asc' },
+                  take: packsToOpen,
+                });
+                if (availableBoxes.length > 0) {
+                  await prisma.stockLotBox.updateMany({
+                    where: { id: { in: availableBoxes.map((b) => b.id) } },
+                    data: { status: leftoverPieces > 0 ? 'IN_USE' : 'DISPENSED' },
+                  });
+                }
+
+                const pieceCost = lot.unitCost / ratio;
+                const costForDispensedPieces = piecesToDeduct * pieceCost;
+
+                await prisma.stockTransaction.create({
+                  data: {
+                    itemId: reqItem.itemId,
+                    lotId: lot.id,
+                    type: 'OUT_REQUISITION',
+                    quantity: -(piecesToDeduct / ratio),
+                    unitCost: lot.unitCost,
+                    totalCost: costForDispensedPieces,
+                    courseId: requisition.courseId,
+                    referenceNumber: requisition.requestNumber,
+                    createdById: userId,
+                    note: dispenseNote
+                      ? `เปิดแพ็คใหม่ ${packsToOpen} แพ็ค → จ่าย ${piecesToDeduct} ${reqItem.requestedUnit || reqItem.item?.usageUnit || 'ชิ้น'} (เก็บเศษ ${leftoverPieces} เข้าคลัง) ตามคำขอ ${requisition.requestNumber} | ${String(dispenseNote).trim()}`
+                      : `เปิดแพ็คใหม่ ${packsToOpen} แพ็ค → จ่าย ${piecesToDeduct} ${reqItem.requestedUnit || reqItem.item?.usageUnit || 'ชิ้น'} (เก็บเศษ ${leftoverPieces} เข้าคลัง) ตามคำขอ ${requisition.requestNumber}`,
+                  },
+                });
+
+                itemTotalCost += costForDispensedPieces;
+                piecesNeeded -= piecesToDeduct;
+              }
+            }
+          }
+
+          remainingToDeduct = piecesNeeded;
         }
 
         const actualDispensed = requestedTarget - remainingToDeduct;

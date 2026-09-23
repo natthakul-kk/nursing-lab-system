@@ -95,6 +95,10 @@ export default function BorrowPage() {
     requestedQty: number;
     quantity: number;
     allowed: boolean;
+    isSubUnit?: boolean;
+    requestedUnit?: string;
+    conversionRatio?: number;
+    usageUnit?: string | null;
     currentStock: number;
   }[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -818,9 +822,16 @@ export default function BorrowPage() {
                     <div className="space-y-1 pl-5 text-[11px] text-teal-900 divide-y divide-teal-100/80">
                       {req.requisitionRequest.items?.map((rItem: any, rIdx: number) => (
                         <div key={rIdx} className="flex items-center justify-between pt-1">
-                          <span>• {rItem.item?.name}</span>
+                          <span>
+                            • {rItem.item?.name}
+                            {rItem.isSubUnit && (
+                              <span className="ml-1.5 px-1.5 py-0.2 rounded text-[9px] bg-teal-100 text-teal-800 font-bold">
+                                เบิกย่อย
+                              </span>
+                            )}
+                          </span>
                           <span className="font-bold text-teal-700">
-                            จำนวน {rItem.quantityRequested} {rItem.item?.unit}
+                            จำนวน {rItem.quantityRequested} {rItem.requestedUnit || rItem.item?.unit}
                           </span>
                         </div>
                       ))}
@@ -898,16 +909,23 @@ export default function BorrowPage() {
                           })
                         );
                         setCheckoutReqItems(
-                          (req.requisitionRequest?.items || []).map((it: any) => ({
-                            id: it.id,
-                            itemId: it.itemId,
-                            name: it.item?.name || 'วัสดุสิ้นเปลือง',
-                            unit: it.item?.unit || 'หน่วย',
-                            requestedQty: it.quantityRequested,
-                            quantity: it.quantityRequested,
-                            allowed: true,
-                            currentStock: it.item?.currentStock || 0,
-                          }))
+                          (req.requisitionRequest?.items || []).map((it: any) => {
+                            const matchCons = consumablesList.find((c) => c.id === it.itemId);
+                            return {
+                              id: it.id,
+                              itemId: it.itemId,
+                              name: it.item?.name || matchCons?.name || 'วัสดุสิ้นเปลือง',
+                              unit: it.item?.unit || matchCons?.unit || 'หน่วย',
+                              requestedQty: it.quantityRequested,
+                              quantity: it.quantityRequested,
+                              allowed: true,
+                              isSubUnit: it.isSubUnit,
+                              requestedUnit: it.requestedUnit || it.item?.unit || matchCons?.unit || 'หน่วย',
+                              conversionRatio: it.item?.conversionRatio || matchCons?.conversionRatio || 1,
+                              usageUnit: it.item?.usageUnit || matchCons?.usageUnit,
+                              currentStock: it.item?.currentStock ?? matchCons?.currentStock ?? 0,
+                            };
+                          })
                         );
                       }}
                       className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow transition cursor-pointer"
@@ -1825,9 +1843,16 @@ export default function BorrowPage() {
                           >
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                               <div>
-                                <div className="font-bold text-slate-800 dark:text-slate-200 text-sm">{it.name}</div>
+                                <div className="font-bold text-slate-800 dark:text-slate-200 text-sm">
+                                  {it.name}
+                                  {it.isSubUnit && (
+                                    <span className="ml-1.5 px-1.5 py-0.2 rounded text-[9px] bg-teal-100 text-teal-800 dark:bg-teal-900/60 dark:text-teal-200 font-bold">
+                                      เบิกย่อย
+                                    </span>
+                                  )}
+                                </div>
                                 <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                                  ขอมา: {it.requestedQty} {it.unit}
+                                  ขอมา: {it.requestedQty} {it.requestedUnit || it.unit}
                                   {it.currentStock !== undefined && (
                                     <span className="ml-1.5 text-[10px] text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 px-1.5 py-0.5 rounded border border-teal-200 dark:border-teal-800">
                                       คงคลัง: {it.currentStock} {it.unit}
@@ -1859,7 +1884,7 @@ export default function BorrowPage() {
                                       }}
                                       className="w-14 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 text-xs font-bold text-center text-slate-800 dark:text-slate-200"
                                     />
-                                    <span className="text-[11px] text-slate-500 dark:text-slate-400">{it.unit}</span>
+                                    <span className="text-[11px] text-slate-500 dark:text-slate-400">{it.requestedUnit || it.unit}</span>
                                   </div>
                                 )}
 
@@ -1890,6 +1915,51 @@ export default function BorrowPage() {
                                 </button>
                               </div>
                             </div>
+
+                            {/* Option A Smart Guidance for Sub-Unit Items */}
+                            {it.isSubUnit && it.allowed && (
+                              <div className="p-2.5 rounded-lg bg-teal-50/90 dark:bg-teal-950/50 border border-teal-200 dark:border-teal-800 text-[11px] text-teal-950 dark:text-teal-200 space-y-1">
+                                <div className="font-bold flex items-center gap-1.5 text-teal-800 dark:text-teal-300">
+                                  <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                                  <span>💡 คำแนะนำการจ่ายพัสดุ (ทางเลือก A - เบิกย่อย):</span>
+                                  <span className="px-1.5 py-0.2 rounded text-[10px] bg-teal-100 text-teal-800 dark:bg-teal-900/60 dark:text-teal-200 font-extrabold">
+                                    1 {it.unit} = {it.conversionRatio} {it.requestedUnit}
+                                  </span>
+                                </div>
+                                {(() => {
+                                  const ratio = Number(it.conversionRatio) > 0 ? Number(it.conversionRatio) : 1;
+                                  const wholePacks = Math.floor(it.quantity / ratio);
+                                  const loosePieces = it.quantity % ratio;
+                                  const openRemainder = matchCons?.stockLots?.find((l: any) => (l.openPackRemainder || 0) > 0)?.openPackRemainder || 0;
+
+                                  return (
+                                    <div className="pl-5 space-y-0.5 text-slate-700 dark:text-slate-300">
+                                      {wholePacks > 0 && (
+                                        <div className="flex items-center gap-1">
+                                          <span>• จ่ายแพ็คเต็ม:</span>
+                                          <strong className="text-teal-900 dark:text-teal-100">{wholePacks} {it.unit}</strong>
+                                          <span className="text-slate-500 dark:text-slate-400">({wholePacks * ratio} {it.requestedUnit})</span>
+                                        </div>
+                                      )}
+                                      {loosePieces > 0 && (
+                                        <div className="flex items-center gap-1">
+                                          <span>• เศษที่ต้องจ่าย ({loosePieces} {it.requestedUnit}):</span>
+                                          {openRemainder >= loosePieces ? (
+                                            <span className="text-emerald-700 dark:text-emerald-300 font-semibold">
+                                              หยิบจากแพ็คเปิดเดิม {loosePieces} {it.requestedUnit} (เหลือเศษในแพ็คอีก {openRemainder - loosePieces} {it.requestedUnit})
+                                            </span>
+                                          ) : (
+                                            <span className="text-amber-800 dark:text-amber-300 font-semibold">
+                                              เปิดแพ็คใหม่ 1 {it.unit} → จ่าย {loosePieces} {it.requestedUnit} (เก็บเศษ {ratio - loosePieces} {it.requestedUnit} ไว้ในแพ็คเปิด)
+                                            </span>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })()}
+                              </div>
+                            )}
 
                             {/* Consumable Recommended FIFO Lot */}
                             {it.allowed && matchCons?.stockLots && matchCons.stockLots.length > 0 && (

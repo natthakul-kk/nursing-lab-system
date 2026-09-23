@@ -54,8 +54,14 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
   const [borrowItems, setBorrowItems] = useState<{ itemId: string; quantity: number | string; categoryId?: string }[]>([
     { itemId: '', quantity: '' },
   ]);
-  const [requisitionItems, setRequisitionItems] = useState<{ itemId: string; quantity: number | string; categoryId?: string }[]>([
-    { itemId: '', quantity: '' },
+  const [requisitionItems, setRequisitionItems] = useState<{
+    itemId: string;
+    quantity: number | string;
+    categoryId?: string;
+    isSubUnit?: boolean;
+    requestedUnit?: string;
+  }[]>([
+    { itemId: '', quantity: '', isSubUnit: false, requestedUnit: '' },
   ]);
 
   // Load dropdown resources on mount
@@ -98,7 +104,10 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
     if (!row.itemId) return sum;
     const it = consumablesList.find((c) => c.id === row.itemId);
     const q = Number(row.quantity) || 0;
-    return sum + (it?.unitCost || 0) * q;
+    if (!it) return sum;
+    const ratio = Number(it.conversionRatio) > 0 ? Number(it.conversionRatio) : 1;
+    const costPerUnit = row.isSubUnit ? (it.unitCost || 0) / ratio : (it.unitCost || 0);
+    return sum + costPerUnit * q;
   }, 0);
 
   // Compute stock validation errors
@@ -113,7 +122,13 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
     if (!it.itemId) return false;
     const con = consumablesList.find((c) => c.id === it.itemId);
     const q = Number(it.quantity) || 0;
-    return con && (con.currentStock <= 0 || (q > 0 && q > con.currentStock));
+    if (!con) return false;
+    if (it.isSubUnit) {
+      const ratio = Number(con.conversionRatio) > 0 ? Number(con.conversionRatio) : 1;
+      const totalPieces = (con.currentStock * ratio) + (con.openPackRemainder || 0);
+      return totalPieces <= 0 || (q > 0 && q > totalPieces);
+    }
+    return con.currentStock <= 0 || (q > 0 && q > con.currentStock);
   });
 
   const hasStockError = hasEquipmentStockError || hasConsumableStockError;
@@ -176,13 +191,26 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
       const con = consumablesList.find((c) => c.id === it.itemId);
       const q = Number(it.quantity);
       if (con) {
-        if (con.currentStock <= 0) {
-          alert(`วัสดุ "${con.name}" หมดหรือถูกจองเต็มแล้วในขณะนี้ (มีในคลัง ${con.physicalStock || 0} ${con.unit} แต่มีคำขอรอจ่ายแล้ว ${con.reservedStock || 0} ${con.unit})`);
-          return;
-        }
-        if (q > con.currentStock) {
-          alert(`ไม่สามารถขอเบิกเกินสต็อกพร้อมใช้ได้: วัสดุ "${con.name}" มีพร้อมให้ขอ ${con.currentStock} ${con.unit} (จากคลัง ${con.physicalStock || con.currentStock} แต่มีคำขอรอจ่ายอยู่ ${con.reservedStock || 0} ${con.unit})`);
-          return;
+        if (it.isSubUnit) {
+          const ratio = Number(con.conversionRatio) > 0 ? Number(con.conversionRatio) : 1;
+          const totalPieces = (con.currentStock * ratio) + (con.openPackRemainder || 0);
+          if (totalPieces <= 0) {
+            alert(`วัสดุ "${con.name}" หมดหรือถูกจองเต็มแล้วในขณะนี้`);
+            return;
+          }
+          if (q > totalPieces) {
+            alert(`ไม่สามารถขอเบิกเกินสต็อกพร้อมใช้ได้: วัสดุ "${con.name}" มีพร้อมให้ขอ ${totalPieces} ${con.usageUnit || 'ชิ้น'} (จากสต็อกทั้งสิ้นในคลัง)`);
+            return;
+          }
+        } else {
+          if (con.currentStock <= 0) {
+            alert(`วัสดุ "${con.name}" หมดหรือถูกจองเต็มแล้วในขณะนี้ (มีในคลัง ${con.physicalStock || 0} ${con.unit} แต่มีคำขอรอจ่ายแล้ว ${con.reservedStock || 0} ${con.unit})`);
+            return;
+          }
+          if (q > con.currentStock) {
+            alert(`ไม่สามารถขอเบิกเกินสต็อกพร้อมใช้ได้: วัสดุ "${con.name}" มีพร้อมให้ขอ ${con.currentStock} ${con.unit} (จากคลัง ${con.physicalStock || con.currentStock} แต่มีคำขอรอจ่ายอยู่ ${con.reservedStock || 0} ${con.unit})`);
+            return;
+          }
         }
       }
     }
@@ -200,7 +228,16 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
           borrowDate,
           expectedReturnDate,
           borrowItems: validBorrow.map((b) => ({ ...b, quantity: Number(b.quantity) })),
-          requisitionItems: validReq.map((r) => ({ ...r, quantity: Number(r.quantity) })),
+          requisitionItems: validReq.map((r) => {
+            const con = consumablesList.find((c) => c.id === r.itemId);
+            const isSub = !!r.isSubUnit;
+            return {
+              itemId: r.itemId,
+              quantity: Number(r.quantity),
+              isSubUnit: isSub,
+              requestedUnit: isSub ? (con?.usageUnit || 'ชิ้น') : (con?.unit || 'หน่วย'),
+            };
+          }),
         }),
       });
 
@@ -659,8 +696,15 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
                   : consumablesList;
 
                 const chosenItem = consumablesList.find((c) => c.id === row.itemId);
-                const isOutOfStock = chosenItem && chosenItem.currentStock <= 0;
-                const isOverStock = chosenItem && chosenItem.currentStock > 0 && row.quantity !== '' && Number(row.quantity) > chosenItem.currentStock;
+                const ratio = Number(chosenItem?.conversionRatio) > 0 ? Number(chosenItem.conversionRatio) : 1;
+                const canSubUnit = !!(chosenItem && ratio > 1 && chosenItem.usageUnit && chosenItem.usageUnit !== chosenItem.unit);
+                const isSub = row.isSubUnit === true;
+                const availablePieces = chosenItem ? (chosenItem.currentStock * ratio) + (chosenItem.openPackRemainder || 0) : 0;
+                const maxStock = isSub ? availablePieces : (chosenItem?.currentStock || 0);
+                const isOutOfStock = chosenItem && maxStock <= 0;
+                const isOverStock = chosenItem && maxStock > 0 && row.quantity !== '' && Number(row.quantity) > maxStock;
+                const currentUnitLabel = isSub ? (chosenItem?.usageUnit || 'ชิ้น') : (chosenItem?.unit || 'หน่วย');
+                const costPerUnit = isSub ? (chosenItem?.unitCost || 0) / ratio : (chosenItem?.unitCost || 0);
 
                 return (
                   <div
@@ -696,6 +740,8 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
                             const it = consumablesList.find((x) => x.id === val);
                             const updated = [...requisitionItems];
                             updated[idx].itemId = val;
+                            updated[idx].isSubUnit = false;
+                            updated[idx].requestedUnit = it?.unit || '';
                             if (it && it.currentStock > 0 && row.quantity !== '' && Number(updated[idx].quantity) > it.currentStock) {
                               updated[idx].quantity = it.currentStock;
                             }
@@ -707,47 +753,96 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
                           {filteredList.map((c) => {
                             const avail = c.availableStock ?? c.currentStock;
                             const isReserved = c.reservedStock > 0;
+                            const r = Number(c.conversionRatio) > 0 ? Number(c.conversionRatio) : 1;
+                            const subNote = r > 1 && c.usageUnit ? ` [1 ${c.unit} = ${r} ${c.usageUnit}]` : '';
                             return (
                               <option key={c.id} value={c.id}>
-                                {c.name} (พร้อมเบิก: {avail} {c.unit}){isReserved ? ` [รอจ่าย ${c.reservedStock}]` : ''}{avail <= 0 ? ' [คิวเต็ม/หมด]' : ''}
+                                {c.name} (พร้อมเบิก: {avail} {c.unit}){subNote}{isReserved ? ` [รอจ่าย ${c.reservedStock}]` : ''}{avail <= 0 ? ' [คิวเต็ม/หมด]' : ''}
                               </option>
                             );
                           })}
                         </select>
                       </div>
 
-                      <div className="sm:col-span-3 flex items-center gap-1.5">
-                        <input
-                          type="number"
-                          min="1"
-                          max={chosenItem ? Math.max(1, chosenItem.currentStock) : undefined}
-                          value={row.quantity}
-                          onChange={(e) => {
-                            const raw = e.target.value;
-                            const val = raw === '' ? '' : Math.max(1, parseInt(raw, 10));
-                            const updated = [...requisitionItems];
-                            updated[idx].quantity = val;
-                            setRequisitionItems(updated);
-                          }}
-                          className={`w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-lg px-2 py-1.5 text-xs font-bold text-center ${
-                            isOverStock || isOutOfStock ? 'border-rose-500 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300' : ''
-                          }`}
-                          placeholder="กรุณากรอกจำนวน"
-                        />
-                        {requisitionItems.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => setRequisitionItems(requisitionItems.filter((_, i) => i !== idx))}
-                            className="p-1.5 text-slate-400 hover:text-rose-500 transition cursor-pointer"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                      <div className="sm:col-span-3 flex flex-col gap-1">
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="number"
+                            min="1"
+                            max={chosenItem ? Math.max(1, maxStock) : undefined}
+                            value={row.quantity}
+                            onChange={(e) => {
+                              const raw = e.target.value;
+                              const val = raw === '' ? '' : Math.max(1, parseInt(raw, 10));
+                              const updated = [...requisitionItems];
+                              updated[idx].quantity = val;
+                              setRequisitionItems(updated);
+                            }}
+                            className={`w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-lg px-2 py-1.5 text-xs font-bold text-center ${
+                              isOverStock || isOutOfStock ? 'border-rose-500 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300' : ''
+                            }`}
+                            placeholder="กรุณากรอกจำนวน"
+                          />
+                          <span className="text-xs font-bold text-slate-600 dark:text-slate-300 shrink-0 min-w-6">{currentUnitLabel}</span>
+                          {requisitionItems.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => setRequisitionItems(requisitionItems.filter((_, i) => i !== idx))}
+                              className="p-1 text-slate-400 hover:text-rose-500 transition cursor-pointer"
+                              title="ลบรายการนี้"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+
+                        {canSubUnit && (
+                          <div className="flex items-center justify-end gap-1 text-[10px]">
+                            <span className="text-slate-400 text-[9px]">หน่วย:</span>
+                            <div className="inline-flex rounded-md p-0.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updated = [...requisitionItems];
+                                  updated[idx].isSubUnit = false;
+                                  updated[idx].requestedUnit = chosenItem.unit;
+                                  if (updated[idx].quantity !== '' && Number(updated[idx].quantity) > chosenItem.currentStock) {
+                                    updated[idx].quantity = chosenItem.currentStock;
+                                  }
+                                  setRequisitionItems(updated);
+                                }}
+                                className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${
+                                  !isSub
+                                    ? 'bg-teal-600 text-white shadow-xs'
+                                    : 'text-slate-600 dark:text-slate-300 hover:text-teal-700'
+                                }`}
+                              >
+                                📦 {chosenItem.unit}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updated = [...requisitionItems];
+                                  updated[idx].isSubUnit = true;
+                                  updated[idx].requestedUnit = chosenItem.usageUnit;
+                                  setRequisitionItems(updated);
+                                }}
+                                className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${
+                                  isSub
+                                    ? 'bg-teal-600 text-white shadow-xs'
+                                    : 'text-slate-600 dark:text-slate-300 hover:text-teal-700'
+                                }`}
+                              >
+                                ✨ {chosenItem.usageUnit} (ย่อย)
+                              </button>
+                            </div>
+                          </div>
                         )}
                       </div>
                     </div>
 
                     {chosenItem && (
-                      <div className="mt-1.5 pt-1 border-t border-slate-100 flex flex-wrap items-center justify-between gap-1 text-[11px]">
+                      <div className="mt-1.5 pt-1 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-1 text-[11px]">
                         {isOutOfStock ? (
                           <span className="text-rose-600 font-bold flex items-center gap-1">
                             <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
@@ -758,21 +853,22 @@ export default function UnifiedRequestModal({ isOpen, onClose, onSuccess }: Unif
                         ) : isOverStock ? (
                           <span className="text-rose-600 font-bold flex items-center gap-1">
                             <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-                            ขอเกินยอดพร้อมเบิก (พร้อมขอ {chosenItem.currentStock} จากคลัง {chosenItem.physicalStock ?? chosenItem.currentStock} {chosenItem.unit}{chosenItem.reservedStock ? ` | รอจ่าย ${chosenItem.reservedStock}` : ''})
+                            ขอเกินยอดพร้อมเบิก (พร้อมขอ {maxStock} {currentUnitLabel})
                           </span>
                         ) : (
-                          <span className="text-teal-700 font-medium flex items-center gap-1.5">
+                          <span className="text-teal-700 dark:text-teal-400 font-medium flex items-center gap-1.5">
                             <span className="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
-                            พร้อมเบิก: <strong className="font-bold text-slate-900">{chosenItem.currentStock} {chosenItem.unit}</strong>
-                            {chosenItem.reservedStock > 0 && (
-                              <span className="text-[10px] bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.5 rounded-md font-semibold">
-                                คลัง {chosenItem.physicalStock} | รอจ่าย {chosenItem.reservedStock}
+                            พร้อมเบิก: <strong className="font-bold text-slate-900 dark:text-slate-100">{maxStock} {currentUnitLabel}</strong>
+                            {canSubUnit && (
+                              <span className="text-[10px] bg-teal-50 dark:bg-teal-950/60 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800 px-1.5 py-0.5 rounded-md font-semibold">
+                                1 {chosenItem.unit} = {ratio} {chosenItem.usageUnit}
+                                {(chosenItem.openPackRemainder || 0) > 0 && ` | มีเศษเปิดอยู่ ${chosenItem.openPackRemainder} ${chosenItem.usageUnit}`}
                               </span>
                             )}
                           </span>
                         )}
-                        <span className="text-slate-500 font-medium">
-                          ประมาณการ: ฿{((chosenItem.unitCost || 0) * (Number(row.quantity) || 0)).toFixed(2)}
+                        <span className="text-slate-500 dark:text-slate-400 font-medium">
+                          ประมาณการ: ฿{(costPerUnit * (Number(row.quantity) || 0)).toFixed(2)}
                         </span>
                       </div>
                     )}

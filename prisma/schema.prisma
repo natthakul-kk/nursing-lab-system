@@ -313,6 +313,8 @@ model RequisitionItem {
   item                 Item               @relation(fields: [itemId], references: [id])
   quantityRequested    Int
   quantityDispensed    Int                @default(0)
+  requestedUnit        String?            // หน่วยที่ขอเบิก เช่น "อัน", "ชิ้น", "แพ็ค", "กล่อง"
+  isSubUnit            Boolean            @default(false) // true = เบิกเป็นหน่วยย่อย, false = เบิกเป็นหน่วยใหญ่
   unitCost             Float              @default(0)
   totalCost            Float              @default(0)
 }

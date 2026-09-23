@@ -51,7 +51,13 @@ export default function RequisitionsPage() {
     advisorName: string;
     purpose: string;
     dateNeeded: string;
-    items: { itemId: string; quantity: number | string; categoryId?: string }[];
+    items: {
+      itemId: string;
+      quantity: number | string;
+      categoryId?: string;
+      isSubUnit?: boolean;
+      requestedUnit?: string;
+    }[];
   }>({
     courseId: '',
     advisorName: '',
@@ -70,6 +76,10 @@ export default function RequisitionsPage() {
     requestedQty: number;
     quantity: number;
     allowed: boolean;
+    isSubUnit?: boolean;
+    requestedUnit?: string;
+    conversionRatio?: number;
+    usageUnit?: string | null;
     currentStock: number;
     location?: string | null;
     storageLocation?: any;
@@ -163,15 +173,32 @@ export default function RequisitionsPage() {
       const itemInfo = consumables.find((c) => c.id === it.itemId);
       const q = Number(it.quantity);
       if (itemInfo) {
-        if (itemInfo.currentStock <= 0) {
-          alert(`วัสดุ "${itemInfo.name}" สินค้าหมดในคลัง ไม่สามารถขอเบิกได้`);
-          return;
-        }
-        if (q > itemInfo.currentStock) {
-          alert(
-            `ไม่สามารถขอเบิกเกินสต็อกได้:\nวัสดุ "${itemInfo.name}" มีคงเหลือในคลังเพียง ${itemInfo.currentStock} ${itemInfo.unit} (ท่านระบุ ${q} ${itemInfo.unit})`
-          );
-          return;
+        const ratio = Number(itemInfo.conversionRatio) > 0 ? Number(itemInfo.conversionRatio) : 1;
+        const isSub = (it as any).isSubUnit === true;
+        const totalPieces = (itemInfo.currentStock * ratio) + (itemInfo.openPackRemainder || 0);
+
+        if (isSub) {
+          if (totalPieces <= 0) {
+            alert(`วัสดุ "${itemInfo.name}" สินค้าหมดในคลัง ไม่สามารถขอเบิกได้`);
+            return;
+          }
+          if (q > totalPieces) {
+            alert(
+              `ไม่สามารถขอเบิกเกินสต็อกได้:\nวัสดุ "${itemInfo.name}" มีพร้อมให้ขอ ${totalPieces} ${itemInfo.usageUnit || 'ชิ้น'} (ท่านระบุ ${q})`
+            );
+            return;
+          }
+        } else {
+          if (itemInfo.currentStock <= 0) {
+            alert(`วัสดุ "${itemInfo.name}" สินค้าหมดในคลัง ไม่สามารถขอเบิกได้`);
+            return;
+          }
+          if (q > itemInfo.currentStock) {
+            alert(
+              `ไม่สามารถขอเบิกเกินสต็อกได้:\nวัสดุ "${itemInfo.name}" มีคงเหลือในคลังเพียง ${itemInfo.currentStock} ${itemInfo.unit} (ท่านระบุ ${q} ${itemInfo.unit})`
+            );
+            return;
+          }
         }
       }
     }
@@ -187,7 +214,16 @@ export default function RequisitionsPage() {
           advisorName: formatTeacherName(newReq.advisorName || courses.find((c) => c.id === newReq.courseId)?.instructorName) || null,
           purpose: newReq.purpose,
           dateNeeded: newReq.dateNeeded,
-          items: newReq.items.map((it) => ({ ...it, quantity: Number(it.quantity) })),
+          items: newReq.items.map((it: any) => {
+            const itemInfo = consumables.find((c) => c.id === it.itemId);
+            const isSub = !!it.isSubUnit;
+            return {
+              itemId: it.itemId,
+              quantity: Number(it.quantity),
+              isSubUnit: isSub,
+              requestedUnit: isSub ? (itemInfo?.usageUnit || 'ชิ้น') : (itemInfo?.unit || 'หน่วย'),
+            };
+          }),
         }),
       });
 
@@ -467,13 +503,20 @@ export default function RequisitionsPage() {
                   <tbody className="divide-y divide-slate-100 font-medium">
                     {req.items?.map((it: any) => (
                       <tr key={it.id}>
-                        <td className="py-2 text-slate-800 font-semibold">{it.item?.name}</td>
+                        <td className="py-2 text-slate-800 font-semibold">
+                          {it.item?.name}
+                          {it.isSubUnit && (
+                            <span className="ml-1.5 px-1.5 py-0.2 rounded text-[9px] bg-teal-100 text-teal-800 dark:bg-teal-900/60 dark:text-teal-200 font-bold">
+                              เบิกย่อย
+                            </span>
+                          )}
+                        </td>
                         <td className="py-2 text-center text-slate-600">
-                          {it.quantityRequested} {it.item?.unit}
+                          {it.quantityRequested} {it.requestedUnit || it.item?.unit}
                         </td>
                         <td className="py-2 text-center font-bold text-emerald-700">
                           {it.quantityDispensed > 0
-                            ? `${it.quantityDispensed} ${it.item?.unit}`
+                            ? `${it.quantityDispensed} ${it.requestedUnit || it.item?.unit}`
                             : '-'}
                         </td>
                         <td className="py-2 text-right text-slate-500">
@@ -565,6 +608,10 @@ export default function RequisitionsPage() {
                             requestedQty: it.quantityRequested,
                             quantity: it.quantityRequested,
                             allowed: true,
+                            isSubUnit: it.isSubUnit,
+                            requestedUnit: it.requestedUnit || it.item?.unit || 'หน่วย',
+                            conversionRatio: it.item?.conversionRatio ?? matchC?.conversionRatio ?? 1,
+                            usageUnit: it.item?.usageUnit ?? matchC?.usageUnit,
                             currentStock: it.item?.currentStock ?? matchC?.currentStock ?? 0,
                             location: it.item?.location ?? matchC?.location,
                             storageLocation: it.item?.storageLocation ?? matchC?.storageLocation,
@@ -779,8 +826,15 @@ export default function RequisitionsPage() {
                       : consumables;
 
                     const chosenItem = consumables.find((c: any) => c.id === row.itemId);
-                    const isOutOfStock = chosenItem && chosenItem.currentStock <= 0;
-                    const isOverStock = chosenItem && chosenItem.currentStock > 0 && row.quantity !== '' && Number(row.quantity) > chosenItem.currentStock;
+                    const ratio = Number(chosenItem?.conversionRatio) > 0 ? Number(chosenItem.conversionRatio) : 1;
+                    const canSubUnit = !!(chosenItem && ratio > 1 && chosenItem.usageUnit && chosenItem.usageUnit !== chosenItem.unit);
+                    const isSub = (row as any).isSubUnit === true;
+                    const availablePieces = chosenItem ? (chosenItem.currentStock * ratio) + (chosenItem.openPackRemainder || 0) : 0;
+                    const maxStock = isSub ? availablePieces : (chosenItem?.currentStock || 0);
+                    const isOutOfStock = chosenItem && maxStock <= 0;
+                    const isOverStock = chosenItem && maxStock > 0 && row.quantity !== '' && Number(row.quantity) > maxStock;
+                    const currentUnitLabel = isSub ? (chosenItem?.usageUnit || 'ชิ้น') : (chosenItem?.unit || 'หน่วย');
+                    const costPerUnit = isSub ? (chosenItem?.unitCost || 0) / ratio : (chosenItem?.unitCost || 0);
 
                     return (
                       <div key={idx} className={`p-2.5 rounded-xl border transition ${
@@ -829,6 +883,8 @@ export default function RequisitionsPage() {
                                 setNewReq((prev: any) => {
                                   const updated = [...prev.items];
                                   updated[idx].itemId = val;
+                                  updated[idx].isSubUnit = false;
+                                  updated[idx].requestedUnit = it?.unit || '';
                                   if (it?.category?.id) {
                                     updated[idx].categoryId = it.category.id;
                                   }
@@ -849,9 +905,11 @@ export default function RequisitionsPage() {
                               {filteredConsumables.map((c) => {
                                 const avail = c.availableStock ?? c.currentStock;
                                 const isReserved = c.reservedStock > 0;
+                                const r = Number(c.conversionRatio) > 0 ? Number(c.conversionRatio) : 1;
+                                const subNote = r > 1 && c.usageUnit ? ` [1 ${c.unit} = ${r} ${c.usageUnit}]` : '';
                                 return (
                                   <option key={c.id} value={c.id}>
-                                    {c.name} (พร้อมเบิก: {avail} {c.unit}){isReserved ? ` [รอจ่าย ${c.reservedStock}]` : ''}{avail <= 0 ? ' [คิวเต็ม/หมด]' : ''}
+                                    {c.name} (พร้อมเบิก: {avail} {c.unit}){subNote}{isReserved ? ` [รอจ่าย ${c.reservedStock}]` : ''}{avail <= 0 ? ' [คิวเต็ม/หมด]' : ''}
                                   </option>
                                 );
                               })}
@@ -859,37 +917,87 @@ export default function RequisitionsPage() {
                           </div>
 
                           {/* Quantity & Delete */}
-                          <div className="sm:col-span-3 flex items-center gap-1.5">
-                            <input
-                              type="number"
-                              min="1"
-                              max={chosenItem ? Math.max(1, chosenItem.currentStock) : undefined}
-                              value={row.quantity}
-                              onChange={(e) => {
-                                const raw = e.target.value;
-                                const val = raw === '' ? '' : Math.max(1, parseInt(raw, 10));
-                                setNewReq((prev: any) => {
-                                  const updated = [...prev.items];
-                                  updated[idx].quantity = val;
-                                  return { ...prev, items: updated };
-                                });
-                              }}
-                              className={`w-full bg-white border rounded-lg px-2 py-1.5 text-xs font-bold text-center ${
-                                isOverStock || isOutOfStock
-                                  ? 'border-rose-500 bg-rose-50 text-rose-700'
-                                  : 'border-slate-300'
-                              }`}
-                              placeholder="กรุณากรอกจำนวน"
-                            />
-                            {newReq.items.length > 1 && (
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveItemRow(idx)}
-                                className="p-1.5 text-slate-400 hover:text-rose-500 transition cursor-pointer"
-                                title="ลบรายการนี้"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
+                          <div className="sm:col-span-3 flex flex-col gap-1">
+                            <div className="flex items-center gap-1.5">
+                              <input
+                                type="number"
+                                min="1"
+                                max={chosenItem ? Math.max(1, maxStock) : undefined}
+                                value={row.quantity}
+                                onChange={(e) => {
+                                  const raw = e.target.value;
+                                  const val = raw === '' ? '' : Math.max(1, parseInt(raw, 10));
+                                  setNewReq((prev: any) => {
+                                    const updated = [...prev.items];
+                                    updated[idx].quantity = val;
+                                    return { ...prev, items: updated };
+                                  });
+                                }}
+                                className={`w-full bg-white border rounded-lg px-2 py-1.5 text-xs font-bold text-center ${
+                                  isOverStock || isOutOfStock
+                                    ? 'border-rose-500 bg-rose-50 text-rose-700'
+                                    : 'border-slate-300'
+                                }`}
+                                placeholder="กรุณากรอกจำนวน"
+                              />
+                              <span className="text-xs font-bold text-slate-600 dark:text-slate-300 shrink-0 min-w-6">{currentUnitLabel}</span>
+                              {newReq.items.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveItemRow(idx)}
+                                  className="p-1 text-slate-400 hover:text-rose-500 transition cursor-pointer"
+                                  title="ลบรายการนี้"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+
+                            {canSubUnit && (
+                              <div className="flex items-center justify-end gap-1 text-[10px]">
+                                <span className="text-slate-400 text-[9px]">หน่วย:</span>
+                                <div className="inline-flex rounded-md p-0.5 bg-slate-200/80 border border-slate-300">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setNewReq((prev: any) => {
+                                        const updated = [...prev.items];
+                                        updated[idx].isSubUnit = false;
+                                        updated[idx].requestedUnit = chosenItem.unit;
+                                        if (updated[idx].quantity !== '' && Number(updated[idx].quantity) > chosenItem.currentStock) {
+                                          updated[idx].quantity = chosenItem.currentStock;
+                                        }
+                                        return { ...prev, items: updated };
+                                      });
+                                    }}
+                                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${
+                                      !isSub
+                                        ? 'bg-teal-600 text-white shadow-xs'
+                                        : 'text-slate-700 hover:text-teal-700'
+                                    }`}
+                                  >
+                                    📦 {chosenItem.unit}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setNewReq((prev: any) => {
+                                        const updated = [...prev.items];
+                                        updated[idx].isSubUnit = true;
+                                        updated[idx].requestedUnit = chosenItem.usageUnit;
+                                        return { ...prev, items: updated };
+                                      });
+                                    }}
+                                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${
+                                      isSub
+                                        ? 'bg-teal-600 text-white shadow-xs'
+                                        : 'text-slate-700 hover:text-teal-700'
+                                    }`}
+                                  >
+                                    ✨ {chosenItem.usageUnit} (ย่อย)
+                                  </button>
+                                </div>
+                              </div>
                             )}
                           </div>
                         </div>
@@ -902,26 +1010,27 @@ export default function RequisitionsPage() {
                                 <AlertCircle className="w-3.5 h-3.5 text-rose-600 flex-shrink-0" />
                                 {chosenItem.physicalStock > 0 && chosenItem.reservedStock > 0
                                   ? `มีในคลัง ${chosenItem.physicalStock} ${chosenItem.unit} แต่มีคำขอรอจ่ายแล้ว ${chosenItem.reservedStock} (ไม่เหลือพร้อมให้เบิก)`
-                                  : `วัสดุนี้หมดในคลัง (คงเหลือ 0 ${chosenItem.unit}) ไม่สามารถส่งขอเบิกได้`}
+                                  : `วัสดุนี้หมดในคลัง ไม่สามารถส่งขอเบิกได้`}
                               </span>
                             ) : isOverStock ? (
                               <span className="text-rose-700 font-bold flex items-center gap-1">
                                 <AlertCircle className="w-3.5 h-3.5 text-rose-600 flex-shrink-0" />
-                                ขอเกินยอดพร้อมเบิก (พร้อมขอ {chosenItem.currentStock} จากคลัง {chosenItem.physicalStock ?? chosenItem.currentStock} {chosenItem.unit}{chosenItem.reservedStock ? ` | รอจ่าย ${chosenItem.reservedStock}` : ''})
+                                ขอเกินยอดพร้อมเบิก (พร้อมขอ {maxStock} {currentUnitLabel})
                               </span>
                             ) : (
                               <span className="text-emerald-700 font-medium flex items-center gap-1.5">
                                 <span className="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
-                                พร้อมเบิก: <strong className="font-bold text-slate-900">{chosenItem.currentStock} {chosenItem.unit}</strong>
-                                {chosenItem.reservedStock > 0 && (
-                                  <span className="text-[10px] bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.5 rounded-md font-semibold">
-                                    คลัง {chosenItem.physicalStock} | รอจ่าย {chosenItem.reservedStock}
+                                พร้อมเบิก: <strong className="font-bold text-slate-900">{maxStock} {currentUnitLabel}</strong>
+                                {canSubUnit && (
+                                  <span className="text-[10px] bg-teal-50 text-teal-800 border border-teal-200 px-1.5 py-0.5 rounded-md font-semibold">
+                                    1 {chosenItem.unit} = {ratio} {chosenItem.usageUnit}
+                                    {(chosenItem.openPackRemainder || 0) > 0 && ` | มีเศษเปิดอยู่ ${chosenItem.openPackRemainder} ${chosenItem.usageUnit}`}
                                   </span>
                                 )}
                               </span>
                             )}
                             <span className="text-slate-500">
-                              ประมาณการ: <strong className="text-slate-700">฿{((chosenItem.unitCost || 0) * (Number(row.quantity) || 0)).toFixed(2)}</strong>
+                              ประมาณการ: <strong className="text-slate-700">฿{(costPerUnit * (Number(row.quantity) || 0)).toFixed(2)}</strong>
                             </span>
                           </div>
                         )}
@@ -1009,9 +1118,16 @@ export default function RequisitionsPage() {
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <div>
-                        <div className="font-bold text-slate-800 dark:text-slate-200 text-sm">{it.name}</div>
+                        <div className="font-bold text-slate-800 dark:text-slate-200 text-sm">
+                          {it.name}
+                          {it.isSubUnit && (
+                            <span className="ml-1.5 px-1.5 py-0.2 rounded text-[9px] bg-teal-100 text-teal-800 dark:bg-teal-900/60 dark:text-teal-200 font-bold">
+                              เบิกย่อย
+                            </span>
+                          )}
+                        </div>
                         <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                          ขอมา: {it.requestedQty} {it.unit}
+                          ขอมา: {it.requestedQty} {it.requestedUnit || it.unit}
                           <span className="ml-1.5 text-[10px] text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 px-1.5 py-0.5 rounded border border-teal-200 dark:border-teal-800/60">
                             คงคลัง: {it.currentStock} {it.unit}
                           </span>
@@ -1041,7 +1157,7 @@ export default function RequisitionsPage() {
                               }}
                               className="w-14 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-1 text-xs font-bold text-center text-slate-900 dark:text-slate-100"
                             />
-                            <span className="text-[11px] text-slate-500 dark:text-slate-400">{it.unit}</span>
+                            <span className="text-[11px] text-slate-500 dark:text-slate-400">{it.requestedUnit || it.unit}</span>
                           </div>
                         )}
 
@@ -1072,6 +1188,51 @@ export default function RequisitionsPage() {
                         </button>
                       </div>
                     </div>
+
+                    {/* Option A Smart Guidance for Sub-Unit Items */}
+                    {it.isSubUnit && it.allowed && (
+                      <div className="p-2.5 rounded-lg bg-teal-50/90 dark:bg-teal-950/50 border border-teal-200 dark:border-teal-800 text-[11px] text-teal-950 dark:text-teal-200 space-y-1">
+                        <div className="font-bold flex items-center gap-1.5 text-teal-800 dark:text-teal-300">
+                          <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                          <span>💡 คำแนะนำการจ่ายพัสดุ (ทางเลือก A - เบิกย่อย):</span>
+                          <span className="px-1.5 py-0.2 rounded text-[10px] bg-teal-100 text-teal-800 dark:bg-teal-900/60 dark:text-teal-200 font-extrabold">
+                            1 {it.unit} = {it.conversionRatio} {it.requestedUnit}
+                          </span>
+                        </div>
+                        {(() => {
+                          const ratio = Number(it.conversionRatio) > 0 ? Number(it.conversionRatio) : 1;
+                          const wholePacks = Math.floor(it.quantity / ratio);
+                          const loosePieces = it.quantity % ratio;
+                          const openRemainder = it.stockLots?.find((l: any) => (l.openPackRemainder || 0) > 0)?.openPackRemainder || 0;
+
+                          return (
+                            <div className="pl-5 space-y-0.5 text-slate-700 dark:text-slate-300">
+                              {wholePacks > 0 && (
+                                <div className="flex items-center gap-1">
+                                  <span>• จ่ายแพ็คเต็ม:</span>
+                                  <strong className="text-teal-900 dark:text-teal-100">{wholePacks} {it.unit}</strong>
+                                  <span className="text-slate-500 dark:text-slate-400">({wholePacks * ratio} {it.requestedUnit})</span>
+                                </div>
+                              )}
+                              {loosePieces > 0 && (
+                                <div className="flex items-center gap-1">
+                                  <span>• เศษที่ต้องจ่าย ({loosePieces} {it.requestedUnit}):</span>
+                                  {openRemainder >= loosePieces ? (
+                                    <span className="text-emerald-700 dark:text-emerald-300 font-semibold">
+                                      หยิบจากแพ็คเปิดเดิม {loosePieces} {it.requestedUnit} (เหลือเศษในแพ็คอีก {openRemainder - loosePieces} {it.requestedUnit})
+                                    </span>
+                                  ) : (
+                                    <span className="text-amber-800 dark:text-amber-300 font-semibold">
+                                      เปิดแพ็คใหม่ 1 {it.unit} → จ่าย {loosePieces} {it.requestedUnit} (เก็บเศษ {ratio - loosePieces} {it.requestedUnit} ไว้ในแพ็คเปิด)
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
 
                     {/* Consumable Recommended FIFO Lot */}
                     {it.allowed && it.stockLots && it.stockLots.length > 0 && (

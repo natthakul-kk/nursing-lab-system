@@ -159,56 +159,104 @@ export async function POST(req: Request) {
           : itemRecord.stockLots;
 
         const totalStockRemaining = validLots.reduce((sum: number, lot: any) => sum + lot.quantityRemaining, 0);
+        const totalOpenRemainder = validLots.reduce((sum: number, lot: any) => sum + (lot.openPackRemainder || 0), 0);
+        const ratio = Number(itemRecord.conversionRatio) > 0 ? Number(itemRecord.conversionRatio) : 1;
         const reservedReq = pendingReqMap.get(it.itemId) || 0;
         const availableStock = Math.max(0, totalStockRemaining - reservedReq);
-
-        if (useTarget === 'HUMAN' && totalStockRemaining <= 0) {
-          return NextResponse.json(
-            {
-              error: `ไม่สามารถขอเบิกสำหรับใช้กับคนจริงได้: วัสดุ "${itemRecord.name}" ไม่มีสต็อกที่ยังไม่หมดอายุคงเหลือในคลัง (พบเฉพาะสต็อกหมดอายุที่อนุญาตให้ใช้ฝึกกับหุ่นเท่านั้น)`,
-            },
-            { status: 400 }
-          );
-        }
-
-        if (availableStock <= 0) {
-          return NextResponse.json(
-            {
-              error: useTarget === 'HUMAN'
-                ? `ไม่สามารถขอเบิกสำหรับใช้กับคนจริงได้: วัสดุ "${itemRecord.name}" มีสต็อกที่ยังไม่หมดอายุคงเหลือ 0 ${itemRecord.unit}`
-                : `ไม่สามารถขอเบิกได้: วัสดุ "${itemRecord.name}" มีคงคลัง ${totalStockRemaining} ${itemRecord.unit} แต่มีคำขอรอจ่ายอยู่ ${reservedReq} ${itemRecord.unit} (คงเหลือพร้อมให้ขอได้ 0 ${itemRecord.unit})`,
-            },
-            { status: 400 }
-          );
-        }
-        if (qty > availableStock) {
-          return NextResponse.json(
-            {
-              error: useTarget === 'HUMAN'
-                ? `ไม่สามารถขอเบิกเกินจำนวนที่ยังไม่หมดอายุได้: วัสดุ "${itemRecord.name}" มีสต็อกยังไม่หมดอายุพร้อมใช้เพียง ${availableStock} ${itemRecord.unit} (ท่านระบุ ${qty})`
-                : `ไม่สามารถขอเบิกเกินสต็อกพร้อมใช้ได้: วัสดุ "${itemRecord.name}" มีในคลัง ${totalStockRemaining} ${itemRecord.unit} (มีคำขอรอจ่ายค้างอยู่ ${reservedReq} ${itemRecord.unit}) จึงพร้อมให้ขอได้เพียง ${availableStock} ${itemRecord.unit} (ท่านระบุ ${qty})`,
-            },
-            { status: 400 }
-          );
-        }
+        const totalAvailablePieces = (availableStock * ratio) + totalOpenRemainder;
+        const isSub = it.isSubUnit === true;
 
         const latestLot = itemRecord.stockLots[0];
-        const unitCost = latestLot?.unitCost || 0;
-        const itemTotal = qty * unitCost;
-        estimatedReqTotalCost += itemTotal;
+        const wholeUnitCost = latestLot?.unitCost || 0;
 
-        reqItemsToCreate.push({
-          itemId: it.itemId,
-          quantityRequested: qty,
-          unitCost,
-          totalCost: itemTotal,
-        });
+        if (isSub) {
+          const subUnitName = it.requestedUnit || itemRecord.usageUnit || 'ชิ้น';
+          if (totalAvailablePieces <= 0) {
+            return NextResponse.json(
+              {
+                error: useTarget === 'HUMAN'
+                  ? `ไม่สามารถขอเบิกสำหรับใช้กับคนจริงได้: วัสดุ "${itemRecord.name}" ไม่มีสต็อกที่ยังไม่หมดอายุคงเหลือในคลัง`
+                  : `ไม่สามารถขอเบิกได้: วัสดุ "${itemRecord.name}" ไม่มีสต็อกพร้อมเบิกในระบบ`,
+              },
+              { status: 400 }
+            );
+          }
+          if (qty > totalAvailablePieces) {
+            return NextResponse.json(
+              {
+                error: `ไม่สามารถขอเบิกเกินสต็อกพร้อมใช้ได้: วัสดุ "${itemRecord.name}" มีพร้อมเบิก ${totalAvailablePieces} ${subUnitName} (${availableStock} ${itemRecord.unit} + เศษเปิด ${totalOpenRemainder} ${subUnitName}) (ท่านระบุ ${qty} ${subUnitName})`,
+              },
+              { status: 400 }
+            );
+          }
 
-        reqSummaryList.push({
-          name: itemRecord.name,
-          quantity: qty,
-          unit: itemRecord.unit || 'หน่วย',
-        });
+          const subUnitCost = ratio > 0 ? wholeUnitCost / ratio : wholeUnitCost;
+          const itemTotal = qty * subUnitCost;
+          estimatedReqTotalCost += itemTotal;
+
+          reqItemsToCreate.push({
+            itemId: it.itemId,
+            quantityRequested: qty,
+            requestedUnit: subUnitName,
+            isSubUnit: true,
+            unitCost: subUnitCost,
+            totalCost: itemTotal,
+          });
+
+          reqSummaryList.push({
+            name: itemRecord.name,
+            quantity: qty,
+            unit: subUnitName,
+          });
+        } else {
+          if (useTarget === 'HUMAN' && totalStockRemaining <= 0) {
+            return NextResponse.json(
+              {
+                error: `ไม่สามารถขอเบิกสำหรับใช้กับคนจริงได้: วัสดุ "${itemRecord.name}" ไม่มีสต็อกที่ยังไม่หมดอายุคงเหลือในคลัง (พบเฉพาะสต็อกหมดอายุที่อนุญาตให้ใช้ฝึกกับหุ่นเท่านั้น)`,
+              },
+              { status: 400 }
+            );
+          }
+
+          if (availableStock <= 0) {
+            return NextResponse.json(
+              {
+                error: useTarget === 'HUMAN'
+                  ? `ไม่สามารถขอเบิกสำหรับใช้กับคนจริงได้: วัสดุ "${itemRecord.name}" มีสต็อกที่ยังไม่หมดอายุคงเหลือ 0 ${itemRecord.unit}`
+                  : `ไม่สามารถขอเบิกได้: วัสดุ "${itemRecord.name}" มีคงคลัง ${totalStockRemaining} ${itemRecord.unit} แต่มีคำขอรอจ่ายอยู่ ${reservedReq} ${itemRecord.unit} (คงเหลือพร้อมให้ขอได้ 0 ${itemRecord.unit})`,
+              },
+              { status: 400 }
+            );
+          }
+          if (qty > availableStock) {
+            return NextResponse.json(
+              {
+                error: useTarget === 'HUMAN'
+                  ? `ไม่สามารถขอเบิกเกินจำนวนที่ยังไม่หมดอายุได้: วัสดุ "${itemRecord.name}" มีสต็อกยังไม่หมดอายุพร้อมใช้เพียง ${availableStock} ${itemRecord.unit} (ท่านระบุ ${qty})`
+                  : `ไม่สามารถขอเบิกเกินสต็อกพร้อมใช้ได้: วัสดุ "${itemRecord.name}" มีในคลัง ${totalStockRemaining} ${itemRecord.unit} (มีคำขอรอจ่ายค้างอยู่ ${reservedReq} ${itemRecord.unit}) จึงพร้อมให้ขอได้เพียง ${availableStock} ${itemRecord.unit} (ท่านระบุ ${qty})`,
+              },
+              { status: 400 }
+            );
+          }
+
+          const itemTotal = qty * wholeUnitCost;
+          estimatedReqTotalCost += itemTotal;
+
+          reqItemsToCreate.push({
+            itemId: it.itemId,
+            quantityRequested: qty,
+            requestedUnit: it.requestedUnit || itemRecord.unit,
+            isSubUnit: false,
+            unitCost: wholeUnitCost,
+            totalCost: itemTotal,
+          });
+
+          reqSummaryList.push({
+            name: itemRecord.name,
+            quantity: qty,
+            unit: it.requestedUnit || itemRecord.unit || 'หน่วย',
+          });
+        }
       }
     }
 

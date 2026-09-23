@@ -98,13 +98,19 @@ export async function POST(req: Request) {
 
     for (const it of items) {
       const qty = Number(it.quantity) || 1;
+      const isSub = it.isSubUnit === true;
 
       // Verify item existence and remaining stock across lots
       const itemRecord = await prisma.item.findUnique({
         where: { id: it.itemId },
         include: {
           stockLots: {
-            where: { quantityRemaining: { gt: 0 } },
+            where: {
+              OR: [
+                { quantityRemaining: { gt: 0 } },
+                { openPackRemainder: { gt: 0 } },
+              ],
+            },
             orderBy: [
               { expiryDate: 'asc' },
               { receivedDate: 'asc' },
@@ -119,6 +125,8 @@ export async function POST(req: Request) {
       }
 
       const totalStockRemaining = itemRecord.stockLots.reduce((sum, lot) => sum + lot.quantityRemaining, 0);
+      const totalOpenRemainder = itemRecord.stockLots.reduce((sum, lot) => sum + (lot.openPackRemainder || 0), 0);
+      const ratio = Number(itemRecord.conversionRatio) > 0 ? Number(itemRecord.conversionRatio) : 1;
 
       // Check active reservations (PENDING & APPROVED) to calculate availableStock
       const pendingReq = await prisma.requisitionItem.aggregate({
@@ -129,37 +137,75 @@ export async function POST(req: Request) {
         _sum: { quantityRequested: true },
       });
       const reservedReq = pendingReq._sum.quantityRequested || 0;
-      const availableStock = Math.max(0, totalStockRemaining - reservedReq);
-
-      if (availableStock <= 0) {
-        return NextResponse.json(
-          {
-            error: `ไม่สามารถขอเบิกได้: วัสดุ "${itemRecord.name}" มีในคลัง ${totalStockRemaining} ${itemRecord.unit} แต่มีคำขอรอจ่ายอยู่ ${reservedReq} ${itemRecord.unit} (คงเหลือพร้อมให้ขอได้ 0 ${itemRecord.unit})`,
-          },
-          { status: 400 }
-        );
-      }
-
-      if (qty > availableStock) {
-        return NextResponse.json(
-          {
-            error: `ไม่สามารถขอเบิกเกินสต็อกพร้อมใช้ได้: วัสดุ "${itemRecord.name}" มีในคลัง ${totalStockRemaining} ${itemRecord.unit} (มีคำขอรอจ่ายค้างอยู่ ${reservedReq} ${itemRecord.unit}) จึงพร้อมให้ขอได้เพียง ${availableStock} ${itemRecord.unit} (ท่านระบุ ${qty})`,
-          },
-          { status: 400 }
-        );
-      }
+      const availableWholeStock = Math.max(0, totalStockRemaining - reservedReq);
+      const totalAvailablePieces = (availableWholeStock * ratio) + totalOpenRemainder;
 
       const latestLot = itemRecord.stockLots[0];
-      const unitCost = latestLot?.unitCost || 0;
-      const itemTotal = qty * unitCost;
-      estimatedTotalCost += itemTotal;
+      const wholeUnitCost = latestLot?.unitCost || 0;
 
-      itemsToCreate.push({
-        itemId: it.itemId,
-        quantityRequested: qty,
-        unitCost,
-        totalCost: itemTotal,
-      });
+      if (isSub) {
+        // Sub-unit validation (เช่น อัน/ชิ้น)
+        const subUnitName = it.requestedUnit || itemRecord.usageUnit || 'ชิ้น';
+        if (totalAvailablePieces <= 0) {
+          return NextResponse.json(
+            {
+              error: `ไม่สามารถขอเบิกได้: วัสดุ "${itemRecord.name}" ไม่มีสต็อกพร้อมเบิกในระบบ`,
+            },
+            { status: 400 }
+          );
+        }
+        if (qty > totalAvailablePieces) {
+          return NextResponse.json(
+            {
+              error: `ไม่สามารถขอเบิกเกินสต็อกพร้อมใช้ได้: วัสดุ "${itemRecord.name}" มีพร้อมเบิก ${totalAvailablePieces} ${subUnitName} (${availableWholeStock} ${itemRecord.unit} + เศษเปิด ${totalOpenRemainder} ${subUnitName}) (ท่านระบุ ${qty} ${subUnitName})`,
+            },
+            { status: 400 }
+          );
+        }
+
+        const subUnitCost = ratio > 0 ? wholeUnitCost / ratio : wholeUnitCost;
+        const itemTotal = qty * subUnitCost;
+        estimatedTotalCost += itemTotal;
+
+        itemsToCreate.push({
+          itemId: it.itemId,
+          quantityRequested: qty,
+          requestedUnit: subUnitName,
+          isSubUnit: true,
+          unitCost: subUnitCost,
+          totalCost: itemTotal,
+        });
+      } else {
+        // Whole pack validation (เช่น แพ็ค/กล่อง)
+        if (availableWholeStock <= 0) {
+          return NextResponse.json(
+            {
+              error: `ไม่สามารถขอเบิกได้: วัสดุ "${itemRecord.name}" มีในคลัง ${totalStockRemaining} ${itemRecord.unit} แต่มีคำขอรอจ่ายอยู่ ${reservedReq} ${itemRecord.unit} (คงเหลือพร้อมให้ขอได้ 0 ${itemRecord.unit})`,
+            },
+            { status: 400 }
+          );
+        }
+        if (qty > availableWholeStock) {
+          return NextResponse.json(
+            {
+              error: `ไม่สามารถขอเบิกเกินสต็อกพร้อมใช้ได้: วัสดุ "${itemRecord.name}" มีในคลัง ${totalStockRemaining} ${itemRecord.unit} (มีคำขอรอจ่ายค้างอยู่ ${reservedReq} ${itemRecord.unit}) จึงพร้อมให้ขอได้เพียง ${availableWholeStock} ${itemRecord.unit} (ท่านระบุ ${qty})`,
+            },
+            { status: 400 }
+          );
+        }
+
+        const itemTotal = qty * wholeUnitCost;
+        estimatedTotalCost += itemTotal;
+
+        itemsToCreate.push({
+          itemId: it.itemId,
+          quantityRequested: qty,
+          requestedUnit: it.requestedUnit || itemRecord.unit,
+          isSubUnit: false,
+          unitCost: wholeUnitCost,
+          totalCost: itemTotal,
+        });
+      }
     }
 
     // Find course instructor name if not provided

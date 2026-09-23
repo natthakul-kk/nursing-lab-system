@@ -15,5 +15,22 @@ export function urlBase64ToUint8Array(base64String: string) {
 
 export function isPushNotificationSupported(): boolean {
   if (typeof window === 'undefined') return false;
-  return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+  try {
+    return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+  } catch {
+    return false;
+  }
 }
+
+export function getNotificationPermission(): NotificationPermission | 'unsupported' {
+  if (typeof window === 'undefined') return 'unsupported';
+  try {
+    if (!('Notification' in window) || !window.Notification) {
+      return 'unsupported';
+    }
+    return window.Notification.permission;
+  } catch {
+    return 'unsupported';
+  }
+}
+

@@ -7,7 +7,25 @@ import {
   VAPID_PUBLIC_KEY,
   urlBase64ToUint8Array,
   isPushNotificationSupported,
+  getNotificationPermission,
 } from '@/lib/webpush-client';
+
+function safeGetItem(key: string): string | null {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      return localStorage.getItem(key);
+    }
+  } catch {}
+  return null;
+}
+
+function safeSetItem(key: string, value: string): void {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem(key, value);
+    }
+  } catch {}
+}
 
 export default function PushNotificationManager() {
   const { currentUser } = useAuth();
@@ -19,20 +37,22 @@ export default function PushNotificationManager() {
   useEffect(() => {
     if (typeof window === 'undefined' || !currentUser) return;
 
-    const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+    const supported = isPushNotificationSupported();
     setIsSupported(supported);
 
     if (!supported) return;
 
-    // Pre-register service worker in background
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});
-    }
+    // Pre-register service worker in background safely
+    try {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});
+      }
+    } catch {}
 
-    // Check notification permission
-    const permission = Notification.permission;
+    // Check notification permission safely
+    const permission = getNotificationPermission();
 
-    // If permission already granted, auto-sync subscription with backend in background
+    // If permission already granted, auto-sync existing subscription with backend in background
     if (permission === 'granted') {
       syncSubscriptionInBackground();
       return;
@@ -40,13 +60,13 @@ export default function PushNotificationManager() {
 
     // If permission is default and user hasn't dismissed yet, show one-time banner
     if (permission === 'default') {
-      const dismissed = localStorage.getItem('push_prompt_dismissed');
-      const setupDone = localStorage.getItem('push_prompt_setup_done');
+      const dismissed = safeGetItem('push_prompt_dismissed');
+      const setupDone = safeGetItem('push_prompt_setup_done');
 
       if (!dismissed && !setupDone) {
         const timer = setTimeout(() => {
           setShowBanner(true);
-        }, 600);
+        }, 800);
         return () => clearTimeout(timer);
       }
     }
@@ -54,16 +74,9 @@ export default function PushNotificationManager() {
 
   const syncSubscriptionInBackground = async () => {
     try {
-      const reg = await navigator.serviceWorker.register('/sw.js');
-      await navigator.serviceWorker.ready;
-
-      let sub = await reg.pushManager.getSubscription();
-      if (!sub) {
-        sub = await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-        });
-      }
+      if (!isPushNotificationSupported()) return;
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
 
       if (sub && currentUser?.id) {
         await fetch('/api/notifications/push/subscribe', {
@@ -85,7 +98,10 @@ export default function PushNotificationManager() {
     if (!currentUser?.id) return;
     setLoading(true);
     try {
-      const permission = await Notification.requestPermission();
+      if (typeof window === 'undefined' || !('Notification' in window) || !window.Notification) {
+        throw new Error('เบราว์เซอร์นี้ไม่รองรับการแจ้งเตือน');
+      }
+      const permission = await window.Notification.requestPermission();
       if (permission === 'granted') {
         const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
         await navigator.serviceWorker.ready;
@@ -110,18 +126,18 @@ export default function PushNotificationManager() {
           throw new Error(errData.error || 'Failed to save subscription');
         }
 
-        localStorage.setItem('push_prompt_setup_done', 'true');
+        safeSetItem('push_prompt_setup_done', 'true');
         setIsSuccess(true);
         setTimeout(() => {
           setShowBanner(false);
         }, 2500);
       } else {
-        localStorage.setItem('push_prompt_dismissed', 'true');
+        safeSetItem('push_prompt_dismissed', 'true');
         setShowBanner(false);
       }
     } catch (err) {
       console.error('[Push] Setup failed:', err);
-      localStorage.setItem('push_prompt_dismissed', 'true');
+      safeSetItem('push_prompt_dismissed', 'true');
       setShowBanner(false);
     } finally {
       setLoading(false);
@@ -129,7 +145,7 @@ export default function PushNotificationManager() {
   };
 
   const handleDismiss = () => {
-    localStorage.setItem('push_prompt_dismissed', 'true');
+    safeSetItem('push_prompt_dismissed', 'true');
     setShowBanner(false);
   };
 

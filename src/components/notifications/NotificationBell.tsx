@@ -24,6 +24,7 @@ import {
   VAPID_PUBLIC_KEY,
   urlBase64ToUint8Array,
   isPushNotificationSupported,
+  getNotificationPermission,
 } from '@/lib/webpush-client';
 
 interface NotificationItem {
@@ -80,14 +81,22 @@ export default function NotificationBell() {
       setPushStatus('UNSUPPORTED');
       return;
     }
-    if (Notification.permission === 'denied') {
+    const perm = getNotificationPermission();
+    if (perm === 'unsupported') {
+      setPushStatus('UNSUPPORTED');
+      return;
+    }
+    if (perm === 'denied') {
       setPushStatus('BLOCKED');
       return;
     }
     try {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});
+      }
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.getSubscription();
-      if (sub && Notification.permission === 'granted') {
+      if (sub && perm === 'granted') {
         setPushStatus('ENABLED');
         if (currentUser?.id) {
           fetch('/api/notifications/push/subscribe', {
@@ -104,7 +113,7 @@ export default function NotificationBell() {
         setPushStatus('DISABLED');
       }
     } catch {
-      setPushStatus(Notification.permission === 'granted' ? 'ENABLED' : 'DISABLED');
+      setPushStatus(perm === 'granted' ? 'ENABLED' : 'DISABLED');
     }
   };
 
@@ -120,7 +129,10 @@ export default function NotificationBell() {
     setIsSubscribingPush(true);
     setPushFeedback(null);
     try {
-      const permission = await Notification.requestPermission();
+      if (typeof window === 'undefined' || !('Notification' in window) || !window.Notification) {
+        throw new Error('เบราว์เซอร์นี้ไม่รองรับการแจ้งเตือน');
+      }
+      const permission = await window.Notification.requestPermission();
       if (permission === 'granted') {
         const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
         await navigator.serviceWorker.ready;
@@ -141,7 +153,11 @@ export default function NotificationBell() {
           const errData = await res.json().catch(() => ({}));
           throw new Error(errData.error || 'บันทึกอุปกรณ์ไม่สำเร็จ');
         }
-        localStorage.setItem('push_prompt_setup_done', 'true');
+        try {
+          if (typeof window !== 'undefined' && window.localStorage) {
+            localStorage.setItem('push_prompt_setup_done', 'true');
+          }
+        } catch {}
         setPushStatus('ENABLED');
         setPushFeedback({ success: true, message: 'เปิดรับแจ้งเตือนบนอุปกรณ์นี้สำเร็จแล้ว ✅' });
       } else if (permission === 'denied') {

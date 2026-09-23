@@ -30,6 +30,7 @@ import {
   VAPID_PUBLIC_KEY,
   urlBase64ToUint8Array,
   isPushNotificationSupported,
+  getNotificationPermission,
 } from '@/lib/webpush-client';
 
 interface ProfileModalProps {
@@ -72,6 +73,11 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   const [emailOtpSentTo, setEmailOtpSentTo] = useState('');
   const [emailDevOtp, setEmailDevOtp] = useState<string | null>(null);
 
+  // Push Notification state
+  const [pushStatus, setPushStatus] = useState<'LOADING' | 'ENABLED' | 'DISABLED' | 'BLOCKED' | 'UNSUPPORTED'>('LOADING');
+  const [isPushWorking, setIsPushWorking] = useState(false);
+  const [isTestingPush, setIsTestingPush] = useState(false);
+  const [pushTestFeedback, setPushTestFeedback] = useState<{ success: boolean; message: string } | null>(null);
 
   useEffect(() => {
     if (currentUser) {
@@ -97,8 +103,6 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
       setEmailDevOtp(null);
     }
   }, [currentUser, isOpen]);
-
-  if (!isOpen || !currentUser) return null;
 
   // Request Email Change OTP
   const handleRequestEmailOtp = async (targetEmail: string) => {
@@ -237,6 +241,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   // Handle Password Change
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!currentUser?.id) return;
     setSuccessMsg(null);
     setErrorMsg(null);
 
@@ -288,12 +293,6 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     }
   };
 
-  // Push Notification state
-  const [pushStatus, setPushStatus] = useState<'LOADING' | 'ENABLED' | 'DISABLED' | 'BLOCKED' | 'UNSUPPORTED'>('LOADING');
-  const [isPushWorking, setIsPushWorking] = useState(false);
-  const [isTestingPush, setIsTestingPush] = useState(false);
-  const [pushTestFeedback, setPushTestFeedback] = useState<{ success: boolean; message: string } | null>(null);
-
   const checkPushSubscription = async () => {
     if (typeof window === 'undefined') return;
     if (!isPushNotificationSupported()) {
@@ -301,15 +300,23 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
       return;
     }
 
-    if (Notification.permission === 'denied') {
+    const perm = getNotificationPermission();
+    if (perm === 'unsupported') {
+      setPushStatus('UNSUPPORTED');
+      return;
+    }
+    if (perm === 'denied') {
       setPushStatus('BLOCKED');
       return;
     }
 
     try {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});
+      }
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.getSubscription();
-      if (sub && Notification.permission === 'granted') {
+      if (sub && perm === 'granted') {
         setPushStatus('ENABLED');
         if (currentUser?.id) {
           fetch('/api/notifications/push/subscribe', {
@@ -326,16 +333,16 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         setPushStatus('DISABLED');
       }
     } catch {
-      setPushStatus(Notification.permission === 'granted' ? 'ENABLED' : 'DISABLED');
+      setPushStatus(perm === 'granted' ? 'ENABLED' : 'DISABLED');
     }
   };
 
   useEffect(() => {
-    if (activeTab === 'NOTIFICATIONS') {
+    if (isOpen && activeTab === 'NOTIFICATIONS') {
       checkPushSubscription();
       setPushTestFeedback(null);
     }
-  }, [activeTab]);
+  }, [activeTab, isOpen]);
 
   const handleEnablePush = async () => {
     if (!currentUser?.id) return;
@@ -343,7 +350,10 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     setErrorMsg(null);
     setSuccessMsg(null);
     try {
-      const permission = await Notification.requestPermission();
+      if (typeof window === 'undefined' || !('Notification' in window) || !window.Notification) {
+        throw new Error('เบราว์เซอร์นี้ไม่รองรับการแจ้งเตือน');
+      }
+      const permission = await window.Notification.requestPermission();
       if (permission === 'granted') {
         const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
         await navigator.serviceWorker.ready;
@@ -364,7 +374,11 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
           const errData = await res.json().catch(() => ({}));
           throw new Error(errData.error || 'บันทึกอุปกรณ์ไม่สำเร็จ');
         }
-        localStorage.setItem('push_prompt_setup_done', 'true');
+        try {
+          if (typeof window !== 'undefined' && window.localStorage) {
+            localStorage.setItem('push_prompt_setup_done', 'true');
+          }
+        } catch {}
         setPushStatus('ENABLED');
         setSuccessMsg('เปิดรับการแจ้งเตือนบนอุปกรณ์นี้เรียบร้อยแล้ว ✅');
       } else if (permission === 'denied') {
@@ -424,6 +438,8 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
       setIsTestingPush(false);
     }
   };
+
+  if (!isOpen || !currentUser) return null;
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4">

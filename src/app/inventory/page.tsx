@@ -1311,15 +1311,17 @@ export default function InventoryPage() {
                               {item.code}
                             </span>
                             {item.type === 'CONSUMABLE' && (
-                              item.code.startsWith('RP-') || item.unit === 'ซอง' ? (
-                                <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-300 flex items-center gap-1">
+                              item.code.startsWith('RP-') ? (
+                                <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 dark:bg-emerald-950/60 dark:text-emerald-300 px-2 py-0.5 rounded-md border border-emerald-300 dark:border-emerald-800 flex items-center gap-1">
                                   <span>✨ ปลอดเชื้อแบ่งบรรจุ</span>
-                                  {item.usageUnit && <span>(ซองละ {item.conversionRatio || 1} {item.usageUnit})</span>}
+                                  {item.usageUnit && item.conversionRatio > 1 && item.unit !== item.usageUnit && (
+                                    <span>(ซองละ {item.conversionRatio} {item.usageUnit})</span>
+                                  )}
                                 </span>
                               ) : (
-                                item.usageUnit && (item.conversionRatio > 1 || item.unit !== item.usageUnit) ? (
-                                  <span className="text-[10px] font-bold text-teal-700 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-200">
-                                    1 {item.unit} = {item.conversionRatio || 1} {item.usageUnit}
+                                item.usageUnit && item.conversionRatio > 1 && item.unit !== item.usageUnit ? (
+                                  <span className="text-[10px] font-bold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 px-1.5 py-0.5 rounded border border-teal-200 dark:border-teal-800">
+                                    1 {item.unit} = {item.conversionRatio} {item.usageUnit}
                                   </span>
                                 ) : null
                               )

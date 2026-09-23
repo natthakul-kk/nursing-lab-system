@@ -3531,11 +3531,11 @@ export default function InventoryPage() {
                     }
                     className="w-full font-mono uppercase bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-teal-700 dark:text-teal-400 focus:ring-2 focus:ring-teal-500"
                   />
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
-                    {categoryForm.type === 'EQUIPMENT'
-                      ? 'จำเป็นสำหรับครุภัณฑ์ (นำหน้ารหัส EQ-...)'
-                      : 'วัสดุสิ้นเปลืองปล่อยว่างได้ (ระบบมี Fallback อัตโนมัติ)'}
-                  </p>
+                  {categoryForm.type === 'EQUIPMENT' && (
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      จำเป็นสำหรับครุภัณฑ์ (นำหน้ารหัส EQ-...)
+                    </p>
+                  )}
                 </div>
 
                 <div className="sm:col-span-2">

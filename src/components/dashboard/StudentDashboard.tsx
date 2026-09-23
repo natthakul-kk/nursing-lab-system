@@ -410,7 +410,7 @@ export default function StudentDashboard() {
                               จำนวน {itemRow.quantity} {itemRow.item?.unit || 'เครื่อง'}
                             </span>
                             {itemRow.asset && (
-                              <span className="text-[10px] font-mono font-semibold text-teal-700 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-200">
+                              <span className="text-[10px] font-mono font-semibold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-slate-800 px-2 py-0.5 rounded-md border border-teal-200 dark:border-slate-700">
                                 รหัส: {itemRow.asset.assetCode} ({itemRow.item?.unit || 'ชิ้น'}ที่ {itemRow.asset.sequenceNumber || 1})
                               </span>
                             )}

@@ -1402,14 +1402,14 @@ export default function InventoryPage() {
                               )}
                               {item.openPackRemainder > 0 && (
                                 <div className="mt-0.5">
-                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 font-bold text-[10px] border border-purple-200">
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 font-bold text-[10px] border border-purple-200 dark:border-purple-800/80">
                                     🔓 เศษเปิด {item.openPackRemainder} {item.usageUnit || 'ชิ้น'}
                                   </span>
                                 </div>
                               )}
                               {item.isLowStock && (
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-rose-50 text-rose-600 font-bold text-[10px]">
-                                  <AlertTriangle className="w-2.5 h-2.5" /> ต่ำกว่าเกณฑ์ ({item.minStockAlert})
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 font-bold text-[10px] border border-rose-200 dark:border-rose-900/60 mt-0.5">
+                                  <AlertTriangle className="w-2.5 h-2.5" /> ต่ำกว่าเกณฑ์ ({item.minStockAlert} {item.conversionRatio > 1 && item.minStockAlert > item.conversionRatio ? (item.usageUnit || item.unit) : item.unit})
                                 </span>
                               )}
                             </div>

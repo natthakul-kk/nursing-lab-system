@@ -21,14 +21,20 @@ export async function GET(req: Request) {
 
     // Fetch active reservations concurrently to calculate real available stock
     const [pendingReqItems, pendingBorrowItems] = await Promise.all([
-      prisma.requisitionItem.groupBy({
-        by: ['itemId'],
+      prisma.requisitionItem.findMany({
         where: {
           requisitionRequest: {
             status: { in: ['PENDING', 'APPROVED'] },
           },
         },
-        _sum: { quantityRequested: true },
+        select: {
+          itemId: true,
+          quantityRequested: true,
+          isSubUnit: true,
+          item: {
+            select: { conversionRatio: true },
+          },
+        },
       }),
       prisma.borrowItem.groupBy({
         by: ['itemId'],
@@ -41,9 +47,13 @@ export async function GET(req: Request) {
       }),
     ]);
 
-    const reservedReqMap = new Map(
-      pendingReqItems.map((r) => [r.itemId, r._sum.quantityRequested || 0])
-    );
+    const reservedPiecesMap = new Map<string, number>();
+    for (const r of pendingReqItems) {
+      const ratio = Number(r.item?.conversionRatio) > 0 ? Number(r.item.conversionRatio) : 1;
+      const pieces = r.isSubUnit ? r.quantityRequested : r.quantityRequested * ratio;
+      reservedPiecesMap.set(r.itemId, (reservedPiecesMap.get(r.itemId) || 0) + pieces);
+    }
+
     const reservedBorrowMap = new Map(
       pendingBorrowItems.map((b) => [b.itemId, b._sum.quantity || 0])
     );
@@ -123,22 +133,36 @@ export async function GET(req: Request) {
       });
 
       const formatted = items.map((item) => {
+        const ratio = Number(item.conversionRatio) > 0 ? Number(item.conversionRatio) : 1;
         const physicalStock =
           item.type === 'EQUIPMENT'
             ? item.assets.length
             : item.stockLots.reduce((sum, lot) => sum + lot.quantityRemaining, 0);
 
-        const reservedStock =
-          item.type === 'EQUIPMENT'
-            ? (reservedBorrowMap.get(item.id) || 0)
-            : (reservedReqMap.get(item.id) || 0);
+        let availableStock = 0;
+        let reservedStock = 0;
+        let openPackRemainder = 0;
+        let totalPiecesRemaining = 0;
 
-        const availableStock = Math.max(0, physicalStock - reservedStock);
+        if (item.type === 'EQUIPMENT') {
+          reservedStock = reservedBorrowMap.get(item.id) || 0;
+          availableStock = Math.max(0, physicalStock - reservedStock);
+        } else {
+          const totalPhysicalPieces = item.stockLots.reduce((sum, lot) => {
+            return sum + (lot.quantityRemaining * ratio) + (lot.openPackRemainder || 0);
+          }, 0);
+          const reservedPieces = reservedPiecesMap.get(item.id) || 0;
+          const availablePieces = Math.max(0, totalPhysicalPieces - reservedPieces);
+          availableStock = ratio > 1 ? Math.floor(availablePieces / ratio) : Math.max(0, physicalStock - Math.ceil(reservedPieces / ratio));
+          openPackRemainder = ratio > 1 ? (availablePieces % ratio) : 0;
+          totalPiecesRemaining = availablePieces;
+          reservedStock = Math.ceil(reservedPieces / ratio);
+        }
 
-        const openPackRemainder =
-          item.type === 'CONSUMABLE'
-            ? item.stockLots.reduce((sum, lot) => sum + (lot.openPackRemainder || 0), 0)
-            : 0;
+        const isLowStock =
+          item.type === 'CONSUMABLE' && ratio > 1 && item.minStockAlert > ratio
+            ? totalPiecesRemaining <= item.minStockAlert
+            : availableStock <= item.minStockAlert;
 
         return {
           id: item.id,
@@ -164,7 +188,8 @@ export async function GET(req: Request) {
           availableStock,
           currentStock: availableStock, // Guarantees all selectors and stock checks validate against available stock
           openPackRemainder,
-          isLowStock: availableStock <= item.minStockAlert,
+          totalPiecesRemaining,
+          isLowStock,
           availableAssets: item.type === 'EQUIPMENT' ? (item.assets || []).filter((a: any) => a.isBorrowable !== false) : [],
           nextRecommendedPacks:
             item.type === 'CONSUMABLE' && (item as any).targetRepacks?.[0]?.packItems?.length > 0
@@ -215,40 +240,48 @@ export async function GET(req: Request) {
     });
 
     const formatted = items.map((item) => {
+      const ratio = Number(item.conversionRatio) > 0 ? Number(item.conversionRatio) : 1;
       const physicalStock =
         item.type === 'EQUIPMENT'
           ? item.assets.filter((a) => a.status === 'AVAILABLE').length
           : item.stockLots.reduce((sum, lot) => sum + lot.quantityRemaining, 0);
-
-      const reservedStock =
-        item.type === 'EQUIPMENT'
-          ? (reservedBorrowMap.get(item.id) || 0)
-          : (reservedReqMap.get(item.id) || 0);
-
-      const availableStock = Math.max(0, physicalStock - reservedStock);
 
       const totalQuantity =
         item.type === 'EQUIPMENT'
           ? item.assets.length
           : item.stockLots.reduce((sum, lot) => sum + lot.quantityRemaining, 0);
 
-      const openPackRemainder =
-        item.type === 'CONSUMABLE'
-          ? item.stockLots.reduce((sum, lot) => sum + (lot.openPackRemainder || 0), 0)
-          : 0;
+      let availableStock = 0;
+      let reservedStock = 0;
+      let openPackRemainder = 0;
+      let totalPiecesRemaining = 0;
 
-      const totalPiecesRemaining =
-        item.type === 'CONSUMABLE'
-          ? item.stockLots.reduce((sum, lot) => {
-              const pSize = Number(lot.packSize) > 0 ? Number(lot.packSize) : (Number(item.conversionRatio) || 1);
-              const pPieces = lot.quantityRemaining > 0
-                ? (typeof lot.piecesRemaining === 'number' && lot.piecesRemaining <= lot.quantityRemaining * pSize
-                    ? lot.piecesRemaining
-                    : lot.quantityRemaining * pSize)
-                : 0;
-              return sum + pPieces + (lot.openPackRemainder || 0);
-            }, 0)
-          : 0;
+      if (item.type === 'EQUIPMENT') {
+        reservedStock = reservedBorrowMap.get(item.id) || 0;
+        availableStock = Math.max(0, physicalStock - reservedStock);
+      } else {
+        const totalPhysicalPieces = item.stockLots.reduce((sum, lot) => {
+          const pSize = Number(lot.packSize) > 0 ? Number(lot.packSize) : ratio;
+          const pPieces = lot.quantityRemaining > 0
+            ? (typeof lot.piecesRemaining === 'number' && lot.piecesRemaining <= lot.quantityRemaining * pSize
+                ? lot.piecesRemaining
+                : lot.quantityRemaining * pSize)
+            : 0;
+          return sum + pPieces + (lot.openPackRemainder || 0);
+        }, 0);
+
+        const reservedPieces = reservedPiecesMap.get(item.id) || 0;
+        const availablePieces = Math.max(0, totalPhysicalPieces - reservedPieces);
+        availableStock = ratio > 1 ? Math.floor(availablePieces / ratio) : Math.max(0, physicalStock - Math.ceil(reservedPieces / ratio));
+        openPackRemainder = ratio > 1 ? (availablePieces % ratio) : item.stockLots.reduce((sum, lot) => sum + (lot.openPackRemainder || 0), 0);
+        totalPiecesRemaining = availablePieces;
+        reservedStock = Math.ceil(reservedPieces / ratio);
+      }
+
+      const isLowStock =
+        item.type === 'CONSUMABLE' && ratio > 1 && item.minStockAlert > ratio
+          ? totalPiecesRemaining <= item.minStockAlert
+          : availableStock <= item.minStockAlert;
 
       return {
         ...item,
@@ -259,7 +292,7 @@ export async function GET(req: Request) {
         openPackRemainder,
         totalPiecesRemaining,
         totalQuantity,
-        isLowStock: availableStock <= item.minStockAlert,
+        isLowStock,
       };
     });
 

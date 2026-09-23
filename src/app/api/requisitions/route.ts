@@ -129,16 +129,20 @@ export async function POST(req: Request) {
       const ratio = Number(itemRecord.conversionRatio) > 0 ? Number(itemRecord.conversionRatio) : 1;
 
       // Check active reservations (PENDING & APPROVED) to calculate availableStock
-      const pendingReq = await prisma.requisitionItem.aggregate({
+      const pendingReqList = await prisma.requisitionItem.findMany({
         where: {
           itemId: it.itemId,
           requisitionRequest: { status: { in: ['PENDING', 'APPROVED'] } },
         },
-        _sum: { quantityRequested: true },
+        select: { quantityRequested: true, isSubUnit: true },
       });
-      const reservedReq = pendingReq._sum.quantityRequested || 0;
-      const availableWholeStock = Math.max(0, totalStockRemaining - reservedReq);
-      const totalAvailablePieces = (availableWholeStock * ratio) + totalOpenRemainder;
+      const reservedPieces = pendingReqList.reduce((sum, p) => {
+        return sum + (p.isSubUnit ? p.quantityRequested : p.quantityRequested * ratio);
+      }, 0);
+
+      const totalPhysicalPieces = (totalStockRemaining * ratio) + totalOpenRemainder;
+      const totalAvailablePieces = Math.max(0, totalPhysicalPieces - reservedPieces);
+      const availableWholeStock = Math.floor(totalAvailablePieces / ratio);
 
       const latestLot = itemRecord.stockLots[0];
       const wholeUnitCost = latestLot?.unitCost || 0;
@@ -177,10 +181,11 @@ export async function POST(req: Request) {
         });
       } else {
         // Whole pack validation (เช่น แพ็ค/กล่อง)
+        const reservedPacks = Math.ceil(reservedPieces / ratio);
         if (availableWholeStock <= 0) {
           return NextResponse.json(
             {
-              error: `ไม่สามารถขอเบิกได้: วัสดุ "${itemRecord.name}" มีในคลัง ${totalStockRemaining} ${itemRecord.unit} แต่มีคำขอรอจ่ายอยู่ ${reservedReq} ${itemRecord.unit} (คงเหลือพร้อมให้ขอได้ 0 ${itemRecord.unit})`,
+              error: `ไม่สามารถขอเบิกได้: วัสดุ "${itemRecord.name}" มีในคลัง ${totalStockRemaining} ${itemRecord.unit} แต่มีคำขอรอจ่ายอยู่ ${reservedPacks} ${itemRecord.unit} (คงเหลือพร้อมให้ขอได้ 0 ${itemRecord.unit})`,
             },
             { status: 400 }
           );
@@ -188,7 +193,7 @@ export async function POST(req: Request) {
         if (qty > availableWholeStock) {
           return NextResponse.json(
             {
-              error: `ไม่สามารถขอเบิกเกินสต็อกพร้อมใช้ได้: วัสดุ "${itemRecord.name}" มีในคลัง ${totalStockRemaining} ${itemRecord.unit} (มีคำขอรอจ่ายค้างอยู่ ${reservedReq} ${itemRecord.unit}) จึงพร้อมให้ขอได้เพียง ${availableWholeStock} ${itemRecord.unit} (ท่านระบุ ${qty})`,
+              error: `ไม่สามารถขอเบิกเกินสต็อกพร้อมใช้ได้: วัสดุ "${itemRecord.name}" มีในคลัง ${totalStockRemaining} ${itemRecord.unit} (มีคำขอรอจ่ายค้างอยู่ ${reservedPacks} ${itemRecord.unit}) จึงพร้อมให้ขอได้เพียง ${availableWholeStock} ${itemRecord.unit} (ท่านระบุ ${qty})`,
             },
             { status: 400 }
           );

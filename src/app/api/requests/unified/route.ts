@@ -133,17 +133,26 @@ export async function POST(req: Request) {
             },
           },
         }),
-        prisma.requisitionItem.groupBy({
-          by: ['itemId'],
+        prisma.requisitionItem.findMany({
           where: {
             itemId: { in: reqItemIds },
             requisitionRequest: { status: { in: ['PENDING', 'APPROVED'] } },
           },
-          _sum: { quantityRequested: true },
+          select: {
+            itemId: true,
+            quantityRequested: true,
+            isSubUnit: true,
+          },
         }),
       ]);
       const reqMap = new Map(reqRecords.map((r) => [r.id, r]));
-      const pendingReqMap = new Map(pendingReqList.map((r) => [r.itemId, r._sum.quantityRequested || 0]));
+      const reservedPiecesMap = new Map<string, number>();
+      for (const p of pendingReqList) {
+        const itemRec = reqMap.get(p.itemId);
+        const ratio = Number(itemRec?.conversionRatio) > 0 ? Number(itemRec?.conversionRatio) : 1;
+        const pieces = p.isSubUnit ? p.quantityRequested : p.quantityRequested * ratio;
+        reservedPiecesMap.set(p.itemId, (reservedPiecesMap.get(p.itemId) || 0) + pieces);
+      }
 
       for (const it of validRequisitionItems) {
         const qty = Number(it.quantity) || 1;
@@ -161,9 +170,10 @@ export async function POST(req: Request) {
         const totalStockRemaining = validLots.reduce((sum: number, lot: any) => sum + lot.quantityRemaining, 0);
         const totalOpenRemainder = validLots.reduce((sum: number, lot: any) => sum + (lot.openPackRemainder || 0), 0);
         const ratio = Number(itemRecord.conversionRatio) > 0 ? Number(itemRecord.conversionRatio) : 1;
-        const reservedReq = pendingReqMap.get(it.itemId) || 0;
-        const availableStock = Math.max(0, totalStockRemaining - reservedReq);
-        const totalAvailablePieces = (availableStock * ratio) + totalOpenRemainder;
+        const totalPhysicalPieces = (totalStockRemaining * ratio) + totalOpenRemainder;
+        const reservedPieces = reservedPiecesMap.get(it.itemId) || 0;
+        const totalAvailablePieces = Math.max(0, totalPhysicalPieces - reservedPieces);
+        const availableStock = Math.floor(totalAvailablePieces / ratio);
         const isSub = it.isSubUnit === true;
 
         const latestLot = itemRecord.stockLots[0];
@@ -209,6 +219,7 @@ export async function POST(req: Request) {
             unit: subUnitName,
           });
         } else {
+          const reservedPacks = Math.ceil(reservedPieces / ratio);
           if (useTarget === 'HUMAN' && totalStockRemaining <= 0) {
             return NextResponse.json(
               {
@@ -223,7 +234,7 @@ export async function POST(req: Request) {
               {
                 error: useTarget === 'HUMAN'
                   ? `ไม่สามารถขอเบิกสำหรับใช้กับคนจริงได้: วัสดุ "${itemRecord.name}" มีสต็อกที่ยังไม่หมดอายุคงเหลือ 0 ${itemRecord.unit}`
-                  : `ไม่สามารถขอเบิกได้: วัสดุ "${itemRecord.name}" มีคงคลัง ${totalStockRemaining} ${itemRecord.unit} แต่มีคำขอรอจ่ายอยู่ ${reservedReq} ${itemRecord.unit} (คงเหลือพร้อมให้ขอได้ 0 ${itemRecord.unit})`,
+                  : `ไม่สามารถขอเบิกได้: วัสดุ "${itemRecord.name}" มีคงคลัง ${totalStockRemaining} ${itemRecord.unit} แต่มีคำขอรอจ่ายอยู่ ${reservedPacks} ${itemRecord.unit} (คงเหลือพร้อมให้ขอได้ 0 ${itemRecord.unit})`,
               },
               { status: 400 }
             );
@@ -233,7 +244,7 @@ export async function POST(req: Request) {
               {
                 error: useTarget === 'HUMAN'
                   ? `ไม่สามารถขอเบิกเกินจำนวนที่ยังไม่หมดอายุได้: วัสดุ "${itemRecord.name}" มีสต็อกยังไม่หมดอายุพร้อมใช้เพียง ${availableStock} ${itemRecord.unit} (ท่านระบุ ${qty})`
-                  : `ไม่สามารถขอเบิกเกินสต็อกพร้อมใช้ได้: วัสดุ "${itemRecord.name}" มีในคลัง ${totalStockRemaining} ${itemRecord.unit} (มีคำขอรอจ่ายค้างอยู่ ${reservedReq} ${itemRecord.unit}) จึงพร้อมให้ขอได้เพียง ${availableStock} ${itemRecord.unit} (ท่านระบุ ${qty})`,
+                  : `ไม่สามารถขอเบิกเกินสต็อกพร้อมใช้ได้: วัสดุ "${itemRecord.name}" มีในคลัง ${totalStockRemaining} ${itemRecord.unit} (มีคำขอรอจ่ายค้างอยู่ ${reservedPacks} ${itemRecord.unit}) จึงพร้อมให้ขอได้เพียง ${availableStock} ${itemRecord.unit} (ท่านระบุ ${qty})`,
               },
               { status: 400 }
             );

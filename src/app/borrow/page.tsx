@@ -776,17 +776,17 @@ export default function BorrowPage() {
                   {req.items?.map((it: any) => (
                     <div
                       key={it.id}
-                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs font-semibold text-slate-800 p-1.5 rounded-lg hover:bg-white/60 transition"
+                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs font-semibold text-slate-800 dark:text-slate-200 p-1.5 rounded-lg hover:bg-white/60 dark:hover:bg-slate-800/60 transition"
                     >
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="w-1.5 h-1.5 rounded-full bg-teal-500"></span>
-                        <span>{it.item?.name}</span>
+                        <span className="text-slate-900 dark:text-slate-100">{it.item?.name}</span>
                         {it.asset && (
-                          <span className="font-mono text-[10px] bg-slate-200 px-1.5 py-0.5 rounded text-slate-700">
+                          <span className="font-mono text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-teal-300 border border-slate-300 dark:border-slate-700 px-2 py-0.5 rounded-md font-semibold shadow-2xs">
                             Asset: {it.asset.assetCode} ({it.item?.unit || 'ชิ้น'}ที่ {it.asset.sequenceNumber || 1})
                           </span>
                         )}
-                        <span className="text-slate-500 font-normal text-[11px]">
+                        <span className="text-slate-500 dark:text-slate-400 font-normal text-[11px]">
                           จำนวน {it.quantity} {it.item?.unit}
                         </span>
                       </div>

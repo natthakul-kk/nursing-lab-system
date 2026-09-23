@@ -96,7 +96,11 @@ body {
 .dark .bg-slate-50:not(.keep-white),
 .dark [class*="bg-slate-50\/"]:not(.keep-white),
 .dark .bg-slate-100:not(.keep-white),
-.dark [class*="bg-slate-100\/"]:not(.keep-white) {
+.dark [class*="bg-slate-100\/"]:not(.keep-white),
+.dark .bg-slate-200:not(.keep-white),
+.dark [class*="bg-slate-200\/"]:not(.keep-white),
+.dark .bg-slate-300:not(.keep-white),
+.dark [class*="bg-slate-300\/"]:not(.keep-white) {
   background-color: #1e293b;
 }
 

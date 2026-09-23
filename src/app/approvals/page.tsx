@@ -47,9 +47,45 @@ export default function ApprovalsPage() {
   const [statusFilter, setStatusFilter] = useState<'PENDING' | 'APPROVED' | 'REJECTED'>('PENDING');
   const [activeTab, setActiveTab] = useState<'ALL' | 'BORROW' | 'REQUISITION' | 'PRACTICE' | 'ROOM'>('ALL');
   const [viewScope, setViewScope] = useState<'RELEVANT' | 'ALL'>('RELEVANT');
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const targetId = params.get('id');
+      const targetType = params.get('type');
+      if (targetId) {
+        setHighlightId(targetId);
+      }
+      if (targetType) {
+        const upper = targetType.toUpperCase();
+        if (upper === 'BORROW' || upper === 'REQUISITION' || upper === 'PRACTICE' || upper === 'ROOM') {
+          setActiveTab(upper as any);
+          setStatusFilter('PENDING');
+        }
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    if (highlightId && !loading) {
+      const timer = setTimeout(() => {
+        const el = document.getElementById(`approval-card-${highlightId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [highlightId, loading]);
 
   useEffect(() => {
     if (currentUser && !isAdmin) {
+      // If user came via direct deep link with specific type, do not override
+      const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+      if (params?.get('type')) return;
+
       const hasItems = canUserApprove(currentUser, 'BORROW') || canUserApprove(currentUser, 'REQUISITION');
       const hasRooms = canUserApprove(currentUser, 'PRACTICE') || canUserApprove(currentUser, 'ROOM');
       if (hasRooms && !hasItems) {
@@ -729,7 +765,10 @@ export default function ApprovalsPage() {
               filteredBorrows.map((req) => (
                 <div
                   key={req.id}
-                  className={`bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-sm space-y-4 border-l-4 transition-colors ${
+                  id={`approval-card-${req.id}`}
+                  className={`bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-sm space-y-4 border-l-4 transition-all ${
+                    req.id === highlightId ? 'ring-2 ring-teal-500 shadow-xl shadow-teal-500/20' : ''
+                  } ${
                     statusFilter === 'PENDING'
                       ? 'border-l-amber-500'
                       : statusFilter === 'APPROVED'
@@ -1012,7 +1051,10 @@ export default function ApprovalsPage() {
               filteredRequisitions.map((req) => (
                 <div
                   key={req.id}
-                  className={`bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-sm space-y-4 border-l-4 transition-colors ${
+                  id={`approval-card-${req.id}`}
+                  className={`bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-sm space-y-4 border-l-4 transition-all ${
+                    req.id === highlightId ? 'ring-2 ring-teal-500 shadow-xl shadow-teal-500/20' : ''
+                  } ${
                     statusFilter === 'PENDING'
                       ? 'border-l-amber-500'
                       : statusFilter === 'APPROVED'
@@ -1246,7 +1288,10 @@ export default function ApprovalsPage() {
               filteredPracticeBookings.map((b) => (
                 <div
                   key={b.id}
-                  className={`bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-sm space-y-4 border-l-4 transition-colors ${
+                  id={`approval-card-${b.id}`}
+                  className={`bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-sm space-y-4 border-l-4 transition-all ${
+                    b.id === highlightId ? 'ring-2 ring-teal-500 shadow-xl shadow-teal-500/20' : ''
+                  } ${
                     statusFilter === 'PENDING'
                       ? 'border-l-amber-500'
                       : statusFilter === 'APPROVED'
@@ -1434,7 +1479,10 @@ export default function ApprovalsPage() {
               filteredRoomBookings.map((rm) => (
                 <div
                   key={rm.id}
-                  className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 space-y-4 hover:shadow-md transition shadow-xs"
+                  id={`approval-card-${rm.id}`}
+                  className={`bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 space-y-4 hover:shadow-md transition shadow-xs ${
+                    rm.id === highlightId ? 'ring-2 ring-teal-500 shadow-xl shadow-teal-500/20' : ''
+                  }`}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
                     <div className="flex items-center gap-2">

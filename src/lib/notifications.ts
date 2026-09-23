@@ -54,14 +54,19 @@ async function dispatchPushForNotification(params: CreateNotificationParams) {
       }
     }
 
+    const targetUrl =
+      params.type === 'APPROVAL' && params.entityType && params.entityId
+        ? `/approvals?id=${params.entityId}&type=${params.entityType}`
+        : (params.linkUrl || '/');
+
     const payload: PushPayload = {
       title: params.title,
       message: params.message,
-      linkUrl: params.linkUrl || '/',
+      linkUrl: targetUrl,
       tag: params.entityId ? `lab-${params.entityType}-${params.entityId}` : `lab-${Date.now()}`,
       actions,
       data: {
-        url: params.linkUrl || '/',
+        url: targetUrl,
         ...(approvalEndpoint ? { approvalEndpoint, approvalBody: { action: 'APPROVE' } } : {}),
       },
     };

@@ -2,6 +2,45 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { invalidateCache } from '@/lib/cache';
 
+export async function GET(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const limit = Math.min(Number(searchParams.get('limit')) || 20, 100);
+    const itemId = searchParams.get('itemId');
+
+    const transactions = await prisma.stockTransaction.findMany({
+      where: {
+        type: 'IN',
+        ...(itemId ? { itemId } : {}),
+      },
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        item: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            unit: true,
+            type: true,
+          },
+        },
+        createdBy: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    return NextResponse.json(transactions);
+  } catch (error: any) {
+    console.error('Fetch stock-in history error:', error);
+    return NextResponse.json({ error: 'เกิดข้อผิดพลาดในการดึงข้อมูลประวัติรับเข้า' }, { status: 500 });
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();

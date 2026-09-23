@@ -57,21 +57,21 @@ export default function StockInPage() {
 
   const fetchItemsAndHistory = async () => {
     try {
-      const [itemsRes, dashRes] = await Promise.all([
+      const [itemsRes, historyRes] = await Promise.all([
         fetch('/api/items'),
-        fetch('/api/dashboard'),
+        fetch('/api/stock/in?limit=20'),
       ]);
       if (itemsRes.ok) {
         const data = await itemsRes.json();
         setItems(data);
         // Keep form.itemId empty by default so user selects explicitly
       }
-      if (dashRes.ok) {
-        const dash = await dashRes.json();
-        setRecentTransactions(dash.recentTransactions?.filter((tx: any) => tx.type === 'IN') || []);
+      if (historyRes.ok) {
+        const historyData = await historyRes.json();
+        setRecentTransactions(Array.isArray(historyData) ? historyData : []);
       }
     } catch (err) {
-      console.error(err);
+      console.error('Error fetching stock-in data:', err);
     } finally {
       setLoading(false);
     }
@@ -799,18 +799,28 @@ export default function StockInPage() {
             <div className="divide-y divide-slate-100 dark:divide-slate-800">
               {recentTransactions.map((tx: any) => (
                 <div key={tx.id} className="py-2.5">
-                  <div className="text-xs font-bold text-slate-900 dark:text-slate-100">{tx.item?.name}</div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
+                      {tx.item?.code ? `[${tx.item.code}] ` : ''}{tx.item?.name}
+                    </span>
+                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800 shrink-0">
+                      +{tx.quantity} {tx.item?.unit || 'หน่วย'}
+                    </span>
+                  </div>
                   <div className="flex items-center justify-between mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-                    <span>
-                      +{tx.quantity} {tx.item?.unit}
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                      {new Date(tx.createdAt).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })}
+                      {tx.createdBy?.name ? ` โดย ${tx.createdBy.name}` : ''}
                     </span>
-                    <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                      ฿{tx.totalCost.toFixed(2)} บาท
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400 text-xs">
+                      ฿{(tx.totalCost ?? 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                   </div>
-                  <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
-                    {new Date(tx.createdAt).toLocaleDateString('th-TH')} | {tx.note}
-                  </div>
+                  {tx.note && (
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">
+                      {tx.note}
+                    </div>
+                  )}
                 </div>
               ))}
               {recentTransactions.length === 0 && (

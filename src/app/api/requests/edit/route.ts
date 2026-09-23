@@ -93,11 +93,10 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: 'ท่านไม่มีสิทธิ์ในการแก้ไขคำขอนี้' }, { status: 403 });
     }
 
-    // 2. Check if the status allows editing
-    const nonEditableStatuses = ['BORROWED', 'DISPENSED', 'RETURNED_COMPLETE', 'RETURNED_WITH_ISSUE', 'CANCELLED'];
-    if (nonEditableStatuses.includes(primaryRecord.status)) {
+    // 2. Check if the status allows editing (Only PENDING is editable)
+    if (primaryRecord.status !== 'PENDING' || (borrowRecord && borrowRecord.status !== 'PENDING') || (requisitionRecord && requisitionRecord.status !== 'PENDING')) {
       return NextResponse.json(
-        { error: 'ไม่สามารถแก้ไขคำขอที่ส่งมอบพัสดุแล้ว หรือถูกยกเลิกแล้วได้' },
+        { error: 'สามารถแก้ไขได้เฉพาะคำขอที่อยู่ในสถานะ "รออนุมัติ" เท่านั้น (คำขอที่ได้รับการอนุมัติแล้วไม่สามารถแก้ไขได้)' },
         { status: 400 }
       );
     }

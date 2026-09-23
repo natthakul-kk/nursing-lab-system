@@ -479,18 +479,19 @@ export default function StudentDashboard() {
                       <span>{returnInfo.label}</span>
                     </div>
 
-                    {/* Edit Request Button for Student in PENDING or APPROVED */}
-                    {(req.status === 'PENDING' || req.status === 'APPROVED') && (
+                    {/* Edit Request Button for Student in PENDING only */}
+                    {req.status === 'PENDING' && (
                       <button
                         type="button"
                         onClick={() => {
                           setEditingRequest(req);
                           setShowEditModal(true);
                         }}
-                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl border border-amber-300 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-200 text-xs font-bold transition shadow-xs cursor-pointer mt-1"
+                        className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg border border-amber-300 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-200 text-[11px] font-bold transition cursor-pointer"
+                        title="แก้ไขรายการหรือรายละเอียดคำขอ"
                       >
                         <Edit3 className="w-3 h-3 text-amber-600 dark:text-amber-400" />
-                        <span>✏️ แก้ไขคำขอ</span>
+                        <span>แก้ไข</span>
                       </button>
                     )}
                   </div>

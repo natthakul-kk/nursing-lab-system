@@ -649,6 +649,20 @@ export default function BorrowPage() {
                       <Sparkles className="w-3 h-3 text-indigo-600 dark:text-indigo-400" /> คำขอรวม One-Stop
                     </span>
                   )}
+                  {req.status === 'PENDING' && (currentUser?.id === req.userId || isOfficer || isAdmin) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingRequest(req);
+                        setShowEditModal(true);
+                      }}
+                      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg border border-amber-300 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-200 text-[11px] font-bold transition cursor-pointer"
+                      title="แก้ไขรายการหรือรายละเอียดคำขอ"
+                    >
+                      <Edit3 className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                      <span>แก้ไข</span>
+                    </button>
+                  )}
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
@@ -884,25 +898,7 @@ export default function BorrowPage() {
                 </div>
               )}
 
-              {/* Edit Request Button (Available for Requester / Officer / Admin in PENDING or APPROVED) */}
-              {((req.status === 'PENDING' || req.status === 'APPROVED') && (currentUser?.id === req.userId || isOfficer || isAdmin)) && (
-                <div className="flex items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                    {req.status === 'APPROVED' ? '⚡ อนุมัติแล้ว (หากแก้ไขจะปรับกลับเป็นรออนุมัติ)' : 'สามารถแก้ไขรายการหรือจำนวนได้ก่อนส่งมอบ'}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingRequest(req);
-                      setShowEditModal(true);
-                    }}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-300 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-200 text-xs font-bold transition shadow-xs cursor-pointer"
-                  >
-                    <Edit3 className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                    <span>✏️ แก้ไขคำขอ</span>
-                  </button>
-                </div>
-              )}
+
 
               {/* Action Buttons for Officer */}
               {isOfficer && (

@@ -8,7 +8,6 @@ import {
   Boxes,
   Plus,
   Trash2,
-  AlertTriangle,
   AlertCircle,
   Calendar,
   BookOpen,
@@ -191,7 +190,7 @@ export default function EditRequestModal({
 
   if (!isOpen || !initialData) return null;
 
-  const isApproved = initialData.status === 'APPROVED';
+
   const showBorrowSection = requestType === 'BORROW' || requestType === 'UNIFIED' || borrowItems.length > 0;
   const showReqSection = requestType === 'REQUISITION' || requestType === 'UNIFIED' || requisitionItems.length > 0;
 
@@ -351,16 +350,7 @@ export default function EditRequestModal({
           </button>
         </div>
 
-        {/* Warning Banner if Approved */}
-        {isApproved && (
-          <div className="bg-amber-50 dark:bg-amber-950/40 border-b border-amber-200 dark:border-amber-800/80 p-3 sm:p-4 flex items-start gap-2.5">
-            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-            <div className="text-xs text-amber-900 dark:text-amber-200 leading-relaxed font-medium">
-              <span className="font-bold">⚠️ แจ้งเตือนความปลอดภัย:</span> คำขอนี้ได้รับการอนุมัติแล้ว หากท่านบันทึกการแก้ไข
-              ระบบจะรีเซ็ตสถานะกลับเป็น <strong>"รออนุมัติ (PENDING)"</strong> โดยอัตโนมัติ เพื่อให้อาจารย์ผู้ดูแลตรวจสอบข้อมูลล่าสุดก่อนอนุมัติใหม่อีกครั้ง
-            </div>
-          </div>
-        )}
+
 
         {/* Conflict Error Notice */}
         {conflictError && (
@@ -761,13 +751,7 @@ export default function EditRequestModal({
         {/* Footer Actions */}
         <div className="p-4 sm:p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 flex items-center justify-between gap-3">
           <div className="text-xs text-slate-500">
-            {isApproved ? (
-              <span className="text-amber-700 dark:text-amber-300 font-medium">
-                * บันทึกแล้วสถานะจะรีเซ็ตเป็นรออนุมัติ
-              </span>
-            ) : (
               <span>ตรวจสอบข้อมูลให้ถูกต้องก่อนกดบันทึก</span>
-            )}
           </div>
 
           <div className="flex items-center gap-2">

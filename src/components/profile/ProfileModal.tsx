@@ -20,7 +20,17 @@ import {
   EyeOff,
   RotateCcw,
   Send,
+  Bell,
+  BellRing,
+  Smartphone,
+  Check,
+  RefreshCw,
 } from 'lucide-react';
+import {
+  VAPID_PUBLIC_KEY,
+  urlBase64ToUint8Array,
+  isPushNotificationSupported,
+} from '@/lib/webpush-client';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -29,7 +39,7 @@ interface ProfileModalProps {
 
 export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   const { currentUser, updateUser, setCurrentUser } = useAuth();
-  const [activeTab, setActiveTab] = useState<'PROFILE' | 'PASSWORD'>('PROFILE');
+  const [activeTab, setActiveTab] = useState<'PROFILE' | 'PASSWORD' | 'NOTIFICATIONS'>('PROFILE');
 
   // Profile form state
   const [formData, setFormData] = useState({
@@ -278,6 +288,123 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     }
   };
 
+  // Push Notification state
+  const [pushStatus, setPushStatus] = useState<'LOADING' | 'ENABLED' | 'DISABLED' | 'BLOCKED' | 'UNSUPPORTED'>('LOADING');
+  const [isPushWorking, setIsPushWorking] = useState(false);
+  const [isTestingPush, setIsTestingPush] = useState(false);
+  const [pushTestFeedback, setPushTestFeedback] = useState<{ success: boolean; message: string } | null>(null);
+
+  const checkPushSubscription = async () => {
+    if (typeof window === 'undefined') return;
+    if (!isPushNotificationSupported()) {
+      setPushStatus('UNSUPPORTED');
+      return;
+    }
+
+    if (Notification.permission === 'denied') {
+      setPushStatus('BLOCKED');
+      return;
+    }
+
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      if (sub && Notification.permission === 'granted') {
+        setPushStatus('ENABLED');
+      } else {
+        setPushStatus('DISABLED');
+      }
+    } catch {
+      setPushStatus(Notification.permission === 'granted' ? 'ENABLED' : 'DISABLED');
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'NOTIFICATIONS') {
+      checkPushSubscription();
+      setPushTestFeedback(null);
+    }
+  }, [activeTab]);
+
+  const handleEnablePush = async () => {
+    setIsPushWorking(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        const reg = await navigator.serviceWorker.register('/sw.js');
+        await navigator.serviceWorker.ready;
+        const sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+        });
+        await fetch('/api/notifications/push/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscription: sub.toJSON(), userAgent: navigator.userAgent }),
+        });
+        localStorage.setItem('push_prompt_setup_done', 'true');
+        setPushStatus('ENABLED');
+        setSuccessMsg('เปิดรับการแจ้งเตือนบนอุปกรณ์นี้เรียบร้อยแล้ว ✅');
+      } else if (permission === 'denied') {
+        setPushStatus('BLOCKED');
+        setErrorMsg('เบราว์เซอร์บล็อกการแจ้งเตือน กรุณาเปิดการอนุญาตในการตั้งค่าเว็บไซต์ของเบราว์เซอร์');
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || 'ไม่สามารถเปิดการแจ้งเตือนได้');
+    } finally {
+      setIsPushWorking(false);
+    }
+  };
+
+  const handleDisablePush = async () => {
+    setIsPushWorking(true);
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      if (sub) {
+        await fetch('/api/notifications/push/subscribe', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ endpoint: sub.endpoint }),
+        });
+        await sub.unsubscribe();
+      }
+      setPushStatus('DISABLED');
+      setSuccessMsg('ปิดการแจ้งเตือนบนอุปกรณ์นี้แล้ว');
+    } catch (err: any) {
+      setErrorMsg('เกิดข้อผิดพลาดในการยกเลิก');
+    } finally {
+      setIsPushWorking(false);
+    }
+  };
+
+  const handleSendTestNotification = async () => {
+    if (!currentUser) return;
+    setIsTestingPush(true);
+    setPushTestFeedback(null);
+    try {
+      const res = await fetch('/api/notifications/push/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUser.id }),
+      });
+      const data = await res.json();
+      if (data.warning) {
+        setPushTestFeedback({ success: false, message: data.message });
+      } else if (data.success) {
+        setPushTestFeedback({ success: true, message: data.message });
+      } else {
+        setPushTestFeedback({ success: false, message: data.error || 'ส่งการแจ้งเตือนไม่สำเร็จ' });
+      }
+    } catch (err: any) {
+      setPushTestFeedback({ success: false, message: 'ไม่สามารถติดต่อเซิร์ฟเวอร์ได้' });
+    } finally {
+      setIsTestingPush(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4">
       <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full shadow-2xl border border-slate-100 dark:border-slate-800 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
@@ -333,6 +460,22 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
           >
             <KeyRound className="w-4 h-4" />
             <span>เปลี่ยนรหัสผ่าน</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab('NOTIFICATIONS');
+              setErrorMsg(null);
+              setSuccessMsg(null);
+            }}
+            className={`pb-3 px-3 text-xs font-bold transition border-b-2 cursor-pointer flex items-center gap-1.5 ${
+              activeTab === 'NOTIFICATIONS'
+                ? 'border-teal-600 text-teal-700 dark:text-teal-400'
+                : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+            }`}
+          >
+            <Bell className="w-4 h-4" />
+            <span>การแจ้งเตือน</span>
           </button>
         </div>
 
@@ -706,6 +849,158 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                 </button>
               </div>
             </form>
+          )}
+
+          {/* Notifications Tab Content */}
+          {activeTab === 'NOTIFICATIONS' && (
+            <div className="space-y-5 animate-in fade-in duration-200">
+              {/* Push Status Banner */}
+              <div className="p-4 rounded-2xl border bg-slate-50/60 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-teal-100 dark:bg-teal-950/70 text-teal-700 dark:text-teal-300 flex items-center justify-center">
+                      <Smartphone className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100">
+                        สถานะการแจ้งเตือนบนอุปกรณ์นี้
+                      </h4>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                        Web Push Notifications
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    {pushStatus === 'ENABLED' && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                        <Check className="w-3 h-3 text-emerald-600" /> เปิดใช้งานแล้ว
+                      </span>
+                    )}
+                    {pushStatus === 'DISABLED' && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                        ยังไม่เปิดใช้งาน
+                      </span>
+                    )}
+                    {pushStatus === 'BLOCKED' && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-100 dark:bg-rose-950/70 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                        ปิดกั้นในเบราว์เซอร์
+                      </span>
+                    )}
+                    {pushStatus === 'UNSUPPORTED' && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                        ไม่รองรับบนเบราว์เซอร์นี้
+                      </span>
+                    )}
+                    {pushStatus === 'LOADING' && (
+                      <span className="text-[11px] text-slate-400">กำลังตรวจสอบ...</span>
+                    )}
+                  </div>
+                </div>
+
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                  {pushStatus === 'ENABLED'
+                    ? 'อุปกรณ์นี้เชื่อมต่อระบบ Web Push เรียบร้อยแล้ว คุณจะได้รับการแจ้งเตือนผลการอนุมัติและรายการคำขอใหม่ทันที แม้ไม่ได้เปิดหน้าเว็บไซต์ค้างไว้'
+                    : pushStatus === 'BLOCKED'
+                    ? 'สิทธิ์การแจ้งเตือนถูกปิดกั้นในเบราว์เซอร์ กรุณาแตะไอคอนแม่กุญแจหรือตั้งค่าเว็บไซต์ แล้วเปลี่ยนการอนุญาต "การแจ้งเตือน" เป็น "อนุญาต"'
+                    : pushStatus === 'UNSUPPORTED'
+                    ? 'เบราว์เซอร์นี้ไม่รองรับ Web Push หากใช้งานบน iPhone/iPad กรุณาแตะปุ่มแชร์แล้วเลือก "เพิ่มไปยังหน้าจอโฮม" (Add to Home Screen) บน iOS 16.4 ขึ้นไป'
+                    : 'เปิดรับการแจ้งเตือนเพื่อให้โทรศัพท์หรือคอมพิวเตอร์เครื่องนี้แจ้งเตือนผลคำขอหรือกดอนุมัติได้ทันที'}
+                </p>
+
+                {/* Action button */}
+                <div className="pt-1">
+                  {pushStatus === 'DISABLED' && (
+                    <button
+                      type="button"
+                      onClick={handleEnablePush}
+                      disabled={isPushWorking}
+                      className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      <BellRing className="w-4 h-4" />
+                      <span>{isPushWorking ? 'กำลังตั้งค่า...' : 'เปิดรับการแจ้งเตือนบนอุปกรณ์นี้'}</span>
+                    </button>
+                  )}
+
+                  {pushStatus === 'ENABLED' && (
+                    <button
+                      type="button"
+                      onClick={handleDisablePush}
+                      disabled={isPushWorking}
+                      className="py-1.5 px-3 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:border-rose-300 text-xs font-semibold transition cursor-pointer disabled:opacity-50"
+                    >
+                      {isPushWorking ? 'กำลังยกเลิก...' : 'ปิดการแจ้งเตือนบนอุปกรณ์นี้'}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Test Push Section (Visible when enabled) */}
+              {pushStatus === 'ENABLED' && (
+                <div className="p-4 rounded-2xl border border-teal-200 dark:border-teal-800/60 bg-teal-50/50 dark:bg-teal-950/30 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Bell className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                    <h4 className="text-xs font-bold text-teal-900 dark:text-teal-200">
+                      ทดสอบการส่งแจ้งเตือนเข้าอุปกรณ์
+                    </h4>
+                  </div>
+                  <p className="text-[11px] text-teal-800 dark:text-teal-300 leading-relaxed">
+                    กดปุ่มด้านล่างเพื่อทดสอบส่งข้อความแจ้งเตือนมายังอุปกรณ์นี้ทันที (บนหน้าจอล็อกหรือแถบแจ้งเตือนจะมีปุ่ม Action ดำเนินการ)
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={handleSendTestNotification}
+                    disabled={isTestingPush}
+                    className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-sm transition cursor-pointer disabled:opacity-50"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>{isTestingPush ? 'กำลังส่งแจ้งเตือน...' : 'ส่งแจ้งเตือนทดสอบ'}</span>
+                  </button>
+
+                  {pushTestFeedback && (
+                    <div
+                      className={`p-2.5 rounded-xl text-xs font-bold flex items-center gap-2 ${
+                        pushTestFeedback.success
+                          ? 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
+                          : 'bg-rose-100 dark:bg-rose-950/70 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-800'
+                      }`}
+                    >
+                      {pushTestFeedback.success ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+                      )}
+                      <span>{pushTestFeedback.message}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Tips for Mobile / PWA */}
+              <div className="p-3 bg-slate-50 dark:bg-slate-950/50 rounded-xl border border-slate-200 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 space-y-1">
+                <p className="font-semibold text-slate-700 dark:text-slate-300">
+                  📱 ข้อแนะนำสำหรับผู้ใช้งานบนโทรศัพท์มือถือ:
+                </p>
+                <p>
+                  • สำหรับ iOS (iPhone/iPad): กดปุ่มแชร์ใน Safari แล้วเลือก <strong>&quot;เพิ่มไปยังหน้าจอโฮม&quot; (Add to Home Screen)</strong> เพื่อเปิดใช้งาน Web Push ได้เต็มรูปแบบบน iOS 16.4 ขึ้นไป
+                </p>
+                <p>
+                  • สำหรับ Android / คอมพิวเตอร์: รองรับการแจ้งเตือนทันทีผ่าน Chrome, Edge, Safari และ Firefox
+                </p>
+              </div>
+
+              {/* Close Button */}
+              <div className="flex items-center justify-end pt-3 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition cursor-pointer"
+                >
+                  ปิดหน้าต่าง
+                </button>
+              </div>
+            </div>
           )}
         </div>
       </div>

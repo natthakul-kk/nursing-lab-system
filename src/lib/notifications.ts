@@ -1,4 +1,6 @@
 import { prisma } from '@/lib/prisma';
+import { sendPushToUser, PushPayload } from '@/lib/webpush';
+import { canUserApprove, ApprovalScopeType } from '@/lib/approval-scope';
 
 export interface CreateNotificationParams {
   userId: string;
@@ -21,11 +23,58 @@ export interface CreateNotificationParams {
 }
 
 /**
- * สร้างการแจ้งเตือนให้กับผู้ใช้คนเดียว
+ * ส่ง Web Push Notification ไปยังเครื่องของผู้ใช้ควบคู่กับการบันทึกลงฐานข้อมูล
+ */
+async function dispatchPushForNotification(params: CreateNotificationParams) {
+  try {
+    let approvalEndpoint: string | undefined;
+    let actions: { action: string; title: string }[] = [
+      { action: 'view', title: '🔍 ดูรายละเอียด' },
+    ];
+
+    if (params.type === 'APPROVAL' && params.entityType && params.entityId) {
+      if (params.entityType === 'BORROW') {
+        approvalEndpoint = `/api/borrow/${params.entityId}`;
+      } else if (params.entityType === 'REQUISITION') {
+        approvalEndpoint = `/api/requisitions/${params.entityId}`;
+      } else if (params.entityType === 'PRACTICE') {
+        approvalEndpoint = `/api/practice/bookings/${params.entityId}`;
+      } else if (params.entityType === 'BOOKING') {
+        approvalEndpoint = `/api/room-bookings/${params.entityId}`;
+      }
+
+      if (approvalEndpoint) {
+        actions = [
+          { action: 'approve', title: '✅ อนุมัติทันที' },
+          { action: 'view', title: '🔍 ดูรายละเอียด' },
+        ];
+      }
+    }
+
+    const payload: PushPayload = {
+      title: params.title,
+      message: params.message,
+      linkUrl: params.linkUrl || '/',
+      tag: params.entityId ? `lab-${params.entityType}-${params.entityId}` : `lab-${Date.now()}`,
+      actions,
+      data: {
+        url: params.linkUrl || '/',
+        ...(approvalEndpoint ? { approvalEndpoint, approvalBody: { action: 'APPROVE' } } : {}),
+      },
+    };
+
+    await sendPushToUser(params.userId, payload);
+  } catch (err) {
+    console.warn('[WebPush] Error dispatching push:', err);
+  }
+}
+
+/**
+ * สร้างการแจ้งเตือนให้กับผู้ใช้คนเดียว พร้อมส่ง Web Push
  */
 export async function createNotification(params: CreateNotificationParams) {
   try {
-    return await prisma.notification.create({
+    const record = await prisma.notification.create({
       data: {
         userId: params.userId,
         title: params.title,
@@ -37,6 +86,11 @@ export async function createNotification(params: CreateNotificationParams) {
         entityId: params.entityId || null,
       },
     });
+
+    // ส่ง Web Push ในพื้นหลังโดยไม่บล็อกการตอบกลับ
+    dispatchPushForNotification(params).catch(() => {});
+
+    return record;
   } catch (error) {
     console.error('Failed to create notification:', error);
     return null;
@@ -44,12 +98,12 @@ export async function createNotification(params: CreateNotificationParams) {
 }
 
 /**
- * สร้างการแจ้งเตือนให้กับกลุ่มผู้ใช้หลายคน
+ * สร้างการแจ้งเตือนให้กับกลุ่มผู้ใช้หลายคน พร้อมส่ง Web Push
  */
 export async function createMultipleNotifications(notifications: CreateNotificationParams[]) {
   try {
     if (notifications.length === 0) return;
-    return await prisma.notification.createMany({
+    const result = await prisma.notification.createMany({
       data: notifications.map((n) => ({
         userId: n.userId,
         title: n.title,
@@ -61,6 +115,13 @@ export async function createMultipleNotifications(notifications: CreateNotificat
         entityId: n.entityId || null,
       })),
     });
+
+    // ส่ง Web Push ไปยังทุกผู้รับในพื้นหลัง
+    for (const notif of notifications) {
+      dispatchPushForNotification(notif).catch(() => {});
+    }
+
+    return result;
   } catch (error) {
     console.error('Failed to create multiple notifications:', error);
     return null;
@@ -68,11 +129,13 @@ export async function createMultipleNotifications(notifications: CreateNotificat
 }
 
 /**
- * แจ้งเตือนไปยังกลุ่มบทบาท (เช่น 'ADMIN', 'OFFICER')
+ * แจ้งเตือนไปยังกลุ่มบทบาท (เช่น 'ADMIN', 'OFFICER', 'APPROVER')
+ * สามารถระบุ scope เพื่อกรองเฉพาะผู้อนุมัติที่มีสิทธิ์ในหมวดนั้นได้
  */
 export async function notifyRoles(
   roles: string[],
-  params: Omit<CreateNotificationParams, 'userId'>
+  params: Omit<CreateNotificationParams, 'userId'>,
+  scope?: ApprovalScopeType
 ) {
   try {
     const users = await prisma.user.findMany({
@@ -80,10 +143,15 @@ export async function notifyRoles(
         role: { in: roles },
         status: 'ACTIVE',
       },
-      select: { id: true },
+      select: { id: true, role: true, approvalScopes: true },
     });
 
-    const notifs = users.map((u) => ({
+    // กรองเฉพาะผู้ใช้ที่มีสิทธิ์อนุมัติตรงตามขอบเขตงาน
+    const targetUsers = scope
+      ? users.filter((u) => canUserApprove(u, scope))
+      : users;
+
+    const notifs = targetUsers.map((u) => ({
       ...params,
       userId: u.id,
     }));

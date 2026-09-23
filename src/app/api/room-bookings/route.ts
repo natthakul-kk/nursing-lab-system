@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { invalidateCache } from '@/lib/cache';
+import { notifyRoles, notifyAdvisorByName } from '@/lib/notifications';
 
 export async function GET(req: Request) {
   try {
@@ -221,6 +222,34 @@ export async function POST(req: Request) {
     });
 
     invalidateCache('room:bookings:');
+
+    // Notify room approvers according to scope
+    notifyRoles(
+      ['OFFICER', 'ADMIN', 'APPROVER'],
+      {
+        title: 'มีคำขอจองห้องปฏิบัติการใหม่',
+        message: `${booking.user?.name || 'นิสิต'} ขอจองห้อง ${booking.room?.name || ''} (${booking.bookingNumber})`,
+        type: 'APPROVAL',
+        linkUrl: '/approvals',
+        entityType: 'BOOKING',
+        entityId: booking.id,
+        priority: 'HIGH',
+      },
+      'ROOM'
+    ).catch(() => {});
+
+    // Notify advisor if specified
+    if (advisorName) {
+      notifyAdvisorByName(advisorName, {
+        title: 'นิสิตระบุชื่ออาจารย์ในคำขอจองห้องปฏิบัติการ',
+        message: `${booking.user?.name || 'นิสิต'} ได้ขอจองห้อง ${booking.room?.name || ''} และระบุชื่อท่านเป็นอาจารย์ประจำวิชา`,
+        type: 'INSTRUCTOR_ACK',
+        linkUrl: '/schedule',
+        entityType: 'BOOKING',
+        entityId: booking.id,
+      }).catch(() => {});
+    }
+
     return NextResponse.json(booking, { status: 201 });
   } catch (error: any) {
     console.error('Error creating room booking:', error);

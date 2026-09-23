@@ -248,15 +248,16 @@ export async function POST(req: Request) {
       console.error('Failed to trigger approval email:', emailErr);
     }
 
-    // In-app notifications
-    notifyRoles(['OFFICER', 'ADMIN'], {
+    // In-app & Push notifications
+    notifyRoles(['OFFICER', 'ADMIN', 'APPROVER'], {
       title: 'มีคำขอจองห้องฝึกปฏิบัติการใหม่ 🏢',
       message: `นิสิต ${booking.user?.name || ''} ยื่นคำขอจองเลขที่ ${booking.bookingNumber} (${booking.skillTopic})`,
-      type: 'REQUEST_SUBMITTED',
+      type: 'APPROVAL',
       linkUrl: '/practice/bookings',
       entityType: 'PRACTICE',
       entityId: booking.id,
-    }).catch(() => {});
+      priority: 'HIGH',
+    }, 'PRACTICE').catch(() => {});
 
     if (finalAdvisorName) {
       notifyAdvisorByName(finalAdvisorName, {

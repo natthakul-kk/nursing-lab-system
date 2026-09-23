@@ -236,15 +236,16 @@ export async function POST(req: Request) {
       console.error('Failed to trigger borrow email:', emailErr);
     }
 
-    // In-app notifications
-    notifyRoles(['OFFICER', 'ADMIN'], {
+    // In-app & Push notifications
+    notifyRoles(['OFFICER', 'ADMIN', 'APPROVER'], {
       title: 'มีคำขอยืมครุภัณฑ์ใหม่ 📋',
       message: `นิสิต ${borrow.user?.name || ''} ยื่นคำขอยืมเลขที่ ${borrow.requestNumber} (${borrow.purpose})`,
-      type: 'REQUEST_SUBMITTED',
+      type: 'APPROVAL',
       linkUrl: '/approvals',
       entityType: 'BORROW',
       entityId: borrow.id,
-    }).catch(() => {});
+      priority: 'HIGH',
+    }, 'BORROW').catch(() => {});
 
     if (finalAdvisorName) {
       notifyAdvisorByName(finalAdvisorName, {

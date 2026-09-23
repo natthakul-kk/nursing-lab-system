@@ -10,6 +10,7 @@ import Sidebar from './Sidebar';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import QrScannerModal from '@/components/qrcode/QrScannerModal';
 import SessionActivityWatcher from '@/components/auth/SessionActivityWatcher';
+import PushNotificationManager from '@/components/notifications/PushNotificationManager';
 import {
   LayoutDashboard,
   Boxes,
@@ -147,6 +148,9 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
       {/* Global Session Activity & Idle Timeout Watcher */}
       <SessionActivityWatcher />
+
+      {/* Web Push Notification One-time Setup Banner */}
+      <PushNotificationManager />
     </div>
   );
 }

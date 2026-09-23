@@ -41,6 +41,7 @@ model User {
   roomBookings        RoomBooking[]        @relation("UserRoomBookings")
   approvedRoomBookings RoomBooking[]       @relation("ApproverRoomBookings")
   notifications       Notification[]       @relation("UserNotifications")
+  pushSubscriptions   PushSubscription[]   @relation("UserPushSubscriptions")
 
   @@index([role, status])
   @@index([studentId])
@@ -577,5 +578,20 @@ model Notification {
 
   @@index([userId, isRead])
   @@index([userId, createdAt])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation("UserPushSubscriptions", fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, isActive])
 }
 

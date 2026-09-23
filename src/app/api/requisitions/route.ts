@@ -246,15 +246,16 @@ export async function POST(req: Request) {
       },
     });
 
-    // In-app notifications
-    notifyRoles(['OFFICER', 'ADMIN'], {
+    // In-app & Push notifications
+    notifyRoles(['OFFICER', 'ADMIN', 'APPROVER'], {
       title: 'มีคำขอเบิกพัสดุใหม่ 📋',
       message: `นิสิต ${reqRecord.user?.name || ''} ยื่นคำขอเบิกเลขที่ ${reqRecord.requestNumber} (${reqRecord.purpose})`,
-      type: 'REQUEST_SUBMITTED',
+      type: 'APPROVAL',
       linkUrl: '/approvals',
       entityType: 'REQUISITION',
       entityId: reqRecord.id,
-    }).catch(() => {});
+      priority: 'HIGH',
+    }, 'REQUISITION').catch(() => {});
 
     if (advisorName) {
       notifyAdvisorByName(advisorName, {

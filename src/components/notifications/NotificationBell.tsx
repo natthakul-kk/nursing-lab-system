@@ -19,6 +19,7 @@ import {
   Smartphone,
   Send,
   BellRing,
+  Settings,
 } from 'lucide-react';
 import {
   VAPID_PUBLIC_KEY,
@@ -347,6 +348,19 @@ export default function NotificationBell() {
             </div>
 
             <div className="flex items-center gap-1">
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsOpen(false);
+                    router.push('/settings/notifications');
+                  }}
+                  className="p-1.5 text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition cursor-pointer rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                  title="ตั้งค่าข้อความแจ้งเตือน (สำหรับแอดมิน)"
+                >
+                  <Settings className="w-3.5 h-3.5" />
+                </button>
+              )}
               {unreadCount > 0 && (
                 <button
                   type="button"

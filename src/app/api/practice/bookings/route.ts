@@ -250,6 +250,14 @@ export async function POST(req: Request) {
 
     // In-app & Push notifications
     notifyRoles(['OFFICER', 'ADMIN', 'APPROVER'], {
+      templateId: 'PRACTICE_BOOKING_SUBMITTED',
+      variables: {
+        studentName: booking.user?.name || '',
+        roomName: slot.room?.name || 'ห้องปฏิบัติการ',
+        date: booking.slot?.date?.toISOString().slice(0, 10) || '',
+        timeSlot: `${booking.slot?.startTime || ''} - ${booking.slot?.endTime || ''}`,
+        bookingNumber: booking.bookingNumber,
+      },
       title: 'มีคำขอจองห้องฝึกปฏิบัติการใหม่ 🏢',
       message: `นิสิต ${booking.user?.name || ''} ยื่นคำขอจองเลขที่ ${booking.bookingNumber} (${booking.skillTopic})`,
       type: 'APPROVAL',

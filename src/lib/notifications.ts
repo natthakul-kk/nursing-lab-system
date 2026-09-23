@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { sendPushToUser, PushPayload } from '@/lib/webpush';
 import { canUserApprove, ApprovalScopeType } from '@/lib/approval-scope';
+import { getRenderedNotification } from '@/lib/notification-templates';
 
 export interface CreateNotificationParams {
   userId: string;
@@ -20,6 +21,8 @@ export interface CreateNotificationParams {
   linkUrl?: string;
   entityType?: 'BORROW' | 'REQUISITION' | 'ITEM' | 'STORAGE' | 'BOOKING' | 'PRACTICE';
   entityId?: string;
+  templateId?: string;
+  variables?: Record<string, string | number | undefined | null>;
 }
 
 /**
@@ -74,11 +77,25 @@ async function dispatchPushForNotification(params: CreateNotificationParams) {
  */
 export async function createNotification(params: CreateNotificationParams) {
   try {
+    let finalTitle = params.title;
+    let finalMessage = params.message;
+
+    if (params.templateId) {
+      const { title, message, isActive } = await getRenderedNotification(
+        params.templateId,
+        params.variables || {},
+        { title: params.title, message: params.message }
+      );
+      if (!isActive) return null;
+      finalTitle = title;
+      finalMessage = message;
+    }
+
     const record = await prisma.notification.create({
       data: {
         userId: params.userId,
-        title: params.title,
-        message: params.message,
+        title: finalTitle,
+        message: finalMessage,
         type: params.type,
         priority: params.priority || 'NORMAL',
         linkUrl: params.linkUrl || null,
@@ -88,7 +105,7 @@ export async function createNotification(params: CreateNotificationParams) {
     });
 
     // ส่ง Web Push ในพื้นหลังโดยไม่บล็อกการตอบกลับ
-    dispatchPushForNotification(params).catch(() => {});
+    dispatchPushForNotification({ ...params, title: finalTitle, message: finalMessage }).catch(() => {});
 
     return record;
   } catch (error) {
@@ -138,6 +155,20 @@ export async function notifyRoles(
   scope?: ApprovalScopeType
 ) {
   try {
+    let finalTitle = params.title;
+    let finalMessage = params.message;
+
+    if (params.templateId) {
+      const { title, message, isActive } = await getRenderedNotification(
+        params.templateId,
+        params.variables || {},
+        { title: params.title, message: params.message }
+      );
+      if (!isActive) return null;
+      finalTitle = title;
+      finalMessage = message;
+    }
+
     const users = await prisma.user.findMany({
       where: {
         role: { in: roles },
@@ -153,6 +184,8 @@ export async function notifyRoles(
 
     const notifs = targetUsers.map((u) => ({
       ...params,
+      title: finalTitle,
+      message: finalMessage,
       userId: u.id,
     }));
 
@@ -195,3 +228,113 @@ export async function notifyAdvisorByName(
   }
   return null;
 }
+
+/**
+ * สร้างการแจ้งเตือนโดยใช้ข้อความจาก Notification Template
+ */
+export async function createTemplatedNotification(params: {
+  templateId: string;
+  userId: string;
+  variables: Record<string, string | number | undefined | null>;
+  type: CreateNotificationParams['type'];
+  priority?: CreateNotificationParams['priority'];
+  linkUrl?: string;
+  entityType?: CreateNotificationParams['entityType'];
+  entityId?: string;
+  fallback?: { title: string; message: string };
+}) {
+  const { title, message, isActive } = await getRenderedNotification(
+    params.templateId,
+    params.variables,
+    params.fallback
+  );
+
+  if (!isActive) return null;
+
+  return await createNotification({
+    userId: params.userId,
+    title,
+    message,
+    type: params.type,
+    priority: params.priority,
+    linkUrl: params.linkUrl,
+    entityType: params.entityType,
+    entityId: params.entityId,
+  });
+}
+
+/**
+ * ส่งแจ้งเตือนไปยังกลุ่มบทบาทโดยใช้ข้อความจาก Notification Template
+ */
+export async function notifyRolesWithTemplate(
+  roles: string[],
+  params: {
+    templateId: string;
+    variables: Record<string, string | number | undefined | null>;
+    type: CreateNotificationParams['type'];
+    priority?: CreateNotificationParams['priority'];
+    linkUrl?: string;
+    entityType?: CreateNotificationParams['entityType'];
+    entityId?: string;
+    fallback?: { title: string; message: string };
+  },
+  scope?: ApprovalScopeType
+) {
+  const { title, message, isActive } = await getRenderedNotification(
+    params.templateId,
+    params.variables,
+    params.fallback
+  );
+
+  if (!isActive) return null;
+
+  return await notifyRoles(
+    roles,
+    {
+      title,
+      message,
+      type: params.type,
+      priority: params.priority,
+      linkUrl: params.linkUrl,
+      entityType: params.entityType,
+      entityId: params.entityId,
+    },
+    scope
+  );
+}
+
+/**
+ * ส่งแจ้งเตือนไปยังอาจารย์โดยใช้ข้อความจาก Notification Template
+ */
+export async function notifyAdvisorWithTemplate(
+  advisorName: string | null | undefined,
+  params: {
+    templateId: string;
+    variables: Record<string, string | number | undefined | null>;
+    type: CreateNotificationParams['type'];
+    priority?: CreateNotificationParams['priority'];
+    linkUrl?: string;
+    entityType?: CreateNotificationParams['entityType'];
+    entityId?: string;
+    fallback?: { title: string; message: string };
+  }
+) {
+  const { title, message, isActive } = await getRenderedNotification(
+    params.templateId,
+    params.variables,
+    params.fallback
+  );
+
+  if (!isActive) return null;
+
+  return await notifyAdvisorByName(advisorName, {
+    title,
+    message,
+    type: params.type,
+    priority: params.priority,
+    linkUrl: params.linkUrl,
+    entityType: params.entityType,
+    entityId: params.entityId,
+  });
+}
+

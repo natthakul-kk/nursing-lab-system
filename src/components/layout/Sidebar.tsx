@@ -27,6 +27,7 @@ import {
   Building2,
   X,
   Store,
+  Sliders,
 } from 'lucide-react';
 import ProfileModal from '@/components/profile/ProfileModal';
 import ThemeToggle from '@/components/common/ThemeToggle';
@@ -219,6 +220,13 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
           icon: Users,
           roles: ['ADMIN'],
           badge: 'แอดมิน',
+        },
+        {
+          label: 'ตั้งค่าข้อความแจ้งเตือน',
+          href: '/settings/notifications',
+          icon: Sliders,
+          roles: ['ADMIN'],
+          badge: 'เทมเพลต',
         },
       ],
     },

@@ -595,3 +595,18 @@ model PushSubscription {
   @@index([userId, isActive])
 }
 
+model NotificationTemplate {
+  id          String   @id
+  category    String
+  name        String
+  description String?
+  title       String
+  message     String
+  variables   String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+}
+

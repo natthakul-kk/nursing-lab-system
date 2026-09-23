@@ -227,6 +227,13 @@ export async function POST(req: Request) {
     notifyRoles(
       ['OFFICER', 'ADMIN', 'APPROVER'],
       {
+        templateId: 'ROOM_BOOKING_SUBMITTED',
+        variables: {
+          studentName: booking.user?.name || 'นิสิต',
+          roomName: booking.room?.name || '',
+          date: booking.bookingDate.toISOString().slice(0, 10),
+          bookingNumber: booking.bookingNumber,
+        },
         title: 'มีคำขอจองห้องปฏิบัติการใหม่',
         message: `${booking.user?.name || 'นิสิต'} ขอจองห้อง ${booking.room?.name || ''} (${booking.bookingNumber})`,
         type: 'APPROVAL',

@@ -204,6 +204,11 @@ export async function GET(req: Request) {
         if (borrow.userId) {
           createNotification({
             userId: borrow.userId,
+            templateId: 'BORROW_APPROVED',
+            variables: {
+              studentName: borrow.user?.name || '',
+              requestNumber: borrow.requestNumber,
+            },
             title: 'คำขอยืมครุภัณฑ์ได้รับการอนุมัติแล้ว 🎉',
             message: `คำขอ ${borrow.requestNumber} ได้รับการอนุมัติแล้ว เจ้าหน้าที่เตรียมจัดอุปกรณ์ให้ท่าน`,
             type: 'STATUS_UPDATE',
@@ -256,6 +261,12 @@ export async function GET(req: Request) {
         if (borrow.userId) {
           createNotification({
             userId: borrow.userId,
+            templateId: 'BORROW_REJECTED',
+            variables: {
+              studentName: borrow.user?.name || '',
+              requestNumber: borrow.requestNumber,
+              reason: 'ไม่อนุมัติผ่านอีเมล',
+            },
             title: 'คำขอยืมครุภัณฑ์ไม่ได้รับการอนุมัติ ❌',
             message: `คำขอ ${borrow.requestNumber} ไม่ได้รับการอนุมัติผ่านอีเมล`,
             type: 'STATUS_UPDATE',

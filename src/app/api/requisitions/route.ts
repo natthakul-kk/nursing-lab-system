@@ -248,6 +248,12 @@ export async function POST(req: Request) {
 
     // In-app & Push notifications
     notifyRoles(['OFFICER', 'ADMIN', 'APPROVER'], {
+      templateId: 'REQUISITION_REQUEST_SUBMITTED',
+      variables: {
+        studentName: reqRecord.user?.name || '',
+        requestNumber: reqRecord.requestNumber,
+        itemSummary: reqRecord.purpose || `${items.length} รายการ`,
+      },
       title: 'มีคำขอเบิกพัสดุใหม่ 📋',
       message: `นิสิต ${reqRecord.user?.name || ''} ยื่นคำขอเบิกเลขที่ ${reqRecord.requestNumber} (${reqRecord.purpose})`,
       type: 'APPROVAL',

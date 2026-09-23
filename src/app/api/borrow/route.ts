@@ -238,6 +238,12 @@ export async function POST(req: Request) {
 
     // In-app & Push notifications
     notifyRoles(['OFFICER', 'ADMIN', 'APPROVER'], {
+      templateId: 'BORROW_REQUEST_SUBMITTED',
+      variables: {
+        studentName: borrow.user?.name || '',
+        requestNumber: borrow.requestNumber,
+        itemSummary: borrow.purpose || `${items.length} รายการ`,
+      },
       title: 'มีคำขอยืมครุภัณฑ์ใหม่ 📋',
       message: `นิสิต ${borrow.user?.name || ''} ยื่นคำขอยืมเลขที่ ${borrow.requestNumber} (${borrow.purpose})`,
       type: 'APPROVAL',

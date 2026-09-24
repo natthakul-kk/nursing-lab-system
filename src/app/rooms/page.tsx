@@ -30,7 +30,11 @@ import {
   Package,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   LayoutGrid,
+  Layers,
+  SlidersHorizontal,
   Check,
   Edit3,
   ShieldCheck,
@@ -40,6 +44,50 @@ import {
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { formatUserName, formatTeacherName } from '@/lib/user-utils';
+
+type RoomCategory = 'ALL' | 'SKILL' | 'SIMULATION' | 'SPECIALTY' | 'SUPPORT';
+
+const ROOM_CATEGORIES: { id: RoomCategory; label: string; shortLabel: string; icon: string }[] = [
+  { id: 'ALL', label: 'ทุกหมวดหมู่', shortLabel: 'ทั้งหมด', icon: '🏢' },
+  { id: 'SKILL', label: 'ทักษะพื้นฐาน (Skill Labs)', shortLabel: 'Skill Labs', icon: '🩺' },
+  { id: 'SIMULATION', label: 'จำลองสถานการณ์เสมือนจริง (Sim Labs)', shortLabel: 'Sim Labs', icon: '🤖' },
+  { id: 'SPECIALTY', label: 'การพยาบาลเฉพาะทาง (Specialty)', shortLabel: 'เฉพาะทาง', icon: '🏥' },
+  { id: 'SUPPORT', label: 'คลัง & ห้องจัดเตรียม (Support)', shortLabel: 'คลัง/เตรียม', icon: '📦' },
+];
+
+function getRoomCategory(code: string, name: string): RoomCategory {
+  const c = (code || '').toUpperCase();
+  const n = name || '';
+  if (
+    c.includes('SIM') ||
+    c.includes('LAB-07') ||
+    n.includes('SIM') ||
+    n.includes('debrief') ||
+    n.includes('จำลอง') ||
+    n.includes('สังเกตการณ์')
+  ) {
+    return 'SIMULATION';
+  }
+  if (
+    c.startsWith('LAB-01') ||
+    c.startsWith('LAB-1') ||
+    n.includes('พื้นฐาน') ||
+    n.includes('Skill')
+  ) {
+    return 'SKILL';
+  }
+  if (
+    c.includes('CS') ||
+    c.includes('EQ') ||
+    n.includes('พัสดุ') ||
+    n.includes('วัสดุ') ||
+    n.includes('ครุภัณฑ์') ||
+    n.includes('เก็บของ')
+  ) {
+    return 'SUPPORT';
+  }
+  return 'SPECIALTY';
+}
 
 export default function RoomsPage() {
   const { currentUser, isOfficer, isAdmin, isTeacher, isApprover } = useAuth();
@@ -73,6 +121,32 @@ export default function RoomsPage() {
   }, [rooms, showArchivedRooms]);
 
   const archivedRoomsCount = useMemo(() => rooms.filter(isRoomArchived).length, [rooms]);
+
+  // Room Category Filter & Overview Expansion
+  const [selectedCategory, setSelectedCategory] = useState<RoomCategory>('ALL');
+  const [isRoomsOverviewExpanded, setIsRoomsOverviewExpanded] = useState(false);
+
+  // Category-filtered rooms
+  const categoryFilteredRooms = useMemo(() => {
+    if (selectedCategory === 'ALL') return visibleRooms;
+    return visibleRooms.filter((r) => getRoomCategory(r.code, r.name) === selectedCategory);
+  }, [visibleRooms, selectedCategory]);
+
+  // Counts by category
+  const categoryCounts = useMemo(() => {
+    const counts: Record<RoomCategory, number> = {
+      ALL: visibleRooms.length,
+      SKILL: 0,
+      SIMULATION: 0,
+      SPECIALTY: 0,
+      SUPPORT: 0,
+    };
+    visibleRooms.forEach((r) => {
+      const cat = getRoomCategory(r.code, r.name);
+      counts[cat] = (counts[cat] || 0) + 1;
+    });
+    return counts;
+  }, [visibleRooms]);
 
   // Filter States
   const [selectedRoomId, setSelectedRoomId] = useState<string>('ALL');
@@ -684,16 +758,24 @@ export default function RoomsPage() {
         <div className="space-y-6">
           {/* SECTION 1: ROOM STATUS & AVAILABILITY BAR */}
           <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-sm space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
               <div>
                 <div className="flex items-center gap-2">
                   <Building className="w-5 h-5 text-teal-600 dark:text-teal-400" />
                   <h3 className="text-base font-black text-slate-900 dark:text-slate-100">
-                    สถานะการเปิด/ปิดห้องปฏิบัติการ ({visibleRooms.length} ห้อง)
+                    สถานะห้องปฏิบัติการ ({visibleRooms.length} ห้อง)
                   </h3>
+                  <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                    เปิด {activeRoomsCount}
+                  </span>
+                  {visibleRooms.length - activeRoomsCount > 0 && (
+                    <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                      ปิด {visibleRooms.length - activeRoomsCount}
+                    </span>
+                  )}
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  เจ้าหน้าที่สามารถเปิดหรือปิดรับการจองห้องได้ทันที หากมีการซ่อมบำรุงหรือปิดทำความสะอาด
+                  เลือกดูสถานะห้องตามหมวดหมู่ หรือคลิกชิปห้องเพื่อกรองตารางเวลาทันที
                 </p>
               </div>
 
@@ -711,7 +793,7 @@ export default function RoomsPage() {
                     title={showArchivedRooms ? 'คลิกเพื่อซ่อนห้องที่เลิกใช้งาน' : 'คลิกเพื่อดูห้องที่ถูกปิดถาวร/เลิกใช้งาน'}
                   >
                     <Archive className="w-3.5 h-3.5" />
-                    <span>{showArchivedRooms ? 'ซ่อนห้องที่เลิกใช้งาน' : `แสดงห้องที่เลิกใช้งาน (${archivedRoomsCount})`}</span>
+                    <span>{showArchivedRooms ? 'ซ่อนห้องที่เลิกใช้งาน' : `ห้องที่เลิกใช้งาน (${archivedRoomsCount})`}</span>
                   </button>
                 )}
 
@@ -723,159 +805,286 @@ export default function RoomsPage() {
                     className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-teal-500/20"
                   >
                     <option value="ALL">ทุกห้องปฏิบัติการ ({visibleRooms.length})</option>
-                    {visibleRooms.map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {r.name} {isRoomArchived(r) ? '(เลิกใช้งาน)' : ''}
-                      </option>
-                    ))}
+                    {ROOM_CATEGORIES.filter((c) => c.id !== 'ALL').map((category) => {
+                      const catRooms = visibleRooms.filter(
+                        (r) => getRoomCategory(r.code, r.name) === category.id
+                      );
+                      if (catRooms.length === 0) return null;
+                      return (
+                        <optgroup key={category.id} label={`${category.icon} ${category.shortLabel}`}>
+                          {catRooms.map((r) => (
+                            <option key={r.id} value={r.id}>
+                              {r.code} - {r.name} {isRoomArchived(r) ? '(เลิกใช้งาน)' : ''}
+                            </option>
+                          ))}
+                        </optgroup>
+                      );
+                    })}
                   </select>
                 </div>
+
+                {/* Toggle Expand/Collapse Cards */}
+                <button
+                  type="button"
+                  onClick={() => setIsRoomsOverviewExpanded(!isRoomsOverviewExpanded)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 border shadow-sm ${
+                    isRoomsOverviewExpanded
+                      ? 'bg-teal-50 dark:bg-teal-950/40 text-teal-800 dark:text-teal-300 border-teal-300 dark:border-teal-700'
+                      : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
+                  }`}
+                  title={isRoomsOverviewExpanded ? 'ย่อมุมมองการ์ดให้กะทัดรัด' : 'ขยายดูการ์ดห้องแบบละเอียดเพื่อจัดการสถานะ'}
+                >
+                  <Layers className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                  <span>{isRoomsOverviewExpanded ? 'ย่อมุมมองการ์ด' : 'ขยายดูการ์ดห้อง'}</span>
+                  {isRoomsOverviewExpanded ? (
+                    <ChevronUp className="w-3.5 h-3.5" />
+                  ) : (
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  )}
+                </button>
               </div>
             </div>
 
-            {/* Room Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {visibleRooms.map((room) => {
-                const isArchived = isRoomArchived(room);
-                const isOpen = room.isActive !== false;
+            {/* Category Filter Pills */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-0.5 no-scrollbar">
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap flex items-center gap-1 mr-1">
+                <SlidersHorizontal className="w-3.5 h-3.5" /> หมวดหมู่:
+              </span>
+              {ROOM_CATEGORIES.map((cat) => {
+                const count = categoryCounts[cat.id] || 0;
+                const isActive = selectedCategory === cat.id;
                 return (
-                  <div
-                    key={room.id}
-                    className={`rounded-2xl p-4 border transition flex flex-col justify-between space-y-3 ${
-                      isArchived
-                        ? 'bg-slate-100/60 dark:bg-slate-850/40 border-slate-300 dark:border-slate-700/60 opacity-75'
-                        : isOpen
-                        ? 'bg-slate-50/50 dark:bg-slate-850/60 border-slate-200 dark:border-slate-800 hover:border-teal-300'
-                        : 'bg-rose-50/30 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/40 opacity-90'
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => setSelectedCategory(cat.id)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer whitespace-nowrap flex items-center gap-1.5 border ${
+                      isActive
+                        ? 'bg-teal-600 text-white border-teal-600 shadow-sm shadow-teal-600/30'
+                        : 'bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-750'
                     }`}
                   >
-                    <div>
-                      <div className="flex items-start justify-between gap-2">
-                        <span className="font-mono text-[10px] font-bold text-teal-800 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/80 px-2 py-0.5 rounded border border-teal-200 dark:border-teal-800">
-                          {room.code}
-                        </span>
-
-                        <span
-                          className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                            isArchived
-                              ? 'bg-slate-200 text-slate-700 border border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
-                              : isOpen
-                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                              : 'bg-rose-100 text-rose-800 border border-rose-200'
-                          }`}
-                        >
-                          {isArchived ? (
-                            <>
-                              <Archive className="w-2.5 h-2.5" />
-                              <span>เลิกใช้งานถาวร</span>
-                            </>
-                          ) : isOpen ? (
-                            <>
-                              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                              <span>เปิดให้จอง</span>
-                            </>
-                          ) : (
-                            <>
-                              <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-                              <span>ปิดให้บริการ</span>
-                            </>
-                          )}
-                        </span>
-                      </div>
-
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 mt-2">
-                        {room.name}
-                      </h4>
-
-                      <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex flex-wrap items-center gap-2">
-                        {room.location && (
-                          <span className="flex items-center gap-1">
-                            <MapPin className="w-3 h-3 text-slate-400" />
-                            {room.location}
-                          </span>
-                        )}
-                        <span>•</span>
-                        <span>ความจุ {room.capacity} คน</span>
-                      </div>
-
-                      {!isOpen && room.closeReason && (
-                        <div
-                          className={`mt-2 p-2 rounded-xl border text-[11px] flex items-start gap-1.5 ${
-                            isArchived
-                              ? 'bg-slate-100 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
-                              : 'bg-rose-50 dark:bg-rose-950/50 border-rose-200 dark:border-rose-900/50 text-rose-700 dark:text-rose-300'
-                          }`}
-                        >
-                          {isArchived ? (
-                            <Archive className="w-3.5 h-3.5 text-slate-500 flex-shrink-0 mt-0.5" />
-                          ) : (
-                            <AlertTriangle className="w-3.5 h-3.5 text-rose-600 flex-shrink-0 mt-0.5" />
-                          )}
-                          <span>เหตุผล: {room.closeReason}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Staff/Admin Open/Close Controls */}
-                    {canManageRooms && (
-                      <div className="pt-2 border-t border-slate-200/70 dark:border-slate-800 flex items-center justify-between gap-2">
-                        <button
-                          onClick={() => {
-                            setRoomToToggle(room);
-                            setRoomToggleReason(room.closeReason || '');
-                          }}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
-                            isOpen
-                              ? 'bg-rose-100 hover:bg-rose-200 text-rose-800 dark:bg-rose-950 dark:hover:bg-rose-900 dark:text-rose-300'
-                              : 'bg-emerald-100 hover:bg-emerald-200 text-emerald-800 dark:bg-emerald-950 dark:hover:bg-emerald-900 dark:text-emerald-300'
-                          }`}
-                        >
-                          {isOpen ? (
-                            <>
-                              <Lock className="w-3.5 h-3.5" />
-                              <span>ปิดรับจอง</span>
-                            </>
-                          ) : (
-                            <>
-                              <Unlock className="w-3.5 h-3.5" />
-                              <span>เปิดรับจอง</span>
-                            </>
-                          )}
-                        </button>
-
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => {
-                              setRoomToEdit(room);
-                              setRoomForm({
-                                code: room.code,
-                                name: room.name,
-                                location: room.location || '',
-                                capacity: room.capacity || 10,
-                                description: room.description || '',
-                                closeReason: room.closeReason || '',
-                              });
-                              setShowRoomModal(true);
-                            }}
-                            className="p-1.5 text-slate-500 hover:text-teal-600 hover:bg-teal-50 dark:hover:bg-slate-800 rounded-lg transition cursor-pointer"
-                            title="แก้ไขข้อมูลห้อง"
-                          >
-                            <Edit className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteRoom(room.id, room.name)}
-                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-slate-800 rounded-lg transition cursor-pointer"
-                            title="ลบหรือปิดห้อง"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                    <span>{cat.icon}</span>
+                    <span>{cat.shortLabel}</span>
+                    <span
+                      className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
+                        isActive
+                          ? 'bg-white/20 text-white'
+                          : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  </button>
                 );
               })}
             </div>
+
+            {/* COMPACT VIEW (DEFAULT): Horizontal Room Pill Chips */}
+            {!isRoomsOverviewExpanded ? (
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                {categoryFilteredRooms.map((room) => {
+                  const isArchived = isRoomArchived(room);
+                  const isOpen = room.isActive !== false;
+                  const isSelected = selectedRoomId === room.id;
+
+                  return (
+                    <button
+                      key={room.id}
+                      type="button"
+                      onClick={() => setSelectedRoomId(selectedRoomId === room.id ? 'ALL' : room.id)}
+                      className={`group px-3 py-2 rounded-xl text-xs font-medium transition cursor-pointer flex items-center gap-2 border ${
+                        isSelected
+                          ? 'bg-teal-50 dark:bg-teal-950/60 border-teal-500 ring-2 ring-teal-500/30 text-teal-900 dark:text-teal-200 font-bold shadow-sm'
+                          : isArchived
+                          ? 'bg-slate-100/60 dark:bg-slate-850/40 border-slate-300 dark:border-slate-700 text-slate-500 opacity-70'
+                          : isOpen
+                          ? 'bg-white dark:bg-slate-800/90 border-slate-200 dark:border-slate-700 hover:border-teal-400 dark:hover:border-teal-500 text-slate-800 dark:text-slate-200'
+                          : 'bg-rose-50/50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900/60 text-rose-800 dark:text-rose-300'
+                      }`}
+                      title={`${room.code}: ${room.name} (${isOpen ? 'เปิดให้จอง' : 'ปิดให้บริการ'})`}
+                    >
+                      {/* Status Dot */}
+                      <span
+                        className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                          isArchived
+                            ? 'bg-slate-400'
+                            : isOpen
+                            ? 'bg-emerald-500 shadow-xs shadow-emerald-500/50'
+                            : 'bg-rose-500'
+                        }`}
+                      />
+                      <span className="font-mono font-bold text-[11px] text-teal-800 dark:text-teal-300">
+                        {room.code}
+                      </span>
+                      <span className="truncate max-w-[140px] text-slate-700 dark:text-slate-300">
+                        {room.name}
+                      </span>
+                      {!isOpen && !isArchived && (
+                        <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-900/50 px-1 rounded">
+                          ปิด
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+
+                {canManageRooms && (
+                  <button
+                    type="button"
+                    onClick={() => setIsRoomsOverviewExpanded(true)}
+                    className="px-3 py-2 rounded-xl text-xs font-bold text-teal-700 dark:text-teal-300 bg-teal-50/60 dark:bg-teal-950/30 hover:bg-teal-100 dark:hover:bg-teal-900/40 border border-teal-200 dark:border-teal-800/60 transition cursor-pointer flex items-center gap-1"
+                  >
+                    <span>จัดการ/แก้ไขสถานะห้อง</span>
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            ) : (
+              /* EXPANDED VIEW: Detailed Grid Cards (Filtered by Category) */
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+                {categoryFilteredRooms.map((room) => {
+                  const isArchived = isRoomArchived(room);
+                  const isOpen = room.isActive !== false;
+                  return (
+                    <div
+                      key={room.id}
+                      className={`rounded-2xl p-4 border transition flex flex-col justify-between space-y-3 ${
+                        isArchived
+                          ? 'bg-slate-100/60 dark:bg-slate-850/40 border-slate-300 dark:border-slate-700/60 opacity-75'
+                          : isOpen
+                          ? 'bg-slate-50/50 dark:bg-slate-850/60 border-slate-200 dark:border-slate-800 hover:border-teal-300'
+                          : 'bg-rose-50/30 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/40 opacity-90'
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="font-mono text-[10px] font-bold text-teal-800 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/80 px-2 py-0.5 rounded border border-teal-200 dark:border-teal-800">
+                            {room.code}
+                          </span>
+
+                          <span
+                            className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              isArchived
+                                ? 'bg-slate-200 text-slate-700 border border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
+                                : isOpen
+                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                : 'bg-rose-100 text-rose-800 border border-rose-200'
+                            }`}
+                          >
+                            {isArchived ? (
+                              <>
+                                <Archive className="w-2.5 h-2.5" />
+                                <span>เลิกใช้งานถาวร</span>
+                              </>
+                            ) : isOpen ? (
+                              <>
+                                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                <span>เปิดให้จอง</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+                                <span>ปิดให้บริการ</span>
+                              </>
+                            )}
+                          </span>
+                        </div>
+
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 mt-2">
+                          {room.name}
+                        </h4>
+
+                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex flex-wrap items-center gap-2">
+                          {room.location && (
+                            <span className="flex items-center gap-1">
+                              <MapPin className="w-3 h-3 text-slate-400" />
+                              {room.location}
+                            </span>
+                          )}
+                          <span>•</span>
+                          <span>ความจุ {room.capacity} คน</span>
+                        </div>
+
+                        {!isOpen && room.closeReason && (
+                          <div
+                            className={`mt-2 p-2 rounded-xl border text-[11px] flex items-start gap-1.5 ${
+                              isArchived
+                                ? 'bg-slate-100 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
+                                : 'bg-rose-50 dark:bg-rose-950/50 border-rose-200 dark:border-rose-900/50 text-rose-700 dark:text-rose-300'
+                            }`}
+                          >
+                            {isArchived ? (
+                              <Archive className="w-3.5 h-3.5 text-slate-500 flex-shrink-0 mt-0.5" />
+                            ) : (
+                              <AlertTriangle className="w-3.5 h-3.5 text-rose-600 flex-shrink-0 mt-0.5" />
+                            )}
+                            <span>เหตุผล: {room.closeReason}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Staff/Admin Open/Close Controls */}
+                      {canManageRooms && (
+                        <div className="pt-2 border-t border-slate-200/70 dark:border-slate-800 flex items-center justify-between gap-2">
+                          <button
+                            onClick={() => {
+                              setRoomToToggle(room);
+                              setRoomToggleReason(room.closeReason || '');
+                            }}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                              isOpen
+                                ? 'bg-rose-100 hover:bg-rose-200 text-rose-800 dark:bg-rose-950 dark:hover:bg-rose-900 dark:text-rose-300'
+                                : 'bg-emerald-100 hover:bg-emerald-200 text-emerald-800 dark:bg-emerald-950 dark:hover:bg-emerald-900 dark:text-emerald-300'
+                            }`}
+                          >
+                            {isOpen ? (
+                              <>
+                                <Lock className="w-3.5 h-3.5" />
+                                <span>ปิดรับจอง</span>
+                              </>
+                            ) : (
+                              <>
+                                <Unlock className="w-3.5 h-3.5" />
+                                <span>เปิดรับจอง</span>
+                              </>
+                            )}
+                          </button>
+
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => {
+                                setRoomToEdit(room);
+                                setRoomForm({
+                                  code: room.code,
+                                  name: room.name,
+                                  location: room.location || '',
+                                  capacity: room.capacity || 10,
+                                  description: room.description || '',
+                                  closeReason: room.closeReason || '',
+                                });
+                                setShowRoomModal(true);
+                              }}
+                              className="p-1.5 text-slate-500 hover:text-teal-600 hover:bg-teal-50 dark:hover:bg-slate-800 rounded-lg transition cursor-pointer"
+                              title="แก้ไขข้อมูลห้อง"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteRoom(room.id, room.name)}
+                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-slate-800 rounded-lg transition cursor-pointer"
+                              title="ลบหรือปิดห้อง"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* SECTION 2: CALENDAR & TIMETABLE CONTROLS */}
@@ -1472,13 +1681,21 @@ export default function RoomsPage() {
                   className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs font-medium text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500/20"
                 >
                   <option value="">-- กรุณาเลือกห้องปฏิบัติการ --</option>
-                  {rooms
-                    .filter((r) => !isRoomArchived(r))
-                    .map((r) => (
-                      <option key={r.id} value={r.id} disabled={!r.isActive}>
-                        {r.name} ({r.code}) {r.location ? `- ${r.location}` : ''} {!r.isActive ? '(ปิดปรับปรุง)' : ''}
-                      </option>
-                    ))}
+                  {ROOM_CATEGORIES.filter((c) => c.id !== 'ALL').map((category) => {
+                    const catRooms = rooms.filter(
+                      (r) => !isRoomArchived(r) && getRoomCategory(r.code, r.name) === category.id
+                    );
+                    if (catRooms.length === 0) return null;
+                    return (
+                      <optgroup key={category.id} label={`${category.icon} ${category.label}`}>
+                        {catRooms.map((r) => (
+                          <option key={r.id} value={r.id} disabled={!r.isActive}>
+                            {r.code} - {r.name} {r.location ? `(${r.location})` : ''} {!r.isActive ? '(ปิดให้บริการ)' : ''}
+                          </option>
+                        ))}
+                      </optgroup>
+                    );
+                  })}
                 </select>
               </div>
 

@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { sendApprovalRequestEmail } from '@/lib/email';
 import { getCached, setCached, invalidateCache } from '@/lib/cache';
 import { formatUserName, formatTeacherName } from '@/lib/user-utils';
-import { notifyRoles, notifyAdvisorByName } from '@/lib/notifications';
+import { notifyRoles, notifyAdvisorByName, createNotification } from '@/lib/notifications';
 
 export async function GET(req: Request) {
   try {
@@ -268,6 +268,18 @@ export async function POST(req: Request) {
         entityId: borrow.id,
       }).catch(() => {});
     }
+
+    // Confirmation notification to Student
+    createNotification({
+      userId: borrow.userId,
+      title: 'ยื่นคำขอยืมเรียบร้อยแล้ว ✅',
+      message: `คำขอยืมเลขที่ ${borrow.requestNumber} ถูกส่งเข้าสู่ระบบแล้ว และอยู่ระหว่างรอการอนุมัติ`,
+      type: 'STATUS_UPDATE',
+      priority: 'NORMAL',
+      linkUrl: '/borrow',
+      entityType: 'BORROW',
+      entityId: borrow.id,
+    }).catch(() => {});
 
     invalidateCache('borrow:');
     invalidateCache('dashboard:');

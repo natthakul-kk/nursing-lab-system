@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { invalidateCache } from '@/lib/cache';
-import { createNotification, notifyAdvisorByName } from '@/lib/notifications';
+import { createNotification, notifyAdvisorByName, notifyRoles } from '@/lib/notifications';
 
 export async function PUT(req: Request) {
   try {
@@ -418,10 +418,25 @@ export async function PUT(req: Request) {
       entityId: primaryRecord.id,
     }).catch(() => {});
 
+    // Notify Approver / Officer / Admin roles
+    notifyRoles(
+      ['OFFICER', 'ADMIN', 'APPROVER'],
+      {
+        title: 'คำขอพัสดุมีการแก้ไขข้อมูล 📋',
+        message: `คำขอเลขที่ ${reqNum} ได้รับการแก้ไขข้อมูลและปรับสถานะเป็น "รออนุมัติ" เพื่อตรวจสอบ`,
+        type: 'APPROVAL',
+        linkUrl: '/approvals',
+        entityType: borrowRecord ? 'BORROW' : 'REQUISITION',
+        entityId: primaryRecord.id,
+        priority: 'HIGH',
+      },
+      borrowRecord ? 'BORROW' : 'REQUISITION'
+    ).catch(() => {});
+
     // Notify Advisor / Approver if assigned
     if (finalAdvisorName) {
       notifyAdvisorByName(finalAdvisorName, {
-        title: 'คำขอพัสดุมีการแก้ไขข้อมูล',
+        title: 'คำขอพัสดุมีการแก้ไขข้อมูล 👩‍🏫',
         message: `คำขอเลขที่ ${reqNum} ของนิสิตได้รับการแก้ไขข้อมูล ระบบได้ปรับสถานะเป็น "รออนุมัติ" เพื่อให้อาจารย์ตรวจสอบข้อมูลล่าสุด`,
         type: 'REQUEST_SUBMITTED',
         priority: 'HIGH',

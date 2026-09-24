@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCached, setCached, invalidateCache } from '@/lib/cache';
 import { formatTeacherName } from '@/lib/user-utils';
-import { notifyRoles, notifyAdvisorByName } from '@/lib/notifications';
+import { notifyRoles, notifyAdvisorByName, createNotification } from '@/lib/notifications';
 
 export async function GET(req: Request) {
   try {
@@ -286,6 +286,18 @@ export async function POST(req: Request) {
         entityId: reqRecord.id,
       }).catch(() => {});
     }
+
+    // Confirmation notification to Student
+    createNotification({
+      userId: reqRecord.userId,
+      title: 'ยื่นคำขอเบิกเรียบร้อยแล้ว ✅',
+      message: `คำขอเบิกเลขที่ ${reqRecord.requestNumber} ถูกส่งเข้าสู่ระบบแล้ว และอยู่ระหว่างรอการอนุมัติ`,
+      type: 'STATUS_UPDATE',
+      priority: 'NORMAL',
+      linkUrl: '/requisitions',
+      entityType: 'REQUISITION',
+      entityId: reqRecord.id,
+    }).catch(() => {});
 
     invalidateCache('requisitions:');
     invalidateCache('dashboard:');

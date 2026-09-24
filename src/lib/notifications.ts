@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { sendPushToUser, PushPayload } from '@/lib/webpush';
 import { canUserApprove, ApprovalScopeType } from '@/lib/approval-scope';
 import { getRenderedNotification } from '@/lib/notification-templates';
+import { stripAllPrefixes } from '@/lib/user-utils';
 
 export interface CreateNotificationParams {
   userId: string;
@@ -210,17 +211,35 @@ export async function notifyAdvisorByName(
 ) {
   if (!advisorName) return null;
   try {
-    const cleanName = advisorName.replace(/^(อาจารย์|ผศ\.|รศ\.|ดร\.|ศ\.|นาย|นาง|นางสาว|อ\.)\s*/, '').trim();
+    const cleanName = stripAllPrefixes(advisorName).trim();
     if (!cleanName) return null;
 
-    const teacher = await prisma.user.findFirst({
+    const nameParts = cleanName.split(/\s+/).filter(Boolean);
+    const firstName = nameParts[0] || cleanName;
+
+    // ค้นหาอาจารย์ / ผู้ตรวจตามชื่อ โดยค้นหาจาก role ที่มีสิทธิ์เกี่ยวข้อง
+    let teacher = await prisma.user.findFirst({
       where: {
         status: 'ACTIVE',
         role: { in: ['TEACHER', 'APPROVER', 'ADMIN', 'OFFICER'] },
-        name: { contains: cleanName, mode: 'insensitive' },
+        OR: [
+          { name: { contains: cleanName, mode: 'insensitive' } },
+          { name: { contains: firstName, mode: 'insensitive' } },
+        ],
       },
       select: { id: true },
     });
+
+    // Fallback: หากไม่พบในกลุ่มบทบาทข้างต้น ให้ค้นหาจากผู้ใช้ที่ใช้งานอยู่ทั้งหมด
+    if (!teacher && cleanName.length >= 3) {
+      teacher = await prisma.user.findFirst({
+        where: {
+          status: 'ACTIVE',
+          name: { contains: cleanName, mode: 'insensitive' },
+        },
+        select: { id: true },
+      });
+    }
 
     if (teacher) {
       return await createNotification({

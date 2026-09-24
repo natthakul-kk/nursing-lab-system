@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendApprovalRequestEmail } from '@/lib/email';
 import { invalidateCache } from '@/lib/cache';
+import { notifyRoles, notifyAdvisorByName, createNotification } from '@/lib/notifications';
+import { stripAllPrefixes } from '@/lib/user-utils';
 
 export async function POST(req: Request) {
   try {
@@ -364,15 +366,23 @@ export async function POST(req: Request) {
     );
 
     // 5. Send combined approval request email to instructor/approver (asynchronous, outside transaction)
+    const student = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true, studentId: true, prefix: true },
+    });
+    const studentDisplayName = student?.name || 'นิสิต';
+
     try {
       let approverEmail = '';
       let approverName = finalAdvisorName || 'อาจารย์ผู้ดูแล';
 
       if (finalAdvisorName) {
+        const cleanAdvisor = stripAllPrefixes(finalAdvisorName).trim();
         const advisorUser = await prisma.user.findFirst({
           where: {
             OR: [
-              { name: { contains: finalAdvisorName } },
+              { name: { contains: cleanAdvisor, mode: 'insensitive' } },
+              { name: { contains: finalAdvisorName, mode: 'insensitive' } },
               { email: { contains: 'teacher' } },
               { role: 'APPROVER' },
             ],
@@ -395,11 +405,6 @@ export async function POST(req: Request) {
       }
 
       if (approverEmail) {
-        const student = await prisma.user.findUnique({
-          where: { id: userId },
-          select: { name: true },
-        });
-
         const allItemsList: { name: string; quantity: number; unit?: string }[] = [
           ...borrowSummaryList.map((it) => ({
             name: `[📦 ครุภัณฑ์] ${it.name}`,
@@ -442,7 +447,8 @@ export async function POST(req: Request) {
         sendApprovalRequestEmail({
           approverEmail,
           approverName,
-          studentName: student?.name || 'นิสิต',
+          studentName: studentDisplayName,
+          studentId: student?.studentId || undefined,
           type: 'BORROW',
           title: `คำขอเบิก-ยืมพัสดุแบบรวม: ${purpose}`,
           details,
@@ -452,6 +458,92 @@ export async function POST(req: Request) {
     } catch (e) {
       console.error('Email notification error:', e);
     }
+
+    // 6. In-App & Push Notifications for Approvers and Advisors
+    if (result.createdBorrow) {
+      notifyRoles(
+        ['OFFICER', 'ADMIN', 'APPROVER'],
+        {
+          templateId: 'BORROW_REQUEST_SUBMITTED',
+          variables: {
+            studentName: studentDisplayName,
+            requestNumber: result.createdBorrow.requestNumber,
+            itemSummary: purpose || `${borrowSummaryList.length} รายการ`,
+          },
+          title: 'มีคำขอยืมครุภัณฑ์ใหม่ 📋',
+          message: `นิสิต ${studentDisplayName} ยื่นคำขอยืมเลขที่ ${result.createdBorrow.requestNumber} (${purpose})`,
+          type: 'APPROVAL',
+          linkUrl: '/approvals',
+          entityType: 'BORROW',
+          entityId: result.createdBorrow.id,
+          priority: 'HIGH',
+        },
+        'BORROW'
+      ).catch((err) => console.error('Failed to notify borrow roles:', err));
+
+      if (finalAdvisorName) {
+        notifyAdvisorByName(finalAdvisorName, {
+          title: 'มีคำขอยืมครุภัณฑ์รอกดรับทราบ 👩‍🏫',
+          message: `นิสิต ${studentDisplayName} ยื่นคำขอยืมเลขที่ ${result.createdBorrow.requestNumber} ${courseInfo ? `ในรายวิชา ${courseInfo.name}` : ''} รออาจารย์รับทราบ`,
+          type: 'REQUEST_SUBMITTED',
+          priority: 'HIGH',
+          linkUrl: '/approvals',
+          entityType: 'BORROW',
+          entityId: result.createdBorrow.id,
+        }).catch((err) => console.error('Failed to notify borrow advisor:', err));
+      }
+    }
+
+    if (result.createdRequisition) {
+      notifyRoles(
+        ['OFFICER', 'ADMIN', 'APPROVER'],
+        {
+          templateId: 'REQUISITION_REQUEST_SUBMITTED',
+          variables: {
+            studentName: studentDisplayName,
+            requestNumber: result.createdRequisition.requestNumber,
+            itemSummary: purpose || `${reqSummaryList.length} รายการ`,
+          },
+          title: 'มีคำขอเบิกพัสดุใหม่ 📋',
+          message: `นิสิต ${studentDisplayName} ยื่นคำขอเบิกเลขที่ ${result.createdRequisition.requestNumber} (${purpose})`,
+          type: 'APPROVAL',
+          linkUrl: '/approvals',
+          entityType: 'REQUISITION',
+          entityId: result.createdRequisition.id,
+          priority: 'HIGH',
+        },
+        'REQUISITION'
+      ).catch((err) => console.error('Failed to notify requisition roles:', err));
+
+      if (finalAdvisorName) {
+        notifyAdvisorByName(finalAdvisorName, {
+          title: 'มีคำขอเบิกพัสดุรอกดรับทราบ 👩‍🏫',
+          message: `นิสิต ${studentDisplayName} ยื่นคำขอเบิกเลขที่ ${result.createdRequisition.requestNumber} ${courseInfo ? `ในรายวิชา ${courseInfo.name}` : ''} รออาจารย์รับทราบ`,
+          type: 'REQUEST_SUBMITTED',
+          priority: 'HIGH',
+          linkUrl: '/approvals',
+          entityType: 'REQUISITION',
+          entityId: result.createdRequisition.id,
+        }).catch((err) => console.error('Failed to notify requisition advisor:', err));
+      }
+    }
+
+    // Confirmation notification to Student
+    const combinedRefNumber =
+      result.createdBorrow && result.createdRequisition
+        ? `${result.createdBorrow.requestNumber} + ${result.createdRequisition.requestNumber}`
+        : result.createdBorrow?.requestNumber || result.createdRequisition?.requestNumber || 'REQ';
+
+    createNotification({
+      userId,
+      title: 'ยื่นคำขอเรียบร้อยแล้ว ✅',
+      message: `คำขอเลขที่ ${combinedRefNumber} ของท่านถูกส่งเข้าสู่ระบบแล้ว และอยู่ระหว่างรอการอนุมัติ`,
+      type: 'STATUS_UPDATE',
+      priority: 'NORMAL',
+      linkUrl: result.createdBorrow ? '/borrow' : '/requisitions',
+      entityType: result.createdBorrow ? 'BORROW' : 'REQUISITION',
+      entityId: result.createdBorrow?.id || result.createdRequisition?.id,
+    }).catch(() => {});
 
     // Invalidate caches so other screens immediately reflect updated reservations
     invalidateCache('borrow:');

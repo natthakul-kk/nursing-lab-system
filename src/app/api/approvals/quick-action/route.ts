@@ -347,6 +347,31 @@ export async function GET(req: Request) {
           });
         }
 
+        // Check conflict with open PracticeSlot
+        const qDayStart = new Date(roomBooking.bookingDate);
+        qDayStart.setHours(0, 0, 0, 0);
+        const qDayEnd = new Date(qDayStart);
+        qDayEnd.setDate(qDayStart.getDate() + 1);
+
+        const conflictingSlot = await prisma.practiceSlot.findFirst({
+          where: {
+            roomId: roomBooking.roomId,
+            date: { gte: qDayStart, lt: qDayEnd },
+            isOpen: true,
+            startTime: { lt: roomBooking.endTime },
+            endTime: { gt: roomBooking.startTime },
+          },
+        });
+
+        if (conflictingSlot) {
+          return renderResponseHtml({
+            success: false,
+            title: 'ห้องมีรอบเปิดฝึกทักษะด้วยตนเอง',
+            message: `ไม่สามารถอนุมัติได้เนื่องจากห้องนี้มีรอบเปิดฝึกปฏิบัติการทักษะด้วยตนเอง (${conflictingSlot.startTime} - ${conflictingSlot.endTime} น.)`,
+            isDanger: true,
+          });
+        }
+
         await prisma.roomBooking.update({
           where: { id },
           data: {
@@ -354,6 +379,42 @@ export async function GET(req: Request) {
             approvedAt: new Date(),
           },
         });
+
+        // Auto-reject any remaining PENDING room bookings that overlap
+        const competingPendings = await prisma.roomBooking.findMany({
+          where: {
+            id: { not: id },
+            roomId: roomBooking.roomId,
+            bookingDate: roomBooking.bookingDate,
+            status: 'PENDING',
+            startTime: { lt: roomBooking.endTime },
+            endTime: { gt: roomBooking.startTime },
+          },
+          include: { room: true },
+        });
+
+        for (const p of competingPendings) {
+          await prisma.roomBooking.update({
+            where: { id: p.id },
+            data: {
+              status: 'REJECTED',
+              rejectionReason: `ระบบยกเลิกอัตโนมัติเนื่องจากห้องนี้ได้รับการอนุมัติให้คำขอ ${roomBooking.bookingNumber} (${roomBooking.startTime} - ${roomBooking.endTime} น.) แล้ว`,
+            },
+          });
+
+          if (p.userId) {
+            await createNotification({
+              userId: p.userId,
+              title: 'คำขอจองห้องปฏิบัติการถูกยกเลิกเนื่องจากเวลาซ้ำซ้อน',
+              message: `คำขอ ${p.bookingNumber} ของท่านถูกยกเลิก เนื่องจากห้อง ${p.room?.name || ''} ได้รับการอนุมัติให้คำขออื่นในช่วงเวลาดังกล่าวแล้ว`,
+              type: 'STATUS_UPDATE',
+              priority: 'NORMAL',
+              linkUrl: '/rooms',
+              entityType: 'ROOM',
+              entityId: p.id,
+            }).catch(() => {});
+          }
+        }
 
         if (roomBooking.userId) {
           await createNotification({

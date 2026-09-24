@@ -124,6 +124,34 @@ export async function POST(req: Request) {
       );
     }
 
+    // 3.1 Cross-system conflict: Check if room has an APPROVED room booking during this slot's time
+    const slotDayStart = new Date(slot.date);
+    slotDayStart.setHours(0, 0, 0, 0);
+    const slotDayEnd = new Date(slotDayStart);
+    slotDayEnd.setDate(slotDayStart.getDate() + 1);
+
+    const conflictingRoom = await prisma.roomBooking.findFirst({
+      where: {
+        roomId: slot.roomId,
+        bookingDate: {
+          gte: slotDayStart,
+          lt: slotDayEnd,
+        },
+        status: 'APPROVED',
+        startTime: { lt: slot.endTime },
+        endTime: { gt: slot.startTime },
+      },
+    });
+
+    if (conflictingRoom) {
+      return NextResponse.json(
+        {
+          error: `ห้องนี้ได้รับการอนุมัติให้ใช้งานการเรียนการสอน/กิจกรรมแล้ว (${conflictingRoom.startTime} - ${conflictingRoom.endTime} น.: "${conflictingRoom.title}") จึงไม่สามารถจองรอบฝึกทักษะในช่วงเวลานี้ได้`,
+        },
+        { status: 409 }
+      );
+    }
+
     // 4. Check duplicate booking by the same student in this slot
     const existing = await prisma.practiceBooking.findFirst({
       where: {

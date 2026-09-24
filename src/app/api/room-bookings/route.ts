@@ -144,30 +144,90 @@ export async function POST(req: Request) {
     const bDate = new Date(bookingDate);
     bDate.setHours(0, 0, 0, 0);
 
-    // 3. Conflict Detection: Check overlapping APPROVED bookings for the same room on the same date
+    // 3. Conflict Detection
     const nextDay = new Date(bDate);
     nextDay.setDate(bDate.getDate() + 1);
 
-    const conflictingBookings = await prisma.roomBooking.findMany({
+    // 3.1 Check overlapping APPROVED or PENDING room bookings for the same room on the same date
+    const existingRoomBookings = await prisma.roomBooking.findMany({
       where: {
         roomId,
         bookingDate: {
           gte: bDate,
           lt: nextDay,
         },
-        status: 'APPROVED',
+        status: { in: ['APPROVED', 'PENDING'] },
       },
     });
 
-    // An overlap occurs if (startA < endB && endA > startB)
-    const conflict = conflictingBookings.find((existing) => {
-      return startTime < existing.endTime && endTime > existing.startTime;
-    });
+    const approvedConflict = existingRoomBookings.find(
+      (existing) => existing.status === 'APPROVED' && startTime < existing.endTime && endTime > existing.startTime
+    );
 
-    if (conflict) {
+    if (approvedConflict) {
       return NextResponse.json(
         {
-          error: `ห้อง "${room.name}" ได้รับการอนุมัติให้ใช้งานแล้วในช่วงเวลา ${conflict.startTime} - ${conflict.endTime} น. ("${conflict.title}") กรุณาเลือกช่วงเวลาอื่น`,
+          error: `ห้อง "${room.name}" ได้รับการอนุมัติให้ใช้งานแล้วในช่วงเวลา ${approvedConflict.startTime} - ${approvedConflict.endTime} น. ("${approvedConflict.title}") กรุณาเลือกช่วงเวลาอื่น`,
+        },
+        { status: 409 }
+      );
+    }
+
+    const pendingConflict = existingRoomBookings.find(
+      (existing) => existing.status === 'PENDING' && startTime < existing.endTime && endTime > existing.startTime
+    );
+
+    if (pendingConflict) {
+      return NextResponse.json(
+        {
+          error: `ช่วงเวลา ${pendingConflict.startTime} - ${pendingConflict.endTime} น. มีคำขออื่นรอการพิจารณาอนุมัติอยู่แล้ว ("${pendingConflict.title}") เพื่อป้องกันการจองซ้ำซ้อน กรุณาเลือกช่วงเวลาอื่น`,
+        },
+        { status: 409 }
+      );
+    }
+
+    // 3.2 Cross-system conflict: Check overlapping open PracticeSlot for the same room on this date
+    const conflictingSlots = await prisma.practiceSlot.findMany({
+      where: {
+        roomId,
+        date: {
+          gte: bDate,
+          lt: nextDay,
+        },
+        isOpen: true,
+      },
+      include: {
+        bookings: {
+          where: {
+            status: { in: ['PENDING', 'APPROVED', 'CHECKED_IN'] },
+          },
+        },
+      },
+    });
+
+    const slotConflict = conflictingSlots.find(
+      (s) => startTime < s.endTime && endTime > s.startTime
+    );
+
+    if (slotConflict) {
+      const activeCount = slotConflict.bookings.length;
+      return NextResponse.json(
+        {
+          error: `ห้อง "${room.name}" มีรอบเปิดฝึกปฏิบัติการทักษะด้วยตนเอง (${slotConflict.startTime} - ${slotConflict.endTime} น.${activeCount > 0 ? ` มีนิสิตจองแล้ว ${activeCount} คน` : ''}) จึงไม่สามารถจองห้องแบบทั่วไปในช่วงเวลานี้ได้`,
+        },
+        { status: 409 }
+      );
+    }
+
+    // 3.3 Check duplicate submission by the same user for this room, date and overlapping time
+    const duplicateRequest = existingRoomBookings.find(
+      (existing) => existing.userId === userId && startTime < existing.endTime && endTime > existing.startTime
+    );
+
+    if (duplicateRequest) {
+      return NextResponse.json(
+        {
+          error: `ท่านได้ส่งคำขอจองห้องนี้ในช่วงเวลา ${duplicateRequest.startTime} - ${duplicateRequest.endTime} น. ไปแล้ว (เลขที่: ${duplicateRequest.bookingNumber})`,
         },
         { status: 409 }
       );

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import {
   Building,
@@ -10,6 +10,7 @@ import {
   Clock,
   CheckCircle2,
   XCircle,
+  AlertCircle,
   AlertTriangle,
   Plus,
   Lock,
@@ -189,6 +190,24 @@ export default function RoomsPage() {
     }
   }, [currentUser]);
 
+  // Real-time conflict detection for the selected room and date
+  const selectedRoomBookings = useMemo(() => {
+    if (!bookingForm.roomId || !bookingForm.bookingDate) return [];
+    return bookings.filter((b) => {
+      if (b.roomId !== bookingForm.roomId) return false;
+      if (!b.bookingDate) return false;
+      const bDateStr = new Date(b.bookingDate).toISOString().slice(0, 10);
+      return bDateStr === bookingForm.bookingDate && (b.status === 'APPROVED' || b.status === 'PENDING');
+    });
+  }, [bookings, bookingForm.roomId, bookingForm.bookingDate]);
+
+  const conflictItem = useMemo(() => {
+    if (!bookingForm.startTime || !bookingForm.endTime) return null;
+    return selectedRoomBookings.find(
+      (b) => bookingForm.startTime < b.endTime && bookingForm.endTime > b.startTime
+    );
+  }, [selectedRoomBookings, bookingForm.startTime, bookingForm.endTime]);
+
   // Actions: Submit Booking Request
   const handleSubmitBooking = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -206,6 +225,14 @@ export default function RoomsPage() {
     }
     if (bookingForm.startTime >= bookingForm.endTime) {
       alert('เวลาเริ่มต้นต้องมาก่อนเวลาสิ้นสุด');
+      return;
+    }
+    if (conflictItem) {
+      alert(
+        `ช่วงเวลา ${bookingForm.startTime} - ${bookingForm.endTime} น. ทับซ้อนกับคำขออื่น ("${conflictItem.title}") สถานะ: ${
+          conflictItem.status === 'APPROVED' ? 'อนุมัติแล้ว' : 'รอพิจารณา'
+        } กรุณาเลือกช่วงเวลาอื่น`
+      );
       return;
     }
     if (!bookingForm.title?.trim()) {
@@ -1459,6 +1486,57 @@ export default function RoomsPage() {
                 </div>
               </div>
 
+              {/* Conflict Status & Existing Bookings Banner */}
+              {bookingForm.roomId && bookingForm.bookingDate && (
+                <div className="space-y-2">
+                  {conflictItem ? (
+                    <div className="flex items-start gap-2.5 p-3 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 rounded-2xl text-rose-800 dark:text-rose-300 text-xs">
+                      <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                      <div className="space-y-0.5">
+                        <p className="font-bold">
+                          ช่วงเวลาที่เลือกทับซ้อนกับคำขออื่น ({conflictItem.startTime} - {conflictItem.endTime} น.)
+                        </p>
+                        <p className="text-[11px] text-rose-700 dark:text-rose-400">
+                          ชื่องาน: &ldquo;{conflictItem.title}&rdquo; (สถานะ: {conflictItem.status === 'APPROVED' ? 'อนุมัติแล้ว' : 'รอพิจารณา'}) — กรุณาเลือกช่วงเวลาอื่น
+                        </p>
+                      </div>
+                    </div>
+                  ) : selectedRoomBookings.length > 0 ? (
+                    <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 space-y-1.5">
+                      <div className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                        <span className="flex items-center gap-1.5">
+                          <CalendarDays className="w-3.5 h-3.5 text-teal-600" />
+                          <span>ตารางการใช้ห้องในวันที่เลือก:</span>
+                        </span>
+                        <span className="text-[10px] text-slate-500 font-normal">มี {selectedRoomBookings.length} รายการ</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {selectedRoomBookings.map((b) => (
+                          <span
+                            key={b.id}
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold border ${
+                              b.status === 'APPROVED'
+                                ? 'bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800'
+                                : 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800'
+                            }`}
+                          >
+                            <Clock className="w-3 h-3" />
+                            <span>
+                              {b.startTime} - {b.endTime} น. ({b.status === 'APPROVED' ? 'อนุมัติแล้ว' : 'รออนุมัติ'})
+                            </span>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-[11px] text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 p-2.5 rounded-2xl border border-emerald-200 dark:border-emerald-800">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span>ห้องว่างตลอดทั้งวัน สามารถเลือกช่วงเวลาที่ต้องการได้</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Title & Purpose */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
@@ -1664,10 +1742,14 @@ export default function RoomsPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting}
-                  className="px-5 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow transition flex items-center gap-1.5"
+                  disabled={submitting || !!conflictItem}
+                  className="px-5 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold shadow transition flex items-center gap-1.5 cursor-pointer"
                 >
-                  {submitting ? 'กำลังบันทึก...' : 'ยื่นคำขอจองห้อง'}
+                  {submitting
+                    ? 'กำลังบันทึก...'
+                    : conflictItem
+                    ? '⚠️ เวลาซ้ำซ้อน ไม่สามารถจองได้'
+                    : 'ยื่นคำขอจองห้อง'}
                 </button>
               </div>
             </form>

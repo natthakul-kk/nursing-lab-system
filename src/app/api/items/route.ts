@@ -105,11 +105,17 @@ export async function GET(req: Request) {
               id: true,
               lotNumber: true,
               expiryDate: true,
+              receivedDate: true,
+              packSize: true,
               quantityRemaining: true,
               openPackRemainder: true,
               brand: true,
             },
-            orderBy: { expiryDate: 'asc' },
+            orderBy: [
+              { expiryDate: 'asc' },
+              { receivedDate: 'asc' },
+              { createdAt: 'asc' },
+            ],
           },
           targetRepacks: {
             where: {

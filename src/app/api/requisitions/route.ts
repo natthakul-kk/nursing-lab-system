@@ -45,7 +45,11 @@ export async function GET(req: Request) {
                 storageLocation: true,
                 stockLots: {
                   where: { quantityRemaining: { gt: 0 } },
-                  orderBy: { expiryDate: 'asc' },
+                  orderBy: [
+                    { expiryDate: 'asc' },
+                    { receivedDate: 'asc' },
+                    { createdAt: 'asc' },
+                  ],
                 },
               },
             },
@@ -140,9 +144,17 @@ export async function POST(req: Request) {
         return sum + (p.isSubUnit ? p.quantityRequested : p.quantityRequested * ratio);
       }, 0);
 
-      const totalPhysicalPieces = (totalStockRemaining * ratio) + totalOpenRemainder;
+      const totalPhysicalPieces = itemRecord.stockLots.reduce((sum, lot) => {
+        const pSize = Number(lot.packSize) > 0 ? Number(lot.packSize) : ratio;
+        const pPieces = lot.quantityRemaining > 0
+          ? (typeof lot.piecesRemaining === 'number' && lot.piecesRemaining <= lot.quantityRemaining * pSize
+              ? lot.piecesRemaining
+              : lot.quantityRemaining * pSize)
+          : 0;
+        return sum + pPieces + (lot.openPackRemainder || 0);
+      }, 0);
       const totalAvailablePieces = Math.max(0, totalPhysicalPieces - reservedPieces);
-      const availableWholeStock = Math.floor(totalAvailablePieces / ratio);
+      const availableWholeStock = ratio > 1 ? Math.floor(totalAvailablePieces / ratio) : Math.max(0, totalStockRemaining - Math.ceil(reservedPieces / ratio));
 
       const latestLot = itemRecord.stockLots[0];
       const wholeUnitCost = latestLot?.unitCost || 0;

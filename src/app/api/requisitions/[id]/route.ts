@@ -250,10 +250,21 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           ];
         }
 
-        const availableLots = await prisma.stockLot.findMany({
+        let availableLots = await prisma.stockLot.findMany({
           where: whereLots,
-          orderBy: [{ expiryDate: 'asc' }, { receivedDate: 'asc' }],
+          orderBy: [
+            { expiryDate: 'asc' },
+            { receivedDate: 'asc' },
+            { createdAt: 'asc' },
+          ],
         });
+
+        if (adj && (adj as any).lotId) {
+          const selectedLot = availableLots.find((l) => l.id === (adj as any).lotId);
+          if (selectedLot) {
+            availableLots = [selectedLot, ...availableLots.filter((l) => l.id !== (adj as any).lotId)];
+          }
+        }
 
         if (!isSub) {
           // ==========================================
@@ -268,7 +279,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
             const costForThisDeduction = deductFromThisLot * lot.unitCost;
             const newQty = Math.max(0, lot.quantityRemaining - deductFromThisLot);
             const openRem = lot.openPackRemainder || 0;
-            const newPieces = Math.max(0, (newQty * ratio) + openRem);
+            const lotPackSize = Number(lot.packSize) > 0 ? Number(lot.packSize) : ratio;
+            const newPieces = Math.max(0, (newQty * lotPackSize) + openRem);
 
             // Update lot
             await prisma.stockLot.update({
@@ -357,7 +369,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
               const costForPacks = deductPacks * lot.unitCost;
               const newQty = lot.quantityRemaining - deductPacks;
               const openRem = lot.openPackRemainder || 0;
-              const newPieces = Math.max(0, (newQty * ratio) + openRem);
+              const lotPackSize = Number(lot.packSize) > 0 ? Number(lot.packSize) : ratio;
+              const newPieces = Math.max(0, (newQty * lotPackSize) + openRem);
 
               lot.quantityRemaining = newQty;
 
@@ -412,14 +425,14 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
                   referenceNumber: requisition.requestNumber,
                   createdById: userId,
                   note: dispenseNote
-                    ? `จ่ายแพ็คเต็ม (Option A: เบิกย่อย ${deductPacks * ratio} ${reqItem.requestedUnit || reqItem.item?.usageUnit || 'ชิ้น'}) ตามคำขอ ${requisition.requestNumber} | ${String(dispenseNote).trim()}`
-                    : `จ่ายแพ็คเต็ม (Option A: เบิกย่อย ${deductPacks * ratio} ${reqItem.requestedUnit || reqItem.item?.usageUnit || 'ชิ้น'}) ตามคำขอ ${requisition.requestNumber}`,
+                    ? `จ่ายแพ็คเต็ม (Option A: เบิกย่อย ${deductPacks * lotPackSize} ${reqItem.requestedUnit || reqItem.item?.usageUnit || 'ชิ้น'}) ตามคำขอ ${requisition.requestNumber} | ${String(dispenseNote).trim()}`
+                    : `จ่ายแพ็คเต็ม (Option A: เบิกย่อย ${deductPacks * lotPackSize} ${reqItem.requestedUnit || reqItem.item?.usageUnit || 'ชิ้น'}) ตามคำขอ ${requisition.requestNumber}`,
                 },
               });
 
               itemTotalCost += costForPacks;
               wholePacksRemainingToDeduct -= deductPacks;
-              piecesNeeded -= deductPacks * ratio;
+              piecesNeeded -= deductPacks * lotPackSize;
             }
           }
 
@@ -433,9 +446,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
               const takeFromOpen = Math.min(currentOpen, piecesNeeded);
               const newOpen = currentOpen - takeFromOpen;
-              const pieceCost = lot.unitCost / ratio;
+              const lotPackSize = Number(lot.packSize) > 0 ? Number(lot.packSize) : ratio;
+              const pieceCost = lot.unitCost / lotPackSize;
               const costForLoose = takeFromOpen * pieceCost;
-              const newPieces = Math.max(0, (lot.quantityRemaining * ratio) + newOpen);
+              const newPieces = Math.max(0, (lot.quantityRemaining * lotPackSize) + newOpen);
 
               lot.openPackRemainder = newOpen;
 
@@ -452,7 +466,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
                   itemId: reqItem.itemId,
                   lotId: lot.id,
                   type: 'OUT_REQUISITION',
-                  quantity: -(takeFromOpen / ratio),
+                  quantity: -(takeFromOpen / lotPackSize),
                   unitCost: lot.unitCost,
                   totalCost: costForLoose,
                   courseId: requisition.courseId,
@@ -474,15 +488,16 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
                 if (piecesNeeded <= 0) break;
                 if (lot.quantityRemaining <= 0) continue;
 
-                const packsToOpen = Math.min(lot.quantityRemaining, Math.ceil(piecesNeeded / ratio));
-                const piecesProvided = packsToOpen * ratio;
+                const lotPackSize = Number(lot.packSize) > 0 ? Number(lot.packSize) : ratio;
+                const packsToOpen = Math.min(lot.quantityRemaining, Math.ceil(piecesNeeded / lotPackSize));
+                const piecesProvided = packsToOpen * lotPackSize;
                 const piecesToDeduct = Math.min(piecesProvided, piecesNeeded);
                 const leftoverPieces = piecesProvided - piecesToDeduct;
 
                 const newQty = lot.quantityRemaining - packsToOpen;
                 const currentOpen = lot.openPackRemainder || 0;
                 const newOpen = currentOpen + leftoverPieces;
-                const newPieces = Math.max(0, (newQty * ratio) + newOpen);
+                const newPieces = Math.max(0, (newQty * lotPackSize) + newOpen);
 
                 lot.quantityRemaining = newQty;
                 lot.openPackRemainder = newOpen;
@@ -509,7 +524,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
                   });
                 }
 
-                const pieceCost = lot.unitCost / ratio;
+                const pieceCost = lot.unitCost / lotPackSize;
                 const costForDispensedPieces = piecesToDeduct * pieceCost;
 
                 await prisma.stockTransaction.create({
@@ -517,7 +532,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
                     itemId: reqItem.itemId,
                     lotId: lot.id,
                     type: 'OUT_REQUISITION',
-                    quantity: -(piecesToDeduct / ratio),
+                    quantity: -(piecesToDeduct / lotPackSize),
                     unitCost: lot.unitCost,
                     totalCost: costForDispensedPieces,
                     courseId: requisition.courseId,

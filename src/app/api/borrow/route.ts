@@ -50,7 +50,11 @@ export async function GET(req: Request) {
                     storageLocation: true,
                     stockLots: {
                       where: { quantityRemaining: { gt: 0 } },
-                      orderBy: { expiryDate: 'asc' },
+                      orderBy: [
+                        { expiryDate: 'asc' },
+                        { receivedDate: 'asc' },
+                        { createdAt: 'asc' },
+                      ],
                     },
                   },
                 },

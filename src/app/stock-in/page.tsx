@@ -125,10 +125,10 @@ export default function StockInPage() {
       setForm((prev) => ({
         ...prev,
         itemId: selectedId,
-        brand: prev.brand || it.brand || '',
-        packSize: prev.packSize || it.conversionRatio || 1,
-        packageUnit: prev.packageUnit || it.unit || 'ห่อ',
-        usageUnit: prev.usageUnit || it.usageUnit || 'ชิ้น',
+        brand: it.brand || '',
+        packSize: it.conversionRatio || 1,
+        packageUnit: it.unit || 'ห่อ',
+        usageUnit: it.usageUnit || 'ชิ้น',
       }));
     }
   };

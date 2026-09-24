@@ -87,6 +87,7 @@ export default function RequisitionsPage() {
     location?: string | null;
     storageLocation?: any;
     stockLots?: any[];
+    lotId?: string;
     recommendedPacks?: any;
   }[]>([]);
   const [dispenseNote, setDispenseNote] = useState('');
@@ -619,9 +620,11 @@ export default function RequisitionsPage() {
                       setDispenseItems(
                         (req.items || []).map((it: any) => {
                           const matchC = consumables.find((c) => c.id === it.itemId);
+                          const lots = it.item?.stockLots ?? matchC?.stockLots ?? [];
                           return {
                             id: it.id,
                             itemId: it.itemId,
+                            lotId: lots.length > 0 ? lots[0].id : undefined,
                             name: it.item?.name || 'วัสดุสิ้นเปลือง',
                             unit: it.item?.unit || 'หน่วย',
                             requestedQty: it.quantityRequested,
@@ -634,7 +637,7 @@ export default function RequisitionsPage() {
                             currentStock: it.item?.currentStock ?? matchC?.currentStock ?? 0,
                             location: it.item?.location ?? matchC?.location,
                             storageLocation: it.item?.storageLocation ?? matchC?.storageLocation,
-                            stockLots: it.item?.stockLots ?? matchC?.stockLots ?? [],
+                            stockLots: lots,
                             recommendedPacks: matchC?.nextRecommendedPacks || null,
                           };
                         })
@@ -1258,19 +1261,30 @@ export default function RequisitionsPage() {
                       <div className="p-2 rounded-lg bg-teal-50/70 dark:bg-teal-950/40 border border-teal-100 dark:border-teal-900/60 flex flex-wrap items-center gap-2 text-[11px] text-teal-900 dark:text-teal-200">
                         <span className="font-semibold flex items-center gap-1">
                           <Package className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-                          📦 แนะนำตัดสต็อก (FIFO):
+                          📦 ล็อตที่ตัดสต็อก (FIFO แนะนำ):
                         </span>
-                        <span className="font-mono font-bold text-teal-800 dark:text-teal-300 bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-teal-200 dark:border-teal-800">
-                          Lot {it.stockLots[0].lotNumber}
-                        </span>
-                        {it.stockLots[0].expiryDate && (
-                          <span className="text-[10px] text-teal-700 dark:text-teal-400">
-                            (EXP: {new Date(it.stockLots[0].expiryDate).toLocaleDateString('th-TH')})
+                        {it.stockLots.length === 1 ? (
+                          <span className="font-mono font-bold text-teal-800 dark:text-teal-300 bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-teal-200 dark:border-teal-800">
+                            Lot {it.stockLots[0].lotNumber} {it.stockLots[0].expiryDate ? `(EXP: ${new Date(it.stockLots[0].expiryDate).toLocaleDateString('th-TH')})` : ''} - คงเหลือ {it.stockLots[0].quantityRemaining} {it.unit}
                           </span>
+                        ) : (
+                          <select
+                            value={it.lotId || it.stockLots[0].id}
+                            onChange={(e) => {
+                              const chosenLotId = e.target.value;
+                              setDispenseItems((prev) =>
+                                prev.map((item, i) => (i === idx ? { ...item, lotId: chosenLotId } : item))
+                              );
+                            }}
+                            className="bg-white dark:bg-slate-900 border border-teal-300 dark:border-teal-700 text-teal-900 dark:text-teal-200 text-xs font-semibold rounded-lg px-2 py-1 focus:ring-1 focus:ring-teal-500"
+                          >
+                            {it.stockLots.map((l: any, lIdx: number) => (
+                              <option key={l.id} value={l.id}>
+                                {lIdx === 0 ? '⭐ [FIFO แนะนำ] ' : ''}Lot {l.lotNumber} {l.expiryDate ? `(EXP: ${new Date(l.expiryDate).toLocaleDateString('th-TH')})` : '(ไม่ระบุวันหมดอายุ)'} - คงเหลือ {l.quantityRemaining} {it.unit}
+                              </option>
+                            ))}
+                          </select>
                         )}
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400">
-                          คงเหลือในล็อต: {it.stockLots[0].quantityRemaining} {it.unit}
-                        </span>
                       </div>
                     )}
 

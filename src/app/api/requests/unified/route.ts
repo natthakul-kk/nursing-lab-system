@@ -170,10 +170,18 @@ export async function POST(req: Request) {
         const totalStockRemaining = validLots.reduce((sum: number, lot: any) => sum + lot.quantityRemaining, 0);
         const totalOpenRemainder = validLots.reduce((sum: number, lot: any) => sum + (lot.openPackRemainder || 0), 0);
         const ratio = Number(itemRecord.conversionRatio) > 0 ? Number(itemRecord.conversionRatio) : 1;
-        const totalPhysicalPieces = (totalStockRemaining * ratio) + totalOpenRemainder;
+        const totalPhysicalPieces = validLots.reduce((sum: number, lot: any) => {
+          const pSize = Number(lot.packSize) > 0 ? Number(lot.packSize) : ratio;
+          const pPieces = lot.quantityRemaining > 0
+            ? (typeof lot.piecesRemaining === 'number' && lot.piecesRemaining <= lot.quantityRemaining * pSize
+                ? lot.piecesRemaining
+                : lot.quantityRemaining * pSize)
+            : 0;
+          return sum + pPieces + (lot.openPackRemainder || 0);
+        }, 0);
         const reservedPieces = reservedPiecesMap.get(it.itemId) || 0;
         const totalAvailablePieces = Math.max(0, totalPhysicalPieces - reservedPieces);
-        const availableStock = Math.floor(totalAvailablePieces / ratio);
+        const availableStock = ratio > 1 ? Math.floor(totalAvailablePieces / ratio) : Math.max(0, totalStockRemaining - Math.ceil(reservedPieces / ratio));
         const isSub = it.isSubUnit === true;
 
         const latestLot = itemRecord.stockLots[0];

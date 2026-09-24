@@ -103,6 +103,8 @@ export default function BorrowPage() {
     conversionRatio?: number;
     usageUnit?: string | null;
     currentStock: number;
+    lotId?: string;
+    stockLots?: any[];
   }[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [acknowledgingId, setAcknowledgingId] = useState<string | null>(null);
@@ -930,9 +932,11 @@ export default function BorrowPage() {
                         setCheckoutReqItems(
                           (req.requisitionRequest?.items || []).map((it: any) => {
                             const matchCons = consumablesList.find((c) => c.id === it.itemId);
+                            const lots = it.item?.stockLots ?? matchCons?.stockLots ?? [];
                             return {
                               id: it.id,
                               itemId: it.itemId,
+                              lotId: lots.length > 0 ? lots[0].id : undefined,
                               name: it.item?.name || matchCons?.name || 'วัสดุสิ้นเปลือง',
                               unit: it.item?.unit || matchCons?.unit || 'หน่วย',
                               requestedQty: it.quantityRequested,
@@ -943,6 +947,7 @@ export default function BorrowPage() {
                               conversionRatio: it.item?.conversionRatio || matchCons?.conversionRatio || 1,
                               usageUnit: it.item?.usageUnit || matchCons?.usageUnit,
                               currentStock: it.item?.currentStock ?? matchCons?.currentStock ?? 0,
+                              stockLots: lots,
                             };
                           })
                         );
@@ -1981,25 +1986,39 @@ export default function BorrowPage() {
                             )}
 
                             {/* Consumable Recommended FIFO Lot */}
-                            {it.allowed && matchCons?.stockLots && matchCons.stockLots.length > 0 && (
-                              <div className="p-2 rounded-lg bg-teal-50/70 dark:bg-teal-950/40 border border-teal-100 dark:border-teal-900/60 flex flex-wrap items-center gap-2 text-[11px] text-teal-900 dark:text-teal-200">
-                                <span className="font-semibold flex items-center gap-1">
-                                  <Package className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-                                  📦 แนะนำตัดสต็อก (FIFO):
-                                </span>
-                                <span className="font-mono font-bold text-teal-800 dark:text-teal-300 bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-teal-200 dark:border-teal-800">
-                                  Lot {matchCons.stockLots[0].lotNumber}
-                                </span>
-                                {matchCons.stockLots[0].expiryDate && (
-                                  <span className="text-[10px] text-teal-700 dark:text-teal-400">
-                                    (EXP: {new Date(matchCons.stockLots[0].expiryDate).toLocaleDateString('th-TH')})
+                            {it.allowed && (it.stockLots || matchCons?.stockLots) && (it.stockLots || matchCons?.stockLots).length > 0 && (() => {
+                              const availLots = it.stockLots?.length ? it.stockLots : (matchCons?.stockLots || []);
+                              return (
+                                <div className="p-2 rounded-lg bg-teal-50/70 dark:bg-teal-950/40 border border-teal-100 dark:border-teal-900/60 flex flex-wrap items-center gap-2 text-[11px] text-teal-900 dark:text-teal-200">
+                                  <span className="font-semibold flex items-center gap-1">
+                                    <Package className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                                    📦 ล็อตที่ตัดสต็อก (FIFO แนะนำ):
                                   </span>
-                                )}
-                                <span className="text-[10px] text-slate-500 dark:text-slate-400">
-                                  คงเหลือ: {matchCons.stockLots[0].quantityRemaining} {it.unit}
-                                </span>
-                              </div>
-                            )}
+                                  {availLots.length === 1 ? (
+                                    <span className="font-mono font-bold text-teal-800 dark:text-teal-300 bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-teal-200 dark:border-teal-800">
+                                      Lot {availLots[0].lotNumber} {availLots[0].expiryDate ? `(EXP: ${new Date(availLots[0].expiryDate).toLocaleDateString('th-TH')})` : ''} - คงเหลือ {availLots[0].quantityRemaining} {it.unit}
+                                    </span>
+                                  ) : (
+                                    <select
+                                      value={it.lotId || availLots[0].id}
+                                      onChange={(e) => {
+                                        const chosenLotId = e.target.value;
+                                        setCheckoutReqItems((prev) =>
+                                          prev.map((item, i) => (i === idx ? { ...item, lotId: chosenLotId } : item))
+                                        );
+                                      }}
+                                      className="bg-white dark:bg-slate-900 border border-teal-300 dark:border-teal-700 text-teal-900 dark:text-teal-200 text-xs font-semibold rounded-lg px-2 py-1 focus:ring-1 focus:ring-teal-500"
+                                    >
+                                      {availLots.map((l: any, lIdx: number) => (
+                                        <option key={l.id} value={l.id}>
+                                          {lIdx === 0 ? '⭐ [FIFO แนะนำ] ' : ''}Lot {l.lotNumber} {l.expiryDate ? `(EXP: ${new Date(l.expiryDate).toLocaleDateString('th-TH')})` : '(ไม่ระบุวันหมดอายุ)'} - คงเหลือ {l.quantityRemaining} {it.unit}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  )}
+                                </div>
+                              );
+                            })()}
 
                             {/* Sterile Repack Recommendation */}
                             {recPacks && it.allowed && (

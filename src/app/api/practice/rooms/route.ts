@@ -6,14 +6,24 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const includeInactive = searchParams.get('includeInactive') === 'true';
+    const includeArchived = searchParams.get('includeArchived') === 'true';
 
-    const cacheKey = `practice:rooms:list:${includeInactive ? 'ALL' : 'ACTIVE'}`;
+    const cacheKey = `practice:rooms:list:${includeInactive ? 'ALL' : 'ACTIVE'}:${includeArchived ? 'WITH_ARCHIVED' : 'NO_ARCHIVED'}`;
     const cached = getCached(cacheKey);
     if (cached) {
       return NextResponse.json(cached);
     }
 
-    const where = includeInactive ? {} : { isActive: true };
+    const where: any = {};
+    if (!includeInactive) {
+      where.isActive = true;
+    }
+    if (!includeArchived) {
+      where.NOT = [
+        { closeReason: { contains: 'ปิดการใช้งานถาวร' } },
+        { closeReason: { contains: 'ประวัติการจอง' } },
+      ];
+    }
 
     const rooms = await prisma.practiceRoom.findMany({
       where,

@@ -82,9 +82,9 @@ export default function ApprovalsPage() {
 
   useEffect(() => {
     if (currentUser && !isAdmin) {
-      // If user came via direct deep link with specific type, do not override
+      // If user came via direct deep link with specific type or id, do not override
       const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
-      if (params?.get('type')) return;
+      if (params?.get('type') || params?.get('id')) return;
 
       const hasItems = canUserApprove(currentUser, 'BORROW') || canUserApprove(currentUser, 'REQUISITION');
       const hasRooms = canUserApprove(currentUser, 'PRACTICE') || canUserApprove(currentUser, 'ROOM');
@@ -107,6 +107,36 @@ export default function ApprovalsPage() {
       setViewScope('RELEVANT');
     }
   }, [isAdmin]);
+
+  // Auto-switch tab and statusFilter if a specific item is targeted via query param
+  useEffect(() => {
+    if (!highlightId || loading) return;
+    const all = [
+      ...allBorrows.map((b) => ({ ...b, _type: 'BORROW' })),
+      ...allRequisitions.map((r) => ({ ...r, _type: 'REQUISITION' })),
+      ...allPracticeBookings.map((p) => ({ ...p, _type: 'PRACTICE' })),
+      ...allRoomBookings.map((rm) => ({ ...rm, _type: 'ROOM' })),
+    ];
+    const match = all.find((item) => item.id === highlightId);
+    if (match) {
+      if (match.status === 'PENDING') {
+        setStatusFilter('PENDING');
+      } else if (isApproved(match.status)) {
+        setStatusFilter('APPROVED');
+      } else if (match.status === 'REJECTED') {
+        setStatusFilter('REJECTED');
+      }
+      if (match._type === 'ROOM') {
+        setActiveTab('ROOM');
+      } else if (match._type === 'PRACTICE') {
+        setActiveTab('PRACTICE');
+      } else if (match._type === 'BORROW') {
+        setActiveTab('BORROW');
+      } else if (match._type === 'REQUISITION') {
+        setActiveTab('REQUISITION');
+      }
+    }
+  }, [highlightId, loading, allBorrows, allRequisitions, allPracticeBookings, allRoomBookings]);
 
   // Reject Modal State
   const [rejectItem, setRejectItem] = useState<{ id: string; type: 'BORROW' | 'REQUISITION' | 'PRACTICE' | 'ROOM' } | null>(null);
@@ -368,26 +398,41 @@ export default function ApprovalsPage() {
     return false;
   };
 
-  // Base datasets filtered by scope (RELEVANT: only requests involving this teacher vs ALL: all faculty requests)
+  // Check if an item is relevant to the current user (either by teaching/advising OR by approval responsibility scope)
+  const isRelevantToUser = (
+    item: any,
+    user: any,
+    type: 'BORROW' | 'REQUISITION' | 'PRACTICE' | 'ROOM'
+  ): boolean => {
+    if (!user) return false;
+    // Highlighted item from deep link is always visible
+    if (item.id === highlightId) return true;
+    // If user has approval rights for this scope, all items in this scope are under their responsibility
+    if (canUserApprove(user, type)) return true;
+    // Otherwise check if teacher/advisor/creator
+    return isRelevantToTeacher(item, user);
+  };
+
+  // Base datasets filtered by scope (RELEVANT: requests in user's approval scope or assigned teaching vs ALL: all faculty requests)
   const scopedBorrows =
     viewScope === 'ALL'
       ? allBorrows
-      : allBorrows.filter((b) => isRelevantToTeacher(b, currentUser));
+      : allBorrows.filter((b) => isRelevantToUser(b, currentUser, 'BORROW'));
 
   const scopedRequisitions =
     viewScope === 'ALL'
       ? allRequisitions
-      : allRequisitions.filter((r) => isRelevantToTeacher(r, currentUser));
+      : allRequisitions.filter((r) => isRelevantToUser(r, currentUser, 'REQUISITION'));
 
   const scopedPracticeBookings =
     viewScope === 'ALL'
       ? allPracticeBookings
-      : allPracticeBookings.filter((p) => isRelevantToTeacher(p, currentUser));
+      : allPracticeBookings.filter((p) => isRelevantToUser(p, currentUser, 'PRACTICE'));
 
   const scopedRoomBookings =
     viewScope === 'ALL'
       ? allRoomBookings
-      : allRoomBookings.filter((r) => isRelevantToTeacher(r, currentUser));
+      : allRoomBookings.filter((r) => isRelevantToUser(r, currentUser, 'ROOM'));
 
   // Filter Borrows by statusFilter
   const filteredBorrows = scopedBorrows.filter((b) => {
@@ -460,10 +505,10 @@ export default function ApprovalsPage() {
     allRoomBookings.length;
 
   const totalRelevantItems =
-    allBorrows.filter((b) => isRelevantToTeacher(b, currentUser)).length +
-    allRequisitions.filter((r) => !r.borrowRequest && isRelevantToTeacher(r, currentUser)).length +
-    allPracticeBookings.filter((p) => isRelevantToTeacher(p, currentUser)).length +
-    allRoomBookings.filter((r) => isRelevantToTeacher(r, currentUser)).length;
+    allBorrows.filter((b) => isRelevantToUser(b, currentUser, 'BORROW')).length +
+    allRequisitions.filter((r) => !r.borrowRequest && isRelevantToUser(r, currentUser, 'REQUISITION')).length +
+    allPracticeBookings.filter((p) => isRelevantToUser(p, currentUser, 'PRACTICE')).length +
+    allRoomBookings.filter((r) => isRelevantToUser(r, currentUser, 'ROOM')).length;
 
   const getStageLabel = (status: string, type: 'BORROW' | 'REQUISITION') => {
     if (type === 'BORROW') {
@@ -540,7 +585,11 @@ export default function ApprovalsPage() {
             <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
               <span>ขอบเขตรายการที่แสดง:</span>
               <span className="text-teal-700 dark:text-teal-400 font-extrabold">
-                {viewScope === 'RELEVANT' ? 'เฉพาะคำขอที่เกี่ยวข้องกับท่าน (ตามรายวิชา/อาจารย์ที่ปรึกษา)' : 'คำขอทั้งหมดในระบบ (ทุกรายวิชา)'}
+                {viewScope === 'RELEVANT'
+                  ? canApprove
+                    ? 'เฉพาะคำขอในขอบเขตหน้าที่ความรับผิดชอบ / รายวิชาที่ดูแล'
+                    : 'เฉพาะคำขอที่เกี่ยวข้องกับท่าน (ตามรายวิชา/อาจารย์ที่ปรึกษา)'
+                  : 'คำขอทั้งหมดในระบบ (ทุกขอบเขต/ทุกรายวิชา)'}
               </span>
             </div>
             {currentUser && (
@@ -568,7 +617,7 @@ export default function ApprovalsPage() {
                 )}
                 {canApprove && (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-teal-100/80 dark:bg-teal-950/70 text-teal-800 dark:text-teal-300 font-bold text-[10px] border border-teal-200 dark:border-teal-800">
-                    <ShieldCheck className="w-3 h-3 text-teal-600 dark:text-teal-400" />
+                    <ShieldCheck className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
                     <span>{formatApprovalScopeBadge(currentUser.approvalScopes)}</span>
                   </span>
                 )}
@@ -588,7 +637,7 @@ export default function ApprovalsPage() {
             }`}
           >
             <CheckCircle2 className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-            <span>เฉพาะที่เกี่ยวข้องกับฉัน ({totalRelevantItems})</span>
+            <span>{canApprove ? 'เฉพาะในขอบเขตของฉัน' : 'เฉพาะที่เกี่ยวข้องกับฉัน'} ({totalRelevantItems})</span>
           </button>
           <button
             type="button"
@@ -726,7 +775,11 @@ export default function ApprovalsPage() {
                 <p className="font-bold text-slate-700 dark:text-slate-200 text-sm">ไม่มีคำขอค้างรอการอนุมัติในหมวดนี้</p>
                 {viewScope === 'RELEVANT' && totalSystemItems > 0 && (
                   <div className="pt-2 text-slate-500 dark:text-slate-400 text-[11px] max-w-md mx-auto space-y-2">
-                    <p>ขณะนี้ไม่มีคำขอที่ระบุชื่อของท่านเป็นอาจารย์ผู้รับทราบหรืออาจารย์ประจำวิชาในสถานะนี้</p>
+                    <p>
+                      {canApprove
+                        ? 'ขณะนี้ไม่มีคำขอที่รอการพิจารณาในขอบเขตหน้าที่ความรับผิดชอบของท่าน'
+                        : 'ขณะนี้ไม่มีคำขอที่ระบุชื่อของท่านเป็นอาจารย์ผู้รับทราบหรืออาจารย์ประจำวิชาในสถานะนี้'}
+                    </p>
                     <button
                       type="button"
                       onClick={() => setViewScope('ALL')}

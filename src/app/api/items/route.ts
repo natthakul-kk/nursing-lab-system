@@ -2,6 +2,91 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCached, setCached, invalidateCache } from '@/lib/cache';
 
+function computeConsumableStock(lots: any[], defaultRatio: number, reservedPieces: number) {
+  const physicalStock = lots.reduce((sum, lot) => sum + (lot.quantityRemaining || 0), 0);
+  const physicalOpen = lots.reduce((sum, lot) => sum + (lot.openPackRemainder || 0), 0);
+  const totalPhysicalPieces = lots.reduce((sum, lot) => {
+    const pSize = Number(lot.packSize) > 0 ? Number(lot.packSize) : defaultRatio;
+    const pPieces = lot.quantityRemaining > 0
+      ? (typeof lot.piecesRemaining === 'number' && lot.piecesRemaining <= lot.quantityRemaining * pSize
+          ? lot.piecesRemaining
+          : lot.quantityRemaining * pSize)
+      : 0;
+    return sum + pPieces + (lot.openPackRemainder || 0);
+  }, 0);
+
+  if (reservedPieces <= 0) {
+    return {
+      physicalStock,
+      availableStock: physicalStock,
+      openPackRemainder: physicalOpen,
+      totalPiecesRemaining: totalPhysicalPieces,
+      reservedStock: 0,
+    };
+  }
+
+  // Simulate reserving piecesNeeded in FIFO order across lots:
+  const simLots = lots.map((l) => {
+    const pSize = Number(l.packSize) > 0 ? Number(l.packSize) : defaultRatio;
+    return {
+      packSize: pSize,
+      quantityRemaining: l.quantityRemaining || 0,
+      openPackRemainder: l.openPackRemainder || 0,
+    };
+  });
+
+  let piecesToReserve = reservedPieces;
+
+  // Step 1: Dedicate whole packs if piecesToReserve >= lot.packSize
+  for (const l of simLots) {
+    if (piecesToReserve <= 0) break;
+    if (l.quantityRemaining <= 0) continue;
+    const packs = Math.min(l.quantityRemaining, Math.floor(piecesToReserve / l.packSize));
+    if (packs > 0) {
+      l.quantityRemaining -= packs;
+      piecesToReserve -= packs * l.packSize;
+    }
+  }
+
+  // Step 2: From openPackRemainder
+  if (piecesToReserve > 0) {
+    for (const l of simLots) {
+      if (piecesToReserve <= 0) break;
+      if (l.openPackRemainder <= 0) continue;
+      const take = Math.min(l.openPackRemainder, piecesToReserve);
+      l.openPackRemainder -= take;
+      piecesToReserve -= take;
+    }
+  }
+
+  // Step 3: If still need pieces, open whole pack
+  if (piecesToReserve > 0) {
+    for (const l of simLots) {
+      if (piecesToReserve <= 0) break;
+      if (l.quantityRemaining <= 0) continue;
+      const packs = Math.min(l.quantityRemaining, Math.ceil(piecesToReserve / l.packSize));
+      const provided = packs * l.packSize;
+      const take = Math.min(provided, piecesToReserve);
+      const leftover = provided - take;
+      l.quantityRemaining -= packs;
+      l.openPackRemainder += leftover;
+      piecesToReserve -= take;
+    }
+  }
+
+  const availableStock = simLots.reduce((sum, l) => sum + l.quantityRemaining, 0);
+  const openPackRemainder = simLots.reduce((sum, l) => sum + l.openPackRemainder, 0);
+  const availablePieces = Math.max(0, totalPhysicalPieces - reservedPieces);
+
+  return {
+    physicalStock,
+    availableStock,
+    openPackRemainder,
+    totalPiecesRemaining: availablePieces,
+    reservedStock: physicalStock - availableStock,
+  };
+}
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -154,15 +239,12 @@ export async function GET(req: Request) {
           reservedStock = reservedBorrowMap.get(item.id) || 0;
           availableStock = Math.max(0, physicalStock - reservedStock);
         } else {
-          const totalPhysicalPieces = item.stockLots.reduce((sum, lot) => {
-            return sum + (lot.quantityRemaining * ratio) + (lot.openPackRemainder || 0);
-          }, 0);
           const reservedPieces = reservedPiecesMap.get(item.id) || 0;
-          const availablePieces = Math.max(0, totalPhysicalPieces - reservedPieces);
-          availableStock = ratio > 1 ? Math.floor(availablePieces / ratio) : Math.max(0, physicalStock - Math.ceil(reservedPieces / ratio));
-          openPackRemainder = ratio > 1 ? (availablePieces % ratio) : 0;
-          totalPiecesRemaining = availablePieces;
-          reservedStock = Math.ceil(reservedPieces / ratio);
+          const stockCalc = computeConsumableStock(item.stockLots, ratio, reservedPieces);
+          availableStock = stockCalc.availableStock;
+          reservedStock = stockCalc.reservedStock;
+          openPackRemainder = stockCalc.openPackRemainder;
+          totalPiecesRemaining = stockCalc.totalPiecesRemaining;
         }
 
         const isLowStock =
@@ -266,22 +348,12 @@ export async function GET(req: Request) {
         reservedStock = reservedBorrowMap.get(item.id) || 0;
         availableStock = Math.max(0, physicalStock - reservedStock);
       } else {
-        const totalPhysicalPieces = item.stockLots.reduce((sum, lot) => {
-          const pSize = Number(lot.packSize) > 0 ? Number(lot.packSize) : ratio;
-          const pPieces = lot.quantityRemaining > 0
-            ? (typeof lot.piecesRemaining === 'number' && lot.piecesRemaining <= lot.quantityRemaining * pSize
-                ? lot.piecesRemaining
-                : lot.quantityRemaining * pSize)
-            : 0;
-          return sum + pPieces + (lot.openPackRemainder || 0);
-        }, 0);
-
         const reservedPieces = reservedPiecesMap.get(item.id) || 0;
-        const availablePieces = Math.max(0, totalPhysicalPieces - reservedPieces);
-        availableStock = ratio > 1 ? Math.floor(availablePieces / ratio) : Math.max(0, physicalStock - Math.ceil(reservedPieces / ratio));
-        openPackRemainder = ratio > 1 ? (availablePieces % ratio) : item.stockLots.reduce((sum, lot) => sum + (lot.openPackRemainder || 0), 0);
-        totalPiecesRemaining = availablePieces;
-        reservedStock = Math.ceil(reservedPieces / ratio);
+        const stockCalc = computeConsumableStock(item.stockLots, ratio, reservedPieces);
+        availableStock = stockCalc.availableStock;
+        reservedStock = stockCalc.reservedStock;
+        openPackRemainder = stockCalc.openPackRemainder;
+        totalPiecesRemaining = stockCalc.totalPiecesRemaining;
       }
 
       const isLowStock =

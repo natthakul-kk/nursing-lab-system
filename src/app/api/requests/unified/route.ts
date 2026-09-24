@@ -459,72 +459,82 @@ export async function POST(req: Request) {
       console.error('Email notification error:', e);
     }
 
-    // 6. In-App & Push Notifications for Approvers and Advisors
+    // 6. In-App & Push Notifications for Approvers and Advisors (awaited)
+    const notifPromises: Promise<any>[] = [];
+
     if (result.createdBorrow) {
-      notifyRoles(
-        ['OFFICER', 'ADMIN', 'APPROVER'],
-        {
-          templateId: 'BORROW_REQUEST_SUBMITTED',
-          variables: {
-            studentName: studentDisplayName,
-            requestNumber: result.createdBorrow.requestNumber,
-            itemSummary: purpose || `${borrowSummaryList.length} รายการ`,
+      notifPromises.push(
+        notifyRoles(
+          ['OFFICER', 'ADMIN', 'APPROVER'],
+          {
+            templateId: 'BORROW_REQUEST_SUBMITTED',
+            variables: {
+              studentName: studentDisplayName,
+              requestNumber: result.createdBorrow.requestNumber,
+              itemSummary: purpose || `${borrowSummaryList.length} รายการ`,
+            },
+            title: 'มีคำขอยืมครุภัณฑ์ใหม่ 📋',
+            message: `นิสิต ${studentDisplayName} ยื่นคำขอยืมเลขที่ ${result.createdBorrow.requestNumber} (${purpose})`,
+            type: 'APPROVAL',
+            linkUrl: '/approvals',
+            entityType: 'BORROW',
+            entityId: result.createdBorrow.id,
+            priority: 'HIGH',
           },
-          title: 'มีคำขอยืมครุภัณฑ์ใหม่ 📋',
-          message: `นิสิต ${studentDisplayName} ยื่นคำขอยืมเลขที่ ${result.createdBorrow.requestNumber} (${purpose})`,
-          type: 'APPROVAL',
-          linkUrl: '/approvals',
-          entityType: 'BORROW',
-          entityId: result.createdBorrow.id,
-          priority: 'HIGH',
-        },
-        'BORROW'
-      ).catch((err) => console.error('Failed to notify borrow roles:', err));
+          'BORROW'
+        )
+      );
 
       if (finalAdvisorName) {
-        notifyAdvisorByName(finalAdvisorName, {
-          title: 'มีคำขอยืมครุภัณฑ์รอกดรับทราบ 👩‍🏫',
-          message: `นิสิต ${studentDisplayName} ยื่นคำขอยืมเลขที่ ${result.createdBorrow.requestNumber} ${courseInfo ? `ในรายวิชา ${courseInfo.name}` : ''} รออาจารย์รับทราบ`,
-          type: 'REQUEST_SUBMITTED',
-          priority: 'HIGH',
-          linkUrl: '/approvals',
-          entityType: 'BORROW',
-          entityId: result.createdBorrow.id,
-        }).catch((err) => console.error('Failed to notify borrow advisor:', err));
+        notifPromises.push(
+          notifyAdvisorByName(finalAdvisorName, {
+            title: 'มีคำขอยืมครุภัณฑ์รอกดรับทราบ 👩‍🏫',
+            message: `นิสิต ${studentDisplayName} ยื่นคำขอยืมเลขที่ ${result.createdBorrow.requestNumber} ${courseInfo ? `ในรายวิชา ${courseInfo.name}` : ''} รออาจารย์รับทราบ`,
+            type: 'REQUEST_SUBMITTED',
+            priority: 'HIGH',
+            linkUrl: '/approvals',
+            entityType: 'BORROW',
+            entityId: result.createdBorrow.id,
+          })
+        );
       }
     }
 
     if (result.createdRequisition) {
-      notifyRoles(
-        ['OFFICER', 'ADMIN', 'APPROVER'],
-        {
-          templateId: 'REQUISITION_REQUEST_SUBMITTED',
-          variables: {
-            studentName: studentDisplayName,
-            requestNumber: result.createdRequisition.requestNumber,
-            itemSummary: purpose || `${reqSummaryList.length} รายการ`,
+      notifPromises.push(
+        notifyRoles(
+          ['OFFICER', 'ADMIN', 'APPROVER'],
+          {
+            templateId: 'REQUISITION_REQUEST_SUBMITTED',
+            variables: {
+              studentName: studentDisplayName,
+              requestNumber: result.createdRequisition.requestNumber,
+              itemSummary: purpose || `${reqSummaryList.length} รายการ`,
+            },
+            title: 'มีคำขอเบิกพัสดุใหม่ 📋',
+            message: `นิสิต ${studentDisplayName} ยื่นคำขอเบิกเลขที่ ${result.createdRequisition.requestNumber} (${purpose})`,
+            type: 'APPROVAL',
+            linkUrl: '/approvals',
+            entityType: 'REQUISITION',
+            entityId: result.createdRequisition.id,
+            priority: 'HIGH',
           },
-          title: 'มีคำขอเบิกพัสดุใหม่ 📋',
-          message: `นิสิต ${studentDisplayName} ยื่นคำขอเบิกเลขที่ ${result.createdRequisition.requestNumber} (${purpose})`,
-          type: 'APPROVAL',
-          linkUrl: '/approvals',
-          entityType: 'REQUISITION',
-          entityId: result.createdRequisition.id,
-          priority: 'HIGH',
-        },
-        'REQUISITION'
-      ).catch((err) => console.error('Failed to notify requisition roles:', err));
+          'REQUISITION'
+        )
+      );
 
       if (finalAdvisorName) {
-        notifyAdvisorByName(finalAdvisorName, {
-          title: 'มีคำขอเบิกพัสดุรอกดรับทราบ 👩‍🏫',
-          message: `นิสิต ${studentDisplayName} ยื่นคำขอเบิกเลขที่ ${result.createdRequisition.requestNumber} ${courseInfo ? `ในรายวิชา ${courseInfo.name}` : ''} รออาจารย์รับทราบ`,
-          type: 'REQUEST_SUBMITTED',
-          priority: 'HIGH',
-          linkUrl: '/approvals',
-          entityType: 'REQUISITION',
-          entityId: result.createdRequisition.id,
-        }).catch((err) => console.error('Failed to notify requisition advisor:', err));
+        notifPromises.push(
+          notifyAdvisorByName(finalAdvisorName, {
+            title: 'มีคำขอเบิกพัสดุรอกดรับทราบ 👩‍🏫',
+            message: `นิสิต ${studentDisplayName} ยื่นคำขอเบิกเลขที่ ${result.createdRequisition.requestNumber} ${courseInfo ? `ในรายวิชา ${courseInfo.name}` : ''} รออาจารย์รับทราบ`,
+            type: 'REQUEST_SUBMITTED',
+            priority: 'HIGH',
+            linkUrl: '/approvals',
+            entityType: 'REQUISITION',
+            entityId: result.createdRequisition.id,
+          })
+        );
       }
     }
 
@@ -534,16 +544,20 @@ export async function POST(req: Request) {
         ? `${result.createdBorrow.requestNumber} + ${result.createdRequisition.requestNumber}`
         : result.createdBorrow?.requestNumber || result.createdRequisition?.requestNumber || 'REQ';
 
-    createNotification({
-      userId,
-      title: 'ยื่นคำขอเรียบร้อยแล้ว ✅',
-      message: `คำขอเลขที่ ${combinedRefNumber} ของท่านถูกส่งเข้าสู่ระบบแล้ว และอยู่ระหว่างรอการอนุมัติ`,
-      type: 'STATUS_UPDATE',
-      priority: 'NORMAL',
-      linkUrl: result.createdBorrow ? '/borrow' : '/requisitions',
-      entityType: result.createdBorrow ? 'BORROW' : 'REQUISITION',
-      entityId: result.createdBorrow?.id || result.createdRequisition?.id,
-    }).catch(() => {});
+    notifPromises.push(
+      createNotification({
+        userId,
+        title: 'ยื่นคำขอเรียบร้อยแล้ว ✅',
+        message: `คำขอเลขที่ ${combinedRefNumber} ของท่านถูกส่งเข้าสู่ระบบแล้ว และอยู่ระหว่างรอการอนุมัติ`,
+        type: 'STATUS_UPDATE',
+        priority: 'NORMAL',
+        linkUrl: result.createdBorrow ? '/borrow' : '/requisitions',
+        entityType: result.createdBorrow ? 'BORROW' : 'REQUISITION',
+        entityId: result.createdBorrow?.id || result.createdRequisition?.id,
+      })
+    );
+
+    await Promise.allSettled(notifPromises);
 
     // Invalidate caches so other screens immediately reflect updated reservations
     invalidateCache('borrow:');

@@ -300,6 +300,142 @@ export async function GET(req: Request) {
       }
     }
 
+    if (type === 'ROOM' || type === 'BOOKING') {
+      const roomBooking = await prisma.roomBooking.findUnique({
+        where: { id },
+        include: {
+          user: true,
+          room: true,
+        },
+      });
+
+      if (!roomBooking) {
+        return renderResponseHtml({
+          success: false,
+          title: 'ไม่พบคำขอ',
+          message: 'ไม่พบข้อมูลคำขอจองห้องปฏิบัติการนี้ในระบบ',
+        });
+      }
+
+      if (roomBooking.status === 'APPROVED') {
+        return renderResponseHtml({
+          success: true,
+          title: 'คำขอนี้ได้รับการอนุมัติแล้ว',
+          message: `คำขอจองห้อง ${roomBooking.room?.name || ''} (${roomBooking.bookingNumber}) ได้รับการอนุมัติไปเรียบร้อยแล้ว`,
+          badge: 'อนุมัติแล้ว',
+        });
+      }
+
+      if (action === 'APPROVE') {
+        const conflicting = await prisma.roomBooking.findFirst({
+          where: {
+            id: { not: id },
+            roomId: roomBooking.roomId,
+            bookingDate: roomBooking.bookingDate,
+            status: 'APPROVED',
+            startTime: { lt: roomBooking.endTime },
+            endTime: { gt: roomBooking.startTime },
+          },
+        });
+
+        if (conflicting) {
+          return renderResponseHtml({
+            success: false,
+            title: 'ห้องติดจองในช่วงเวลานี้',
+            message: `ไม่สามารถอนุมัติได้เนื่องจากห้องถูกอนุมัติให้รายการอื่นแล้ว (${conflicting.startTime} - ${conflicting.endTime} น.: ${conflicting.title})`,
+            isDanger: true,
+          });
+        }
+
+        await prisma.roomBooking.update({
+          where: { id },
+          data: {
+            status: 'APPROVED',
+            approvedAt: new Date(),
+          },
+        });
+
+        if (roomBooking.userId) {
+          await createNotification({
+            userId: roomBooking.userId,
+            title: 'คำขอจองห้องปฏิบัติการได้รับการอนุมัติแล้ว 🎉',
+            message: `คำขอจองห้อง ${roomBooking.room?.name || ''} (${roomBooking.bookingNumber}) ได้รับการอนุมัติเรียบร้อยแล้ว`,
+            type: 'STATUS_UPDATE',
+            priority: 'HIGH',
+            linkUrl: '/schedule',
+            entityType: 'ROOM',
+            entityId: roomBooking.id,
+          }).catch(() => {});
+        }
+
+        notifyRoles(
+          ['OFFICER', 'ADMIN'],
+          {
+            title: 'คำขอจองห้องปฏิบัติการได้รับการอนุมัติ ✅',
+            message: `คำขอจองห้อง ${roomBooking.room?.name || ''} (${roomBooking.bookingNumber}) ได้รับการอนุมัติเรียบร้อยแล้ว`,
+            type: 'STATUS_UPDATE',
+            linkUrl: '/approvals',
+            entityType: 'ROOM',
+            entityId: roomBooking.id,
+          },
+          'ROOM'
+        ).catch(() => {});
+
+        invalidateCache('room:bookings:');
+
+        return renderResponseHtml({
+          success: true,
+          title: 'อนุมัติการจองห้องปฏิบัติการสำเร็จ',
+          message: `คำขอจองห้อง ${roomBooking.room?.name || ''} วันที่ ${new Date(roomBooking.bookingDate).toLocaleDateString('th-TH')} เวลา ${roomBooking.startTime} - ${roomBooking.endTime} น. ได้รับการอนุมัติแล้ว`,
+          badge: 'อนุมัติแล้ว',
+        });
+      } else {
+        await prisma.roomBooking.update({
+          where: { id },
+          data: {
+            status: 'REJECTED',
+            rejectionReason: 'ไม่อนุมัติผ่านอีเมล/การแจ้งเตือน',
+          },
+        });
+
+        if (roomBooking.userId) {
+          await createNotification({
+            userId: roomBooking.userId,
+            title: 'คำขอจองห้องปฏิบัติการไม่ผ่านการอนุมัติ ❌',
+            message: `คำขอจองห้อง ${roomBooking.room?.name || ''} (${roomBooking.bookingNumber}) ไม่ผ่านการอนุมัติ`,
+            type: 'STATUS_UPDATE',
+            priority: 'HIGH',
+            linkUrl: '/schedule',
+            entityType: 'ROOM',
+            entityId: roomBooking.id,
+          }).catch(() => {});
+        }
+
+        notifyRoles(
+          ['OFFICER', 'ADMIN'],
+          {
+            title: 'คำขอจองห้องปฏิบัติการถูกปฏิเสธ ❌',
+            message: `คำขอจองห้อง ${roomBooking.room?.name || ''} (${roomBooking.bookingNumber}) ถูกปฏิเสธ`,
+            type: 'STATUS_UPDATE',
+            linkUrl: '/approvals',
+            entityType: 'ROOM',
+            entityId: roomBooking.id,
+          },
+          'ROOM'
+        ).catch(() => {});
+
+        invalidateCache('room:bookings:');
+
+        return renderResponseHtml({
+          success: true,
+          title: 'บันทึกการไม่อนุมัติคำขอแล้ว',
+          message: `คำขอจองห้อง ${roomBooking.room?.name || ''} (${roomBooking.bookingNumber}) ได้รับการบันทึกสถานะเป็นไม่อนุมัติเรียบร้อยแล้ว`,
+          badge: 'ไม่อนุมัติ',
+          isDanger: true,
+        });
+      }
+    }
+
     return renderResponseHtml({
       success: false,
       title: 'ไม่รองรับคำขอนี้',

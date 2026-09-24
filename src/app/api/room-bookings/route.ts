@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { invalidateCache } from '@/lib/cache';
-import { notifyRoles, notifyAdvisorByName } from '@/lib/notifications';
+import { notifyRoles, notifyAdvisorByName, createNotification } from '@/lib/notifications';
 
 export async function GET(req: Request) {
   try {
@@ -223,39 +223,54 @@ export async function POST(req: Request) {
 
     invalidateCache('room:bookings:');
 
-    // Notify room approvers according to scope
-    notifyRoles(
-      ['OFFICER', 'ADMIN', 'APPROVER'],
-      {
-        templateId: 'ROOM_BOOKING_SUBMITTED',
-        variables: {
-          studentName: booking.user?.name || 'นิสิต',
-          roomName: booking.room?.name || '',
-          date: booking.bookingDate.toISOString().slice(0, 10),
-          bookingNumber: booking.bookingNumber,
+    // Notify room approvers according to scope, advisor, and student confirmation (awaited)
+    await Promise.allSettled([
+      // 1. Notify Room Approvers (หัวหน้าสำนักงาน, Admin, ผู้ดูแลห้อง)
+      notifyRoles(
+        ['OFFICER', 'ADMIN', 'APPROVER'],
+        {
+          templateId: 'ROOM_BOOKING_SUBMITTED',
+          variables: {
+            studentName: booking.user?.name || 'นิสิต',
+            roomName: booking.room?.name || '',
+            date: booking.bookingDate.toISOString().slice(0, 10),
+            bookingNumber: booking.bookingNumber,
+          },
+          title: 'มีคำขอจองห้องปฏิบัติการใหม่ 🏢',
+          message: `${booking.user?.name || 'นิสิต'} ขอจองห้อง ${booking.room?.name || ''} (${booking.bookingNumber})`,
+          type: 'APPROVAL',
+          linkUrl: '/approvals',
+          entityType: 'ROOM',
+          entityId: booking.id,
+          priority: 'HIGH',
         },
-        title: 'มีคำขอจองห้องปฏิบัติการใหม่',
-        message: `${booking.user?.name || 'นิสิต'} ขอจองห้อง ${booking.room?.name || ''} (${booking.bookingNumber})`,
-        type: 'APPROVAL',
-        linkUrl: '/approvals',
-        entityType: 'BOOKING',
-        entityId: booking.id,
-        priority: 'HIGH',
-      },
-      'ROOM'
-    ).catch(() => {});
+        'ROOM'
+      ),
 
-    // Notify advisor if specified
-    if (advisorName) {
-      notifyAdvisorByName(advisorName, {
-        title: 'นิสิตระบุชื่ออาจารย์ในคำขอจองห้องปฏิบัติการ',
-        message: `${booking.user?.name || 'นิสิต'} ได้ขอจองห้อง ${booking.room?.name || ''} และระบุชื่อท่านเป็นอาจารย์ประจำวิชา`,
-        type: 'INSTRUCTOR_ACK',
+      // 2. Notify advisor if specified
+      advisorName
+        ? notifyAdvisorByName(advisorName, {
+            title: 'นิสิตระบุชื่ออาจารย์ในคำขอจองห้องปฏิบัติการ 👩‍🏫',
+            message: `${booking.user?.name || 'นิสิต'} ได้ขอจองห้อง ${booking.room?.name || ''} และระบุชื่อท่านเป็นอาจารย์ประจำวิชา`,
+            type: 'INSTRUCTOR_ACK',
+            linkUrl: '/schedule',
+            entityType: 'ROOM',
+            entityId: booking.id,
+          })
+        : Promise.resolve(null),
+
+      // 3. Confirmation notification to the requester
+      createNotification({
+        userId: booking.userId,
+        title: 'ยื่นคำขอจองห้องปฏิบัติการเรียบร้อยแล้ว ✅',
+        message: `คำขอจองห้อง ${booking.room?.name || ''} (${booking.bookingNumber}) ถูกส่งเข้าสู่ระบบแล้ว และอยู่ระหว่างรอการอนุมัติ`,
+        type: 'STATUS_UPDATE',
+        priority: 'NORMAL',
         linkUrl: '/schedule',
-        entityType: 'BOOKING',
+        entityType: 'ROOM',
         entityId: booking.id,
-      }).catch(() => {});
-    }
+      }),
+    ]);
 
     return NextResponse.json(booking, { status: 201 });
   } catch (error: any) {

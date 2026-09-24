@@ -59,6 +59,31 @@ function timeAgo(dateString: string): string {
   return date.toLocaleDateString('th-TH', { month: 'short', day: 'numeric' });
 }
 
+function playNotificationChime() {
+  try {
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const now = ctx.currentTime;
+
+    const playNote = (freq: number, start: number, duration: number) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, start);
+      gain.gain.setValueAtTime(0.18, start);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + duration);
+    };
+
+    playNote(659.25, now, 0.22);       // E5
+    playNote(880.00, now + 0.10, 0.35); // A5
+  } catch {}
+}
+
 export default function NotificationBell() {
   const { currentUser, isOfficer, isAdmin } = useAuth();
   const router = useRouter();
@@ -69,6 +94,11 @@ export default function NotificationBell() {
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<'ALL' | 'UNREAD'>('ALL');
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Real-time Toast & Sound states
+  const [activeToast, setActiveToast] = useState<NotificationItem | null>(null);
+  const lastSeenNotifIdRef = useRef<string | null>(null);
+  const isFirstLoadRef = useRef(true);
 
   // Push Notification state
   const [pushStatus, setPushStatus] = useState<'LOADING' | 'ENABLED' | 'DISABLED' | 'BLOCKED' | 'UNSUPPORTED'>('LOADING');
@@ -203,8 +233,39 @@ export default function NotificationBell() {
       const res = await fetch(`/api/notifications?userId=${currentUser.id}&limit=30`);
       if (res.ok) {
         const data = await res.json();
-        setNotifications(data.notifications || []);
+        const items: NotificationItem[] = data.notifications || [];
+        setNotifications(items);
         setUnreadCount(data.unreadCount || 0);
+
+        if (items.length > 0) {
+          const newest = items[0];
+          // หากมีแจ้งเตือนใหม่เข้ามาและยังไม่ได้อ่าน
+          if (
+            !isFirstLoadRef.current &&
+            lastSeenNotifIdRef.current &&
+            newest.id !== lastSeenNotifIdRef.current &&
+            !newest.isRead
+          ) {
+            playNotificationChime();
+            setActiveToast(newest);
+
+            // ส่ง Notification บนเบราว์เซอร์หากเปิดสิทธิ์ไว้
+            if (
+              typeof window !== 'undefined' &&
+              'Notification' in window &&
+              Notification.permission === 'granted'
+            ) {
+              try {
+                new Notification(newest.title, {
+                  body: newest.message,
+                  icon: '/icons/icon-192x192.png',
+                });
+              } catch {}
+            }
+          }
+          lastSeenNotifIdRef.current = newest.id;
+        }
+        isFirstLoadRef.current = false;
       }
     } catch (err) {
       console.error('Failed to load notifications:', err);
@@ -212,6 +273,16 @@ export default function NotificationBell() {
       if (showLoading) setLoading(false);
     }
   };
+
+  // Auto-dismiss floating toast
+  useEffect(() => {
+    if (activeToast) {
+      const timer = setTimeout(() => {
+        setActiveToast(null);
+      }, 7000);
+      return () => clearTimeout(timer);
+    }
+  }, [activeToast]);
 
   // Run system check (staff/admin only) periodically
   useEffect(() => {
@@ -225,7 +296,7 @@ export default function NotificationBell() {
 
     const interval = setInterval(() => {
       fetchNotifications();
-    }, 45000); // Check every 45s
+    }, 15000); // Check every 15s for instant alerts
 
     const handleFocus = () => fetchNotifications();
     window.addEventListener('focus', handleFocus);
@@ -525,6 +596,59 @@ export default function NotificationBell() {
           {/* Footer */}
           <div className="p-2.5 bg-slate-50/70 dark:bg-slate-950/50 border-t border-slate-100 dark:border-slate-800 text-center text-[10px] text-slate-400">
             ระบบศูนย์ฝึกทักษะทางการพยาบาล • แจ้งเตือนแบบเรียลไทม์
+          </div>
+        </div>
+      )}
+
+      {/* Floating In-App Toast Popup (เด้งเตือนสดบนหน้าจอ) */}
+      {activeToast && (
+        <div className="fixed bottom-5 right-5 z-[99999] max-w-sm w-[calc(100vw-2.5rem)] md:w-96 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-2 border-teal-500/50 dark:border-teal-400/40 rounded-2xl shadow-2xl p-4 transition-all transform animate-in slide-in-from-bottom-5 duration-300">
+          <div className="flex items-start gap-3">
+            <div className="p-2.5 rounded-xl bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 shrink-0 relative">
+              <span className="absolute -top-1 -right-1 w-3 h-3 bg-rose-500 rounded-full animate-ping" />
+              <span className="absolute -top-1 -right-1 w-3 h-3 bg-rose-500 rounded-full" />
+              <BellRing className="w-5 h-5 animate-bounce" />
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-1 mb-1">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/80 px-2 py-0.5 rounded-full">
+                  แจ้งเตือนใหม่ 🔔
+                </span>
+                <button
+                  onClick={() => setActiveToast(null)}
+                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg transition"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <h4 className="text-xs font-bold text-slate-900 dark:text-white leading-tight mb-1 truncate">
+                {activeToast.title}
+              </h4>
+              <p className="text-[11px] text-slate-600 dark:text-slate-300 line-clamp-2 leading-relaxed mb-2.5">
+                {activeToast.message}
+              </p>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    handleMarkAsRead(activeToast.id, activeToast.linkUrl);
+                    setActiveToast(null);
+                  }}
+                  className="flex-1 py-1.5 px-3 bg-teal-600 hover:bg-teal-700 text-white text-[11px] font-bold rounded-lg shadow-sm transition flex items-center justify-center gap-1.5"
+                >
+                  <span>เปิดดูทันที</span>
+                  <ExternalLink className="w-3 h-3" />
+                </button>
+                <button
+                  onClick={() => setActiveToast(null)}
+                  className="py-1.5 px-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-[11px] font-medium rounded-lg transition"
+                >
+                  ปิด
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

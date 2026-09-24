@@ -20,7 +20,7 @@ export interface CreateNotificationParams {
     | 'SYSTEM';
   priority?: 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
   linkUrl?: string;
-  entityType?: 'BORROW' | 'REQUISITION' | 'ITEM' | 'STORAGE' | 'BOOKING' | 'PRACTICE';
+  entityType?: 'BORROW' | 'REQUISITION' | 'ITEM' | 'STORAGE' | 'BOOKING' | 'PRACTICE' | 'ROOM';
   entityId?: string;
   templateId?: string;
   variables?: Record<string, string | number | undefined | null>;
@@ -43,7 +43,7 @@ async function dispatchPushForNotification(params: CreateNotificationParams) {
         approvalEndpoint = `/api/requisitions/${params.entityId}`;
       } else if (params.entityType === 'PRACTICE') {
         approvalEndpoint = `/api/practice/bookings/${params.entityId}`;
-      } else if (params.entityType === 'BOOKING') {
+      } else if (params.entityType === 'BOOKING' || params.entityType === 'ROOM') {
         approvalEndpoint = `/api/room-bookings/${params.entityId}`;
       }
 
@@ -55,16 +55,21 @@ async function dispatchPushForNotification(params: CreateNotificationParams) {
       }
     }
 
+    const normalizedType =
+      params.entityType === 'BOOKING' || params.entityType === 'ROOM'
+        ? 'ROOM'
+        : params.entityType;
+
     const targetUrl =
       params.type === 'APPROVAL' && params.entityType && params.entityId
-        ? `/approvals?id=${params.entityId}&type=${params.entityType}`
+        ? `/approvals?id=${params.entityId}&type=${normalizedType}`
         : (params.linkUrl || '/');
 
     const payload: PushPayload = {
       title: params.title,
       message: params.message,
       linkUrl: targetUrl,
-      tag: params.entityId ? `lab-${params.entityType}-${params.entityId}` : `lab-${Date.now()}`,
+      tag: params.entityId ? `lab-${normalizedType}-${params.entityId}` : `lab-${Date.now()}`,
       actions,
       data: {
         url: targetUrl,
@@ -110,8 +115,8 @@ export async function createNotification(params: CreateNotificationParams) {
       },
     });
 
-    // ส่ง Web Push ในพื้นหลังโดยไม่บล็อกการตอบกลับ
-    dispatchPushForNotification({ ...params, title: finalTitle, message: finalMessage }).catch(() => {});
+    // ส่ง Web Push โดยรอให้เสร็จสิ้นเพื่อป้องกัน runtime ถูกตัดจบ
+    await dispatchPushForNotification({ ...params, title: finalTitle, message: finalMessage });
 
     return record;
   } catch (error) {
@@ -139,10 +144,10 @@ export async function createMultipleNotifications(notifications: CreateNotificat
       })),
     });
 
-    // ส่ง Web Push ไปยังทุกผู้รับในพื้นหลัง
-    for (const notif of notifications) {
-      dispatchPushForNotification(notif).catch(() => {});
-    }
+    // ส่ง Web Push ไปยังทุกผู้รับ พร้อม await ให้สมบูรณ์
+    await Promise.allSettled(
+      notifications.map((notif) => dispatchPushForNotification(notif))
+    );
 
     return result;
   } catch (error) {

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { invalidateCache } from '@/lib/cache';
 import { canUserApprove } from '@/lib/approval-scope';
+import { createNotification } from '@/lib/notifications';
 
 export async function GET(
   req: Request,
@@ -99,6 +100,21 @@ export async function PUT(
       });
 
       invalidateCache('room:bookings:');
+
+      // Notify the requester
+      if (updated.userId) {
+        await createNotification({
+          userId: updated.userId,
+          title: 'คำขอจองห้องปฏิบัติการได้รับการอนุมัติแล้ว 🎉',
+          message: `คำขอจองห้อง ${updated.room?.name || ''} (${updated.bookingNumber}) ได้รับการอนุมัติเรียบร้อยแล้ว`,
+          type: 'STATUS_UPDATE',
+          priority: 'HIGH',
+          linkUrl: '/schedule',
+          entityType: 'ROOM',
+          entityId: updated.id,
+        }).catch(() => {});
+      }
+
       return NextResponse.json(updated);
     }
 
@@ -118,6 +134,21 @@ export async function PUT(
       });
 
       invalidateCache('room:bookings:');
+
+      // Notify the requester
+      if (updated.userId) {
+        await createNotification({
+          userId: updated.userId,
+          title: 'คำขอจองห้องปฏิบัติการไม่ผ่านการอนุมัติ ❌',
+          message: `คำขอจองห้อง ${updated.room?.name || ''} (${updated.bookingNumber}) ไม่ผ่านการอนุมัติ: ${updated.rejectionReason}`,
+          type: 'STATUS_UPDATE',
+          priority: 'HIGH',
+          linkUrl: '/schedule',
+          entityType: 'ROOM',
+          entityId: updated.id,
+        }).catch(() => {});
+      }
+
       return NextResponse.json(updated);
     }
 

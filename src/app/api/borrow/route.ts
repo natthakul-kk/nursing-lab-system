@@ -240,46 +240,47 @@ export async function POST(req: Request) {
       console.error('Failed to trigger borrow email:', emailErr);
     }
 
-    // In-app & Push notifications
-    notifyRoles(['OFFICER', 'ADMIN', 'APPROVER'], {
-      templateId: 'BORROW_REQUEST_SUBMITTED',
-      variables: {
-        studentName: borrow.user?.name || '',
-        requestNumber: borrow.requestNumber,
-        itemSummary: borrow.purpose || `${items.length} รายการ`,
-      },
-      title: 'มีคำขอยืมครุภัณฑ์ใหม่ 📋',
-      message: `นิสิต ${borrow.user?.name || ''} ยื่นคำขอยืมเลขที่ ${borrow.requestNumber} (${borrow.purpose})`,
-      type: 'APPROVAL',
-      linkUrl: '/approvals',
-      entityType: 'BORROW',
-      entityId: borrow.id,
-      priority: 'HIGH',
-    }, 'BORROW').catch(() => {});
-
-    if (finalAdvisorName) {
-      notifyAdvisorByName(finalAdvisorName, {
-        title: 'มีคำขอยืมครุภัณฑ์รอกดรับทราบ 👩‍🏫',
-        message: `นิสิต ${borrow.user?.name || ''} ยื่นคำขอยืมเลขที่ ${borrow.requestNumber} ในรายวิชา ${borrow.course?.name || ''} รออาจารย์รับทราบ`,
-        type: 'REQUEST_SUBMITTED',
-        priority: 'HIGH',
+    // In-app & Push notifications (awaited)
+    await Promise.allSettled([
+      notifyRoles(['OFFICER', 'ADMIN', 'APPROVER'], {
+        templateId: 'BORROW_REQUEST_SUBMITTED',
+        variables: {
+          studentName: borrow.user?.name || 'นิสิต',
+          requestNumber: borrow.requestNumber,
+          itemSummary: borrow.purpose || `${items.length} รายการ`,
+        },
+        title: 'มีคำขอยืมครุภัณฑ์ใหม่ 📋',
+        message: `นิสิต ${borrow.user?.name || ''} ยื่นคำขอยืมเลขที่ ${borrow.requestNumber} (${borrow.purpose})`,
+        type: 'APPROVAL',
         linkUrl: '/approvals',
         entityType: 'BORROW',
         entityId: borrow.id,
-      }).catch(() => {});
-    }
+        priority: 'HIGH',
+      }, 'BORROW'),
 
-    // Confirmation notification to Student
-    createNotification({
-      userId: borrow.userId,
-      title: 'ยื่นคำขอยืมเรียบร้อยแล้ว ✅',
-      message: `คำขอยืมเลขที่ ${borrow.requestNumber} ถูกส่งเข้าสู่ระบบแล้ว และอยู่ระหว่างรอการอนุมัติ`,
-      type: 'STATUS_UPDATE',
-      priority: 'NORMAL',
-      linkUrl: '/borrow',
-      entityType: 'BORROW',
-      entityId: borrow.id,
-    }).catch(() => {});
+      finalAdvisorName
+        ? notifyAdvisorByName(finalAdvisorName, {
+            title: 'มีคำขอยืมครุภัณฑ์รอกดรับทราบ 👩‍🏫',
+            message: `นิสิต ${borrow.user?.name || ''} ยื่นคำขอยืมเลขที่ ${borrow.requestNumber} ในรายวิชา ${borrow.course?.name || ''} รออาจารย์รับทราบ`,
+            type: 'REQUEST_SUBMITTED',
+            priority: 'HIGH',
+            linkUrl: '/approvals',
+            entityType: 'BORROW',
+            entityId: borrow.id,
+          })
+        : Promise.resolve(null),
+
+      createNotification({
+        userId: borrow.userId,
+        title: 'ยื่นคำขอยืมเรียบร้อยแล้ว ✅',
+        message: `คำขอยืมเลขที่ ${borrow.requestNumber} ถูกส่งเข้าสู่ระบบแล้ว และอยู่ระหว่างรอการอนุมัติ`,
+        type: 'STATUS_UPDATE',
+        priority: 'NORMAL',
+        linkUrl: '/borrow',
+        entityType: 'BORROW',
+        entityId: borrow.id,
+      }),
+    ]);
 
     invalidateCache('borrow:');
     invalidateCache('dashboard:');

@@ -258,46 +258,47 @@ export async function POST(req: Request) {
       },
     });
 
-    // In-app & Push notifications
-    notifyRoles(['OFFICER', 'ADMIN', 'APPROVER'], {
-      templateId: 'REQUISITION_REQUEST_SUBMITTED',
-      variables: {
-        studentName: reqRecord.user?.name || '',
-        requestNumber: reqRecord.requestNumber,
-        itemSummary: reqRecord.purpose || `${items.length} รายการ`,
-      },
-      title: 'มีคำขอเบิกพัสดุใหม่ 📋',
-      message: `นิสิต ${reqRecord.user?.name || ''} ยื่นคำขอเบิกเลขที่ ${reqRecord.requestNumber} (${reqRecord.purpose})`,
-      type: 'APPROVAL',
-      linkUrl: '/approvals',
-      entityType: 'REQUISITION',
-      entityId: reqRecord.id,
-      priority: 'HIGH',
-    }, 'REQUISITION').catch(() => {});
-
-    if (advisorName) {
-      notifyAdvisorByName(advisorName, {
-        title: 'มีคำขอเบิกพัสดุรอกดรับทราบ 👩‍🏫',
-        message: `นิสิต ${reqRecord.user?.name || ''} ยื่นคำขอเบิกเลขที่ ${reqRecord.requestNumber} ในรายวิชา ${reqRecord.course?.name || ''} รออาจารย์รับทราบ`,
-        type: 'REQUEST_SUBMITTED',
-        priority: 'HIGH',
+    // In-app & Push notifications (awaited)
+    await Promise.allSettled([
+      notifyRoles(['OFFICER', 'ADMIN', 'APPROVER'], {
+        templateId: 'REQUISITION_REQUEST_SUBMITTED',
+        variables: {
+          studentName: reqRecord.user?.name || 'นิสิต',
+          requestNumber: reqRecord.requestNumber,
+          itemSummary: reqRecord.purpose || `${items.length} รายการ`,
+        },
+        title: 'มีคำขอเบิกพัสดุใหม่ 📋',
+        message: `นิสิต ${reqRecord.user?.name || ''} ยื่นคำขอเบิกเลขที่ ${reqRecord.requestNumber} (${reqRecord.purpose})`,
+        type: 'APPROVAL',
         linkUrl: '/approvals',
         entityType: 'REQUISITION',
         entityId: reqRecord.id,
-      }).catch(() => {});
-    }
+        priority: 'HIGH',
+      }, 'REQUISITION'),
 
-    // Confirmation notification to Student
-    createNotification({
-      userId: reqRecord.userId,
-      title: 'ยื่นคำขอเบิกเรียบร้อยแล้ว ✅',
-      message: `คำขอเบิกเลขที่ ${reqRecord.requestNumber} ถูกส่งเข้าสู่ระบบแล้ว และอยู่ระหว่างรอการอนุมัติ`,
-      type: 'STATUS_UPDATE',
-      priority: 'NORMAL',
-      linkUrl: '/requisitions',
-      entityType: 'REQUISITION',
-      entityId: reqRecord.id,
-    }).catch(() => {});
+      advisorName
+        ? notifyAdvisorByName(advisorName, {
+            title: 'มีคำขอเบิกพัสดุรอกดรับทราบ 👩‍🏫',
+            message: `นิสิต ${reqRecord.user?.name || ''} ยื่นคำขอเบิกเลขที่ ${reqRecord.requestNumber} ในรายวิชา ${reqRecord.course?.name || ''} รออาจารย์รับทราบ`,
+            type: 'REQUEST_SUBMITTED',
+            priority: 'HIGH',
+            linkUrl: '/approvals',
+            entityType: 'REQUISITION',
+            entityId: reqRecord.id,
+          })
+        : Promise.resolve(null),
+
+      createNotification({
+        userId: reqRecord.userId,
+        title: 'ยื่นคำขอเบิกเรียบร้อยแล้ว ✅',
+        message: `คำขอเบิกเลขที่ ${reqRecord.requestNumber} ถูกส่งเข้าสู่ระบบแล้ว และอยู่ระหว่างรอการอนุมัติ`,
+        type: 'STATUS_UPDATE',
+        priority: 'NORMAL',
+        linkUrl: '/requisitions',
+        entityType: 'REQUISITION',
+        entityId: reqRecord.id,
+      }),
+    ]);
 
     invalidateCache('requisitions:');
     invalidateCache('dashboard:');

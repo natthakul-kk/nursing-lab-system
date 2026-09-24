@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
 import { sendApprovalRequestEmail } from '@/lib/email';
 import { formatUserName, formatTeacherName } from '@/lib/user-utils';
-import { notifyRoles, notifyAdvisorByName } from '@/lib/notifications';
+import { notifyRoles, notifyAdvisorByName, createNotification } from '@/lib/notifications';
 
 export async function GET(req: Request) {
   try {
@@ -248,36 +248,53 @@ export async function POST(req: Request) {
       console.error('Failed to trigger approval email:', emailErr);
     }
 
-    // In-app & Push notifications
-    notifyRoles(['OFFICER', 'ADMIN', 'APPROVER'], {
-      templateId: 'PRACTICE_BOOKING_SUBMITTED',
-      variables: {
-        studentName: booking.user?.name || '',
-        roomName: slot.room?.name || 'ห้องปฏิบัติการ',
-        date: booking.slot?.date?.toISOString().slice(0, 10) || '',
-        timeSlot: `${booking.slot?.startTime || ''} - ${booking.slot?.endTime || ''}`,
-        bookingNumber: booking.bookingNumber,
-      },
-      title: 'มีคำขอจองห้องฝึกปฏิบัติการใหม่ 🏢',
-      message: `นิสิต ${booking.user?.name || ''} ยื่นคำขอจองเลขที่ ${booking.bookingNumber} (${booking.skillTopic})`,
-      type: 'APPROVAL',
-      linkUrl: '/practice/bookings',
-      entityType: 'PRACTICE',
-      entityId: booking.id,
-      priority: 'HIGH',
-    }, 'PRACTICE').catch(() => {});
+    // In-app & Push notifications (awaited)
+    await Promise.allSettled([
+      notifyRoles(
+        ['OFFICER', 'ADMIN', 'APPROVER'],
+        {
+          templateId: 'PRACTICE_BOOKING_SUBMITTED',
+          variables: {
+            studentName: booking.user?.name || 'นิสิต',
+            roomName: slot.room?.name || 'ห้องปฏิบัติการ',
+            date: booking.slot?.date?.toISOString().slice(0, 10) || '',
+            timeSlot: `${booking.slot?.startTime || ''} - ${booking.slot?.endTime || ''}`,
+            bookingNumber: booking.bookingNumber,
+          },
+          title: 'มีคำขอจองห้องฝึกปฏิบัติการใหม่ 🏢',
+          message: `นิสิต ${booking.user?.name || ''} ยื่นคำขอจองเลขที่ ${booking.bookingNumber} (${booking.skillTopic})`,
+          type: 'APPROVAL',
+          linkUrl: '/practice/bookings',
+          entityType: 'PRACTICE',
+          entityId: booking.id,
+          priority: 'HIGH',
+        },
+        'PRACTICE'
+      ),
 
-    if (finalAdvisorName) {
-      notifyAdvisorByName(finalAdvisorName, {
-        title: 'มีคำขอจองห้องฝึกปฏิบัติการรอกดรับทราบ 👩‍🏫',
-        message: `นิสิต ${booking.user?.name || ''} ยื่นคำขอจอง ${booking.bookingNumber} (${booking.skillTopic}) รออาจารย์รับทราบ`,
-        type: 'REQUEST_SUBMITTED',
-        priority: 'HIGH',
-        linkUrl: '/approvals',
+      finalAdvisorName
+        ? notifyAdvisorByName(finalAdvisorName, {
+            title: 'มีคำขอจองห้องฝึกปฏิบัติการรอกดรับทราบ 👩‍🏫',
+            message: `นิสิต ${booking.user?.name || ''} ยื่นคำขอจอง ${booking.bookingNumber} (${booking.skillTopic}) รออาจารย์รับทราบ`,
+            type: 'REQUEST_SUBMITTED',
+            priority: 'HIGH',
+            linkUrl: '/approvals',
+            entityType: 'PRACTICE',
+            entityId: booking.id,
+          })
+        : Promise.resolve(null),
+
+      createNotification({
+        userId: booking.userId,
+        title: 'ยื่นคำขอจองห้องฝึกปฏิบัติการเรียบร้อยแล้ว ✅',
+        message: `คำขอจองห้องฝึก ${booking.slot?.room?.name || ''} (${booking.bookingNumber}) ถูกส่งเข้าสู่ระบบแล้ว และอยู่ระหว่างรอการอนุมัติ`,
+        type: 'STATUS_UPDATE',
+        priority: 'NORMAL',
+        linkUrl: '/practice/my-bookings',
         entityType: 'PRACTICE',
         entityId: booking.id,
-      }).catch(() => {});
-    }
+      }),
+    ]);
 
     return NextResponse.json(booking);
   } catch (error: any) {

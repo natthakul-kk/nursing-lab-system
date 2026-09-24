@@ -60,8 +60,8 @@ export default function ApprovalsPage() {
       }
       if (targetType) {
         const upper = targetType.toUpperCase();
-        if (upper === 'BORROW' || upper === 'REQUISITION' || upper === 'PRACTICE' || upper === 'ROOM') {
-          setActiveTab(upper as any);
+        if (upper === 'BORROW' || upper === 'REQUISITION' || upper === 'PRACTICE' || upper === 'ROOM' || upper === 'BOOKING') {
+          setActiveTab(upper === 'BOOKING' ? 'ROOM' : upper as any);
           setStatusFilter('PENDING');
         }
       }
@@ -89,7 +89,11 @@ export default function ApprovalsPage() {
       const hasItems = canUserApprove(currentUser, 'BORROW') || canUserApprove(currentUser, 'REQUISITION');
       const hasRooms = canUserApprove(currentUser, 'PRACTICE') || canUserApprove(currentUser, 'ROOM');
       if (hasRooms && !hasItems) {
-        setActiveTab('PRACTICE');
+        if (canUserApprove(currentUser, 'ROOM') && !canUserApprove(currentUser, 'PRACTICE')) {
+          setActiveTab('ROOM');
+        } else {
+          setActiveTab('PRACTICE');
+        }
       } else if (hasItems && !hasRooms) {
         setActiveTab('BORROW');
       }

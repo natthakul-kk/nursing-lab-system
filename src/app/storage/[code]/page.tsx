@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -22,12 +22,17 @@ import {
   Share2,
   Calendar,
   Sparkles,
+  LogIn,
+  User,
+  ClipboardList,
 } from 'lucide-react';
+import { useAuth } from '@/lib/auth-context';
 
 export default function CabinetStoragePage() {
   const params = useParams();
   const router = useRouter();
   const codeParam = (params?.code as string) || '';
+  const { currentUser } = useAuth();
 
   const [data, setData] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
@@ -215,6 +220,79 @@ export default function CabinetStoragePage() {
 
       {/* Main Container */}
       <div className="max-w-4xl mx-auto px-4 mt-4 space-y-4">
+        {/* Guest Mode or Logged In Auth Banner */}
+        {!currentUser ? (
+          <div className="bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-teal-500/10 dark:from-amber-950/30 dark:to-teal-950/30 border border-amber-300/50 dark:border-amber-800/60 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-900 dark:text-white">โหมดเข้าชมทั่วไป (ไม่ต้องเข้าสู่ระบบ)</span>
+                  <span className="text-[10px] font-semibold bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">สาธารณะ</span>
+                </div>
+                <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
+                  ท่านสามารถดูรายการสิ่งของและยอดคงเหลือในตู้นี้ได้ทันที • หากต้องการทำเรื่องขอยืมหรือขอเบิกพัสดุ กรุณาเข้าสู่ระบบ
+                </p>
+              </div>
+            </div>
+            <Link
+              href={`/login?redirect=${encodeURIComponent(`/storage/${codeParam}`)}`}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition shrink-0 cursor-pointer"
+            >
+              <LogIn className="w-4 h-4" />
+              <span>เข้าสู่ระบบเพื่อขอยืม / ขอเบิก</span>
+            </Link>
+          </div>
+        ) : (
+          <div className="bg-white dark:bg-slate-900 border border-teal-200/80 dark:border-teal-800/60 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 flex items-center justify-center shrink-0">
+                <User className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-900 dark:text-white">
+                    เข้าสู่ระบบแล้ว: {currentUser.name || currentUser.email}
+                  </span>
+                  <span className="text-[10px] font-semibold bg-teal-100 dark:bg-teal-950 text-teal-700 dark:text-teal-300 px-2 py-0.5 rounded-full border border-teal-200 dark:border-teal-800">
+                    {currentUser.role === 'USER' ? 'นิสิต / ผู้ใช้งาน' : currentUser.role === 'TEACHER' ? 'อาจารย์' : currentUser.role === 'ADMIN' ? 'ผู้ดูแลระบบ' : 'เจ้าหน้าที่'}
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  เลือกทำรายการเบิกหรือยืมพัสดุจากตู้นี้ได้โดยตรง
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <Link
+                href={`/borrow`}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-sm transition cursor-pointer"
+              >
+                <ClipboardList className="w-3.5 h-3.5" />
+                <span>ทำเรื่องขอยืม</span>
+              </Link>
+              <Link
+                href={`/requisitions`}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm transition cursor-pointer"
+              >
+                <Package className="w-3.5 h-3.5" />
+                <span>ขอเบิกเวชภัณฑ์</span>
+              </Link>
+              {(currentUser.role === 'ADMIN' || currentUser.role === 'OFFICER') && (
+                <Link
+                  href="/inventory"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition border border-slate-200 dark:border-slate-700 cursor-pointer"
+                >
+                  <span>จัดการตู้</span>
+                </Link>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Real-time KPI Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
           <div className="bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-3">
@@ -416,14 +494,25 @@ export default function CabinetStoragePage() {
                       </div>
                     </div>
 
-                    {/* Quick Requisition Link */}
-                    <Link
-                      href={item.type === 'CONSUMABLE' ? `/requisition?itemId=${item.id}` : `/borrow?itemId=${item.id}`}
-                      className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 dark:hover:bg-teal-900/80 text-teal-700 dark:text-teal-300 text-xs font-bold transition border border-teal-200/80 dark:border-teal-800 cursor-pointer"
-                    >
-                      <span>{item.type === 'CONSUMABLE' ? 'ขอเบิก' : 'ขอยืม'}</span>
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </Link>
+                    {/* Quick Requisition/Borrow Link */}
+                    {currentUser ? (
+                      <Link
+                        href={item.type === 'CONSUMABLE' ? `/requisitions?itemId=${item.id}` : `/borrow?itemId=${item.id}`}
+                        className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 dark:hover:bg-teal-900/80 text-teal-700 dark:text-teal-300 text-xs font-bold transition border border-teal-200/80 dark:border-teal-800 cursor-pointer"
+                      >
+                        <span>{item.type === 'CONSUMABLE' ? 'ขอเบิก' : 'ขอยืม'}</span>
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </Link>
+                    ) : (
+                      <Link
+                        href={`/login?redirect=${encodeURIComponent(item.type === 'CONSUMABLE' ? `/requisitions?itemId=${item.id}` : `/borrow?itemId=${item.id}`)}`}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-teal-50 dark:hover:bg-teal-950 text-slate-700 dark:text-slate-300 hover:text-teal-700 dark:hover:text-teal-300 text-xs font-medium transition border border-slate-200 dark:border-slate-700 cursor-pointer"
+                        title="เข้าสู่ระบบเพื่อทำรายการ"
+                      >
+                        <LogIn className="w-3.5 h-3.5" />
+                        <span>เข้าสู่ระบบเพื่อ{item.type === 'CONSUMABLE' ? 'ขอเบิก' : 'ขอยืม'}</span>
+                      </Link>
+                    )}
                   </div>
                 </div>
               );
@@ -474,13 +563,24 @@ export default function CabinetStoragePage() {
                       )}
                     </div>
 
-                    <Link
-                      href={`/borrow?assetCode=${asset.assetCode}`}
-                      className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/80 text-indigo-700 dark:text-indigo-300 text-xs font-bold transition border border-indigo-200/80 dark:border-indigo-800 cursor-pointer"
-                    >
-                      <span>ขอยืมเครื่องนี้</span>
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </Link>
+                    {currentUser ? (
+                      <Link
+                        href={`/borrow?assetCode=${asset.assetCode}`}
+                        className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/80 text-indigo-700 dark:text-indigo-300 text-xs font-bold transition border border-indigo-200/80 dark:border-indigo-800 cursor-pointer"
+                      >
+                        <span>ขอยืมเครื่องนี้</span>
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </Link>
+                    ) : (
+                      <Link
+                        href={`/login?redirect=${encodeURIComponent(`/borrow?assetCode=${asset.assetCode}`)}`}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950 text-slate-700 dark:text-slate-300 hover:text-indigo-700 dark:hover:text-indigo-300 text-xs font-medium transition border border-slate-200 dark:border-slate-700 cursor-pointer"
+                        title="เข้าสู่ระบบเพื่อขอยืม"
+                      >
+                        <LogIn className="w-3.5 h-3.5" />
+                        <span>เข้าสู่ระบบเพื่อขอยืม</span>
+                      </Link>
+                    )}
                   </div>
                 </div>
               );

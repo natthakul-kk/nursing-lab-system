@@ -6,7 +6,7 @@
 export interface ParsedScanResult {
   raw: string;
   cleanCode: string;
-  detectedType: 'ASSET' | 'CONSUMABLE' | 'PRACTICE' | 'USER' | 'UNKNOWN';
+  detectedType: 'ASSET' | 'CONSUMABLE' | 'PRACTICE' | 'USER' | 'STORAGE' | 'STORAGE_ROOM' | 'UNKNOWN';
   itemCode?: string;
   lotNumber?: string;
 }
@@ -62,16 +62,33 @@ export function extractCleanCode(rawInput: string | null | undefined): ParsedSca
   }
 
   // 3. ตรวจสอบกรณีเป็น URL ลิงก์ (เช่น สติกเกอร์ QR Code ที่พิมพ์ออกมาจากระบบ)
-  // ตัวอย่าง:
-  // http://localhost:3000/asset/EQ-MNK-001
-  // https://nurse-lab.edu/equipment/EQ-AED-01
-  // http://192.168.1.50:3000/consumable/CS-SHP-01-2569-B001
-  // http://.../practice?token=SPK-2026-0001
-  const isUrl = /^https?:\/\//i.test(text) || text.includes('/asset/') || text.includes('/equipment/') || text.includes('/consumable/') || text.includes('/practice');
+  const isUrl = /^https?:\/\//i.test(text) || text.includes('/asset/') || text.includes('/equipment/') || text.includes('/consumable/') || text.includes('/practice') || text.includes('/storage/');
 
   if (isUrl) {
     try {
-      // 3.1 ตรวจสอบ URL พัสดุครุภัณฑ์ /asset/[code]
+      // 3.1 ตรวจสอบ URL ตู้จัดเก็บห้องแล็บ /storage/room/[code]
+      const storageRoomMatch = text.match(/\/storage\/room\/(.+?)(?:[\?#]|$)/i);
+      if (storageRoomMatch && storageRoomMatch[1]) {
+        try {
+          const decoded = decodeURIComponent(storageRoomMatch[1]).trim();
+          return { raw: rawInput, cleanCode: decoded, detectedType: 'STORAGE_ROOM' };
+        } catch {
+          return { raw: rawInput, cleanCode: storageRoomMatch[1].trim(), detectedType: 'STORAGE_ROOM' };
+        }
+      }
+
+      // 3.2 ตรวจสอบ URL ตู้/ชั้นจัดเก็บ /storage/[code]
+      const storageMatch = text.match(/\/storage\/(.+?)(?:[\?#]|$)/i);
+      if (storageMatch && storageMatch[1]) {
+        try {
+          const decoded = decodeURIComponent(storageMatch[1]).trim();
+          return { raw: rawInput, cleanCode: decoded, detectedType: 'STORAGE' };
+        } catch {
+          return { raw: rawInput, cleanCode: storageMatch[1].trim(), detectedType: 'STORAGE' };
+        }
+      }
+
+      // 3.3 ตรวจสอบ URL พัสดุครุภัณฑ์ /asset/[code]
       const assetMatch = text.match(/\/asset\/(.+?)(?:[\?#]|$)/i);
       if (assetMatch && assetMatch[1]) {
         try {
@@ -82,7 +99,7 @@ export function extractCleanCode(rawInput: string | null | undefined): ParsedSca
         }
       }
 
-      // 3.2 ตรวจสอบ URL ครุภัณฑ์ /equipment/[code]
+      // 3.4 ตรวจสอบ URL ครุภัณฑ์ /equipment/[code]
       const equipMatch = text.match(/\/equipment\/(.+?)(?:[\?#]|$)/i);
       if (equipMatch && equipMatch[1]) {
         try {
@@ -93,7 +110,7 @@ export function extractCleanCode(rawInput: string | null | undefined): ParsedSca
         }
       }
 
-      // 3.3 ตรวจสอบ URL วัสดุสิ้นเปลือง / กล่อง / ซอง / ล็อต /consumable/[code]
+      // 3.5 ตรวจสอบ URL วัสดุสิ้นเปลือง / กล่อง / ซอง / ล็อต /consumable/[code]
       const consumableMatch = text.match(/\/consumable\/(.+?)(?:[\?#]|$)/i);
       if (consumableMatch && consumableMatch[1]) {
         try {
@@ -124,7 +141,7 @@ export function extractCleanCode(rawInput: string | null | undefined): ParsedSca
         }
       }
 
-      // 3.4 ตรวจสอบ URL ฝึกปฏิบัติ OSCE / Practice Token
+      // 3.6 ตรวจสอบ URL ฝึกปฏิบัติ OSCE / Practice Token
       const practiceTokenMatch = text.match(/[?&]token=([^\/\?#&]+)/i);
       if (practiceTokenMatch && practiceTokenMatch[1]) {
         try {
@@ -163,9 +180,25 @@ export function extractCleanCode(rawInput: string | null | undefined): ParsedSca
 /**
  * วิเคราะห์ประเภทของรหัสจาก Prefix หรือ Pattern ของรหัสในระบบ
  */
-function detectTypeFromCode(code: string): 'ASSET' | 'CONSUMABLE' | 'PRACTICE' | 'USER' | 'UNKNOWN' {
+function detectTypeFromCode(code: string): 'ASSET' | 'CONSUMABLE' | 'PRACTICE' | 'USER' | 'STORAGE' | 'STORAGE_ROOM' | 'UNKNOWN' {
   if (!code) return 'UNKNOWN';
   const upper = code.toUpperCase();
+
+  // Storage Room (เช่น LAB-01-1, LAB-SIM-MAN)
+  if (upper.startsWith('LAB-')) {
+    return 'STORAGE_ROOM';
+  }
+
+  // Storage Location / Cabinet / Shelf (เช่น CAB-01, SHELF-01, STORE-01, CART-01, DRAWER-01)
+  if (
+    upper.startsWith('CAB-') ||
+    upper.startsWith('SHELF-') ||
+    upper.startsWith('CART-') ||
+    upper.startsWith('STORE-') ||
+    upper.startsWith('DRAWER-')
+  ) {
+    return 'STORAGE';
+  }
 
   // Practice Booking Token
   if (upper.startsWith('SPK-') || upper.startsWith('SPB-')) {

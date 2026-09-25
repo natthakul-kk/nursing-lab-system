@@ -50,6 +50,16 @@ export default function QrScannerModal({ isOpen, onClose, onScan }: QrScannerMod
       return;
     }
 
+    if (detectedType === 'STORAGE_ROOM' || decodedText.includes('/storage/room/')) {
+      stopScannerAndNavigate(`/storage/room/${encodeURIComponent(cleanCode)}`);
+      return;
+    }
+
+    if (detectedType === 'STORAGE' || decodedText.includes('/storage/')) {
+      stopScannerAndNavigate(`/storage/${encodeURIComponent(cleanCode)}`);
+      return;
+    }
+
     if (detectedType === 'CONSUMABLE' || decodedText.includes('/consumable/')) {
       stopScannerAndNavigate(`/consumable/${encodeURIComponent(cleanCode)}`);
       return;

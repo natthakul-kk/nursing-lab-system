@@ -29,8 +29,9 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const isLoginPage = pathname === '/login';
   const isPublicAssetPage = pathname?.startsWith('/asset/');
   const isPublicConsumablePage = pathname?.startsWith('/consumable/');
+  const isPublicStoragePage = pathname?.startsWith('/storage/');
   const isResetPasswordPage = pathname?.startsWith('/reset-password');
-  const isPublicRoute = isLoginPage || isPublicAssetPage || isPublicConsumablePage || isResetPasswordPage;
+  const isPublicRoute = isLoginPage || isPublicAssetPage || isPublicConsumablePage || isPublicStoragePage || isResetPasswordPage;
 
   React.useEffect(() => {
     if (!isLoading && !currentUser && !isPublicRoute) {

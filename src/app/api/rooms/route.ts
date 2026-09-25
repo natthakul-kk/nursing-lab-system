@@ -13,9 +13,14 @@ export async function GET(req: Request) {
       where.isActive = true;
     }
     if (!includeArchived) {
-      where.NOT = [
-        { closeReason: { contains: 'ปิดการใช้งานถาวร' } },
-        { closeReason: { contains: 'ประวัติการจอง' } },
+      where.OR = [
+        { closeReason: null },
+        {
+          AND: [
+            { closeReason: { not: { contains: 'ปิดการใช้งานถาวร' } } },
+            { closeReason: { not: { contains: 'ประวัติการจอง' } } },
+          ],
+        },
       ];
     }
 

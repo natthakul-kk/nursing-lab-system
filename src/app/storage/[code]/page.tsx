@@ -25,8 +25,12 @@ import {
   LogIn,
   User,
   ClipboardList,
+  LayoutGrid,
+  List,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
+import ThemeToggle from '@/components/common/ThemeToggle';
+import { formatImageUrl } from '@/lib/image-helper';
 
 export default function CabinetStoragePage() {
   const params = useParams();
@@ -39,6 +43,7 @@ export default function CabinetStoragePage() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'ALL' | 'CONSUMABLE' | 'EQUIPMENT' | 'ALERT'>('ALL');
+  const [viewMode, setViewMode] = useState<'CARD' | 'TABLE'>('CARD');
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchCabinetData = async (isManual = false) => {
@@ -198,6 +203,7 @@ export default function CabinetStoragePage() {
             </div>
 
             <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
+              <ThemeToggle />
               <button
                 onClick={() => fetchCabinetData(true)}
                 disabled={refreshing}
@@ -396,51 +402,217 @@ export default function CabinetStoragePage() {
           </div>
         </div>
 
-        {/* Item List Header */}
-        <div className="flex items-center justify-between text-xs font-bold text-slate-600 dark:text-slate-400 px-1">
-          <span>รายการสิ่งของในตู้นี้ ({filteredItems.length + filteredAssets.length} รายการ)</span>
-          <span className="text-[11px] font-normal text-slate-400">อัปเดตแบบเรียลไทม์</span>
+        {/* Item List Header & View Mode Switcher */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+              รายการสิ่งของในตู้นี้ ({filteredItems.length + filteredAssets.length} รายการ)
+            </span>
+            <span className="text-[10px] text-slate-400">• อัปเดตแบบเรียลไทม์</span>
+          </div>
+
+          {/* View Mode Switcher */}
+          <div className="flex items-center gap-1 bg-slate-200/70 dark:bg-slate-800 p-1 rounded-xl shrink-0 self-start sm:self-auto">
+            <button
+              onClick={() => setViewMode('CARD')}
+              className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                viewMode === 'CARD'
+                  ? 'bg-white dark:bg-slate-900 text-teal-700 dark:text-teal-300 shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span>แบบการ์ด</span>
+            </button>
+            <button
+              onClick={() => setViewMode('TABLE')}
+              className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                viewMode === 'TABLE'
+                  ? 'bg-white dark:bg-slate-900 text-teal-700 dark:text-teal-300 shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <List className="w-3.5 h-3.5" />
+              <span>แบบตารางกะทัดรัด</span>
+            </button>
+          </div>
         </div>
 
-        {/* Items Grid */}
+        {/* Items Grid / Table */}
         {filteredItems.length === 0 && filteredAssets.length === 0 ? (
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-8 text-center">
             <Package className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
             <p className="text-xs text-slate-500 dark:text-slate-400">ไม่พบสิ่งของที่ตรงกับคำค้นหาในตู้นี้</p>
           </div>
+        ) : viewMode === 'TABLE' ? (
+          /* VIEW 2: Compact Table View (Checklist style for fast counting) */
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 font-bold">
+                  <tr>
+                    <th className="py-3 px-4">รหัส / รายการพัสดุ</th>
+                    <th className="py-3 px-3">หมวดหมู่</th>
+                    <th className="py-3 px-3 text-center">คงเหลือในตู้</th>
+                    <th className="py-3 px-3 text-center">สถานะ</th>
+                    <th className="py-3 px-4 text-right">ดำเนินการ</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {/* Items */}
+                  {filteredItems.map((item: any) => {
+                    const isInStock = item.stockStatus === 'IN_STOCK';
+                    const isLowStock = item.stockStatus === 'LOW_STOCK';
+                    const isOutOfStock = item.stockStatus === 'OUT_OF_STOCK';
+                    return (
+                      <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                        <td className="py-3 px-4">
+                          <div className="font-mono text-[11px] font-bold text-teal-700 dark:text-teal-300">{item.code}</div>
+                          <div className="font-bold text-slate-900 dark:text-slate-100 text-sm leading-snug">{item.name}</div>
+                          {item.lots && item.lots.length > 0 && (
+                            <div className="text-[10px] text-slate-400 dark:text-slate-500 font-mono mt-0.5">
+                              Lot: {item.lots[0].lotNumber} {item.lots[0].expiryDate ? `| EXP: ${item.lots[0].expiryDate}` : ''}
+                            </div>
+                          )}
+                        </td>
+                        <td className="py-3 px-3 text-slate-500 dark:text-slate-400">
+                          {item.categoryName}
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          <span className={`text-base font-black ${isOutOfStock ? 'text-rose-600' : isLowStock ? 'text-amber-600' : 'text-slate-900 dark:text-white'}`}>
+                            {item.totalQuantity}
+                          </span>
+                          <span className="text-[11px] text-slate-400 ml-1">{item.unit || 'ชิ้น'}</span>
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          {isInStock && (
+                            <span className="inline-block text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full">
+                              พร้อมใช้
+                            </span>
+                          )}
+                          {isLowStock && (
+                            <span className="inline-block text-[11px] font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-full">
+                              ใกล้หมด
+                            </span>
+                          )}
+                          {isOutOfStock && (
+                            <span className="inline-block text-[11px] font-bold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 px-2 py-0.5 rounded-full">
+                              ของหมด
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          {currentUser ? (
+                            <Link
+                              href={item.type === 'CONSUMABLE' ? `/requisitions?itemId=${item.id}` : `/borrow?itemId=${item.id}`}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 text-teal-700 dark:text-teal-300 text-xs font-bold border border-teal-200/80 dark:border-teal-800"
+                            >
+                              <span>{item.type === 'CONSUMABLE' ? 'ขอเบิก' : 'ขอยืม'}</span>
+                            </Link>
+                          ) : (
+                            <Link
+                              href={`/login?redirect=${encodeURIComponent(item.type === 'CONSUMABLE' ? `/requisitions?itemId=${item.id}` : `/borrow?itemId=${item.id}`)}`}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-bold border border-slate-200 dark:border-slate-700"
+                            >
+                              <LogIn className="w-3 h-3" />
+                              <span>{item.type === 'CONSUMABLE' ? 'เข้าสู่ระบบเพื่อเบิก' : 'เข้าสู่ระบบเพื่อยืม'}</span>
+                            </Link>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+
+                  {/* Assets */}
+                  {filteredAssets.map((asset: any) => {
+                    const isAvailable = asset.status === 'AVAILABLE';
+                    return (
+                      <tr key={asset.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                        <td className="py-3 px-4">
+                          <div className="font-mono text-[11px] font-bold text-indigo-700 dark:text-indigo-300">{asset.assetCode}</div>
+                          <div className="font-bold text-slate-900 dark:text-slate-100 text-sm leading-snug">{asset.itemName}</div>
+                          {asset.serialNumber && (
+                            <div className="text-[10px] text-slate-400 font-mono mt-0.5">S/N: {asset.serialNumber}</div>
+                          )}
+                        </td>
+                        <td className="py-3 px-3 text-slate-500 dark:text-slate-400">
+                          {asset.categoryName}
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          <span className="text-base font-black text-indigo-600 dark:text-indigo-400">1</span>
+                          <span className="text-[11px] text-slate-400 ml-1">เครื่อง</span>
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          {isAvailable ? (
+                            <span className="inline-block text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full">
+                              พร้อมยืม
+                            </span>
+                          ) : (
+                            <span className="inline-block text-[11px] font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-full">
+                              {asset.status === 'BORROWED' ? 'กำลังถูกยืม' : asset.status}
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          {currentUser ? (
+                            <Link
+                              href={`/borrow?assetCode=${asset.assetCode}`}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 text-indigo-700 dark:text-indigo-300 text-xs font-bold border border-indigo-200/80 dark:border-indigo-800"
+                            >
+                              <span>ขอยืม</span>
+                            </Link>
+                          ) : (
+                            <Link
+                              href={`/login?redirect=${encodeURIComponent(`/borrow?assetCode=${asset.assetCode}`)}`}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-bold border border-slate-200 dark:border-slate-700"
+                            >
+                              <LogIn className="w-3 h-3" />
+                              <span>เข้าสู่ระบบเพื่อยืม</span>
+                            </Link>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
         ) : (
+          /* VIEW 1: Modern Card View (Clean, High Contrast, Readable) */
           <div className="space-y-3">
             {/* Consumable & Equipment Items */}
             {filteredItems.map((item: any) => {
               const isInStock = item.stockStatus === 'IN_STOCK';
               const isLowStock = item.stockStatus === 'LOW_STOCK';
               const isOutOfStock = item.stockStatus === 'OUT_OF_STOCK';
+              const photoUrl = formatImageUrl(item.imageUrl);
 
               return (
                 <div
                   key={item.id}
-                  className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-4 hover:border-teal-500/40 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                  className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-4 hover:border-teal-500/40 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3.5"
                 >
                   <div className="flex items-start gap-3.5">
                     {/* Item Image or Placeholder */}
-                    <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 border border-slate-200/60 dark:border-slate-700 overflow-hidden">
-                      {item.imageUrl ? (
-                        <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+                    <div className="w-14 h-14 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 border border-slate-200/60 dark:border-slate-700 overflow-hidden">
+                      {photoUrl ? (
+                        <img src={photoUrl} alt={item.name} className="w-full h-full object-cover" />
                       ) : (
-                        <Package className="w-5 h-5 text-slate-400" />
+                        <Package className="w-6 h-6 text-slate-400" />
                       )}
                     </div>
 
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-mono text-[10px] font-bold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/70 px-1.5 py-0.5 rounded border border-teal-200/60 dark:border-teal-800">
+                        <span className="font-mono text-[11px] font-bold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/70 px-2 py-0.5 rounded border border-teal-200/60 dark:border-teal-800">
                           {item.code}
                         </span>
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded font-medium">
                           {item.categoryName}
                         </span>
                       </div>
-                      <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
+                      <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 leading-snug">
                         {item.name}
                       </h3>
 
@@ -450,7 +622,7 @@ export default function CabinetStoragePage() {
                           {item.lots.map((lot: any, idx: number) => (
                             <span
                               key={idx}
-                              className="inline-flex items-center gap-1 text-[10px] font-mono text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/80 px-2 py-0.5 rounded border border-slate-200/60 dark:border-slate-700"
+                              className="inline-flex items-center gap-1 text-[11px] font-mono text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/80 px-2.5 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700"
                             >
                               <Calendar className="w-3 h-3 text-teal-500" />
                               <span>Lot: {lot.lotNumber}</span>
@@ -466,27 +638,28 @@ export default function CabinetStoragePage() {
                   </div>
 
                   {/* Stock Quantity & Status Badge */}
-                  <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-800 shrink-0">
+                  <div className="flex items-center justify-between sm:justify-end gap-3.5 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-800 shrink-0">
                     <div className="text-right">
-                      <div className="text-base font-black text-slate-900 dark:text-white">
+                      <div className="text-[11px] text-slate-400 font-medium">คงเหลือในตู้</div>
+                      <div className="text-lg font-black text-slate-900 dark:text-slate-100 leading-none">
                         {item.totalQuantity}{' '}
                         <span className="text-xs font-normal text-slate-500 dark:text-slate-400">{item.unit || 'ชิ้น'}</span>
                       </div>
-                      <div>
+                      <div className="mt-1">
                         {isInStock && (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-full">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                             พร้อมใช้งาน
                           </span>
                         )}
                         {isLowStock && (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-full">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-2.5 py-0.5 rounded-full">
                             <AlertTriangle className="w-3 h-3 text-amber-500" />
                             ใกล้หมดสต็อก
                           </span>
                         )}
                         {isOutOfStock && (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 px-2 py-0.5 rounded-full">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 px-2.5 py-0.5 rounded-full">
                             <XCircle className="w-3 h-3 text-rose-500" />
                             ของหมดตู้
                           </span>
@@ -498,7 +671,7 @@ export default function CabinetStoragePage() {
                     {currentUser ? (
                       <Link
                         href={item.type === 'CONSUMABLE' ? `/requisitions?itemId=${item.id}` : `/borrow?itemId=${item.id}`}
-                        className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 dark:hover:bg-teal-900/80 text-teal-700 dark:text-teal-300 text-xs font-bold transition border border-teal-200/80 dark:border-teal-800 cursor-pointer"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 dark:hover:bg-teal-900/80 text-teal-800 dark:text-teal-200 text-xs font-bold transition border border-teal-200/80 dark:border-teal-800 cursor-pointer shadow-xs"
                       >
                         <span>{item.type === 'CONSUMABLE' ? 'ขอเบิก' : 'ขอยืม'}</span>
                         <ExternalLink className="w-3.5 h-3.5" />
@@ -506,7 +679,7 @@ export default function CabinetStoragePage() {
                     ) : (
                       <Link
                         href={`/login?redirect=${encodeURIComponent(item.type === 'CONSUMABLE' ? `/requisitions?itemId=${item.id}` : `/borrow?itemId=${item.id}`)}`}
-                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-teal-50 dark:hover:bg-teal-950 text-slate-700 dark:text-slate-300 hover:text-teal-700 dark:hover:text-teal-300 text-xs font-medium transition border border-slate-200 dark:border-slate-700 cursor-pointer"
+                        className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-teal-50 dark:hover:bg-teal-950 text-slate-700 dark:text-slate-300 hover:text-teal-700 dark:hover:text-teal-300 text-xs font-medium transition border border-slate-200 dark:border-slate-700 cursor-pointer"
                         title="เข้าสู่ระบบเพื่อทำรายการ"
                       >
                         <LogIn className="w-3.5 h-3.5" />
@@ -524,49 +697,52 @@ export default function CabinetStoragePage() {
               return (
                 <div
                   key={asset.id}
-                  className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-4 hover:border-teal-500/40 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                  className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-4 hover:border-teal-500/40 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3.5"
                 >
                   <div className="flex items-start gap-3.5">
-                    <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-100 dark:border-indigo-900">
-                      <Wrench className="w-5 h-5" />
+                    <div className="w-14 h-14 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-100 dark:border-indigo-900">
+                      <Wrench className="w-6 h-6" />
                     </div>
-                    <div>
+                    <div className="space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-mono text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/80 px-2 py-0.5 rounded border border-indigo-200 dark:border-indigo-800">
+                        <span className="font-mono text-[11px] font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/80 px-2 py-0.5 rounded border border-indigo-200 dark:border-indigo-800">
                           {asset.assetCode}
                         </span>
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded font-medium">
                           {asset.categoryName}
                         </span>
                       </div>
-                      <h3 className="text-sm font-bold text-slate-900 dark:text-white mt-1">
+                      <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 leading-snug">
                         {asset.itemName}
                       </h3>
                       {asset.serialNumber && (
-                        <p className="text-[11px] font-mono text-slate-400 mt-0.5">S/N: {asset.serialNumber}</p>
+                        <p className="text-[11px] font-mono text-slate-400 dark:text-slate-500">S/N: {asset.serialNumber}</p>
                       )}
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-800 shrink-0">
-                    <div>
-                      {isAvailable ? (
-                        <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 rounded-full">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                          พร้อมใช้งานในตู้
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-2.5 py-1 rounded-full">
-                          <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                          {asset.status === 'BORROWED' ? 'กำลังถูกยืม' : asset.status}
-                        </span>
-                      )}
+                  <div className="flex items-center justify-between sm:justify-end gap-3.5 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-800 shrink-0">
+                    <div className="text-right">
+                      <div className="text-[11px] text-slate-400 font-medium">สถานะในตู้</div>
+                      <div className="mt-1">
+                        {isAvailable ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-full">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                            พร้อมใช้งานในตู้
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-2.5 py-0.5 rounded-full">
+                            <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                            {asset.status === 'BORROWED' ? 'กำลังถูกยืม' : asset.status}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     {currentUser ? (
                       <Link
                         href={`/borrow?assetCode=${asset.assetCode}`}
-                        className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/80 text-indigo-700 dark:text-indigo-300 text-xs font-bold transition border border-indigo-200/80 dark:border-indigo-800 cursor-pointer"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/80 text-indigo-700 dark:text-indigo-300 text-xs font-bold transition border border-indigo-200/80 dark:border-indigo-800 cursor-pointer shadow-xs"
                       >
                         <span>ขอยืมเครื่องนี้</span>
                         <ExternalLink className="w-3.5 h-3.5" />
@@ -574,7 +750,7 @@ export default function CabinetStoragePage() {
                     ) : (
                       <Link
                         href={`/login?redirect=${encodeURIComponent(`/borrow?assetCode=${asset.assetCode}`)}`}
-                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950 text-slate-700 dark:text-slate-300 hover:text-indigo-700 dark:hover:text-indigo-300 text-xs font-medium transition border border-slate-200 dark:border-slate-700 cursor-pointer"
+                        className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950 text-slate-700 dark:text-slate-300 hover:text-indigo-700 dark:hover:text-indigo-300 text-xs font-medium transition border border-slate-200 dark:border-slate-700 cursor-pointer"
                         title="เข้าสู่ระบบเพื่อขอยืม"
                       >
                         <LogIn className="w-3.5 h-3.5" />

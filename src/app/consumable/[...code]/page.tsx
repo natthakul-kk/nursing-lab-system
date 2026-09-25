@@ -29,6 +29,7 @@ import {
   Scissors
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import ThemeToggle from '@/components/common/ThemeToggle';
 
 export default function PublicConsumablePage() {
   const params = useParams();
@@ -276,15 +277,17 @@ export default function PublicConsumablePage() {
               </p>
             </div>
           </div>
-
-          <button
-            onClick={handleShare}
-            className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-teal-600 dark:hover:text-teal-400 transition flex items-center gap-1.5 text-xs font-bold cursor-pointer"
-            title="คัดลอกลิงก์ข้อมูลนี้"
-          >
-            <Share2 className="w-4 h-4" />
-            <span className="hidden sm:inline">{copied ? 'คัดลอกแล้ว!' : 'แชร์'}</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <button
+              onClick={handleShare}
+              className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-teal-600 dark:hover:text-teal-400 transition flex items-center gap-1.5 text-xs font-bold cursor-pointer"
+              title="คัดลอกลิงก์ข้อมูลนี้"
+            >
+              <Share2 className="w-4 h-4" />
+              <span className="hidden sm:inline">{copied ? 'คัดลอกแล้ว!' : 'แชร์'}</span>
+            </button>
+          </div>
         </div>
       </header>
 

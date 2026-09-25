@@ -21,25 +21,18 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setMounted(true);
     try {
       const stored = localStorage.getItem('theme') as Theme | null;
-      if (stored === 'dark' || stored === 'light') {
-        setThemeState(stored);
-        if (stored === 'dark') {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-        }
+      if (stored === 'dark') {
+        setThemeState('dark');
+        document.documentElement.classList.add('dark');
       } else {
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const initial = prefersDark ? 'dark' : 'light';
-        setThemeState(initial);
-        if (prefersDark) {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-        }
+        // Default to Light Mode for clinical nursing lab system unless explicitly saved as dark
+        setThemeState('light');
+        document.documentElement.classList.remove('dark');
       }
     } catch (e) {
       console.warn('Failed to read theme preference from localStorage', e);
+      setThemeState('light');
+      document.documentElement.classList.remove('dark');
     }
   }, []);
 

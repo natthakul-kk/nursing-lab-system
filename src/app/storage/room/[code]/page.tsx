@@ -27,6 +27,7 @@ import {
   ClipboardList,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
+import ThemeToggle from '@/components/common/ThemeToggle';
 
 export default function RoomStoragePage() {
   const params = useParams();
@@ -178,6 +179,7 @@ export default function RoomStoragePage() {
             </div>
 
             <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
+              <ThemeToggle />
               <button
                 onClick={() => fetchRoomData(true)}
                 disabled={refreshing}

@@ -26,6 +26,7 @@ import {
   ChevronLeft
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import ThemeToggle from '@/components/common/ThemeToggle';
 
 export default function PublicAssetPage() {
   const params = useParams();
@@ -132,6 +133,7 @@ export default function PublicAssetPage() {
           </Link>
 
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             <button
               onClick={handleShare}
               className="p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-950/40 transition border border-slate-200 dark:border-slate-700 cursor-pointer"

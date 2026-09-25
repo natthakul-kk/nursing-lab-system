@@ -399,6 +399,7 @@ export async function POST(req: Request) {
         model: body.model ? String(body.model).trim() : null,
         location: body.location,
         description: body.description,
+        imageUrl: body.imageUrl ? String(body.imageUrl).trim() : null,
         isBorrowable: body.isBorrowable !== undefined ? Boolean(body.isBorrowable) : true,
         allowExpiredForSim: body.allowExpiredForSim !== undefined ? Boolean(body.allowExpiredForSim) : true,
       },

@@ -1,4 +1,4 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 export async function GET(req: Request, { params }: { params: Promise<{ code: string }> }) {
@@ -52,6 +52,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ code: st
                 id: true,
                 code: true,
                 name: true,
+                brand: true,
+                model: true,
+                description: true,
+                imageUrl: true,
+                isBorrowable: true,
                 category: { select: { id: true, name: true } },
               },
             },
@@ -85,6 +90,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ code: st
         name: item.name,
         type: item.type,
         unit: item.unit,
+        usageUnit: item.usageUnit,
+        conversionRatio: item.conversionRatio,
+        brand: item.brand,
+        model: item.model,
+        description: item.description,
+        isBorrowable: item.isBorrowable,
+        allowExpiredForSim: item.allowExpiredForSim,
         totalQuantity: totalQty,
         minQuantity: item.minStockAlert || 5,
         stockStatus,
@@ -106,8 +118,14 @@ export async function GET(req: Request, { params }: { params: Promise<{ code: st
       status: asset.status,
       condition: asset.condition,
       itemId: asset.itemId,
+      itemCode: asset.item?.code,
       itemName: asset.item?.name || 'ครุภัณฑ์',
       categoryName: asset.item?.category?.name || 'ทั่วไป',
+      imageUrl: asset.imageUrl || asset.item?.imageUrl,
+      brand: asset.brand || asset.item?.brand,
+      model: asset.model || asset.item?.model,
+      description: asset.description || asset.item?.description,
+      isBorrowable: asset.item?.isBorrowable,
     }));
 
     const stats = {

@@ -27,6 +27,9 @@ import {
   ClipboardList,
   LayoutGrid,
   List,
+  Eye,
+  X,
+  Info,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import ThemeToggle from '@/components/common/ThemeToggle';
@@ -45,6 +48,10 @@ export default function CabinetStoragePage() {
   const [selectedFilter, setSelectedFilter] = useState<'ALL' | 'CONSUMABLE' | 'EQUIPMENT' | 'ALERT'>('ALL');
   const [viewMode, setViewMode] = useState<'TABLE' | 'CARD'>('TABLE');
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedDetail, setSelectedDetail] = useState<{
+    type: 'CONSUMABLE' | 'EQUIPMENT';
+    item: any;
+  } | null>(null);
 
   useEffect(() => {
     try {
@@ -483,9 +490,13 @@ export default function CabinetStoragePage() {
                     const isLowStock = item.stockStatus === 'LOW_STOCK';
                     const isOutOfStock = item.stockStatus === 'OUT_OF_STOCK';
                     return (
-                      <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                      <tr
+                        key={item.id}
+                        onClick={() => setSelectedDetail({ type: 'CONSUMABLE', item })}
+                        className="hover:bg-teal-50/50 dark:hover:bg-slate-800/60 transition cursor-pointer group"
+                      >
                         <td className="py-3 px-4">
-                          <div className="font-mono text-[11px] font-bold text-teal-700 dark:text-teal-300">{item.code}</div>
+                          <div className="font-mono text-[11px] font-bold text-teal-700 dark:text-teal-300 group-hover:underline">{item.code}</div>
                           <div className="font-bold text-slate-900 dark:text-slate-100 text-sm leading-snug">{item.name}</div>
                           {item.lots && item.lots.length > 0 && (
                             <div className="text-[10px] text-slate-400 dark:text-slate-500 font-mono mt-0.5">
@@ -519,23 +530,34 @@ export default function CabinetStoragePage() {
                             </span>
                           )}
                         </td>
-                        <td className="py-3 px-4 text-right">
-                          {currentUser ? (
-                            <Link
-                              href={item.type === 'CONSUMABLE' ? `/requisitions?itemId=${item.id}` : `/borrow?itemId=${item.id}`}
-                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 text-teal-700 dark:text-teal-300 text-xs font-bold border border-teal-200/80 dark:border-teal-800"
+                        <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedDetail({ type: 'CONSUMABLE', item })}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-bold border border-slate-200 dark:border-slate-700 transition cursor-pointer"
+                              title="ดูรายละเอียดข้อมูลพัสดุและล็อต"
                             >
-                              <span>{item.type === 'CONSUMABLE' ? 'ขอเบิก' : 'ขอยืม'}</span>
-                            </Link>
-                          ) : (
-                            <Link
-                              href={`/login?redirect=${encodeURIComponent(item.type === 'CONSUMABLE' ? `/requisitions?itemId=${item.id}` : `/borrow?itemId=${item.id}`)}`}
-                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-bold border border-slate-200 dark:border-slate-700"
-                            >
-                              <LogIn className="w-3 h-3" />
-                              <span>{item.type === 'CONSUMABLE' ? 'เข้าสู่ระบบเพื่อเบิก' : 'เข้าสู่ระบบเพื่อยืม'}</span>
-                            </Link>
-                          )}
+                              <Eye className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                              <span className="hidden sm:inline">ดูข้อมูล</span>
+                            </button>
+                            {currentUser ? (
+                              <Link
+                                href={item.type === 'CONSUMABLE' ? `/requisitions?itemId=${item.id}` : `/borrow?itemId=${item.id}`}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 text-teal-700 dark:text-teal-300 text-xs font-bold border border-teal-200/80 dark:border-teal-800"
+                              >
+                                <span>{item.type === 'CONSUMABLE' ? 'ขอเบิก' : 'ขอยืม'}</span>
+                              </Link>
+                            ) : (
+                              <Link
+                                href={`/login?redirect=${encodeURIComponent(item.type === 'CONSUMABLE' ? `/requisitions?itemId=${item.id}` : `/borrow?itemId=${item.id}`)}`}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-bold border border-slate-200 dark:border-slate-700"
+                              >
+                                <LogIn className="w-3 h-3" />
+                                <span>{item.type === 'CONSUMABLE' ? 'เข้าสู่ระบบเพื่อเบิก' : 'เข้าสู่ระบบเพื่อยืม'}</span>
+                              </Link>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -545,9 +567,13 @@ export default function CabinetStoragePage() {
                   {filteredAssets.map((asset: any) => {
                     const isAvailable = asset.status === 'AVAILABLE';
                     return (
-                      <tr key={asset.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                      <tr
+                        key={asset.id}
+                        onClick={() => setSelectedDetail({ type: 'EQUIPMENT', item: asset })}
+                        className="hover:bg-indigo-50/50 dark:hover:bg-slate-800/60 transition cursor-pointer group"
+                      >
                         <td className="py-3 px-4">
-                          <div className="font-mono text-[11px] font-bold text-indigo-700 dark:text-indigo-300">{asset.assetCode}</div>
+                          <div className="font-mono text-[11px] font-bold text-indigo-700 dark:text-indigo-300 group-hover:underline">{asset.assetCode}</div>
                           <div className="font-bold text-slate-900 dark:text-slate-100 text-sm leading-snug">{asset.itemName}</div>
                           {asset.serialNumber && (
                             <div className="text-[10px] text-slate-400 font-mono mt-0.5">S/N: {asset.serialNumber}</div>
@@ -571,23 +597,34 @@ export default function CabinetStoragePage() {
                             </span>
                           )}
                         </td>
-                        <td className="py-3 px-4 text-right">
-                          {currentUser ? (
-                            <Link
-                              href={`/borrow?assetCode=${asset.assetCode}`}
-                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 text-indigo-700 dark:text-indigo-300 text-xs font-bold border border-indigo-200/80 dark:border-indigo-800"
+                        <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedDetail({ type: 'EQUIPMENT', item: asset })}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-bold border border-slate-200 dark:border-slate-700 transition cursor-pointer"
+                              title="ดูรายละเอียดครุภัณฑ์"
                             >
-                              <span>ขอยืม</span>
-                            </Link>
-                          ) : (
-                            <Link
-                              href={`/login?redirect=${encodeURIComponent(`/borrow?assetCode=${asset.assetCode}`)}`}
-                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-bold border border-slate-200 dark:border-slate-700"
-                            >
-                              <LogIn className="w-3 h-3" />
-                              <span>เข้าสู่ระบบเพื่อยืม</span>
-                            </Link>
-                          )}
+                              <Eye className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                              <span className="hidden sm:inline">ดูข้อมูล</span>
+                            </button>
+                            {currentUser ? (
+                              <Link
+                                href={`/borrow?assetCode=${asset.assetCode}`}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 text-indigo-700 dark:text-indigo-300 text-xs font-bold border border-indigo-200/80 dark:border-indigo-800"
+                              >
+                                <span>ขอยืม</span>
+                              </Link>
+                            ) : (
+                              <Link
+                                href={`/login?redirect=${encodeURIComponent(`/borrow?assetCode=${asset.assetCode}`)}`}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-bold border border-slate-200 dark:border-slate-700"
+                              >
+                                <LogIn className="w-3 h-3" />
+                                <span>เข้าสู่ระบบเพื่อยืม</span>
+                              </Link>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -609,7 +646,8 @@ export default function CabinetStoragePage() {
               return (
                 <div
                   key={item.id}
-                  className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-4 hover:border-teal-500/40 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3.5"
+                  onClick={() => setSelectedDetail({ type: 'CONSUMABLE', item })}
+                  className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-4 hover:border-teal-500/60 hover:shadow-md transition flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 cursor-pointer group"
                 >
                   <div className="flex items-start gap-3.5">
                     {/* Item Image or Placeholder */}
@@ -623,7 +661,7 @@ export default function CabinetStoragePage() {
 
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-mono text-[11px] font-bold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/70 px-2 py-0.5 rounded border border-teal-200/60 dark:border-teal-800">
+                        <span className="font-mono text-[11px] font-bold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/70 px-2 py-0.5 rounded border border-teal-200/60 dark:border-teal-800 group-hover:underline">
                           {item.code}
                         </span>
                         <span className="text-[10px] text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded font-medium">
@@ -685,25 +723,36 @@ export default function CabinetStoragePage() {
                       </div>
                     </div>
 
-                    {/* Quick Requisition/Borrow Link */}
-                    {currentUser ? (
-                      <Link
-                        href={item.type === 'CONSUMABLE' ? `/requisitions?itemId=${item.id}` : `/borrow?itemId=${item.id}`}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 dark:hover:bg-teal-900/80 text-teal-800 dark:text-teal-200 text-xs font-bold transition border border-teal-200/80 dark:border-teal-800 cursor-pointer shadow-xs"
+                    {/* Quick Buttons */}
+                    <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedDetail({ type: 'CONSUMABLE', item })}
+                        className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold border border-slate-200 dark:border-slate-700 transition cursor-pointer"
+                        title="ดูรายละเอียดข้อมูลพัสดุ"
                       >
-                        <span>{item.type === 'CONSUMABLE' ? 'ขอเบิก' : 'ขอยืม'}</span>
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </Link>
-                    ) : (
-                      <Link
-                        href={`/login?redirect=${encodeURIComponent(item.type === 'CONSUMABLE' ? `/requisitions?itemId=${item.id}` : `/borrow?itemId=${item.id}`)}`}
-                        className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-teal-50 dark:hover:bg-teal-950 text-slate-700 dark:text-slate-300 hover:text-teal-700 dark:hover:text-teal-300 text-xs font-medium transition border border-slate-200 dark:border-slate-700 cursor-pointer"
-                        title="เข้าสู่ระบบเพื่อทำรายการ"
-                      >
-                        <LogIn className="w-3.5 h-3.5" />
-                        <span>เข้าสู่ระบบเพื่อ{item.type === 'CONSUMABLE' ? 'ขอเบิก' : 'ขอยืม'}</span>
-                      </Link>
-                    )}
+                        <Eye className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                        <span>ดูข้อมูล</span>
+                      </button>
+                      {currentUser ? (
+                        <Link
+                          href={item.type === 'CONSUMABLE' ? `/requisitions?itemId=${item.id}` : `/borrow?itemId=${item.id}`}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 dark:hover:bg-teal-900/80 text-teal-800 dark:text-teal-200 text-xs font-bold transition border border-teal-200/80 dark:border-teal-800 cursor-pointer shadow-xs"
+                        >
+                          <span>{item.type === 'CONSUMABLE' ? 'ขอเบิก' : 'ขอยืม'}</span>
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </Link>
+                      ) : (
+                        <Link
+                          href={`/login?redirect=${encodeURIComponent(item.type === 'CONSUMABLE' ? `/requisitions?itemId=${item.id}` : `/borrow?itemId=${item.id}`)}`}
+                          className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-teal-50 dark:hover:bg-teal-950 text-slate-700 dark:text-slate-300 hover:text-teal-700 dark:hover:text-teal-300 text-xs font-medium transition border border-slate-200 dark:border-slate-700 cursor-pointer"
+                          title="เข้าสู่ระบบเพื่อทำรายการ"
+                        >
+                          <LogIn className="w-3.5 h-3.5" />
+                          <span>เข้าสู่ระบบ</span>
+                        </Link>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
@@ -715,15 +764,20 @@ export default function CabinetStoragePage() {
               return (
                 <div
                   key={asset.id}
-                  className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-4 hover:border-teal-500/40 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3.5"
+                  onClick={() => setSelectedDetail({ type: 'EQUIPMENT', item: asset })}
+                  className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-4 hover:border-indigo-500/60 hover:shadow-md transition flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 cursor-pointer group"
                 >
                   <div className="flex items-start gap-3.5">
-                    <div className="w-14 h-14 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-100 dark:border-indigo-900">
-                      <Wrench className="w-6 h-6" />
+                    <div className="w-14 h-14 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-100 dark:border-indigo-900 overflow-hidden">
+                      {asset.imageUrl ? (
+                        <img src={formatImageUrl(asset.imageUrl)} alt={asset.itemName} className="w-full h-full object-cover" />
+                      ) : (
+                        <Wrench className="w-6 h-6" />
+                      )}
                     </div>
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-mono text-[11px] font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/80 px-2 py-0.5 rounded border border-indigo-200 dark:border-indigo-800">
+                        <span className="font-mono text-[11px] font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/80 px-2 py-0.5 rounded border border-indigo-200 dark:border-indigo-800 group-hover:underline">
                           {asset.assetCode}
                         </span>
                         <span className="text-[10px] text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded font-medium">
@@ -757,28 +811,327 @@ export default function CabinetStoragePage() {
                       </div>
                     </div>
 
-                    {currentUser ? (
-                      <Link
-                        href={`/borrow?assetCode=${asset.assetCode}`}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/80 text-indigo-700 dark:text-indigo-300 text-xs font-bold transition border border-indigo-200/80 dark:border-indigo-800 cursor-pointer shadow-xs"
+                    <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedDetail({ type: 'EQUIPMENT', item: asset })}
+                        className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold border border-slate-200 dark:border-slate-700 transition cursor-pointer"
+                        title="ดูรายละเอียดข้อมูลครุภัณฑ์"
                       >
-                        <span>ขอยืมเครื่องนี้</span>
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </Link>
-                    ) : (
-                      <Link
-                        href={`/login?redirect=${encodeURIComponent(`/borrow?assetCode=${asset.assetCode}`)}`}
-                        className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950 text-slate-700 dark:text-slate-300 hover:text-indigo-700 dark:hover:text-indigo-300 text-xs font-medium transition border border-slate-200 dark:border-slate-700 cursor-pointer"
-                        title="เข้าสู่ระบบเพื่อขอยืม"
-                      >
-                        <LogIn className="w-3.5 h-3.5" />
-                        <span>เข้าสู่ระบบเพื่อขอยืม</span>
-                      </Link>
-                    )}
+                        <Eye className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                        <span>ดูข้อมูล</span>
+                      </button>
+                      {currentUser ? (
+                        <Link
+                          href={`/borrow?assetCode=${asset.assetCode}`}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/80 text-indigo-700 dark:text-indigo-300 text-xs font-bold transition border border-indigo-200/80 dark:border-indigo-800 cursor-pointer shadow-xs"
+                        >
+                          <span>ขอยืมเครื่องนี้</span>
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </Link>
+                      ) : (
+                        <Link
+                          href={`/login?redirect=${encodeURIComponent(`/borrow?assetCode=${asset.assetCode}`)}`}
+                          className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950 text-slate-700 dark:text-slate-300 hover:text-indigo-700 dark:hover:text-indigo-300 text-xs font-medium transition border border-slate-200 dark:border-slate-700 cursor-pointer"
+                          title="เข้าสู่ระบบเพื่อขอยืม"
+                        >
+                          <LogIn className="w-3.5 h-3.5" />
+                          <span>เข้าสู่ระบบ</span>
+                        </Link>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Modal: Item / Asset Detail */}
+        {selectedDetail && (
+          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 max-h-[90vh] overflow-y-auto space-y-4">
+              {/* Header */}
+              <div className="flex items-start justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-2">
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    selectedDetail.type === 'CONSUMABLE'
+                      ? 'bg-teal-50 dark:bg-teal-950/80 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800'
+                      : 'bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800'
+                  }`}>
+                    {selectedDetail.type === 'CONSUMABLE' ? 'วัสดุสิ้นเปลือง' : 'ครุภัณฑ์'}
+                  </span>
+                  <span className="font-mono text-xs font-bold text-slate-500 dark:text-slate-400">
+                    {selectedDetail.type === 'CONSUMABLE' ? selectedDetail.item.code : selectedDetail.item.assetCode}
+                  </span>
+                </div>
+                <button
+                  onClick={() => setSelectedDetail(null)}
+                  className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 flex items-center justify-center transition cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Photo & Title */}
+              <div className="space-y-3">
+                {selectedDetail.item.imageUrl ? (
+                  <div className="w-full h-48 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 relative">
+                    <img
+                      src={formatImageUrl(selectedDetail.item.imageUrl)}
+                      alt={selectedDetail.item.name || selectedDetail.item.itemName}
+                      className="w-full h-full object-cover"
+                      onError={(e: any) => { (e.target as HTMLElement).style.display = 'none'; }}
+                    />
+                  </div>
+                ) : null}
+
+                <div>
+                  <span className="text-[11px] font-semibold text-slate-400">
+                    หมวดหมู่: {selectedDetail.item.categoryName}
+                  </span>
+                  <h3 className="text-lg font-black text-slate-900 dark:text-white leading-snug">
+                    {selectedDetail.item.name || selectedDetail.item.itemName}
+                  </h3>
+                </div>
+              </div>
+
+              {/* Content Details */}
+              {selectedDetail.type === 'CONSUMABLE' ? (
+                <div className="space-y-4">
+                  {/* Stock Stats in this cabinet */}
+                  <div className="p-4 rounded-2xl bg-teal-50/70 dark:bg-teal-950/40 border border-teal-200/80 dark:border-teal-800 flex items-center justify-between">
+                    <div>
+                      <div className="text-xs text-teal-800 dark:text-teal-300 font-medium">คงเหลือพร้อมใช้ในตู้นี้</div>
+                      <div className="text-2xl font-black text-teal-700 dark:text-teal-300 mt-0.5">
+                        {selectedDetail.item.totalQuantity}{' '}
+                        <span className="text-sm font-semibold text-teal-900/70 dark:text-teal-400">
+                          {selectedDetail.item.unit || 'หน่วย'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      {selectedDetail.item.stockStatus === 'IN_STOCK' && (
+                        <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950 px-2.5 py-1 rounded-full">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> พร้อมใช้
+                        </span>
+                      )}
+                      {selectedDetail.item.stockStatus === 'LOW_STOCK' && (
+                        <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950 px-2.5 py-1 rounded-full">
+                          <AlertTriangle className="w-3.5 h-3.5 text-amber-500" /> ใกล้หมดสต็อก
+                        </span>
+                      )}
+                      {selectedDetail.item.stockStatus === 'OUT_OF_STOCK' && (
+                        <span className="inline-flex items-center gap-1 text-xs font-bold text-rose-700 dark:text-rose-300 bg-rose-100 dark:bg-rose-950 px-2.5 py-1 rounded-full">
+                          <XCircle className="w-3.5 h-3.5 text-rose-500" /> ของหมด
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Sub-unit Conversion (if any) */}
+                  {selectedDetail.item.usageUnit && selectedDetail.item.conversionRatio && (
+                    <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 text-xs flex items-center justify-between">
+                      <span className="text-slate-500 dark:text-slate-400">อัตราแปลงหน่วยย่อย:</span>
+                      <span className="font-bold text-slate-800 dark:text-slate-200">
+                        1 {selectedDetail.item.unit} = {selectedDetail.item.conversionRatio} {selectedDetail.item.usageUnit}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Brand / Model */}
+                  {(selectedDetail.item.brand || selectedDetail.item.model) && (
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      {selectedDetail.item.brand && (
+                        <div className="p-2.5 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800">
+                          <span className="text-slate-400 block text-[10px]">ยี่ห้อ (Brand)</span>
+                          <span className="font-semibold text-slate-800 dark:text-slate-200">{selectedDetail.item.brand}</span>
+                        </div>
+                      )}
+                      {selectedDetail.item.model && (
+                        <div className="p-2.5 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800">
+                          <span className="text-slate-400 block text-[10px]">รุ่น (Model)</span>
+                          <span className="font-semibold text-slate-800 dark:text-slate-200">{selectedDetail.item.model}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Lots in this cabinet */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
+                      <span className="flex items-center gap-1.5">
+                        <Layers className="w-3.5 h-3.5 text-teal-600" />
+                        ทุกล็อตที่อยู่ในตู้นี้ ({selectedDetail.item.lots?.length || 0} ล็อต)
+                      </span>
+                    </div>
+                    {selectedDetail.item.lots && selectedDetail.item.lots.length > 0 ? (
+                      <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                        {selectedDetail.item.lots.map((lot: any, idx: number) => {
+                          const isExpired = lot.expiryDate && new Date(lot.expiryDate) < new Date();
+                          return (
+                            <div
+                              key={idx}
+                              className={`p-3 rounded-xl border flex items-center justify-between text-xs ${
+                                isExpired
+                                  ? 'bg-rose-50/50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900/60'
+                                  : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200/80 dark:border-slate-700'
+                              }`}
+                            >
+                              <div>
+                                <div className="font-mono font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                                  <span>Lot: {lot.lotNumber}</span>
+                                  {isExpired && (
+                                    <span className="text-[10px] font-bold text-rose-600 bg-rose-100 dark:bg-rose-950 px-1.5 py-0.5 rounded">
+                                      หมดอายุแล้ว
+                                    </span>
+                                  )}
+                                </div>
+                                {lot.expiryDate && (
+                                  <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
+                                    <Calendar className="w-3 h-3 text-slate-400" />
+                                    <span>วันหมดอายุ (EXP): {lot.expiryDate}</span>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-right">
+                                <span className="text-sm font-black text-teal-700 dark:text-teal-300">
+                                  {lot.remainingQuantity}
+                                </span>
+                                <span className="text-[11px] text-slate-500 ml-1">{selectedDetail.item.unit}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="p-3 text-center text-xs text-slate-400 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
+                        ไม่มีรายการล็อตที่มียอดคงเหลือ
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Description */}
+                  {selectedDetail.item.description && (
+                    <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
+                      <span className="text-slate-400 text-[10px] block font-bold mb-1">สเปก / ข้อควรระวัง</span>
+                      <p className="text-slate-700 dark:text-slate-300 whitespace-pre-line leading-relaxed">
+                        {selectedDetail.item.description}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* EQUIPMENT DETAILS */
+                <div className="space-y-4">
+                  {/* Status Box */}
+                  <div className="p-4 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800 flex items-center justify-between">
+                    <div>
+                      <div className="text-xs text-indigo-800 dark:text-indigo-300 font-medium">รหัสเครื่องประจำห้องแล็บ</div>
+                      <div className="font-mono text-xl font-black text-indigo-700 dark:text-indigo-300 mt-0.5">
+                        {selectedDetail.item.assetCode}
+                      </div>
+                    </div>
+                    <div>
+                      {selectedDetail.item.status === 'AVAILABLE' ? (
+                        <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950 px-2.5 py-1 rounded-full">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> พร้อมใช้งาน
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950 px-2.5 py-1 rounded-full">
+                          <AlertTriangle className="w-3.5 h-3.5 text-amber-500" /> {selectedDetail.item.status}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Serial Number & Attributes */}
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    {selectedDetail.item.serialNumber && (
+                      <div className="p-2.5 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800 col-span-2">
+                        <span className="text-slate-400 block text-[10px]">หมายเลขเครื่อง (Serial Number / S/N)</span>
+                        <span className="font-mono font-bold text-slate-800 dark:text-slate-200">{selectedDetail.item.serialNumber}</span>
+                      </div>
+                    )}
+                    {selectedDetail.item.brand && (
+                      <div className="p-2.5 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800">
+                        <span className="text-slate-400 block text-[10px]">ยี่ห้อ (Brand)</span>
+                        <span className="font-semibold text-slate-800 dark:text-slate-200">{selectedDetail.item.brand}</span>
+                      </div>
+                    )}
+                    {selectedDetail.item.model && (
+                      <div className="p-2.5 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800">
+                        <span className="text-slate-400 block text-[10px]">รุ่น (Model)</span>
+                        <span className="font-semibold text-slate-800 dark:text-slate-200">{selectedDetail.item.model}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Description */}
+                  {selectedDetail.item.description && (
+                    <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
+                      <span className="text-slate-400 text-[10px] block font-bold mb-1">สเปก / ข้อควรระวัง</span>
+                      <p className="text-slate-700 dark:text-slate-300 whitespace-pre-line leading-relaxed">
+                        {selectedDetail.item.description}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Footer Buttons */}
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
+                <Link
+                  href={
+                    selectedDetail.type === 'CONSUMABLE'
+                      ? `/consumable/${selectedDetail.item.code}`
+                      : `/asset/${selectedDetail.item.assetCode}`
+                  }
+                  className="px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 transition inline-flex items-center gap-1.5"
+                >
+                  <span>เปิดหน้าเต็ม</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </Link>
+
+                {selectedDetail.type === 'CONSUMABLE' ? (
+                  currentUser ? (
+                    <Link
+                      href={`/requisitions?itemId=${selectedDetail.item.id}`}
+                      className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-teal-600 hover:bg-teal-500 shadow-md shadow-teal-600/20 transition inline-flex items-center gap-1.5"
+                    >
+                      <span>ขอเบิกวัสดุนี้</span>
+                      <ArrowLeft className="w-3.5 h-3.5 rotate-180" />
+                    </Link>
+                  ) : (
+                    <Link
+                      href={`/login?redirect=${encodeURIComponent(`/requisitions?itemId=${selectedDetail.item.id}`)}`}
+                      className="px-4 py-2 rounded-xl text-xs font-bold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 transition inline-flex items-center gap-1.5"
+                    >
+                      <LogIn className="w-3.5 h-3.5" />
+                      <span>เข้าสู่ระบบเพื่อขอเบิก</span>
+                    </Link>
+                  )
+                ) : (
+                  currentUser ? (
+                    <Link
+                      href={`/borrow?assetCode=${selectedDetail.item.assetCode}`}
+                      className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 shadow-md shadow-indigo-600/20 transition inline-flex items-center gap-1.5"
+                    >
+                      <span>ขอยืมเครื่องนี้</span>
+                      <ArrowLeft className="w-3.5 h-3.5 rotate-180" />
+                    </Link>
+                  ) : (
+                    <Link
+                      href={`/login?redirect=${encodeURIComponent(`/borrow?assetCode=${selectedDetail.item.assetCode}`)}`}
+                      className="px-4 py-2 rounded-xl text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 transition inline-flex items-center gap-1.5"
+                    >
+                      <LogIn className="w-3.5 h-3.5" />
+                      <span>เข้าสู่ระบบเพื่อขอยืม</span>
+                    </Link>
+                  )
+                )}
+              </div>
+            </div>
           </div>
         )}
 

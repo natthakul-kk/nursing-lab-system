@@ -43,8 +43,26 @@ export default function CabinetStoragePage() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'ALL' | 'CONSUMABLE' | 'EQUIPMENT' | 'ALERT'>('ALL');
-  const [viewMode, setViewMode] = useState<'CARD' | 'TABLE'>('CARD');
+  const [viewMode, setViewMode] = useState<'TABLE' | 'CARD'>('TABLE');
   const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('cabinet_view_mode');
+      if (saved === 'CARD' || saved === 'TABLE') {
+        setViewMode(saved);
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, []);
+
+  const handleViewModeChange = (mode: 'TABLE' | 'CARD') => {
+    setViewMode(mode);
+    try {
+      localStorage.setItem('cabinet_view_mode', mode);
+    } catch (e) {}
+  };
 
   const fetchCabinetData = async (isManual = false) => {
     if (isManual) setRefreshing(true);
@@ -414,7 +432,18 @@ export default function CabinetStoragePage() {
           {/* View Mode Switcher */}
           <div className="flex items-center gap-1 bg-slate-200/70 dark:bg-slate-800 p-1 rounded-xl shrink-0 self-start sm:self-auto">
             <button
-              onClick={() => setViewMode('CARD')}
+              onClick={() => handleViewModeChange('TABLE')}
+              className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                viewMode === 'TABLE'
+                  ? 'bg-white dark:bg-slate-900 text-teal-700 dark:text-teal-300 shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <List className="w-3.5 h-3.5" />
+              <span>แบบรายการ</span>
+            </button>
+            <button
+              onClick={() => handleViewModeChange('CARD')}
               className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                 viewMode === 'CARD'
                   ? 'bg-white dark:bg-slate-900 text-teal-700 dark:text-teal-300 shadow-sm'
@@ -423,17 +452,6 @@ export default function CabinetStoragePage() {
             >
               <LayoutGrid className="w-3.5 h-3.5" />
               <span>แบบการ์ด</span>
-            </button>
-            <button
-              onClick={() => setViewMode('TABLE')}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-                viewMode === 'TABLE'
-                  ? 'bg-white dark:bg-slate-900 text-teal-700 dark:text-teal-300 shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <List className="w-3.5 h-3.5" />
-              <span>แบบตารางกะทัดรัด</span>
             </button>
           </div>
         </div>

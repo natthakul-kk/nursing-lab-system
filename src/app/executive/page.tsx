@@ -386,7 +386,7 @@ export default function ExecutiveDashboardPage() {
               <tr>
                 <th className="p-3 w-12 text-center">ลำดับ</th>
                 <th className="p-3">รหัสแล็บ</th>
-                <th className="p-3">หมายเลขครุภัณฑ์ราชการ</th>
+                <th className="p-3">เลขครุภัณฑ์</th>
                 <th className="p-3">ชื่อครุภัณฑ์</th>
                 <th className="p-3">สถานที่ติดตั้ง / ห้อง</th>
                 <th className="p-3 text-right">มูลค่า (บาท)</th>
@@ -450,13 +450,33 @@ export default function ExecutiveDashboardPage() {
                       <td className="p-3 font-mono text-[11px] text-slate-600 dark:text-slate-400">
                         {item.govAssetCode || '-'}
                       </td>
-                      <td className="p-3 font-bold text-slate-900 dark:text-white">
-                        {item.itemName}
-                        {item.sequenceNumber && (
-                          <span className="text-[10px] font-normal text-slate-500 ml-1.5">
-                            (เครื่องที่ {item.sequenceNumber})
-                          </span>
-                        )}
+                      <td className="p-3">
+                        <div className="flex items-center gap-2.5">
+                          {item.imageUrl ? (
+                            <img
+                              src={item.imageUrl}
+                              alt={item.itemName}
+                              className="w-8 h-8 rounded-lg object-cover border border-slate-200 dark:border-slate-700 shrink-0 shadow-xs"
+                              onError={(e) => {
+                                (e.target as HTMLElement).style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700">
+                              <Boxes className="w-4 h-4" />
+                            </div>
+                          )}
+                          <div>
+                            <div className="font-bold text-slate-900 dark:text-white">
+                              {item.itemName}
+                            </div>
+                            {item.sequenceNumber && (
+                              <div className="text-[10px] text-slate-500">
+                                เครื่องที่ {item.sequenceNumber}
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </td>
                       <td className="p-3 text-slate-600 dark:text-slate-300 truncate max-w-[180px]">
                         {item.roomName}
@@ -576,7 +596,7 @@ export default function ExecutiveDashboardPage() {
                   {selectedAsset.itemName}
                 </h3>
                 <p className="text-[11px] text-teal-200/80">
-                  เครื่องที่ {selectedAsset.sequenceNumber || 1} • รหัสทางราชการ: {selectedAsset.govAssetCode || '-'}
+                  เครื่องที่ {selectedAsset.sequenceNumber || 1} • เลขครุภัณฑ์: {selectedAsset.govAssetCode || '-'}
                 </p>
               </div>
 
@@ -591,6 +611,25 @@ export default function ExecutiveDashboardPage() {
 
             {/* Modal Body */}
             <div className="p-5 overflow-y-auto space-y-4 text-xs">
+              {/* Asset Photo */}
+              {selectedAsset.imageUrl ? (
+                <div className="w-full h-48 sm:h-56 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-center p-2">
+                  <img
+                    src={selectedAsset.imageUrl}
+                    alt={selectedAsset.itemName}
+                    className="w-full h-full object-contain"
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.display = 'none';
+                    }}
+                  />
+                </div>
+              ) : (
+                <div className="w-full py-6 rounded-2xl bg-slate-50 dark:bg-slate-950/40 border border-dashed border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center gap-1.5 text-slate-400">
+                  <Boxes className="w-8 h-8 opacity-40" />
+                  <span className="text-[11px]">ไม่มีรูปภาพประจำรายการครุภัณฑ์นี้</span>
+                </div>
+              )}
+
               {/* Status and Cost Highlights */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
@@ -617,6 +656,13 @@ export default function ExecutiveDashboardPage() {
                 <h4 className="font-bold text-slate-900 dark:text-white text-xs border-b border-slate-100 dark:border-slate-700 pb-1.5">
                   ข้อมูลคุณลักษณะประจำเครื่อง
                 </h4>
+
+                <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 mb-2">
+                  <span className="text-slate-400 block text-[10px]">เลขครุภัณฑ์ (ทางราชการ):</span>
+                  <span className="font-mono font-black text-slate-900 dark:text-white text-xs">
+                    {selectedAsset.govAssetCode || '-'}
+                  </span>
+                </div>
 
                 <div className="grid grid-cols-2 gap-2 pt-1">
                   <div>

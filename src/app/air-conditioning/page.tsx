@@ -88,18 +88,21 @@ export default function AirConditioningPage() {
         const json = await res.json();
         setData(json);
 
-        // Default room selection: pick first 3-4 rooms if not set
+        // Default room selection: pick ห้องเก็บครุภัณฑ์ and SIM MAN
         if (selectedRoomIds.length === 0 && json.rooms?.length > 0) {
-          // Prefer: การพยาบาลพื้นฐาน, เก็บครุภัณฑ์, SIM MAN
-          const preferredCodes = ['LAB-01-1', 'LAB-EQ', 'LAB-SIM-MAN', 'LAB-SIM-01'];
-          const matched = json.rooms
-            .filter((r: any) => preferredCodes.includes(r.code) || r.name.includes('พื้นฐาน') || r.name.includes('ครุภัณฑ์') || r.name.includes('SIM'))
-            .map((r: any) => r.id);
-          
-          if (matched.length > 0) {
-            setSelectedRoomIds(matched.slice(0, 4));
+          // Prioritize: ห้องเก็บครุภัณฑ์ (LAB-EQ) and SIM MAN (LAB-SIM-MAN)
+          const targetRooms = json.rooms.filter(
+            (r: any) =>
+              r.code === 'LAB-EQ' ||
+              r.code === 'LAB-SIM-MAN' ||
+              r.name.includes('เก็บครุภัณฑ์') ||
+              r.name.includes('SIM MAN')
+          );
+
+          if (targetRooms.length > 0) {
+            setSelectedRoomIds(targetRooms.map((r: any) => r.id));
           } else {
-            setSelectedRoomIds(json.rooms.slice(0, 3).map((r: any) => r.id));
+            setSelectedRoomIds(json.rooms.slice(0, 2).map((r: any) => r.id));
           }
         }
       }
@@ -118,7 +121,17 @@ export default function AirConditioningPage() {
   // Selected rooms for the matrix columns
   const activeRooms = useMemo(() => {
     if (!data?.rooms) return [];
-    if (selectedRoomIds.length === 0) return data.rooms.slice(0, 3);
+    if (selectedRoomIds.length === 0) {
+      const preferred = data.rooms.filter(
+        (r: any) =>
+          r.code === 'LAB-EQ' ||
+          r.code === 'LAB-SIM-MAN' ||
+          r.name.includes('เก็บครุภัณฑ์') ||
+          r.name.includes('SIM MAN')
+      );
+      if (preferred.length > 0) return preferred;
+      return data.rooms.slice(0, 2);
+    }
     return data.rooms.filter((r: any) => selectedRoomIds.includes(r.id));
   }, [data?.rooms, selectedRoomIds]);
 
@@ -538,7 +551,7 @@ export default function AirConditioningPage() {
       </div>
 
       {/* Role Notice & Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
         <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
           <div>
             <span className="text-[11px] font-bold text-slate-500 uppercase">รวมชั่วโมงเปิดทั้งเดือน</span>
@@ -549,19 +562,6 @@ export default function AirConditioningPage() {
           </div>
           <div className="w-11 h-11 rounded-2xl bg-teal-50 dark:bg-teal-950/60 text-teal-600 flex items-center justify-center">
             <Clock className="w-5 h-5" />
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-bold text-slate-500 uppercase">มาตรฐานรักษาอุปกรณ์</span>
-            <div className="text-lg font-black text-slate-800 dark:text-white mt-1">
-              10:00 - 14:00 น.
-            </div>
-            <p className="text-[10px] text-teal-600 dark:text-teal-400 font-bold mt-0.5">Preset 4.0 ชม. | 22°C</p>
-          </div>
-          <div className="w-11 h-11 rounded-2xl bg-cyan-50 dark:bg-cyan-950/60 text-cyan-600 flex items-center justify-center">
-            <Zap className="w-5 h-5" />
           </div>
         </div>
 

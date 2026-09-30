@@ -19,6 +19,7 @@ export async function GET() {
             unit: true,
             brand: true,
             model: true,
+            imageUrl: true,
             category: { select: { name: true } },
           },
         },
@@ -133,6 +134,7 @@ export async function GET() {
         categoryName: a.item.category?.name || 'ครุภัณฑ์',
         supplier: a.supplier || '-',
         warrantyExpiry: a.warrantyExpiry ? a.warrantyExpiry.toISOString() : null,
+        imageUrl: a.imageUrl || a.item.imageUrl || null,
       };
     });
 

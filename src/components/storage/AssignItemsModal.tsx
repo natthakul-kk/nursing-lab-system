@@ -64,6 +64,7 @@ export default function AssignItemsModal({
             itemId: item.id,
             itemName: item.name,
             itemCode: item.code,
+            unit: item.unit || 'ชิ้น',
             categoryName: item.category?.name || 'ครุภัณฑ์',
           });
         });
@@ -401,7 +402,7 @@ export default function AssignItemsModal({
                   <Wrench className="w-4 h-4 text-indigo-600" />
                   <span>ครุภัณฑ์ในตู้นี้ ({currentAssets.length} ชิ้น)</span>
                 </span>
-                <span className="text-[11px] text-slate-400">คลิก &quot;นำออก&quot; เพื่อปลดเครื่องออกจากตู้</span>
+                <span className="text-[11px] text-slate-400">คลิก &quot;นำออก&quot; เพื่อปลดออกจากตู้</span>
               </h4>
 
               {currentAssets.length === 0 ? (
@@ -412,6 +413,7 @@ export default function AssignItemsModal({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-48 overflow-y-auto p-1">
                   {currentAssets.map((asset: any) => {
                     const isAvailable = asset.status === 'AVAILABLE';
+                    const unitName = asset.item?.unit || asset.unit || 'ชิ้น';
                     return (
                       <div
                         key={asset.id}
@@ -424,7 +426,7 @@ export default function AssignItemsModal({
                             </span>
                             {asset.sequenceNumber && (
                               <span className="text-[10px] text-slate-500 font-medium">
-                                เครื่องที่ {asset.sequenceNumber}
+                                {unitName}ที่ {asset.sequenceNumber}
                               </span>
                             )}
                           </div>
@@ -467,10 +469,10 @@ export default function AssignItemsModal({
                 <div>
                   <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                     <Wrench className="w-4 h-4 text-indigo-600" />
-                    <span>เลือกครุภัณฑ์รายเครื่องเพื่อจัดเก็บเข้าตู้นี้</span>
+                    <span>เลือกครุภัณฑ์รายชิ้นเพื่อจัดเก็บเข้าตู้นี้</span>
                   </h4>
                   <p className="text-[11px] text-slate-400 mt-0.5">
-                    สามารถแยกเก็บแต่ละเครื่อง (เช่น เครื่องที่ 1, เครื่องที่ 2) คนละตู้หรือคนละชั้นได้อย่างอิสระ
+                    สามารถแยกเก็บแต่ละชิ้น (เช่น ตัวที่ 1, ชุดที่ 2, เครื่องที่ 3) คนละตู้หรือคนละชั้นได้อย่างอิสระ
                   </p>
                 </div>
                 <span className="text-[11px] text-indigo-600 font-bold">
@@ -482,7 +484,7 @@ export default function AssignItemsModal({
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                 <input
                   type="text"
-                  placeholder="ค้นหารหัสครุภัณฑ์ (เช่น EQ-AED-001/01), ชื่อเครื่อง, หรือ S/N..."
+                  placeholder="ค้นหารหัสครุภัณฑ์ (เช่น EQ-AED-001/01), ชื่ออุปกรณ์, หรือ S/N..."
                   value={assetSearch}
                   onChange={(e) => setAssetSearch(e.target.value)}
                   className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-9 pr-3 text-xs text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500"
@@ -497,6 +499,7 @@ export default function AssignItemsModal({
                 ) : (
                   selectableAssets.map((asset) => {
                     const isSelected = selectedAssetIds.includes(asset.id);
+                    const unitName = asset.unit || 'ชิ้น';
                     return (
                       <div
                         key={asset.id}
@@ -527,7 +530,7 @@ export default function AssignItemsModal({
                               </span>
                               {asset.sequenceNumber && (
                                 <span className="text-[10px] text-slate-500 font-medium bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
-                                  เครื่องที่ {asset.sequenceNumber}
+                                  {unitName}ที่ {asset.sequenceNumber}
                                 </span>
                               )}
                             </div>

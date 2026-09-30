@@ -44,6 +44,11 @@ export default function AssignItemsModal({
     return location?.assets || [];
   }, [location?.assets]);
 
+  // Legacy equipment items tied directly to Item instead of EquipmentAsset
+  const legacyEquipmentItems = useMemo(() => {
+    return (location?.items || []).filter((i: any) => i.type === 'EQUIPMENT');
+  }, [location?.items]);
+
   // Extract all individual equipment assets from availableItems
   const allEquipmentAssets = useMemo(() => {
     const list: any[] = [];
@@ -148,6 +153,27 @@ export default function AssignItemsModal({
       console.error('Error unassigning item:', err);
     }
   };
+
+  // Execute unassigning all legacy equipment items
+  const handleUnassignAllLegacy = async () => {
+    if (legacyEquipmentItems.length === 0) return;
+    try {
+      const res = await fetch(`/api/storage/locations/${location.id}/assign`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          itemIds: legacyEquipmentItems.map((i: any) => i.id),
+          action: 'UNASSIGN',
+        }),
+      });
+      if (res.ok) {
+        onRefresh();
+      }
+    } catch (err: any) {
+      console.error('Error unassigning legacy items:', err);
+    }
+  };
+
 
   // Execute assigning equipment assets (individual units)
   const handleExecuteAssignAssets = async () => {
@@ -269,7 +295,7 @@ export default function AssignItemsModal({
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
               }`}
             >
-              {currentAssets.length}
+              {currentAssets.length + legacyEquipmentItems.length}
             </span>
           </button>
         </div>
@@ -395,6 +421,54 @@ export default function AssignItemsModal({
         {/* Tab 2 Content: Equipment Assets (Individual Units) */}
         {activeTab === 'EQUIPMENT' && (
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+            {/* Legacy Equipment Items (tied at Item level) */}
+            {legacyEquipmentItems.length > 0 && (
+              <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                    <span className="text-xs font-bold text-amber-900 dark:text-amber-200">
+                      พบรายการครุภัณฑ์รุ่นเดิมที่ผูกไว้ที่ระดับพัสดุ ({legacyEquipmentItems.length} รายการ)
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleUnassignAllLegacy}
+                    className="text-[11px] font-bold text-amber-700 dark:text-amber-300 hover:underline cursor-pointer"
+                  >
+                    นำออกทั้งหมด
+                  </button>
+                </div>
+                <p className="text-[11px] text-amber-700/80 dark:text-amber-300/80">
+                  รายการเหล่านี้ถูกผูกไว้กับตู้โดยยังไม่ได้ระบุชิ้นทรัพย์สิน กรุณากด &quot;นำออก&quot; เพื่อเปลี่ยนมาใช้การจัดสรรรายชิ้น
+                </p>
+                <div className="space-y-1.5 pt-1">
+                  {legacyEquipmentItems.map((item: any) => (
+                    <div
+                      key={item.id}
+                      className="bg-white/80 dark:bg-slate-900/80 p-2.5 rounded-xl border border-amber-200/70 dark:border-amber-800/60 flex items-center justify-between gap-2"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="font-mono text-[10px] font-bold text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/60 px-1.5 py-0.5 rounded">
+                          {item.code}
+                        </span>
+                        <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">
+                          {item.name}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleUnassignItem(item.id)}
+                        className="px-2 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/80 text-rose-600 text-[10px] font-bold hover:bg-rose-100 cursor-pointer shrink-0"
+                      >
+                        นำออก
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Currently Assigned Assets in this Cabinet */}
             <div className="space-y-2">
               <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">

@@ -42,6 +42,15 @@ export default function ExecutiveDashboardPage() {
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'AVAILABLE' | 'BORROWED' | 'MAINTENANCE' | 'DAMAGED'>('ALL');
   const [selectedAsset, setSelectedAsset] = useState<any | null>(null);
 
+  // Pagination for equipment drill-down table
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+
+  // Reset page when search or status filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter]);
+
   const fetchStats = async (manual = false) => {
     if (manual) setRefreshing(true);
     else setLoading(true);
@@ -87,6 +96,14 @@ export default function ExecutiveDashboardPage() {
       return true;
     });
   }, [equipmentList, searchQuery, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredEquipment.length / (pageSize || 20)));
+
+  const paginatedEquipment = useMemo(() => {
+    if (pageSize >= 9999) return filteredEquipment;
+    const start = (currentPage - 1) * pageSize;
+    return filteredEquipment.slice(start, start + pageSize);
+  }, [filteredEquipment, currentPage, pageSize]);
 
   const formatDateThai = (dateStr?: string | null) => {
     if (!dateStr) return '-';
@@ -193,7 +210,7 @@ export default function ExecutiveDashboardPage() {
         {/* KPI 2: Asset Health Breakdown */}
         <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm transition hover:shadow-md">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">สุขภาวะครุภัณฑ์</span>
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">สภาพความพร้อมครุภัณฑ์</span>
             <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 flex items-center justify-center">
               <Boxes className="w-5 h-5" />
             </div>
@@ -386,7 +403,8 @@ export default function ExecutiveDashboardPage() {
                   </td>
                 </tr>
               ) : (
-                filteredEquipment.map((item: any, idx: number) => {
+                paginatedEquipment.map((item: any, idx: number) => {
+                  const rowNumber = (currentPage - 1) * pageSize + idx + 1;
                   let statusBadge = (
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
                       พร้อมใช้งาน
@@ -425,7 +443,7 @@ export default function ExecutiveDashboardPage() {
                       onClick={() => setSelectedAsset(item)}
                       className="hover:bg-teal-50/40 dark:hover:bg-teal-950/20 transition cursor-pointer"
                     >
-                      <td className="p-3 text-center text-slate-400 font-mono">{idx + 1}</td>
+                      <td className="p-3 text-center text-slate-400 font-mono">{rowNumber}</td>
                       <td className="p-3 font-mono font-bold text-teal-800 dark:text-teal-300">
                         {item.assetCode}
                       </td>
@@ -464,6 +482,77 @@ export default function ExecutiveDashboardPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Controls (Matching Inventory System) */}
+        {filteredEquipment.length > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-3.5 bg-slate-50/70 dark:bg-slate-900/60 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-400">
+            <div className="flex items-center gap-2">
+              <span>
+                แสดง {Math.min((currentPage - 1) * pageSize + 1, filteredEquipment.length)} - {Math.min(currentPage * pageSize, filteredEquipment.length)} จาก {filteredEquipment.length} รายการ
+              </span>
+              <span className="text-slate-300 dark:text-slate-700">|</span>
+              <div className="flex items-center gap-1.5">
+                <span>แสดงต่อหน้า:</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-teal-500 cursor-pointer"
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={35}>35</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                  <option value={9999}>ทั้งหมด ({filteredEquipment.length})</option>
+                </select>
+              </div>
+            </div>
+
+            {totalPages > 1 && (
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+                >
+                  ก่อนหน้า
+                </button>
+                <div className="flex items-center gap-1 px-1">
+                  {Array.from({ length: totalPages }, (_, idx) => idx + 1)
+                    .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+                    .map((p, idx, arr) => (
+                      <React.Fragment key={p}>
+                        {idx > 0 && arr[idx - 1] !== p - 1 && <span className="px-1 text-slate-400">...</span>}
+                        <button
+                          type="button"
+                          onClick={() => setCurrentPage(p)}
+                          className={`min-w-[28px] h-7 px-2 rounded-lg font-bold transition text-xs cursor-pointer ${
+                            currentPage === p
+                              ? 'bg-teal-600 text-white shadow-sm'
+                              : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      </React.Fragment>
+                    ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+                >
+                  ถัดไป
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* ---------------------------------------------------- */}

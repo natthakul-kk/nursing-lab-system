@@ -33,6 +33,7 @@ import {
   EyeOff,
   Sparkles,
   Lock,
+  Briefcase,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { TableLoadingRow } from '@/components/common/LoadingSpinner';
@@ -423,6 +424,12 @@ export default function UsersPage() {
             <UserCheck className="w-3.5 h-3.5 text-amber-600" /> ผู้อนุมัติ / หัวหน้าภาค (Approver)
           </span>
         );
+      case 'EXECUTIVE':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">
+            <Briefcase className="w-3.5 h-3.5 text-blue-600" /> ผู้บริหาร (Executive)
+          </span>
+        );
       case 'TEACHER':
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800 border border-indigo-200">
@@ -444,6 +451,7 @@ export default function UsersPage() {
   const tabCounts = {
     ALL: users.length,
     ADMIN: users.filter((u) => u.role === 'ADMIN').length,
+    EXECUTIVE: users.filter((u) => u.role === 'EXECUTIVE').length,
     OFFICER: users.filter((u) => u.role === 'OFFICER').length,
     APPROVER: users.filter((u) => u.role === 'APPROVER').length,
     TEACHER: users.filter((u) => u.role === 'TEACHER').length,
@@ -520,7 +528,7 @@ export default function UsersPage() {
       </div>
 
       {/* Role Descriptions Grid (Interactive Click to Filter) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
         <div
           onClick={() => setSelectedTab(selectedTab === 'ADMIN' ? 'ALL' : 'ADMIN')}
           className={`p-3.5 rounded-2xl border transition cursor-pointer hover:shadow-md ${
@@ -539,6 +547,27 @@ export default function UsersPage() {
           </div>
           <p className="text-[11px] text-purple-800 dark:text-purple-300/80 leading-relaxed mt-1.5">
             ดูแลระบบทั้งหมด เพิ่ม/แก้ไขผู้ใช้ กำหนดสิทธิ์ และเข้าถึงข้อมูลทุกส่วน
+          </p>
+        </div>
+
+        <div
+          onClick={() => setSelectedTab(selectedTab === 'EXECUTIVE' ? 'ALL' : 'EXECUTIVE')}
+          className={`p-3.5 rounded-2xl border transition cursor-pointer hover:shadow-md ${
+            selectedTab === 'EXECUTIVE'
+              ? 'border-blue-400 ring-2 ring-blue-400 shadow-md bg-blue-100/70 dark:bg-blue-950/60 dark:border-blue-500'
+              : 'bg-blue-50/80 dark:bg-blue-950/20 border-blue-100 dark:border-blue-900/50 hover:dark:bg-blue-950/30'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <div className="font-bold text-blue-900 dark:text-blue-300 text-xs flex items-center gap-1.5">
+              <Briefcase className="w-4 h-4 text-blue-600 dark:text-blue-400" /> ผู้บริหาร (Exec)
+            </div>
+            <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-blue-200/80 dark:bg-blue-900/60 text-blue-800 dark:text-blue-200">
+              {tabCounts.EXECUTIVE} คน
+            </span>
+          </div>
+          <p className="text-[11px] text-blue-800 dark:text-blue-300/80 leading-relaxed mt-1.5">
+            ดูภาพรวมคลัง มูลค่าสินทรัพย์ สถิติการใช้งาน และรายละเอียดครุภัณฑ์เชิงลึก
           </p>
         </div>
 
@@ -634,6 +663,7 @@ export default function UsersPage() {
           {[
             { key: 'ALL', label: 'ทั้งหมด (รวม)', icon: Users, count: tabCounts.ALL },
             { key: 'ADMIN', label: 'ผู้ดูแลระบบ', icon: ShieldCheck, count: tabCounts.ADMIN },
+            { key: 'EXECUTIVE', label: 'ผู้บริหาร', icon: Briefcase, count: tabCounts.EXECUTIVE },
             { key: 'OFFICER', label: 'เจ้าหน้าที่แล็บ', icon: Activity, count: tabCounts.OFFICER },
             { key: 'APPROVER', label: 'ผู้อนุมัติ/หัวหน้าภาค', icon: UserCheck, count: tabCounts.APPROVER },
             { key: 'TEACHER', label: 'อาจารย์ผู้สอน', icon: BookOpen, count: tabCounts.TEACHER },
@@ -674,6 +704,7 @@ export default function UsersPage() {
           >
             <option value="ALL">ทั้งหมด (รวม) ({tabCounts.ALL})</option>
             <option value="ADMIN">ผู้ดูแลระบบ (Admin) ({tabCounts.ADMIN})</option>
+            <option value="EXECUTIVE">ผู้บริหาร (Executive) ({tabCounts.EXECUTIVE})</option>
             <option value="OFFICER">เจ้าหน้าที่แล็บ (Officer) ({tabCounts.OFFICER})</option>
             <option value="APPROVER">ผู้อนุมัติ/หัวหน้าภาค (Approver) ({tabCounts.APPROVER})</option>
             <option value="TEACHER">อาจารย์ผู้สอน (Teacher) ({tabCounts.TEACHER})</option>
@@ -1055,6 +1086,7 @@ export default function UsersPage() {
                   <option value="USER">นิสิต (Student)</option>
                   <option value="TEACHER">อาจารย์ผู้สอน / ที่ปรึกษา (Teacher)</option>
                   <option value="APPROVER">ผู้อนุมัติ / หัวหน้าภาค (Approver)</option>
+                  <option value="EXECUTIVE">ผู้บริหาร (Executive)</option>
                   <option value="OFFICER">เจ้าหน้าที่ห้องแล็บ (Officer)</option>
                   <option value="ADMIN">ผู้ดูแลระบบ (Admin)</option>
                 </select>
@@ -1249,6 +1281,7 @@ export default function UsersPage() {
                     <option value="USER">นิสิต (Student)</option>
                     <option value="TEACHER">อาจารย์ผู้สอน / ที่ปรึกษา (Teacher)</option>
                     <option value="APPROVER">ผู้อนุมัติ / หัวหน้าภาค (Approver)</option>
+                    <option value="EXECUTIVE">ผู้บริหาร (Executive)</option>
                     <option value="OFFICER">เจ้าหน้าที่ห้องแล็บ (Officer)</option>
                     <option value="ADMIN">ผู้ดูแลระบบ (Admin)</option>
                   </select>
@@ -1325,7 +1358,7 @@ export default function UsersPage() {
                 </label>
                 <input
                   type="text"
-                  placeholder="เช่น กลุ่มวิชาการพยาบาลเด็ก, นศ.พยาบาลศาสตร์ ชั้นปี 2"
+                  placeholder="เช่น กลุ่มวิชาการพยาบาลเด็ก, นิสิตพยาบาลศาสตร์ ชั้นปี 2"
                   value={editingUser.department || ''}
                   onChange={(e) => setEditingUser({ ...editingUser, department: e.target.value })}
                   className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-teal-500/20"

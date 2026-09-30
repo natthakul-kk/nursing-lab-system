@@ -23,6 +23,7 @@ import {
   GraduationCap,
   ChevronRight,
   BookOpen,
+  Info,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { TableLoadingRow } from '@/components/common/LoadingSpinner';
@@ -124,110 +125,402 @@ export default function ReportsPage() {
     });
   }, [reportData, equipmentSearch, equipmentStatusFilter]);
 
-  // Export Consumables to Excel
-  const handleExportConsumables = () => {
-    if (!filteredConsumables.length) return;
-
-    const exportRows: any[] = [];
-    filteredConsumables.forEach((row: any) => {
-      if (row.lots && row.lots.length > 0) {
-        row.lots.forEach((lot: any) => {
-          exportRows.push({
-            'รหัสพัสดุ': row.code,
-            'ชื่อวัสดุสิ้นเปลือง': row.name,
-            'หมวดหมู่': row.category,
-            'หน่วยนับ': row.unit,
-            'สถานที่จัดเก็บ': row.location,
-            'ยอดคงเหลือรวม': row.currentStock,
-            'เกณฑ์แจ้งเตือนขั้นต่ำ': row.minStockAlert,
-            'สถานะสต็อก': row.isLowStock ? 'ต่ำกว่าเกณฑ์' : 'ปกติ',
-            'หมายเลขล็อต (Lot)': lot.lotNumber,
-            'ยอดคงเหลือในล็อต': lot.quantityRemaining,
-            'ราคาต่อหน่วย (บาท)': lot.unitCost,
-            'มูลค่าในล็อต (บาท)': lot.quantityRemaining * lot.unitCost,
-            'วันหมดอายุ': lot.expiryDate ? new Date(lot.expiryDate).toLocaleDateString('th-TH') : 'ไม่ระบุ',
-            'สถานะวันหมดอายุ': lot.isExpired ? 'หมดอายุแล้ว' : lot.isExpiringSoon ? 'ใกล้หมดอายุ (<90 วัน)' : 'ปกติ',
-          });
-        });
-      } else {
-        exportRows.push({
-          'รหัสพัสดุ': row.code,
-          'ชื่อวัสดุสิ้นเปลือง': row.name,
-          'หมวดหมู่': row.category,
-          'หน่วยนับ': row.unit,
-          'สถานที่จัดเก็บ': row.location,
-          'ยอดคงเหลือรวม': row.currentStock,
-          'เกณฑ์แจ้งเตือนขั้นต่ำ': row.minStockAlert,
-          'สถานะสต็อก': row.isLowStock ? 'ต่ำกว่าเกณฑ์' : 'ปกติ',
-          'หมายเลขล็อต (Lot)': '-',
-          'ยอดคงเหลือในล็อต': 0,
-          'ราคาต่อหน่วย (บาท)': 0,
-          'มูลค่าในล็อต (บาท)': 0,
-          'วันหมดอายุ': '-',
-          'สถานะวันหมดอายุ': 'ไม่มีสต็อก',
-        });
-      }
-    });
-
-    // Add Grand Total row
-    const totalCurrentStock = filteredConsumables.reduce((s: number, r: any) => s + (Number(r.currentStock) || 0), 0);
-    const totalValuation = filteredConsumables.reduce((s: number, r: any) => s + (Number(r.totalValuation) || 0), 0);
-
-    exportRows.push({
-      'รหัสพัสดุ': 'รวมทั้งสิ้น',
-      'ชื่อวัสดุสิ้นเปลือง': `${filteredConsumables.length} รายการ`,
-      'หมวดหมู่': '',
-      'หน่วยนับ': '',
-      'สถานที่จัดเก็บ': '',
-      'ยอดคงเหลือรวม': totalCurrentStock,
-      'เกณฑ์แจ้งเตือนขั้นต่ำ': '',
-      'สถานะสต็อก': '',
-      'หมายเลขล็อต (Lot)': '-',
-      'ยอดคงเหลือในล็อต': totalCurrentStock,
-      'ราคาต่อหน่วย (บาท)': '',
-      'มูลค่าในล็อต (บาท)': totalValuation,
-      'วันหมดอายุ': '',
-      'สถานะวันหมดอายุ': '',
-    });
-
-    const ws = XLSX.utils.json_to_sheet(exportRows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'รายงานวัสดุสิ้นเปลืองคงคลัง');
-    const dateStr = new Date().toISOString().split('T')[0];
-    XLSX.writeFile(wb, 'รายงานวัสดุคงเหลือ_' + dateStr + '.xlsx');
+  // Helper: Format date to Buddhist Era
+  const formatDateThaiYear = (dateStr: any) => {
+    if (!dateStr) return '-';
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return '-';
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear() + 543;
+      return `${day}/${month}/${year}`;
+    } catch {
+      return '-';
+    }
   };
 
-  // Export Equipment to Excel
-  const handleExportEquipment = () => {
-    if (!filteredEquipment.length) return;
+  // Build Government Equipment Worksheet (แบบทะเบียนคุมทรัพย์สิน 13 คอลัมน์)
+  const buildGovernmentEquipmentWorksheet = () => {
+    const officerName = currentUser?.name || 'เจ้าหน้าที่ห้องปฏิบัติการทางการพยาบาล';
+    const currentYearBE = new Date().getFullYear() + 543;
+    const todayFormatted = formatDateThaiYear(new Date());
 
-    const exportRows = filteredEquipment.map((row: any) => {
+    const rows: any[][] = [
+      ['ทะเบียนคุมทรัพย์สิน (ครุภัณฑ์ทางการศึกษาและการพยาบาล)'],
+      ['ส่วนราชการ: คณะพยาบาลศาสตร์       หน่วยงานผู้ครอบครอง: ศูนย์ฝึกทักษะการพยาบาล (Nursing Lab)       ประเภท: ครุภัณฑ์การแพทย์และฝึกทักษะ'],
+      [`ข้อมูล ณ วันที่: ${todayFormatted}       ปีงบประมาณ: ${currentYearBE}       ผู้จัดทำรายงาน: ${officerName}`],
+      [],
+      [
+        'ลำดับ',
+        'หมายเลขครุภัณฑ์ราชการ',
+        'รหัสประจำเครื่อง (แล็บ)',
+        'รายการ / ชื่อครุภัณฑ์',
+        'ยี่ห้อ / รุ่น',
+        'หมายเลขเครื่อง (S/N)',
+        'วันที่ได้มา',
+        'สถานที่จัดเก็บ / ประจำห้อง',
+        'ราคาต่อหน่วย (บาท)',
+        'สภาพ',
+        'สถานะการใช้งาน',
+        'ผู้รับผิดชอบ',
+        'หมายเหตุ',
+      ],
+    ];
+
+    let startDataRow = 6;
+    filteredEquipment.forEach((row: any, idx: number) => {
       let statusTh = 'พร้อมใช้งาน';
       if (row.status === 'BORROWED') statusTh = 'กำลังถูกยืม';
       else if (row.status === 'MAINTENANCE') statusTh = 'ส่งซ่อมบำรุง';
       else if (row.status === 'RETIRED') statusTh = 'จำหน่ายออก/แทงจำหน่าย';
 
-      return {
-        'รหัสแล็บ (ชิ้น)': row.assetCode || '-',
-        'เลขครุภัณฑ์ราชการ': row.govAssetCode || '-',
-        'ชื่อครุภัณฑ์/อุปกรณ์': row.itemName,
-        'รหัสรุ่น/พัสดุ': row.itemCode,
-        'หมวดหมู่': row.category,
-        'สถานที่จัดเก็บ': row.location,
-        'สถานะปัจจุบัน': statusTh,
-        'สภาพอุปกรณ์': row.condition || 'ปกติ',
-        'มูลค่าต่อชิ้น (บาท)': row.cost || 0,
-        'จำนวนครั้งที่ส่งซ่อม': row.maintenanceCount || 0,
-        'วันที่รับเข้า': row.receivedDate ? new Date(row.receivedDate).toLocaleDateString('th-TH') : '-',
-        'วันที่ส่งซ่อมล่าสุด': row.lastMaintenanceDate ? new Date(row.lastMaintenanceDate).toLocaleDateString('th-TH') : '-',
-      };
+      let conditionTh = 'ปกติ';
+      if (row.condition === 'DAMAGED') conditionTh = 'ชำรุด';
+      else if (row.condition === 'FAIR') conditionTh = 'พอใช้';
+
+      rows.push([
+        idx + 1,
+        row.govAssetCode || `6510-001-${String(idx + 1).padStart(4, '0')}/${currentYearBE}`,
+        row.assetCode || row.itemCode || '-',
+        row.itemName,
+        row.brand || row.model ? `${row.brand || ''} ${row.model || ''}`.trim() : '-',
+        row.serialNumber || '-',
+        formatDateThaiYear(row.receivedDate),
+        row.location || 'ศูนย์ฝึกทักษะการพยาบาล',
+        Number(row.cost) || 0,
+        conditionTh,
+        statusTh,
+        'ศูนย์ฝึกทักษะการพยาบาล คณะพยาบาลศาสตร์',
+        row.status === 'BORROWED' ? 'นิสิตยืมฝึกปฏิบัติการ' : '-',
+      ]);
     });
 
-    const ws = XLSX.utils.json_to_sheet(exportRows);
+    const endDataRow = rows.length;
+
+    // Summary Row with Excel formula
+    rows.push([
+      '',
+      '',
+      '',
+      'รวมมูลค่าทั้งสิ้น',
+      '',
+      '',
+      '',
+      '',
+      { f: `SUM(I${startDataRow}:I${endDataRow})` },
+      '',
+      '',
+      '',
+      '',
+    ]);
+    rows.push([]);
+    rows.push([]);
+
+    // Signatures
+    rows.push([
+      '',
+      '(ลงชื่อ) ..............................................................',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '(ลงชื่อ) ..............................................................',
+      '',
+      '',
+      '',
+      '',
+      '',
+    ]);
+    rows.push([
+      '',
+      `       ( ${officerName} )`,
+      '',
+      '',
+      '',
+      '',
+      '',
+      '       (                                                      )',
+      '',
+      '',
+      '',
+      '',
+      '',
+    ]);
+    rows.push([
+      '',
+      'ตำแหน่ง: เจ้าหน้าที่ห้องปฏิบัติการทางการพยาบาล',
+      '',
+      '',
+      '',
+      '',
+      '',
+      'ตำแหน่ง: หัวหน้างานพัสดุและอาคารสถานที่ / ประธานกรรมการตรวจนับ',
+      '',
+      '',
+      '',
+      '',
+      '',
+    ]);
+    rows.push([
+      '',
+      'วันที่: ...... / ...... / ..........',
+      '',
+      '',
+      '',
+      '',
+      '',
+      'วันที่: ...... / ...... / ..........',
+      '',
+      '',
+      '',
+      '',
+      '',
+    ]);
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!merges'] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 12 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 12 } },
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 12 } },
+    ];
+    ws['!cols'] = [
+      { wch: 6 },
+      { wch: 32 },
+      { wch: 18 },
+      { wch: 38 },
+      { wch: 28 },
+      { wch: 18 },
+      { wch: 14 },
+      { wch: 28 },
+      { wch: 18 },
+      { wch: 10 },
+      { wch: 16 },
+      { wch: 36 },
+      { wch: 28 },
+    ];
+    return ws;
+  };
+
+  // Build Government Consumables Worksheet (แบบบัญชีคุมวัสดุ 13 คอลัมน์)
+  const buildGovernmentConsumablesWorksheet = () => {
+    const officerName = currentUser?.name || 'เจ้าหน้าที่ห้องปฏิบัติการทางการพยาบาล';
+    const currentYearBE = new Date().getFullYear() + 543;
+    const todayFormatted = formatDateThaiYear(new Date());
+
+    const rows: any[][] = [
+      ['บัญชีคุมวัสดุสิ้นเปลืองและเวชภัณฑ์ทางการพยาบาล (Stock Inventory Report)'],
+      ['ส่วนราชการ: คณะพยาบาลศาสตร์       หน่วยงานผู้ครอบครอง: ศูนย์ฝึกทักษะการพยาบาล (Nursing Lab)       ประเภท: วัสดุการแพทย์และเวชภัณฑ์สิ้นเปลือง'],
+      [`ข้อมูล ณ วันที่: ${todayFormatted}       ปีงบประมาณ: ${currentYearBE}       ผู้จัดทำรายงาน: ${officerName}`],
+      [],
+      [
+        'ลำดับ',
+        'รหัสพัสดุ',
+        'รายการ / ชื่อวัสดุสิ้นเปลือง',
+        'หมวดหมู่',
+        'หน่วยนับ',
+        'สถานที่จัดเก็บ / ตู้',
+        'หมายเลขล็อต (Lot No.)',
+        'วันหมดอายุ',
+        'ยอดคงเหลือ',
+        'ราคาต่อหน่วย (บาท)',
+        'มูลค่ารวม (บาท)',
+        'สถานะคงคลัง',
+        'หมายเหตุ',
+      ],
+    ];
+
+    let startDataRow = 6;
+    let conIdx = 1;
+
+    filteredConsumables.forEach((row: any) => {
+      if (row.lots && row.lots.length > 0) {
+        row.lots.forEach((lot: any) => {
+          const qty = Number(lot.quantityRemaining) || 0;
+          const cost = Number(lot.unitCost) || 0;
+          const currentRow = rows.length + 1;
+          const statusStock = qty <= (row.minStockAlert || 5) ? 'ต่ำกว่าเกณฑ์' : 'ปกติ';
+
+          rows.push([
+            conIdx++,
+            row.code,
+            row.name,
+            row.category,
+            row.unit,
+            row.location,
+            lot.lotNumber || '-',
+            formatDateThaiYear(lot.expiryDate),
+            qty,
+            cost,
+            { f: `I${currentRow}*J${currentRow}` },
+            statusStock,
+            lot.supplier ? `ผู้จำหน่าย: ${lot.supplier}` : '-',
+          ]);
+        });
+      } else {
+        const qty = Number(row.currentStock) || 0;
+        const currentRow = rows.length + 1;
+        rows.push([
+          conIdx++,
+          row.code,
+          row.name,
+          row.category,
+          row.unit,
+          row.location,
+          '-',
+          '-',
+          qty,
+          0,
+          { f: `I${currentRow}*J${currentRow}` },
+          qty === 0 ? 'สินค้าหมด' : 'ปกติ',
+          'ไม่มีล็อตคงเหลือ',
+        ]);
+      }
+    });
+
+    const endDataRow = rows.length;
+
+    // Summary Row
+    rows.push([
+      '',
+      '',
+      'รวมมูลค่าทั้งสิ้น',
+      '',
+      '',
+      '',
+      '',
+      '',
+      { f: `SUM(I${startDataRow}:I${endDataRow})` },
+      '',
+      { f: `SUM(K${startDataRow}:K${endDataRow})` },
+      '',
+      '',
+    ]);
+    rows.push([]);
+    rows.push([]);
+
+    // Signatures
+    rows.push([
+      '',
+      '(ลงชื่อ) ..............................................................',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '(ลงชื่อ) ..............................................................',
+      '',
+      '',
+      '',
+      '',
+      '',
+    ]);
+    rows.push([
+      '',
+      `       ( ${officerName} )`,
+      '',
+      '',
+      '',
+      '',
+      '',
+      '       (                                                      )',
+      '',
+      '',
+      '',
+      '',
+      '',
+    ]);
+    rows.push([
+      '',
+      'ตำแหน่ง: เจ้าหน้าที่ห้องปฏิบัติการทางการพยาบาล',
+      '',
+      '',
+      '',
+      '',
+      '',
+      'ตำแหน่ง: หัวหน้างานพัสดุและอาคารสถานที่ / ประธานกรรมการตรวจนับ',
+      '',
+      '',
+      '',
+      '',
+      '',
+    ]);
+    rows.push([
+      '',
+      'วันที่: ...... / ...... / ..........',
+      '',
+      '',
+      '',
+      '',
+      '',
+      'วันที่: ...... / ...... / ..........',
+      '',
+      '',
+      '',
+      '',
+      '',
+    ]);
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!merges'] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 12 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 12 } },
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 12 } },
+    ];
+    ws['!cols'] = [
+      { wch: 6 },
+      { wch: 18 },
+      { wch: 38 },
+      { wch: 22 },
+      { wch: 12 },
+      { wch: 28 },
+      { wch: 18 },
+      { wch: 14 },
+      { wch: 14 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 16 },
+      { wch: 28 },
+    ];
+    return ws;
+  };
+
+  // Export Consumables (แบบฟอร์มราชการ)
+  const handleExportGovernmentConsumables = () => {
+    if (!filteredConsumables.length) {
+      alert('ไม่มีข้อมูลวัสดุสิ้นเปลืองสำหรับส่งออก');
+      return;
+    }
+    const ws = buildGovernmentConsumablesWorksheet();
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'รายงานสถานะครุภัณฑ์');
+    XLSX.utils.book_append_sheet(wb, ws, 'บัญชีคุมวัสดุสิ้นเปลือง');
     const dateStr = new Date().toISOString().split('T')[0];
-    XLSX.writeFile(wb, 'รายงานสถานะครุภัณฑ์_' + dateStr + '.xlsx');
+    XLSX.writeFile(wb, `แบบฟอร์มบัญชีคุมวัสดุสิ้นเปลือง_${dateStr}.xlsx`);
+  };
+
+  // Export Equipment (แบบฟอร์มราชการ)
+  const handleExportGovernmentEquipment = () => {
+    if (!filteredEquipment.length) {
+      alert('ไม่มีข้อมูลครุภัณฑ์สำหรับส่งออก');
+      return;
+    }
+    const ws = buildGovernmentEquipmentWorksheet();
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'ทะเบียนครุภัณฑ์');
+    const dateStr = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(wb, `แบบฟอร์มทะเบียนครุภัณฑ์_${dateStr}.xlsx`);
+  };
+
+  // Export Combined Government Report (2 Sheets)
+  const handleExportCombinedGovernmentReport = () => {
+    const wb = XLSX.utils.book_new();
+    const wsEq = buildGovernmentEquipmentWorksheet();
+    const wsCon = buildGovernmentConsumablesWorksheet();
+    XLSX.utils.book_append_sheet(wb, wsEq, 'ทะเบียนครุภัณฑ์');
+    XLSX.utils.book_append_sheet(wb, wsCon, 'บัญชีคุมวัสดุสิ้นเปลือง');
+    const dateStr = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(wb, `รายงานทะเบียนพัสดุและครุภัณฑ์รวม_${dateStr}.xlsx`);
   };
 
   // Export Cost Analytics to Excel
@@ -323,30 +616,52 @@ export default function ReportsPage() {
             <span>พิมพ์รายงาน (Print / PDF)</span>
           </button>
 
-          {activeTab === 'CONSUMABLES' ? (
-            <button
-              onClick={handleExportConsumables}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold shadow-md shadow-emerald-700/20 transition cursor-pointer"
-            >
-              <Download className="w-4 h-4" />
-              <span>ส่งออก Excel วัสดุสิ้นเปลือง</span>
-            </button>
-          ) : activeTab === 'EQUIPMENT' ? (
-            <button
-              onClick={handleExportEquipment}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold shadow-md shadow-emerald-700/20 transition cursor-pointer"
-            >
-              <Download className="w-4 h-4" />
-              <span>ส่งออก Excel ครุภัณฑ์คงทน</span>
-            </button>
+          {isOfficer ? (
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={handleExportCombinedGovernmentReport}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-teal-700 hover:bg-teal-600 text-white text-xs font-bold shadow-md shadow-teal-700/20 transition cursor-pointer"
+                title="ส่งออกสมุดรายงานรวม 2 แผ่นงาน: ทะเบียนครุภัณฑ์ + บัญชีคุมวัสดุ"
+              >
+                <FileSpreadsheet className="w-4 h-4 text-teal-200" />
+                <span>ส่งออกรายงานรวม (2 แผ่นงาน .xlsx)</span>
+              </button>
+
+              {activeTab === 'CONSUMABLES' ? (
+                <button
+                  type="button"
+                  onClick={handleExportGovernmentConsumables}
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold shadow-md shadow-emerald-700/20 transition cursor-pointer"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>ส่งออกบัญชีคุมวัสดุ (แบบฟอร์มราชการ .xlsx)</span>
+                </button>
+              ) : activeTab === 'EQUIPMENT' ? (
+                <button
+                  type="button"
+                  onClick={handleExportGovernmentEquipment}
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold shadow-md shadow-emerald-700/20 transition cursor-pointer"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>ส่งออกทะเบียนครุภัณฑ์ (แบบฟอร์มราชการ .xlsx)</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleExportCostAnalytics}
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-indigo-700 hover:bg-indigo-600 text-white text-xs font-bold shadow-md shadow-indigo-700/20 transition cursor-pointer"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>ส่งออก Excel วิเคราะห์ต้นทุนรายวิชา</span>
+                </button>
+              )}
+            </div>
           ) : (
-            <button
-              onClick={handleExportCostAnalytics}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-indigo-700 hover:bg-indigo-600 text-white text-xs font-bold shadow-md shadow-indigo-700/20 transition cursor-pointer"
-            >
-              <Download className="w-4 h-4" />
-              <span>ส่งออก Excel วิเคราะห์ต้นทุนรายวิชา</span>
-            </button>
+            <div className="text-[11px] text-slate-500 bg-slate-100 dark:bg-slate-800 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center gap-1.5">
+              <Info className="w-3.5 h-3.5 text-slate-400" />
+              <span>โหมดเปิดดูบนหน้าจอ (การนำออกไฟล์เอกสารสงวนสิทธิ์เฉพาะเจ้าหน้าที่และแอดมิน)</span>
+            </div>
           )}
         </div>
       </div>

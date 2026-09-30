@@ -5,10 +5,13 @@ import { invalidateCache } from '@/lib/cache';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { records, countedBy, note } = body;
+    const { records, assetAudits, countedBy, note } = body;
 
-    if (!Array.isArray(records) || records.length === 0) {
-      return NextResponse.json({ error: 'กรุณาระบุรายการที่ต้องการกระทบยอด' }, { status: 400 });
+    const hasRecords = Array.isArray(records) && records.length > 0;
+    const hasAssetAudits = Array.isArray(assetAudits) && assetAudits.length > 0;
+
+    if (!hasRecords && !hasAssetAudits) {
+      return NextResponse.json({ error: 'กรุณาระบุรายการวัสดุหรือครุภัณฑ์ที่ต้องการตรวจนับ' }, { status: 400 });
     }
 
     // Default system user for reconciliation audit
@@ -20,9 +23,28 @@ export async function POST(req: Request) {
     const creatorId = adminUser?.id || 'system';
     const auditLogs: any[] = [];
     const updatedItems: any[] = [];
+    const updatedAssets: any[] = [];
 
     // Process reconciliation in transaction
     await prisma.$transaction(async (tx) => {
+      // 1. Process Equipment Asset Audits
+      if (hasAssetAudits) {
+        for (const a of assetAudits) {
+          if (!a.assetId) continue;
+          const updated = await tx.equipmentAsset.update({
+            where: { id: a.assetId },
+            data: {
+              ...(a.condition ? { condition: a.condition } : {}),
+              ...(a.status ? { status: a.status } : {}),
+            },
+            select: { id: true, assetCode: true, condition: true, status: true },
+          });
+          updatedAssets.push(updated);
+        }
+      }
+
+      // 2. Process Consumable Lot Reconciliations
+      if (hasRecords) {
       for (const rec of records) {
         const { itemId, physicalCount, systemCount, variance, reason } = rec;
         if (typeof variance !== 'number' || variance === 0) continue;
@@ -96,6 +118,7 @@ export async function POST(req: Request) {
           physicalCount,
         });
       }
+      }
     });
 
     invalidateCache('items:');
@@ -103,9 +126,10 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      message: `กระทบยอดสต็อกสำเร็จทั้งหมด ${updatedItems.length} รายการ`,
+      message: `บันทึกผลการตรวจนับสำเร็จ (กระทบยอดวัสดุ ${updatedItems.length} รายการ, ตรวจสอบครุภัณฑ์ ${updatedAssets.length} รายการ)`,
       reconciledAt: new Date().toISOString(),
       updatedItems,
+      updatedAssets,
     });
   } catch (error: any) {
     console.error('Reconciliation error:', error);

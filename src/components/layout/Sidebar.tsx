@@ -28,6 +28,7 @@ import {
   X,
   Store,
   Sliders,
+  Wind,
 } from 'lucide-react';
 import ProfileModal from '@/components/profile/ProfileModal';
 import ThemeToggle from '@/components/common/ThemeToggle';
@@ -97,7 +98,14 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
           label: 'ภาพรวมห้องแล็บ',
           href: '/',
           icon: LayoutDashboard,
-          roles: ['ADMIN', 'OFFICER', 'APPROVER', 'TEACHER', 'USER'],
+          roles: ['ADMIN', 'OFFICER', 'APPROVER', 'TEACHER', 'EXECUTIVE', 'USER'],
+        },
+        {
+          label: 'แดชบอร์ดผู้บริหาร (Cockpit 360°)',
+          href: '/executive',
+          icon: BarChart3,
+          roles: ['ADMIN', 'EXECUTIVE'],
+          badge: 'ผู้บริหาร',
         },
         {
           label: 'ตารางงาน & กำหนดรับ-คืน',
@@ -172,7 +180,7 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
           label: 'ทะเบียนพัสดุ-ครุภัณฑ์',
           href: '/inventory',
           icon: Boxes,
-          roles: ['ADMIN', 'OFFICER', 'APPROVER', 'TEACHER', 'USER'],
+          roles: ['ADMIN', 'OFFICER', 'APPROVER', 'TEACHER', 'EXECUTIVE', 'USER'],
         },
         {
           label: 'รับเข้าพัสดุ (Stock In)',
@@ -196,16 +204,23 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
       groupIcon: BarChart3,
       items: [
         {
+          label: 'บันทึกเปิด-ปิดแอร์ (AC Logs)',
+          href: '/air-conditioning',
+          icon: Wind,
+          roles: ['ADMIN', 'OFFICER', 'APPROVER', 'TEACHER', 'EXECUTIVE'],
+          badge: '10:00-14:00',
+        },
+        {
           label: 'จัดการรายวิชา & ต้นทุน',
           href: '/courses',
           icon: BookOpen,
-          roles: ['ADMIN', 'OFFICER', 'APPROVER', 'TEACHER'],
+          roles: ['ADMIN', 'OFFICER', 'APPROVER', 'TEACHER', 'EXECUTIVE'],
         },
         {
           label: 'รายงาน & วิเคราะห์ข้อมูล',
           href: '/reports',
           icon: BarChart3,
-          roles: ['ADMIN', 'OFFICER', 'APPROVER', 'TEACHER'],
+          roles: ['ADMIN', 'OFFICER', 'APPROVER', 'TEACHER', 'EXECUTIVE'],
         },
       ],
     },

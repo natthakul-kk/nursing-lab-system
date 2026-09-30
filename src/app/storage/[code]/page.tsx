@@ -30,16 +30,19 @@ import {
   Eye,
   X,
   Info,
+  ClipboardCheck,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import ThemeToggle from '@/components/common/ThemeToggle';
 import { formatImageUrl } from '@/lib/image-helper';
+import MobileCabinetAuditModal from '@/components/storage/MobileCabinetAuditModal';
 
 export default function CabinetStoragePage() {
   const params = useParams();
   const router = useRouter();
   const codeParam = (params?.code as string) || '';
   const { currentUser } = useAuth();
+  const isOfficerOrAdmin = currentUser?.role === 'OFFICER' || currentUser?.role === 'ADMIN';
 
   const [data, setData] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
@@ -48,6 +51,7 @@ export default function CabinetStoragePage() {
   const [selectedFilter, setSelectedFilter] = useState<'ALL' | 'CONSUMABLE' | 'EQUIPMENT' | 'ALERT'>('ALL');
   const [viewMode, setViewMode] = useState<'TABLE' | 'CARD'>('TABLE');
   const [refreshing, setRefreshing] = useState(false);
+  const [showAuditModal, setShowAuditModal] = useState(false);
   const [selectedDetail, setSelectedDetail] = useState<{
     type: 'CONSUMABLE' | 'EQUIPMENT';
     item: any;
@@ -312,15 +316,55 @@ export default function CabinetStoragePage() {
                 <Package className="w-3.5 h-3.5" />
                 <span>ขอเบิกเวชภัณฑ์</span>
               </Link>
-              {(currentUser.role === 'ADMIN' || currentUser.role === 'OFFICER') && (
-                <Link
-                  href="/inventory"
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition border border-slate-200 dark:border-slate-700 cursor-pointer"
-                >
-                  <span>จัดการตู้</span>
-                </Link>
+              {isOfficerOrAdmin && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setShowAuditModal(true)}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition cursor-pointer"
+                  >
+                    <ClipboardCheck className="w-3.5 h-3.5" />
+                    <span>ตรวจนับสต็อกหน้าตู้</span>
+                  </button>
+                  <Link
+                    href="/inventory"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition border border-slate-200 dark:border-slate-700 cursor-pointer"
+                  >
+                    <span>จัดการตู้</span>
+                  </Link>
+                </>
               )}
             </div>
+          </div>
+        )}
+
+        {/* Officer & Admin Mobile Audit Banner */}
+        {isOfficerOrAdmin && (
+          <div className="bg-gradient-to-r from-teal-500/10 via-cyan-500/10 to-transparent border-2 border-teal-500/30 dark:border-teal-500/20 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-teal-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-teal-600/20">
+                <ClipboardCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+                  <span>ระบบตรวจนับสต็อกหน้าตู้ด้วยมือถือ</span>
+                  <span className="text-[10px] font-bold bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-200 px-2 py-0.5 rounded-full border border-teal-200 dark:border-teal-800">
+                    เฉพาะเจ้าหน้าที่ & แอดมิน
+                  </span>
+                </h3>
+                <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
+                  นับจำนวนของจริงในตู้ใบนี้ เปรียบเทียบยอดกับระบบ และบันทึกกระทบยอดอัตโนมัติ
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowAuditModal(true)}
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 active:scale-95 text-white text-xs font-bold transition shadow-md shadow-teal-600/20 shrink-0 cursor-pointer"
+            >
+              <ClipboardCheck className="w-4 h-4" />
+              <span>เริ่มตรวจนับสต็อกตู้ใบนี้</span>
+            </button>
           </div>
         )}
 
@@ -1155,6 +1199,19 @@ export default function CabinetStoragePage() {
             ข้อมูลเชื่อมตรงกับฐานข้อมูลคลังพัสดุกลาง คณะพยาบาลศาสตร์ • หากพบพัสดุไม่ตรงตู้กรุณาติดต่อเจ้าหน้าที่ห้องปฏิบัติการ
           </p>
         </div>
+
+        {/* Mobile Cabinet Audit Modal (Staff & Admin only) */}
+        {isOfficerOrAdmin && data && (
+          <MobileCabinetAuditModal
+            isOpen={showAuditModal}
+            onClose={() => setShowAuditModal(false)}
+            storage={storage}
+            items={data.items}
+            assets={data.assets}
+            currentUser={currentUser}
+            onSuccess={() => fetchCabinetData(true)}
+          />
+        )}
       </div>
     </div>
   );

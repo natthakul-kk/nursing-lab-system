@@ -18,6 +18,7 @@ import {
   Menu,
   X,
   Store,
+  Briefcase,
 } from 'lucide-react';
 import ProfileModal from '@/components/profile/ProfileModal';
 import QrScannerModal from '@/components/qrcode/QrScannerModal';
@@ -59,6 +60,12 @@ export default function Navbar({ onToggleMobileMenu, isMobileMenuOpen }: NavbarP
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-100 dark:bg-indigo-950/70 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
             <GraduationCap className="w-3 h-3 text-indigo-600 dark:text-indigo-400" /> อาจารย์ผู้สอน
+          </span>
+        );
+      case 'EXECUTIVE':
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-100 dark:bg-blue-950/70 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+            <Briefcase className="w-3 h-3 text-blue-600 dark:text-blue-400" /> ผู้บริหาร
           </span>
         );
       case 'USER':

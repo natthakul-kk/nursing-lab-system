@@ -42,6 +42,7 @@ model User {
   approvedRoomBookings RoomBooking[]       @relation("ApproverRoomBookings")
   notifications       Notification[]       @relation("UserNotifications")
   pushSubscriptions   PushSubscription[]   @relation("UserPushSubscriptions")
+  acOperationLogs     AcOperationLog[]
 
   @@index([role, status])
   @@index([studentId])
@@ -427,6 +428,7 @@ model PracticeRoom {
   slots            PracticeSlot[]
   roomBookings     RoomBooking[]
   storageLocations StorageLocation[]
+  acOperationLogs  AcOperationLog[]
 
   @@index([isActive])
 }
@@ -609,4 +611,28 @@ model NotificationTemplate {
 
   @@index([category])
 }
+
+model AcOperationLog {
+  id           String       @id @default(cuid())
+  roomId       String
+  room         PracticeRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  date         DateTime     // วันที่บันทึก (00:00:00 UTC)
+  openTime     String?      // เช่น "10:00"
+  closeTime    String?      // เช่น "14:00"
+  usageHours   Float        @default(0) // รวมชั่วโมงใช้งานจริงทั้งวัน
+  temperature  Float?       @default(22.0)
+  purpose      String?      @default("เปิดเพื่อรักษาอุปกรณ์")
+  sessionsJson String?      // JSON array ของหลายรอบ: [{"openTime":"10:00","closeTime":"14:00","hours":4.0,"temperature":22.0,"purpose":"เปิดเพื่อรักษาอุปกรณ์"}]
+  recordedById String?
+  recordedBy   User?        @relation(fields: [recordedById], references: [id])
+  recordedName String?
+  note         String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@unique([roomId, date])
+  @@index([roomId, date])
+  @@index([date])
+}
+
 

@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-export type UserRole = 'ADMIN' | 'OFFICER' | 'APPROVER' | 'TEACHER' | 'USER';
+export type UserRole = 'ADMIN' | 'OFFICER' | 'APPROVER' | 'TEACHER' | 'EXECUTIVE' | 'USER';
 
 export interface User {
   id: string;
@@ -38,6 +38,7 @@ interface AuthContextType {
   isOfficer: boolean;
   isApprover: boolean;
   isTeacher: boolean;
+  isExecutive: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -274,6 +275,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isAdmin = currentUser?.role === 'ADMIN';
   const isOfficer = currentUser?.role === 'OFFICER' || isAdmin;
   const isApprover = currentUser?.role === 'APPROVER' || isAdmin;
+  const isExecutive = currentUser?.role === 'EXECUTIVE' || isAdmin;
   const isTeacher =
     currentUser?.role === 'TEACHER' ||
     currentUser?.role === 'APPROVER' ||
@@ -303,6 +305,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isOfficer,
         isApprover,
         isTeacher,
+        isExecutive,
       }}
     >
       {children}

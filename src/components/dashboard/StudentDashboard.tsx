@@ -162,6 +162,43 @@ export default function StudentDashboard() {
     return s.state === 'overdue';
   });
 
+  // Extract all unreturned equipment assets across active borrows
+  const unreturnedEquipments = React.useMemo(() => {
+    const list: any[] = [];
+    (borrowRequests || []).forEach((req) => {
+      if (req.status === 'BORROWED' || req.status === 'APPROVED') {
+        const returnInfo = getReturnStatus(req.expectedReturnDate, req.status);
+        (req.items || []).forEach((itemRow: any) => {
+          const isEquipment = itemRow.item?.type === 'EQUIPMENT' || Boolean(itemRow.asset);
+          if (isEquipment && !itemRow.isReturned) {
+            list.push({
+              id: itemRow.id,
+              requestId: req.id,
+              requestNumber: req.requestNumber,
+              courseName: req.course ? `วิชา ${req.course.code} - ${req.course.name}` : null,
+              expectedReturnDate: req.expectedReturnDate,
+              returnInfo,
+              item: itemRow.item,
+              asset: itemRow.asset,
+              quantity: itemRow.quantity,
+              reqStatus: req.status,
+            });
+          }
+        });
+      }
+    });
+
+    return list.sort((a, b) => {
+      const order: Record<string, number> = { overdue: 1, due_today: 2, due_soon: 3, normal: 4, pending: 5 };
+      const scoreA = order[a.returnInfo.state] || 99;
+      const scoreB = order[b.returnInfo.state] || 99;
+      return scoreA - scoreB;
+    });
+  }, [borrowRequests]);
+
+  const unreturnedOverdueCount = unreturnedEquipments.filter(e => e.returnInfo.state === 'overdue').length;
+  const unreturnedDueTodayCount = unreturnedEquipments.filter(e => e.returnInfo.state === 'due_today').length;
+
   if (loading) {
     return (
       <LoadingSpinner
@@ -207,20 +244,157 @@ export default function StudentDashboard() {
         </div>
       </div>
 
-      {/* OVERDUE ALERT BANNER */}
-      {overdueBorrows.length > 0 && (
-        <div className="bg-rose-50 dark:bg-rose-950/40 border-2 border-rose-300 dark:border-rose-800 rounded-2xl p-4 sm:p-5 flex items-start gap-3 shadow-md shadow-rose-100 dark:shadow-none">
-          <div className="w-10 h-10 rounded-xl bg-rose-500 text-white flex items-center justify-center flex-shrink-0">
-            <AlertTriangle className="w-6 h-6 animate-bounce" />
+      {/* DEDICATED UNRETURNED EQUIPMENT ASSET STATUS CENTER */}
+      {unreturnedEquipments.length > 0 ? (
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border-2 border-teal-500/30 dark:border-teal-500/20 shadow-lg shadow-teal-500/5 overflow-hidden transition-all">
+          {/* Header Banner */}
+          <div className="px-5 py-4 bg-gradient-to-r from-teal-800 via-teal-900 to-slate-900 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-teal-500/20 border border-teal-400/30 flex items-center justify-center flex-shrink-0">
+                <Package className="w-5 h-5 text-teal-300" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm sm:text-base font-black tracking-tight text-white">
+                    ครุภัณฑ์และอุปกรณ์ที่ท่านต้องนำส่งคืนห้องปฏิบัติการ
+                  </h3>
+                  <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-teal-400 text-teal-950">
+                    {unreturnedEquipments.length} ชิ้น
+                  </span>
+                </div>
+                <p className="text-xs text-teal-200/80 mt-0.5">
+                  รายการครุภัณฑ์รายชิ้นที่ท่านกำลังครอบครองใช้งาน กรุณาตรวจสอบและนำส่งคืนตามกำหนดเวลา
+                </p>
+              </div>
+            </div>
+
+            {/* Status alerts pill */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {unreturnedOverdueCount > 0 && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-rose-500 text-white animate-pulse shadow-md shadow-rose-500/30">
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  เกินกำหนดคืน {unreturnedOverdueCount} ชิ้น!
+                </span>
+              )}
+              {unreturnedDueTodayCount > 0 && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-400 text-amber-950">
+                  <Clock className="w-3.5 h-3.5" />
+                  ครบกำหนดวันนี้ {unreturnedDueTodayCount} ชิ้น
+                </span>
+              )}
+            </div>
           </div>
-          <div className="flex-1">
-            <h3 className="text-sm font-black text-rose-900 dark:text-rose-200">
-              แจ้งเตือนด่วน: มีอุปกรณ์ {overdueBorrows.length} รายการที่เกินกำหนดส่งคืนแล้ว!
-            </h3>
-            <p className="text-xs text-rose-700 dark:text-rose-300 mt-1 leading-relaxed">
-              กรุณานำอุปกรณ์มาส่งคืนและตรวจสภาพที่เคาน์เตอร์ห้องปฏิบัติการทางการพยาบาลโดยเร็ว เพื่อเปิดโอกาสให้เพื่อนร่วมชั้นได้ใช้งานต่อ
-            </p>
+
+          {/* Cards Grid */}
+          <div className="p-4 sm:p-5 bg-slate-50/50 dark:bg-slate-950/40">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {unreturnedEquipments.map((item) => {
+                const info = item.returnInfo;
+                const isOverdue = info.state === 'overdue';
+                const isDueToday = info.state === 'due_today';
+
+                return (
+                  <div
+                    key={item.id}
+                    className={`relative rounded-xl p-4 border transition-all flex flex-col justify-between gap-3 ${
+                      isOverdue
+                        ? 'bg-rose-50/90 dark:bg-rose-950/40 border-rose-300 dark:border-rose-800 shadow-sm shadow-rose-100'
+                        : isDueToday
+                        ? 'bg-amber-50/90 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800'
+                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-teal-300'
+                    }`}
+                  >
+                    <div className="space-y-2">
+                      {/* Top Badges */}
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                          {item.requestNumber}
+                        </span>
+                        <span
+                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                            isOverdue
+                              ? 'bg-rose-500 text-white border-rose-600 animate-pulse'
+                              : isDueToday
+                              ? 'bg-amber-500 text-white border-amber-600'
+                              : 'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-200 border-teal-200 dark:border-teal-800'
+                          }`}
+                        >
+                          {isOverdue && <AlertTriangle className="w-3 h-3" />}
+                          {isDueToday && <Clock className="w-3 h-3" />}
+                          {info.label}
+                        </span>
+                      </div>
+
+                      {/* Item & Asset Name */}
+                      <div>
+                        <h4 className="text-sm font-black text-slate-900 dark:text-white leading-snug">
+                          {item.item?.name || 'ครุภัณฑ์'}
+                        </h4>
+                        <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                          {item.asset?.assetCode ? (
+                            <span className="text-[11px] font-mono font-bold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 px-2 py-0.5 rounded-md border border-teal-200 dark:border-teal-800">
+                              รหัส: {item.asset.assetCode} ({item.item?.unit || 'ชิ้น'}ที่ {item.asset.sequenceNumber || 1})
+                            </span>
+                          ) : (
+                            <span className="text-[11px] text-slate-500">
+                              จำนวน {item.quantity} {item.item?.unit || 'เครื่อง'}
+                            </span>
+                          )}
+                          {item.asset?.govAssetCode && (
+                            <span className="text-[10px] font-mono text-slate-500 truncate max-w-[150px]">
+                              {item.asset.govAssetCode}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {item.courseName && (
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                          {item.courseName}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Footer Info & Return Spot */}
+                    <div className="pt-2 border-t border-slate-200/70 dark:border-slate-800/80 flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
+                      <div className="flex items-center gap-1 text-[11px]">
+                        <Calendar className="w-3 h-3 text-slate-400" />
+                        <span>กำหนดคืน: <strong>{formatDate(item.expectedReturnDate)}</strong></span>
+                      </div>
+                      <Link
+                        href="/borrow"
+                        className="text-[11px] font-bold text-teal-600 dark:text-teal-400 hover:text-teal-700 flex items-center gap-0.5 hover:underline"
+                      >
+                        ดูคำขอ <ArrowRight className="w-3 h-3" />
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
+        </div>
+      ) : (
+        <div className="bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-emerald-500 text-white flex items-center justify-center flex-shrink-0">
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-xs sm:text-sm font-bold text-emerald-950 dark:text-emerald-200">
+                ไม่มีครุภัณฑ์ค้างส่งคืนในขณะนี้
+              </h4>
+              <p className="text-[11px] text-emerald-700 dark:text-emerald-300">
+                ท่านไม่มีรายการครุภัณฑ์หรืออุปกรณ์ที่อยู่ระหว่างการยืมใช้งาน หรือนำส่งคืนตรวจสภาพเรียบร้อยสมบูรณ์แล้ว
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/borrow"
+            className="text-xs font-bold text-emerald-700 dark:text-emerald-300 hover:underline flex-shrink-0"
+          >
+            ขอยืมอุปกรณ์ →
+          </Link>
         </div>
       )}
 

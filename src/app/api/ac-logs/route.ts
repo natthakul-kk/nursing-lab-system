@@ -165,6 +165,20 @@ export async function POST(req: Request) {
           }
         }
 
+        if (
+          entry.action === 'DELETE' ||
+          (totalHours === 0 && (!sessions || sessions.length === 0) && !openTime && !closeTime)
+        ) {
+          await tx.acOperationLog.deleteMany({
+            where: {
+              roomId,
+              date: recordDate,
+            },
+          });
+          results.push({ roomId, date: recordDate, deleted: true });
+          continue;
+        }
+
         const upserted = await tx.acOperationLog.upsert({
           where: {
             roomId_date: {
@@ -211,6 +225,41 @@ export async function POST(req: Request) {
     console.error('Error saving AC log:', error);
     return NextResponse.json(
       { error: error.message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูลเครื่องปรับอากาศ' },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE: Permanently delete an AC Operation Log for a specific room and date
+export async function DELETE(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const roomId = searchParams.get('roomId');
+    const dateStr = searchParams.get('dateStr');
+
+    if (!roomId || !dateStr) {
+      return NextResponse.json({ error: 'กรุณาระบุ roomId และ dateStr' }, { status: 400 });
+    }
+
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const recordDate = new Date(Date.UTC(y, m - 1, d, 0, 0, 0));
+
+    const result = await prisma.acOperationLog.deleteMany({
+      where: {
+        roomId,
+        date: recordDate,
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: `ลบข้อมูลบันทึกแอร์สำเร็จ (${result.count} รายการ)`,
+      count: result.count,
+    });
+  } catch (error: any) {
+    console.error('Error deleting AC log:', error);
+    return NextResponse.json(
+      { error: error.message || 'เกิดข้อผิดพลาดในการลบข้อมูลเครื่องปรับอากาศ' },
       { status: 500 }
     );
   }

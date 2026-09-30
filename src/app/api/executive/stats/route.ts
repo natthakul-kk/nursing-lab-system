@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const currentMonth = new Date().getMonth() + 1;
-    const currentYear = new Date().getFullYear();
+    const { searchParams } = new URL(req.url);
+    const currentMonth = parseInt(searchParams.get('month') || String(new Date().getMonth() + 1));
+    const currentYear = parseInt(searchParams.get('year') || String(new Date().getFullYear()));
 
     const startDateMonth = new Date(Date.UTC(currentYear, currentMonth - 1, 1));
-    const endDateMonth = new Date(Date.UTC(currentYear, currentMonth, 0, 23, 59, 59));
+    const endDateMonth = new Date(Date.UTC(currentYear, currentMonth, 0, 23, 59, 59, 999));
 
     // 1. Equipment Assets Metrics
     const assets = await prisma.equipmentAsset.findMany({
@@ -51,13 +52,14 @@ export async function GET() {
     const readinessRate =
       totalAssetsCount > 0 ? Math.round(((availableCount + borrowedCount) / totalAssetsCount) * 1000) / 10 : 100;
 
-    // 2. AC Energy & Operation Hours
+    // 2. AC Energy & Operation Hours (only logs with usageHours > 0)
     const acLogs = await prisma.acOperationLog.findMany({
       where: {
         date: {
           gte: startDateMonth,
           lte: endDateMonth,
         },
+        usageHours: { gt: 0 },
       },
       include: {
         room: { select: { id: true, name: true, code: true } },
@@ -71,6 +73,8 @@ export async function GET() {
 
     acLogs.forEach((l) => {
       const h = Number(l.usageHours) || 0;
+      if (h <= 0) return;
+
       totalAcHoursMonth += h;
       if (l.purpose?.includes('รักษาอุปกรณ์')) maintenanceAcHours += h;
       else teachingAcHours += h;
@@ -79,7 +83,7 @@ export async function GET() {
       if (!roomAcHoursMap[l.roomId]) {
         roomAcHoursMap[l.roomId] = { roomName: rName, hours: 0 };
       }
-      roomAcHoursMap[l.roomId].hours += h;
+      roomAcHoursMap[l.roomId].hours = Math.round((roomAcHoursMap[l.roomId].hours + h) * 10) / 10;
     });
 
     // 3. Consumables Stock Valuation
@@ -154,7 +158,9 @@ export async function GET() {
         totalAcHoursMonth: Math.round(totalAcHoursMonth * 10) / 10,
         maintenanceAcHours: Math.round(maintenanceAcHours * 10) / 10,
         teachingAcHours: Math.round(teachingAcHours * 10) / 10,
-        roomAcBreakdown: Object.values(roomAcHoursMap),
+        roomAcBreakdown: Object.values(roomAcHoursMap)
+          .filter((r) => r.hours > 0)
+          .sort((a, b) => b.hours - a.hours),
         totalConsumablesValuation,
         expiringLotsCount: expiringCount,
         totalPracticeHours: Math.round(totalPracticeHours * 10) / 10,

@@ -290,24 +290,12 @@ export default function AirConditioningPage() {
     setIsSubmitting(true);
 
     try {
-      const res = await fetch('/api/ac-logs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: currentUser?.id,
-          logs: [
-            {
-              roomId: selectedCell.room.id,
-              dateStr: selectedCell.dateStr,
-              openTime: null,
-              closeTime: null,
-              temperature: 22.0,
-              purpose: null,
-              note: null,
-            },
-          ],
-        }),
-      });
+      const res = await fetch(
+        `/api/ac-logs?roomId=${encodeURIComponent(selectedCell.room.id)}&dateStr=${encodeURIComponent(selectedCell.dateStr)}`,
+        {
+          method: 'DELETE',
+        }
+      );
 
       if (res.ok) {
         setShowLogModal(false);

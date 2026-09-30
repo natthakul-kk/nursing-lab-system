@@ -51,12 +51,33 @@ export default function ExecutiveDashboardPage() {
     setCurrentPage(1);
   }, [searchQuery, statusFilter]);
 
-  const fetchStats = async (manual = false) => {
+  // Month & Year Filter for Executive Analytics
+  const [selectedMonth, setSelectedMonth] = useState<number>(() => new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState<number>(() => new Date().getFullYear());
+
+  const THAI_MONTHS = [
+    { value: 1, label: 'มกราคม' },
+    { value: 2, label: 'กุมภาพันธ์' },
+    { value: 3, label: 'มีนาคม' },
+    { value: 4, label: 'เมษายน' },
+    { value: 5, label: 'พฤษภาคม' },
+    { value: 6, label: 'มิถุนายน' },
+    { value: 7, label: 'กรกฎาคม' },
+    { value: 8, label: 'สิงหาคม' },
+    { value: 9, label: 'กันยายน' },
+    { value: 10, label: 'ตุลาคม' },
+    { value: 11, label: 'พฤศจิกายน' },
+    { value: 12, label: 'ธันวาคม' },
+  ];
+
+  const years = [2024, 2025, 2026, 2027, 2028];
+
+  const fetchStats = async (manual = false, m = selectedMonth, y = selectedYear) => {
     if (manual) setRefreshing(true);
     else setLoading(true);
 
     try {
-      const res = await fetch('/api/executive/stats');
+      const res = await fetch(`/api/executive/stats?month=${m}&year=${y}`);
       if (res.ok) {
         const json = await res.json();
         setData(json);
@@ -70,8 +91,8 @@ export default function ExecutiveDashboardPage() {
   };
 
   useEffect(() => {
-    fetchStats();
-  }, []);
+    fetchStats(false, selectedMonth, selectedYear);
+  }, [selectedMonth, selectedYear]);
 
   const kpis = data?.kpis;
   const equipmentList = data?.equipmentList || [];
@@ -168,8 +189,36 @@ export default function ExecutiveDashboardPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0">
-          <div className="bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/10 text-right">
+        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          {/* Month & Year Filter Selector */}
+          <div className="flex items-center gap-1.5 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-white/15">
+            <Calendar className="w-4 h-4 text-cyan-300 shrink-0" />
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(Number(e.target.value))}
+              className="bg-transparent text-white text-xs font-bold outline-none cursor-pointer [&>option]:text-slate-900"
+            >
+              {THAI_MONTHS.map((m) => (
+                <option key={m.value} value={m.value}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
+            <span className="text-white/40">/</span>
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+              className="bg-transparent text-white text-xs font-bold outline-none cursor-pointer [&>option]:text-slate-900"
+            >
+              {years.map((y) => (
+                <option key={y} value={y}>
+                  พ.ศ. {y + 543}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="hidden sm:block bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-2xl border border-white/10 text-right">
             <span className="text-[10px] text-slate-300 block">ผู้เข้าใช้งาน</span>
             <span className="text-xs font-bold text-white">{currentUser?.name} (ผู้บริหาร)</span>
           </div>
@@ -178,7 +227,7 @@ export default function ExecutiveDashboardPage() {
             type="button"
             onClick={() => fetchStats(true)}
             disabled={refreshing}
-            className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition border border-white/10 cursor-pointer disabled:opacity-50"
+            className="p-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white transition border border-white/10 cursor-pointer disabled:opacity-50"
             title="รีเฟรชข้อมูลล่าสุด"
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
@@ -228,7 +277,9 @@ export default function ExecutiveDashboardPage() {
         {/* KPI 3: Energy & AC Monthly Hours */}
         <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm transition hover:shadow-md">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">ชั่วโมงเปิดแอร์เดือนนี้</span>
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              ชั่วโมงเปิดแอร์ ({THAI_MONTHS.find((m) => m.value === selectedMonth)?.label} {selectedYear + 543})
+            </span>
             <div className="w-10 h-10 rounded-2xl bg-cyan-50 dark:bg-cyan-950/60 text-cyan-600 flex items-center justify-center">
               <Wind className="w-5 h-5" />
             </div>
@@ -270,7 +321,9 @@ export default function ExecutiveDashboardPage() {
           <div>
             <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
               <Wind className="w-5 h-5 text-teal-600" />
-              <span>สถิติชั่วโมงการเปิดเครื่องปรับอากาศแยกตามห้อง (ประจำเดือน)</span>
+              <span>
+                สถิติชั่วโมงการเปิดเครื่องปรับอากาศแยกตามห้อง ({THAI_MONTHS.find((m) => m.value === selectedMonth)?.label} {selectedYear + 543})
+              </span>
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
               แสดงความคุ้มค่าของการใช้พลังงานและการรักษาสภาพแวดล้อมสำหรับอุปกรณ์ทางการแพทย์
@@ -284,40 +337,48 @@ export default function ExecutiveDashboardPage() {
           </Link>
         </div>
 
-        {kpis?.roomAcBreakdown && kpis.roomAcBreakdown.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 pt-2">
-            {kpis.roomAcBreakdown.map((r: any, idx: number) => {
-              const maxHours = Math.max(...kpis.roomAcBreakdown.map((b: any) => b.hours), 1);
-              const percentage = Math.round((r.hours / maxHours) * 100);
+        {(() => {
+          const roomAcBreakdown = (kpis?.roomAcBreakdown || []).filter((r: any) => Number(r.hours) > 0);
+          if (roomAcBreakdown.length === 0) {
+            return (
+              <div className="p-8 text-center text-slate-400 text-xs">
+                ยังไม่มีข้อมูลบันทึกการเปิดแอร์ในเดือน{THAI_MONTHS.find((m) => m.value === selectedMonth)?.label} {selectedYear + 543} สามารถให้เจ้าหน้าที่เริ่มลงบันทึกในระบบบันทึกเวลาแอร์
+              </div>
+            );
+          }
 
-              return (
-                <div
-                  key={idx}
-                  className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 space-y-2"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
-                      {r.roomName}
-                    </span>
-                    <span className="font-mono text-sm font-black text-teal-700 dark:text-teal-300">
-                      {r.hours.toFixed(1)} ชม.
-                    </span>
+          const maxHours = Math.max(...roomAcBreakdown.map((b: any) => Number(b.hours) || 1), 1);
+
+          return (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 pt-2">
+              {roomAcBreakdown.map((r: any, idx: number) => {
+                const percentage = Math.round(((Number(r.hours) || 0) / maxHours) * 100);
+
+                return (
+                  <div
+                    key={idx}
+                    className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 space-y-2"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+                        {r.roomName}
+                      </span>
+                      <span className="font-mono text-sm font-black text-teal-700 dark:text-teal-300">
+                        {Number(r.hours).toFixed(1)} ชม.
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                      <div
+                        className="bg-gradient-to-r from-teal-500 to-cyan-500 h-full rounded-full transition-all duration-500"
+                        style={{ width: `${percentage}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="w-full bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
-                    <div
-                      className="bg-gradient-to-r from-teal-500 to-cyan-500 h-full rounded-full transition-all duration-500"
-                      style={{ width: `${percentage}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="p-8 text-center text-slate-400 text-xs">
-            ยังไม่มีข้อมูลบันทึกการเปิดแอร์ในเดือนนี้ สามารถให้เจ้าหน้าที่เริ่มลงบันทึกในระบบบันทึกเวลาแอร์
-          </div>
-        )}
+                );
+              })}
+            </div>
+          );
+        })()}
       </div>
 
       {/* Equipment Asset Drill-down Browser (View-Only / No Export / Safe Mode) */}

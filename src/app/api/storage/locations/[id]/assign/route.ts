@@ -1,5 +1,6 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { invalidateCache } from '@/lib/cache';
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -39,6 +40,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         });
       }
 
+      invalidateCache('items:');
+
       return NextResponse.json({
         success: true,
         message: `จัดเก็บพัสดุ ${itemIds.length} รายการ และครุภัณฑ์ ${assetIds.length} ชิ้น เข้าสู่ ${location.name} เรียบร้อยแล้ว`,
@@ -52,6 +55,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           },
           data: {
             storageLocationId: null,
+            location: null,
           },
         });
       }
@@ -64,9 +68,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           },
           data: {
             storageLocationId: null,
+            location: null,
           },
         });
       }
+
+      invalidateCache('items:');
 
       return NextResponse.json({
         success: true,

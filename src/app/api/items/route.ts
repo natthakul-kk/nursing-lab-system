@@ -261,7 +261,9 @@ export async function GET(req: Request) {
           usageUnit: item.usageUnit,
           conversionRatio: item.conversionRatio,
           minStockAlert: item.minStockAlert,
-          location: item.location,
+          location: item.storageLocation
+            ? `${item.storageLocation.name} (${item.storageLocation.roomName || item.storageLocation.code})`
+            : (item.location || null),
           storageLocation: item.storageLocation,
           stockLots: item.stockLots,
           description: item.description,
@@ -302,8 +304,14 @@ export async function GET(req: Request) {
       where: whereCondition,
       include: {
         category: true,
+        storageLocation: {
+          include: { room: true },
+        },
         assets: {
           include: {
+            storageLocation: {
+              include: { room: true },
+            },
             maintenanceLogs: {
               orderBy: { createdAt: 'desc' },
             },
@@ -361,8 +369,25 @@ export async function GET(req: Request) {
           ? totalPiecesRemaining <= item.minStockAlert
           : availableStock <= item.minStockAlert;
 
+      const itemDisplayLocation = item.storageLocation
+        ? `${item.storageLocation.name} (${item.storageLocation.room?.name || item.storageLocation.roomName || item.storageLocation.code})`
+        : (item.location || null);
+
+      const formattedAssets = item.assets.map((asset) => {
+        const assetDisplayLocation = asset.storageLocation
+          ? `${asset.storageLocation.name} (${asset.storageLocation.room?.name || asset.storageLocation.roomName || asset.storageLocation.code})`
+          : (asset.location || itemDisplayLocation || null);
+
+        return {
+          ...asset,
+          location: assetDisplayLocation,
+        };
+      });
+
       return {
         ...item,
+        location: itemDisplayLocation,
+        assets: formattedAssets,
         physicalStock,
         reservedStock,
         availableStock,

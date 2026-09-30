@@ -1,5 +1,6 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { invalidateCache } from '@/lib/cache';
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -140,6 +141,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       data: { location: legacyLocationStr },
     });
 
+    invalidateCache('items:');
+
     return NextResponse.json(updated);
   } catch (error: any) {
     console.error('Error updating storage location:', error);
@@ -166,17 +169,19 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
 
     await prisma.item.updateMany({
       where: { storageLocationId: id },
-      data: { storageLocationId: null },
+      data: { storageLocationId: null, location: null },
     });
 
     await prisma.equipmentAsset.updateMany({
       where: { storageLocationId: id },
-      data: { storageLocationId: null },
+      data: { storageLocationId: null, location: null },
     });
 
     await prisma.storageLocation.delete({
       where: { id },
     });
+
+    invalidateCache('items:');
 
     return NextResponse.json({
       success: true,

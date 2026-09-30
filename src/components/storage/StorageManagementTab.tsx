@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
@@ -629,6 +629,7 @@ export default function StorageManagementTab({ onRefreshInventory }: StorageMana
         availableItems={availableItems}
         onRefresh={() => {
           fetchLocations();
+          fetchInventoryItems();
           if (assignTargetLocation) {
             fetch(`/api/storage/locations/${assignTargetLocation.id}`)
               .then((r) => r.json())

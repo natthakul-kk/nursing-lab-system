@@ -72,7 +72,7 @@ export default function Navbar({ onToggleMobileMenu, isMobileMenuOpen }: NavbarP
       default:
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-100 dark:bg-blue-950/70 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-            <GraduationCap className="w-3 h-3 text-blue-600 dark:text-blue-400" /> ผู้ใช้งาน
+            <GraduationCap className="w-3 h-3 text-blue-600 dark:text-blue-400" /> นิสิต
           </span>
         );
     }

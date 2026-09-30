@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { formatUserName, getRoleLabel } from '@/lib/user-utils';
 
 export default function ExecutiveDashboardPage() {
   const { currentUser, isExecutive, isAdmin } = useAuth();
@@ -220,7 +221,9 @@ export default function ExecutiveDashboardPage() {
 
           <div className="hidden sm:block bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-2xl border border-white/10 text-right">
             <span className="text-[10px] text-slate-300 block">ผู้เข้าใช้งาน</span>
-            <span className="text-xs font-bold text-white">{currentUser?.name} (ผู้บริหาร)</span>
+            <span className="text-xs font-bold text-white">
+              {currentUser ? `${formatUserName(currentUser) || currentUser.name} (${getRoleLabel(currentUser.role)})` : 'กำลังโหลด...'}
+            </span>
           </div>
 
           <button

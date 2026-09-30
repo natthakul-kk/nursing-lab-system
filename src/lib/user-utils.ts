@@ -271,3 +271,27 @@ export function formatAcknowledgeDisplay(advisorName?: string | null): {
     bgClass: 'bg-emerald-50 dark:bg-emerald-950/60',
   };
 }
+
+/**
+ * Returns the Thai display name for a given user role.
+ * Strictly adheres to terminology policy: "นิสิต" (never "นักศึกษา").
+ */
+export function getRoleLabel(role?: string | null): string {
+  switch (role) {
+    case 'ADMIN':
+      return 'แอดมิน';
+    case 'OFFICER':
+      return 'เจ้าหน้าที่แล็บ';
+    case 'APPROVER':
+      return 'ผู้อนุมัติ';
+    case 'TEACHER':
+      return 'อาจารย์ผู้สอน';
+    case 'EXECUTIVE':
+      return 'ผู้บริหาร';
+    case 'USER':
+      return 'นิสิต';
+    default:
+      return role || 'ผู้ใช้งาน';
+  }
+}
+

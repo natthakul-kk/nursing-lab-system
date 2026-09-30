@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth-context';
-import { COMMON_USER_PREFIXES } from '@/lib/user-utils';
+import { COMMON_USER_PREFIXES, getRoleLabel } from '@/lib/user-utils';
 import {
   User,
   Mail,
@@ -744,8 +744,8 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                   <ShieldCheck className="w-4 h-4 text-teal-600 dark:text-teal-400" />
                   บทบาทในระบบ:
                 </span>
-                <span className="font-bold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 font-mono">
-                  {currentUser.role}
+                <span className="font-bold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 text-xs">
+                  {getRoleLabel(currentUser.role)} <span className="font-mono text-[11px] text-slate-400">({currentUser.role})</span>
                 </span>
               </div>
 

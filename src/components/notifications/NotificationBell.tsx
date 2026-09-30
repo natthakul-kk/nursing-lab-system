@@ -27,6 +27,7 @@ import {
   isPushNotificationSupported,
   getNotificationPermission,
 } from '@/lib/webpush-client';
+import { ORG_CONFIG } from '@/lib/constants/organization';
 
 interface NotificationItem {
   id: string;
@@ -595,7 +596,7 @@ export default function NotificationBell() {
 
           {/* Footer */}
           <div className="p-2.5 bg-slate-50/70 dark:bg-slate-950/50 border-t border-slate-100 dark:border-slate-800 text-center text-[10px] text-slate-400">
-            ระบบศูนย์ฝึกทักษะทางการพยาบาล • แจ้งเตือนแบบเรียลไทม์
+            ระบบ{ORG_CONFIG.CUSTODIAN_UNIT_NAME} • แจ้งเตือนแบบเรียลไทม์
           </div>
         </div>
       )}

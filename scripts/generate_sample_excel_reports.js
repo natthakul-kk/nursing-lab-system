@@ -55,12 +55,17 @@ async function generateReports() {
 
   console.log(`Found ${assets.length} equipment assets and ${consumables.length} consumables.`);
 
+  const CUSTODIAN_UNIT_NAME = 'ศูนย์การเรียนรู้ปฏิบัติการทางการพยาบาลเสมือนจริง';
+  const FACULTY_NAME = 'คณะพยาบาลศาสตร์';
+  const UNIVERSITY_NAME = 'มหาวิทยาลัยเกษตรศาสตร์';
+  const FULL_CUSTODIAN_LABEL = `${CUSTODIAN_UNIT_NAME} ${FACULTY_NAME}`;
+
   // ----------------------------------------------------
   // BUILD EQUIPMENT WORKSHEET
   // ----------------------------------------------------
   const eqRows = [
     ['ทะเบียนคุมทรัพย์สิน (ครุภัณฑ์ทางการศึกษาและการพยาบาล)'],
-    ['ส่วนราชการ: คณะพยาบาลศาสตร์       หน่วยงานผู้ครอบครอง: ศูนย์ฝึกทักษะการพยาบาล (Nursing Lab)       ประเภท: ครุภัณฑ์การแพทย์และฝึกทักษะ'],
+    [`ส่วนราชการ: ${FACULTY_NAME} ${UNIVERSITY_NAME}       หน่วยงานผู้ครอบครอง: ${CUSTODIAN_UNIT_NAME}       ประเภท: ครุภัณฑ์การแพทย์และฝึกทักษะ`],
     ['ข้อมูล ณ วันที่: 30 กันยายน 2569       ปีงบประมาณ: 2569       ผู้จัดทำรายงาน: เจ้าหน้าที่ห้องปฏิบัติการทางการพยาบาล'],
     [],
     [
@@ -84,7 +89,7 @@ async function generateReports() {
   assets.forEach((a, idx) => {
     const loc = a.storageLocation
       ? `${a.storageLocation.name} (${a.storageLocation.room?.name || a.storageLocation.code})`
-      : a.location || a.item?.location || 'ศูนย์ฝึกทักษะการพยาบาล';
+      : a.location || a.item?.location || CUSTODIAN_UNIT_NAME;
 
     const brandModel = [a.brand || a.item?.brand, a.model || a.item?.model].filter(Boolean).join(' / ') || '-';
     
@@ -114,7 +119,7 @@ async function generateReports() {
       Number(a.cost) || 0,
       conditionText,
       statusText,
-      'ศูนย์ฝึกทักษะการพยาบาล คณะพยาบาลศาสตร์',
+      FULL_CUSTODIAN_LABEL,
       noteText,
     ]);
   });
@@ -230,7 +235,7 @@ async function generateReports() {
   // ----------------------------------------------------
   const conRows = [
     ['บัญชีคุมวัสดุสิ้นเปลืองและเวชภัณฑ์ทางการพยาบาล (Stock Inventory Report)'],
-    ['ส่วนราชการ: คณะพยาบาลศาสตร์       หน่วยงานผู้ครอบครอง: ศูนย์ฝึกทักษะการพยาบาล (Nursing Lab)       ประเภท: วัสดุการแพทย์และเวชภัณฑ์สิ้นเปลือง'],
+    [`ส่วนราชการ: ${FACULTY_NAME} ${UNIVERSITY_NAME}       หน่วยงานผู้ครอบครอง: ${CUSTODIAN_UNIT_NAME}       ประเภท: วัสดุการแพทย์และเวชภัณฑ์สิ้นเปลือง`],
     ['ข้อมูล ณ วันที่: 30 กันยายน 2569       ปีงบประมาณ: 2569       ผู้จัดทำรายงาน: เจ้าหน้าที่ห้องปฏิบัติการทางการพยาบาล'],
     [],
     [
@@ -256,7 +261,7 @@ async function generateReports() {
   consumables.forEach((item) => {
     const loc = item.storageLocation
       ? `${item.storageLocation.name} (${item.storageLocation.room?.name || item.storageLocation.code})`
-      : item.location || 'ศูนย์ฝึกทักษะการพยาบาล';
+      : item.location || CUSTODIAN_UNIT_NAME;
 
     if (item.stockLots && item.stockLots.length > 0) {
       item.stockLots.forEach((lot) => {

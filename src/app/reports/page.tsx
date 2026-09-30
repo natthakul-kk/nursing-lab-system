@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { TableLoadingRow } from '@/components/common/LoadingSpinner';
+import { ORG_CONFIG } from '@/lib/constants/organization';
 
 export default function ReportsPage() {
   const { currentUser, isOfficer, isApprover, isAdmin } = useAuth();
@@ -148,7 +149,7 @@ export default function ReportsPage() {
 
     const rows: any[][] = [
       ['ทะเบียนคุมทรัพย์สิน (ครุภัณฑ์ทางการศึกษาและการพยาบาล)'],
-      ['ส่วนราชการ: คณะพยาบาลศาสตร์       หน่วยงานผู้ครอบครอง: ศูนย์ฝึกทักษะการพยาบาล (Nursing Lab)       ประเภท: ครุภัณฑ์การแพทย์และฝึกทักษะ'],
+      [ORG_CONFIG.EXCEL_EQUIPMENT_HEADER],
       [`ข้อมูล ณ วันที่: ${todayFormatted}       ปีงบประมาณ: ${currentYearBE}       ผู้จัดทำรายงาน: ${officerName}`],
       [],
       [
@@ -187,11 +188,11 @@ export default function ReportsPage() {
         row.brand || row.model ? `${row.brand || ''} ${row.model || ''}`.trim() : '-',
         row.serialNumber || '-',
         formatDateThaiYear(row.receivedDate),
-        row.location || 'ศูนย์ฝึกทักษะการพยาบาล',
+        row.location || ORG_CONFIG.CUSTODIAN_UNIT_NAME,
         Number(row.cost) || 0,
         conditionTh,
         statusTh,
-        'ศูนย์ฝึกทักษะการพยาบาล คณะพยาบาลศาสตร์',
+        ORG_CONFIG.FULL_CUSTODIAN_LABEL,
         row.status === 'BORROWED' ? 'นิสิตยืมฝึกปฏิบัติการ' : '-',
       ]);
     });
@@ -311,7 +312,7 @@ export default function ReportsPage() {
 
     const rows: any[][] = [
       ['บัญชีคุมวัสดุสิ้นเปลืองและเวชภัณฑ์ทางการพยาบาล (Stock Inventory Report)'],
-      ['ส่วนราชการ: คณะพยาบาลศาสตร์       หน่วยงานผู้ครอบครอง: ศูนย์ฝึกทักษะการพยาบาล (Nursing Lab)       ประเภท: วัสดุการแพทย์และเวชภัณฑ์สิ้นเปลือง'],
+      [ORG_CONFIG.EXCEL_CONSUMABLE_HEADER],
       [`ข้อมูล ณ วันที่: ${todayFormatted}       ปีงบประมาณ: ${currentYearBE}       ผู้จัดทำรายงาน: ${officerName}`],
       [],
       [

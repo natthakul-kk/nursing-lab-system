@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
@@ -14,6 +14,7 @@ import {
   Copy,
   ExternalLink,
 } from 'lucide-react';
+import { ORG_CONFIG } from '@/lib/constants/organization';
 
 interface PrintItem {
   id: string;
@@ -261,7 +262,7 @@ export default function CabinetQrPrintModal({
                     >
                       <div className="text-center border-b-2 border-teal-800 pb-3">
                         <div className="text-[11px] font-bold tracking-widest text-teal-700 uppercase">
-                          คณะพยาบาลศาสตร์ • ศูนย์ฝึกทักษะทางการพยาบาล
+                          {ORG_CONFIG.FACULTY_NAME} • {ORG_CONFIG.CUSTODIAN_UNIT_NAME}
                         </div>
                         <h2 className="text-xl font-black text-slate-900 mt-1">{item.name}</h2>
                         <div className="inline-block mt-1 font-mono text-sm font-black bg-teal-800 text-white px-3 py-0.5 rounded-lg">

@@ -33,6 +33,7 @@ import { useAuth } from '@/lib/auth-context';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { formatUserName, getRoleLabel } from '@/lib/user-utils';
 import { formatImageUrl } from '@/lib/image-helper';
+import { ORG_CONFIG } from '@/lib/constants/organization';
 
 export default function ExecutiveDashboardPage() {
   const { currentUser, isExecutive, isAdmin } = useAuth();
@@ -825,7 +826,7 @@ export default function ExecutiveDashboardPage() {
                     <strong>ห้องประจำ:</strong> {selectedAsset.roomName}
                   </p>
                   <p className="text-slate-500">
-                    <strong>หน่วยงานผู้ครอบครอง:</strong> ศูนย์ฝึกทักษะการพยาบาล คณะพยาบาลศาสตร์
+                    <strong>หน่วยงานผู้ครอบครอง:</strong> {ORG_CONFIG.FULL_CUSTODIAN_LABEL}
                   </p>
                 </div>
               </div>

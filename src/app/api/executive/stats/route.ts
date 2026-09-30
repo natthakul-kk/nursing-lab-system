@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { formatImageUrl } from '@/lib/image-helper';
+import { ORG_CONFIG } from '@/lib/constants/organization';
 
 export async function GET(req: Request) {
   try {
@@ -121,7 +122,7 @@ export async function GET(req: Request) {
 
     // Format equipment list for drill-down modal browser
     const equipmentList = assets.map((a) => {
-      const roomName = a.storageLocation?.room?.name || a.location || 'ศูนย์ฝึกทักษะการพยาบาล';
+      const roomName = a.storageLocation?.room?.name || a.location || ORG_CONFIG.CUSTODIAN_UNIT_NAME;
       const rawImageUrl =
         (a.imageUrl && a.imageUrl.trim()) || (a.item.imageUrl && a.item.imageUrl.trim()) || null;
 

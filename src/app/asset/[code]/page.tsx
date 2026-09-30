@@ -108,7 +108,7 @@ export default function PublicAssetPage() {
     );
   }
 
-  const photoUrl = formatImageUrl(asset.imageUrl);
+  const photoUrl = formatImageUrl(asset.imageUrl || asset.item?.imageUrl);
   const isAvailable = asset.status === 'AVAILABLE';
   const isBorrowed = asset.status === 'BORROWED';
   const isMaintenance = asset.status === 'MAINTENANCE';

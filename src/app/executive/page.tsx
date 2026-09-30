@@ -27,10 +27,12 @@ import {
   MapPin,
   Tag,
   Info,
+  ExternalLink,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { formatUserName, getRoleLabel } from '@/lib/user-utils';
+import { formatImageUrl } from '@/lib/image-helper';
 
 export default function ExecutiveDashboardPage() {
   const { currentUser, isExecutive, isAdmin } = useAuth();
@@ -42,6 +44,11 @@ export default function ExecutiveDashboardPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'AVAILABLE' | 'BORROWED' | 'MAINTENANCE' | 'DAMAGED'>('ALL');
   const [selectedAsset, setSelectedAsset] = useState<any | null>(null);
+  const [modalImageError, setModalImageError] = useState(false);
+
+  useEffect(() => {
+    setModalImageError(false);
+  }, [selectedAsset]);
 
   // Pagination for equipment drill-down table
   const [currentPage, setCurrentPage] = useState(1);
@@ -518,11 +525,20 @@ export default function ExecutiveDashboardPage() {
                         <div className="flex items-center gap-2.5">
                           {item.imageUrl ? (
                             <img
-                              src={item.imageUrl}
+                              src={formatImageUrl(item.imageUrl)}
                               alt={item.itemName}
                               className="w-8 h-8 rounded-lg object-cover border border-slate-200 dark:border-slate-700 shrink-0 shadow-xs"
                               onError={(e) => {
-                                (e.target as HTMLElement).style.display = 'none';
+                                const img = e.currentTarget;
+                                const rawUrl = item.rawImageUrl || item.imageUrl || '';
+                                if (rawUrl.includes('drive.google.com') && !img.src.includes('googleusercontent.com')) {
+                                  const m = rawUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || rawUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+                                  if (m && m[1]) {
+                                    img.src = `https://lh3.googleusercontent.com/d/${m[1]}`;
+                                    return;
+                                  }
+                                }
+                                img.style.display = 'none';
                               }}
                             />
                           ) : (
@@ -677,15 +693,57 @@ export default function ExecutiveDashboardPage() {
             <div className="p-5 overflow-y-auto space-y-4 text-xs">
               {/* Asset Photo */}
               {selectedAsset.imageUrl ? (
-                <div className="w-full h-48 sm:h-56 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-center p-2">
-                  <img
-                    src={selectedAsset.imageUrl}
-                    alt={selectedAsset.itemName}
-                    className="w-full h-full object-contain"
-                    onError={(e) => {
-                      (e.target as HTMLElement).style.display = 'none';
-                    }}
-                  />
+                <div className="relative w-full h-48 sm:h-56 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-center p-2 group">
+                  {modalImageError ? (
+                    <div className="flex flex-col items-center justify-center text-center p-4 text-slate-500">
+                      <AlertTriangle className="w-6 h-6 text-amber-500 mb-1.5" />
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                        ไม่สามารถแสดงรูปภาพตัวอย่างได้โดยตรง
+                      </span>
+                      <span className="text-[10px] text-slate-400 mt-0.5">
+                        (อาจเกิดจากสิทธิ์การแชร์ไฟล์ใน Google Drive หรือลิงก์ถูกจำกัดการเข้าถึง)
+                      </span>
+                      <a
+                        href={selectedAsset.rawImageUrl || selectedAsset.imageUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-3 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold transition shadow-xs cursor-pointer"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span>เปิดดูรูปภาพใน Google Drive</span>
+                      </a>
+                    </div>
+                  ) : (
+                    <>
+                      <img
+                        src={formatImageUrl(selectedAsset.imageUrl)}
+                        alt={selectedAsset.itemName}
+                        className="w-full h-full object-contain"
+                        onError={(e) => {
+                          const img = e.currentTarget;
+                          const rawUrl = selectedAsset.rawImageUrl || selectedAsset.imageUrl || '';
+                          if (rawUrl.includes('drive.google.com') && !img.src.includes('googleusercontent.com')) {
+                            const m = rawUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || rawUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+                            if (m && m[1]) {
+                              img.src = `https://lh3.googleusercontent.com/d/${m[1]}`;
+                              return;
+                            }
+                          }
+                          setModalImageError(true);
+                        }}
+                      />
+                      <a
+                        href={selectedAsset.rawImageUrl || selectedAsset.imageUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="absolute bottom-2.5 right-2.5 px-2.5 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-900 text-white text-[11px] font-semibold backdrop-blur-md transition flex items-center gap-1 shadow-md opacity-80 hover:opacity-100 cursor-pointer"
+                        title="เปิดดูรูปภาพต้นฉบับในแท็บใหม่"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span>ดูภาพต้นฉบับ</span>
+                      </a>
+                    </>
+                  )}
                 </div>
               ) : (
                 <div className="w-full py-6 rounded-2xl bg-slate-50 dark:bg-slate-950/40 border border-dashed border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center gap-1.5 text-slate-400">

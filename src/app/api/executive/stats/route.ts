@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { formatImageUrl } from '@/lib/image-helper';
 
 export async function GET(req: Request) {
   try {
@@ -121,6 +122,9 @@ export async function GET(req: Request) {
     // Format equipment list for drill-down modal browser
     const equipmentList = assets.map((a) => {
       const roomName = a.storageLocation?.room?.name || a.location || 'ศูนย์ฝึกทักษะการพยาบาล';
+      const rawImageUrl =
+        (a.imageUrl && a.imageUrl.trim()) || (a.item.imageUrl && a.item.imageUrl.trim()) || null;
+
       return {
         id: a.id,
         assetCode: a.assetCode,
@@ -138,7 +142,8 @@ export async function GET(req: Request) {
         categoryName: a.item.category?.name || 'ครุภัณฑ์',
         supplier: a.supplier || '-',
         warrantyExpiry: a.warrantyExpiry ? a.warrantyExpiry.toISOString() : null,
-        imageUrl: a.imageUrl || a.item.imageUrl || null,
+        imageUrl: rawImageUrl ? formatImageUrl(rawImageUrl) : null,
+        rawImageUrl: rawImageUrl,
       };
     });
 

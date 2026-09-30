@@ -22,6 +22,7 @@ interface AssetQrModalProps {
       name: string;
       code: string;
       unit: string;
+      imageUrl?: string | null;
     };
   };
   itemName?: string;
@@ -494,7 +495,7 @@ export default function AssetQrModal({ asset, itemName, itemUnit, onClose }: Ass
     printWindow.document.close();
   };
 
-  const formattedImg = formatImageUrl(asset.imageUrl);
+  const formattedImg = formatImageUrl(asset.imageUrl || asset.item?.imageUrl);
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">

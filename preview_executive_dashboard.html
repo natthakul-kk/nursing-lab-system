@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ตัวอย่างแดชบอร์ดผู้บริหาร (Executive Decision Analytics Cockpit)</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Sarabun', sans-serif;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .glass-card {
+      backdrop-filter: blur(12px);
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen p-3 sm:p-6 transition-colors duration-200" id="bodyRoot">
+
+  <!-- TOP BAR & SIMULATOR CONTROLS -->
+  <div class="max-w-7xl mx-auto mb-6 bg-slate-800/90 border border-teal-500/30 rounded-3xl p-4 shadow-xl flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-2xl bg-teal-500/20 text-teal-400 flex items-center justify-center font-black text-lg border border-teal-500/30">
+        📊
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="font-extrabold text-sm text-white">ตัวอย่างจำลองหน้าจอจริง (Executive Analytics Prototype)</span>
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+            5 กราฟตัดสินใจเชิงยุทธศาสตร์
+          </span>
+        </div>
+        <p class="text-xs text-slate-400">
+          ศูนย์การเรียนรู้ปฏิบัติการทางการพยาบาลเสมือนจริง คณะพยาบาลศาสตร์
+        </p>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="flex items-center gap-3">
+      <!-- Theme Switch -->
+      <button onclick="toggleTheme()" id="themeBtn" class="px-3.5 py-1.5 rounded-xl font-bold text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition flex items-center gap-1.5 cursor-pointer">
+        <span id="themeIcon">☀️</span>
+        <span id="themeLabel">โหมดสว่าง</span>
+      </button>
+
+      <!-- Month Selector -->
+      <div class="flex items-center gap-1.5 bg-slate-950/60 px-3 py-1.5 rounded-xl border border-slate-700 text-xs">
+        <span class="text-slate-400">เดือน:</span>
+        <select id="monthSelect" onchange="updateData()" class="bg-transparent font-bold text-teal-300 outline-none cursor-pointer">
+          <option value="10" class="text-slate-900" selected>ตุลาคม 2569 (ปัจจุบัน)</option>
+          <option value="9" class="text-slate-900">กันยายน 2569</option>
+          <option value="8" class="text-slate-900">สิงหาคม 2569</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN DASHBOARD WRAPPER -->
+  <div class="max-w-7xl mx-auto space-y-6">
+
+    <!-- 1. HEADER BANNER -->
+    <div class="rounded-3xl p-6 bg-gradient-to-r from-teal-800 via-teal-900 to-slate-950 border border-teal-700/40 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 text-white">
+      <div>
+        <div class="flex items-center gap-2 mb-1">
+          <span class="px-2.5 py-0.5 rounded-md bg-teal-500/30 text-teal-200 text-[11px] font-bold border border-teal-400/30">
+            EXECUTIVE DASHBOARD
+          </span>
+          <span class="text-xs text-teal-200/80">
+            ประจำเดือน <span id="headerMonthLabel" class="font-bold text-white">ตุลาคม 2569</span>
+          </span>
+        </div>
+        <h1 class="text-xl sm:text-2xl font-black tracking-tight">
+          แดชบอร์ดผู้บริหารและวิเคราะห์เชิงกลยุทธ์
+        </h1>
+        <p class="text-xs text-teal-100/70 mt-0.5">
+          ศูนย์การเรียนรู้ปฏิบัติการทางการพยาบาลเสมือนจริง • มหาวิทยาลัยนเรศวร
+        </p>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <div class="bg-white/10 px-4 py-2 rounded-2xl border border-white/15 backdrop-blur-md text-right">
+          <span class="text-[10px] text-teal-200 block">ผู้เข้าใช้งาน</span>
+          <span class="text-xs font-bold text-white">รศ.ดร. นันทิกร (ผู้บริหาร)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. STRATEGIC METRIC CARDS (4 KPIs) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <!-- Card 1 -->
+      <div class="stat-card bg-slate-800/80 border border-slate-700/80 rounded-3xl p-5 shadow-sm">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">มูลค่าครุภัณฑ์รวม</span>
+          <div class="w-9 h-9 rounded-2xl bg-teal-500/20 text-teal-400 flex items-center justify-center font-bold text-sm">
+            ฿
+          </div>
+        </div>
+        <div class="text-2xl font-black text-white mt-2 font-mono">฿14.85M</div>
+        <div class="flex items-center justify-between text-xs mt-2 pt-2 border-t border-slate-700/50">
+          <span class="text-slate-400">อัตราพร้อมใช้งาน</span>
+          <span class="font-bold text-emerald-400">97.8% (เกณฑ์ดีเยี่ยม)</span>
+        </div>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="stat-card bg-slate-800/80 border border-slate-700/80 rounded-3xl p-5 shadow-sm">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">สถานะครุภัณฑ์ในระบบ</span>
+          <div class="w-9 h-9 rounded-2xl bg-blue-500/20 text-blue-400 flex items-center justify-center text-sm font-bold">
+            📦
+          </div>
+        </div>
+        <div class="text-2xl font-black text-white mt-2 font-mono">373 <span class="text-xs font-normal text-slate-400">ชิ้น</span></div>
+        <div class="flex items-center justify-between text-xs mt-2 pt-2 border-t border-slate-700/50">
+          <span class="text-emerald-400 font-medium">พร้อมใช้ 365</span>
+          <span class="text-amber-400 font-medium">ถูกยืม 6</span>
+          <span class="text-rose-400 font-bold">ส่งซ่อม 2</span>
+        </div>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="stat-card bg-slate-800/80 border border-slate-700/80 rounded-3xl p-5 shadow-sm">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">ชั่วโมงเปิดแอร์รวม</span>
+          <div class="w-9 h-9 rounded-2xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-sm font-bold">
+            ❄️
+          </div>
+        </div>
+        <div class="text-2xl font-black text-cyan-300 mt-2 font-mono">324.5 <span class="text-xs font-normal text-slate-400">ชม.</span></div>
+        <div class="flex items-center justify-between text-xs mt-2 pt-2 border-t border-slate-700/50">
+          <span class="text-slate-400">เพื่อถนอมรักษาหุ่น</span>
+          <span class="font-bold text-cyan-400">186.0 ชม. (57.3%)</span>
+        </div>
+      </div>
+
+      <!-- Card 4 -->
+      <div class="stat-card bg-slate-800/80 border border-slate-700/80 rounded-3xl p-5 shadow-sm">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">ชั่วโมงฝึกของนิสิต</span>
+          <div class="w-9 h-9 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-sm font-bold">
+            🎓
+          </div>
+        </div>
+        <div class="text-2xl font-black text-indigo-300 mt-2 font-mono">1,420 <span class="text-xs font-normal text-slate-400">ชม.-คน</span></div>
+        <div class="flex items-center justify-between text-xs mt-2 pt-2 border-t border-slate-700/50">
+          <span class="text-slate-400">ฝึกนอกเวลา (Self-Study)</span>
+          <span class="font-bold text-indigo-400">540 ชม. (38.0%)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. ROW 1: CAPITAL ALLOCATION & READINESS MATRIX -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      
+      <!-- CHART 1: Donut Chart - Asset Valuation by Category -->
+      <div class="chart-container lg:col-span-7 bg-slate-800/80 border border-slate-700/80 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
+        <div>
+          <div class="flex items-start justify-between gap-3 mb-1">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-teal-400"></span>
+                <h3 class="text-base font-black text-white">
+                  1. สัดส่วนมูลค่าการลงทุนในครุภัณฑ์แยกตามหมวดหมู่
+                </h3>
+              </div>
+              <p class="text-xs text-slate-400 mt-0.5">
+                พอร์ตสินทรัพย์รวม ฿14.85 ล้านบาท (373 ชิ้น)
+              </p>
+            </div>
+            <span class="px-2.5 py-1 rounded-xl bg-teal-500/20 text-teal-300 text-[11px] font-bold border border-teal-500/30">
+              Donut Chart
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center my-4">
+            <div class="md:col-span-6 h-60 relative flex items-center justify-center">
+              <canvas id="categoryDonutChart"></canvas>
+            </div>
+            <div class="md:col-span-6 space-y-2 text-xs">
+              <div class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-700/60 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-md bg-purple-500"></span>
+                  <span class="font-bold text-slate-200">หุ่นจำลองเสมือนจริง (AI/Sim)</span>
+                </div>
+                <span class="font-mono font-bold text-purple-400">฿8.20M (55.2%)</span>
+              </div>
+              <div class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-700/60 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-md bg-cyan-500"></span>
+                  <span class="font-bold text-slate-200">อุปกรณ์ช่วยชีวิต/ฉุกเฉิน (CPR/AED)</span>
+                </div>
+                <span class="font-mono font-bold text-cyan-400">฿2.65M (17.8%)</span>
+              </div>
+              <div class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-700/60 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-md bg-teal-500"></span>
+                  <span class="font-bold text-slate-200">เตียงและเฟอร์นิเจอร์แล็บ</span>
+                </div>
+                <span class="font-mono font-bold text-teal-400">฿1.95M (13.1%)</span>
+              </div>
+              <div class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-700/60 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-md bg-amber-500"></span>
+                  <span class="font-bold text-slate-200">เครื่องมือตรวจรักษา (Riester/Omron)</span>
+                </div>
+                <span class="font-mono font-bold text-amber-400">฿1.15M (7.7%)</span>
+              </div>
+              <div class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-700/60 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-md bg-blue-500"></span>
+                  <span class="font-bold text-slate-200">จอแสดงผลและระบบ IT</span>
+                </div>
+                <span class="font-mono font-bold text-blue-400">฿0.90M (6.2%)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Decision Insight Box -->
+        <div class="p-3.5 rounded-2xl bg-teal-950/40 border border-teal-500/30 text-xs text-teal-200 flex items-start gap-2.5">
+          <span class="text-base">💡</span>
+          <div>
+            <strong class="font-bold text-teal-100">สิ่งที่ช่วยตัดสินใจเชิงนโยบาย:</strong>
+            งบประมาณกว่า 55% จมอยู่กับหุ่น Simulator เสมือนจริง (SimMan, AI) ผู้บริหารควรจัดสรรงบทำสัญญาบำรุงรักษาเชิงรุก (Preventive Maintenance) และประกันภัยคุ้มครองกลุ่มนี้เป็นลำดับแรก
+          </div>
+        </div>
+      </div>
+
+      <!-- CHART 2: Gauge / Readiness Breakdown Matrix -->
+      <div class="chart-container lg:col-span-5 bg-slate-800/80 border border-slate-700/80 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
+        <div>
+          <div class="flex items-start justify-between gap-3 mb-1">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                <h3 class="text-base font-black text-white">
+                  2. ดัชนีความพร้อมใช้งานครุภัณฑ์
+                </h3>
+              </div>
+              <p class="text-xs text-slate-400 mt-0.5">
+                ติดตามสุขภาวะครุภัณฑ์เพื่อวางแผนจัดซื้อทดแทน
+              </p>
+            </div>
+            <span class="px-2.5 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 text-[11px] font-bold border border-emerald-500/30">
+              Readiness KPI
+            </span>
+          </div>
+
+          <div class="my-5 space-y-4">
+            <!-- Overall Progress Bar -->
+            <div>
+              <div class="flex items-center justify-between text-xs font-bold mb-1.5">
+                <span class="text-slate-300">ความพร้อมใช้งานรวม (Target &gt; 90%)</span>
+                <span class="text-emerald-400 font-mono text-sm">97.85%</span>
+              </div>
+              <div class="w-full h-4 bg-slate-900 rounded-full overflow-hidden flex border border-slate-700">
+                <div style="width: 97.85%" class="bg-gradient-to-r from-teal-500 to-emerald-400"></div>
+                <div style="width: 1.6%" class="bg-amber-400"></div>
+                <div style="width: 0.55%" class="bg-rose-500"></div>
+              </div>
+            </div>
+
+            <!-- Health Breakdown Categories -->
+            <div class="space-y-2.5 pt-2 text-xs">
+              <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-900/60 border border-slate-700/60">
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                  <span class="font-bold text-slate-200">พร้อมใช้งานทันที (Available)</span>
+                </div>
+                <span class="font-mono font-bold text-emerald-400">365 ชิ้น (97.85%)</span>
+              </div>
+
+              <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-900/60 border border-slate-700/60">
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+                  <span class="font-bold text-slate-200">อยู่ระหว่างการยืมสอน/สอบ (In Use)</span>
+                </div>
+                <span class="font-mono font-bold text-amber-400">6 ชิ้น (1.61%)</span>
+              </div>
+
+              <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-900/60 border border-slate-700/60">
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                  <span class="font-bold text-slate-200">ส่งซ่อมบำรุง / รออะไหล่ (Repair)</span>
+                </div>
+                <span class="font-mono font-bold text-rose-400">2 ชิ้น (0.54%)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Decision Insight Box -->
+        <div class="p-3.5 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 text-xs text-emerald-200 flex items-start gap-2.5">
+          <span class="text-base">💡</span>
+          <div>
+            <strong class="font-bold text-emerald-100">สิ่งที่ช่วยตัดสินใจเชิงนโยบาย:</strong>
+            อัตราความพร้อม 97.8% อยู่ในเกณฑ์ดีเยี่ยม รายการส่งซ่อม 2 ชิ้น (หุ่นฝึกฉีดยา 1 ชิ้น, เครื่องวัดความดัน 1 ชิ้น) อยู่ในระยะเวลาประกัน ไม่จำเป็นต้องตั้งงบซื้อทดแทนฉุกเฉิน
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 4. ROW 2: LAB SPACE UTILIZATION (PURPOSE BREAKDOWN) -->
+    <div class="chart-container bg-slate-800/80 border border-slate-700/80 rounded-3xl p-6 shadow-sm space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-indigo-400"></span>
+            <h3 class="text-base font-black text-white">
+              3. สถิติชั่วโมงการใช้งานห้องปฏิบัติการ 8 ห้อง แยกตามวัตถุประสงค์
+            </h3>
+          </div>
+          <p class="text-xs text-slate-400 mt-0.5">
+            สะท้อนความคุ้มค่าของการใช้พื้นที่ระหว่าง "การสอนตามตารางวิชา" vs "นิสิตจองฝึกทักษะอิสระ" vs "การสอบ OSCE"
+          </p>
+        </div>
+
+        <!-- Custom Legend -->
+        <div class="flex items-center gap-3 text-xs">
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-sm bg-blue-500"></span>
+            <span class="text-slate-300">การสอนตามตารางวิชา</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-sm bg-emerald-500"></span>
+            <span class="text-slate-300 font-bold text-emerald-300">นิสิตจองฝึกอิสระ</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-sm bg-amber-500"></span>
+            <span class="text-slate-300">การสอบประเมิน/OSCE</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="h-72 w-full">
+        <canvas id="labUtilizationChart"></canvas>
+      </div>
+
+      <!-- Decision Insight Box -->
+      <div class="p-3.5 rounded-2xl bg-indigo-950/40 border border-indigo-500/30 text-xs text-indigo-200 flex items-start gap-2.5">
+        <span class="text-base">💡</span>
+        <div>
+          <strong class="font-bold text-indigo-100">สิ่งที่ช่วยตัดสินใจเชิงนโยบาย:</strong>
+          ห้อง Lab 301 และ Lab 304 มีสถิตินิสิตจองฝึกทักษะด้วยตนเองสูงกว่า 65 ชั่วโมง/เดือน สะท้อนว่านิสิตต้องการพื้นที่ฝึกทักษะเชิงลึก ผู้บริหารควรพิจารณาอนุมัติเปิดห้องแล็บช่วงเย็น (16:30 - 20:00 น.) เพื่อสนับสนุนการเรียนรู้ของนิสิตอย่างเต็มศักยภาพ
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. ROW 3: TOP DEMAND EQUIPMENT & AC CLIMATE COMPARISON -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      <!-- CHART 4: Top 5 High-Demand Equipment (Horizontal Bar) -->
+      <div class="chart-container lg:col-span-6 bg-slate-800/80 border border-slate-700/80 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
+        <div>
+          <div class="flex items-start justify-between gap-3 mb-1">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+                <h3 class="text-base font-black text-white">
+                  4. 5 อันดับครุภัณฑ์ที่มีความต้องการยืมสูงสุด (Top Demand)
+                </h3>
+              </div>
+              <p class="text-xs text-slate-400 mt-0.5">
+                ชี้เป้าจุดคอขวด (Bottleneck) ที่นิสิตแย่งกันยืมมากที่สุด
+              </p>
+            </div>
+            <span class="px-2.5 py-1 rounded-xl bg-amber-500/20 text-amber-300 text-[11px] font-bold border border-amber-500/30">
+              High Demand
+            </span>
+          </div>
+
+          <div class="h-64 my-3">
+            <canvas id="topDemandChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Decision Insight Box -->
+        <div class="p-3.5 rounded-2xl bg-amber-950/40 border border-amber-500/30 text-xs text-amber-200 flex items-start gap-2.5">
+          <span class="text-base">💡</span>
+          <div>
+            <strong class="font-bold text-amber-100">สิ่งที่ช่วยตัดสินใจเชิงนโยบาย:</strong>
+            "เครื่อง AED สาธิต (ZOLL)" และ "หุ่นแขนฝึกฉีดยา (Nasco)" มีชั่วโมงการยืมสะสมเกิน 120 ชม. และมีคิวรอนิสิตฝึกซ้อมหนาแน่น ผู้บริหารสามารถอนุมัติงบจัดซื้อเพิ่ม 2-3 ชุดในการจัดทำคำของบประมาณรอบถัดไปได้อย่างคุ้มค่า
+          </div>
+        </div>
+      </div>
+
+      <!-- CHART 5: AC Hours: Teaching vs Asset Climate Preservation -->
+      <div class="chart-container lg:col-span-6 bg-slate-800/80 border border-slate-700/80 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
+        <div>
+          <div class="flex items-start justify-between gap-3 mb-1">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span>
+                <h3 class="text-base font-black text-white">
+                  5. สถิติชั่วโมงแอร์: การสอน vs การถนอมรักษาอุปกรณ์
+                </h3>
+              </div>
+              <p class="text-xs text-slate-400 mt-0.5">
+                ติดตามนโยบาย Green Lab และความคุ้มค่าของการใช้พลังงาน
+              </p>
+            </div>
+            <span class="px-2.5 py-1 rounded-xl bg-cyan-500/20 text-cyan-300 text-[11px] font-bold border border-cyan-500/30">
+              Energy Analytics
+            </span>
+          </div>
+
+          <div class="h-64 my-3">
+            <canvas id="acComparisonChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Decision Insight Box -->
+        <div class="p-3.5 rounded-2xl bg-cyan-950/40 border border-cyan-500/30 text-xs text-cyan-200 flex items-start gap-2.5">
+          <span class="text-base">💡</span>
+          <div>
+            <strong class="font-bold text-cyan-100">สิ่งที่ช่วยตัดสินใจเชิงนโยบาย:</strong>
+            ห้อง SIM MAN และห้องเก็บครุภัณฑ์กลาง มีสัดส่วนเปิดแอร์เพื่อรักษาอุณหภูมิผิวซิลิโคนหุ่นสูงถึง 70% ควรพิจารณาปรับรอบเวลาเปิด-ปิดอัตโนมัติ (Timer Control) หรือรวมศูนย์อุปกรณ์คุมอุณหภูมิ เพื่อลดค่าไฟคณะได้กว่า 15-20% ต่อเดือน
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- SCRIPT FOR CHARTS & INTERACTIVE BEHAVIORS -->
+  <script>
+    let isDarkMode = true;
+    let categoryChart, labChart, topDemandChart, acChart;
+
+    // Theme Toggle Function
+    function toggleTheme() {
+      isDarkMode = !isDarkMode;
+      const body = document.getElementById('bodyRoot');
+      const themeBtn = document.getElementById('themeBtn');
+      const themeIcon = document.getElementById('themeIcon');
+      const themeLabel = document.getElementById('themeLabel');
+
+      if (!isDarkMode) {
+        body.classList.remove('bg-slate-900', 'text-slate-100');
+        body.classList.add('bg-slate-100', 'text-slate-800');
+        
+        document.querySelectorAll('.stat-card, .chart-container').forEach(el => {
+          el.classList.remove('bg-slate-800/80', 'border-slate-700/80');
+          el.classList.add('bg-white', 'border-slate-200', 'shadow-md');
+        });
+
+        themeIcon.innerText = '🌙';
+        themeLabel.innerText = 'โหมดมืด';
+        themeBtn.classList.remove('bg-slate-700', 'text-slate-200', 'border-slate-600');
+        themeBtn.classList.add('bg-slate-200', 'text-slate-800', 'border-slate-300');
+      } else {
+        body.classList.remove('bg-slate-100', 'text-slate-800');
+        body.classList.add('bg-slate-900', 'text-slate-100');
+
+        document.querySelectorAll('.stat-card, .chart-container').forEach(el => {
+          el.classList.remove('bg-white', 'border-slate-200', 'shadow-md');
+          el.classList.add('bg-slate-800/80', 'border-slate-700/80');
+        });
+
+        themeIcon.innerText = '☀️';
+        themeLabel.innerText = 'โหมดสว่าง';
+        themeBtn.classList.remove('bg-slate-200', 'text-slate-800', 'border-slate-300');
+        themeBtn.classList.add('bg-slate-700', 'text-slate-200', 'border-slate-600');
+      }
+
+      // Re-render charts with updated grid lines
+      renderAllCharts();
+    }
+
+    function updateData() {
+      const monthSelect = document.getElementById('monthSelect');
+      const label = monthSelect.options[monthSelect.selectedIndex].text;
+      document.getElementById('headerMonthLabel').innerText = label.split(' ')[0] + ' 2569';
+      renderAllCharts();
+    }
+
+    function renderAllCharts() {
+      const textColor = isDarkMode ? '#94a3b8' : '#64748b';
+      const gridColor = isDarkMode ? 'rgba(51, 65, 85, 0.4)' : 'rgba(226, 232, 240, 0.8)';
+
+      // 1. Category Donut Chart
+      if (categoryChart) categoryChart.destroy();
+      const ctxCat = document.getElementById('categoryDonutChart').getContext('2d');
+      categoryChart = new Chart(ctxCat, {
+        type: 'doughnut',
+        data: {
+          labels: ['หุ่นจำลองเสมือนจริง', 'อุปกรณ์กู้ชีพ/CPR', 'เตียง/เฟอร์นิเจอร์', 'เครื่องมือตรวจรักษา', 'จอและระบบ IT'],
+          datasets: [{
+            data: [8200000, 2650000, 1950000, 1150000, 900000],
+            backgroundColor: ['#a855f7', '#06b6d4', '#14b8a6', '#f59e0b', '#3b82f6'],
+            borderWidth: isDarkMode ? 3 : 2,
+            borderColor: isDarkMode ? '#1e293b' : '#ffffff',
+            hoverOffset: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '72%',
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(c) {
+                  return ' ' + c.label + ': ฿' + (c.raw / 1000000).toFixed(2) + 'M (' + ((c.raw / 14850000) * 100).toFixed(1) + '%)';
+                }
+              }
+            }
+          }
+        }
+      });
+
+      // 2. Lab Utilization (Stacked Bar Chart)
+      if (labChart) labChart.destroy();
+      const ctxLab = document.getElementById('labUtilizationChart').getContext('2d');
+      labChart = new Chart(ctxLab, {
+        type: 'bar',
+        data: {
+          labels: ['Lab 301', 'Lab 302', 'Lab 303', 'Lab 304', 'Lab 305', 'ห้อง SIM MAN', 'ห้องฝึกหัตถการ', 'ห้อง ICU จำลอง'],
+          datasets: [
+            {
+              label: 'การสอนตามตารางวิชา (ชม.)',
+              data: [42, 38, 28, 45, 30, 22, 35, 18],
+              backgroundColor: '#3b82f6',
+              borderRadius: 4
+            },
+            {
+              label: 'นิสิตจองฝึกอิสระ (ชม.)',
+              data: [65, 48, 32, 60, 25, 30, 52, 28],
+              backgroundColor: '#10b981',
+              borderRadius: 4
+            },
+            {
+              label: 'การสอบประเมิน/OSCE (ชม.)',
+              data: [15, 12, 8, 16, 10, 20, 14, 15],
+              backgroundColor: '#f59e0b',
+              borderRadius: 4
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              stacked: true,
+              grid: { display: false },
+              ticks: { color: textColor, font: { family: 'Sarabun', size: 11, weight: 600 } }
+            },
+            y: {
+              stacked: true,
+              grid: { color: gridColor },
+              ticks: { color: textColor, font: { family: 'JetBrains Mono', size: 11 } }
+            }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                afterBody: function(items) {
+                  let sum = 0;
+                  items.forEach(i => sum += i.raw);
+                  return '\nรวมใช้งานทั้งสิ้น: ' + sum + ' ชม./เดือน';
+                }
+              }
+            }
+          }
+        }
+      });
+
+      // 3. Top Demand Equipment (Horizontal Bar)
+      if (topDemandChart) topDemandChart.destroy();
+      const ctxTop = document.getElementById('topDemandChart').getContext('2d');
+      topDemandChart = new Chart(ctxTop, {
+        type: 'bar',
+        indexAxis: 'y',
+        data: {
+          labels: [
+            'เครื่อง AED สาธิต (ZOLL)',
+            'หุ่นแขนฝึกฉีดยา (Nasco)',
+            'หุ่น CPR ผู้ใหญ่ (Amoul)',
+            'ชุดตรวจหูตรวจตา (Riester)',
+            'เครื่องวัดความดัน (Omron)'
+          ],
+          datasets: [{
+            label: 'ชั่วโมงการยืมสะสม (ชม.)',
+            data: [142, 128, 98, 86, 75],
+            backgroundColor: [
+              '#f59e0b',
+              '#f97316',
+              '#06b6d4',
+              '#14b8a6',
+              '#3b82f6'
+            ],
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              grid: { color: gridColor },
+              ticks: { color: textColor, font: { family: 'JetBrains Mono', size: 11 } }
+            },
+            y: {
+              grid: { display: false },
+              ticks: { color: textColor, font: { family: 'Sarabun', size: 11, weight: 600 } }
+            }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(c) {
+                  return ' ถูกยืมใช้งานทั้งสิ้น: ' + c.raw + ' ชั่วโมง (คอขวดสูง)';
+                }
+              }
+            }
+          }
+        }
+      });
+
+      // 4. AC Hours Comparison (Grouped Bar)
+      if (acChart) acChart.destroy();
+      const ctxAc = document.getElementById('acComparisonChart').getContext('2d');
+      acChart = new Chart(ctxAc, {
+        type: 'bar',
+        data: {
+          labels: ['ห้อง SIM MAN', 'ห้องเก็บครุภัณฑ์', 'Lab 301', 'Lab 302', 'Lab 304', 'ห้อง ICU จำลอง'],
+          datasets: [
+            {
+              label: 'เปิดเพื่อการเรียนการสอน (ชม.)',
+              data: [25, 12, 58, 46, 52, 28],
+              backgroundColor: '#38bdf8',
+              borderRadius: 6
+            },
+            {
+              label: 'เปิดเพื่อถนอมรักษาหุ่น/อุปกรณ์ (ชม.)',
+              data: [68, 62, 10, 8, 12, 26],
+              backgroundColor: '#10b981',
+              borderRadius: 6
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { color: textColor, font: { family: 'Sarabun', size: 11, weight: 600 } }
+            },
+            y: {
+              grid: { color: gridColor },
+              ticks: { color: textColor, font: { family: 'JetBrains Mono', size: 11 } }
+            }
+          },
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top',
+              labels: {
+                color: textColor,
+                font: { family: 'Sarabun', size: 11, weight: 600 },
+                boxWidth: 12,
+                boxHeight: 12
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Initialize on load
+    window.addEventListener('DOMContentLoaded', () => {
+      renderAllCharts();
+    });
+  </script>
+</body>
+</html>

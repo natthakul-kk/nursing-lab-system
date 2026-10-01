@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ตัวอย่างแดชบอร์ดผู้บริหาร (Executive Decision Analytics Cockpit)</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
   <script>
-    window.tailwind = {
+    tailwind.config = {
       darkMode: 'class'
     };
   </script>
-  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
@@ -184,6 +184,10 @@
           <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center my-4">
             <div class="md:col-span-6 h-60 relative flex items-center justify-center">
               <canvas id="categoryDonutChart"></canvas>
+              <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+                <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400">มูลค่ารวม</span>
+                <span class="text-xl font-black text-slate-900 dark:text-white font-mono">฿14.85M</span>
+              </div>
             </div>
             <div class="md:col-span-6 space-y-2 text-xs">
               <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700/60 flex items-center justify-between">
@@ -468,9 +472,9 @@
 
     function renderAllCharts() {
       const isDark = document.documentElement.classList.contains('dark');
-      const textColor = isDark ? '#94a3b8' : '#475569';
+      const textColor = isDark ? '#94a3b8' : '#334155';
       const headingColor = isDark ? '#f8fafc' : '#0f172a';
-      const gridColor = isDark ? 'rgba(51, 65, 85, 0.4)' : 'rgba(226, 232, 240, 0.9)';
+      const gridColor = isDark ? 'rgba(51, 65, 85, 0.4)' : 'rgba(203, 213, 225, 0.7)';
 
       // 1. Category Donut Chart
       if (categoryChart) categoryChart.destroy();

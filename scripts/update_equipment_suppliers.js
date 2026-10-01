@@ -3,6 +3,9 @@ const prisma = new PrismaClient();
 const xlsx = require('xlsx');
 const path = require('path');
 
+const UPRIGHT_NAME = 'บริษัท อัพไรท์ ซิมมูเลชั่น จำกัด';
+const FOUR_DEM_NAME = '4DEM';
+
 async function main() {
   console.log('=== Starting Equipment Supplier Update ===');
 
@@ -25,9 +28,9 @@ async function main() {
   });
   console.log(`Total equipment assets in DB: ${allAssets.length}`);
 
-  const group164 = []; // In ERP with seller
-  const group71 = [];  // In ERP with empty seller -> set to "4DEM"
-  const group138 = []; // Not in ERP -> clear to null
+  const group164 = []; // In ERP with seller -> UPRIGHT
+  const group71 = [];  // In ERP with empty seller (FT) -> 4DEM
+  const group138 = []; // Not in ERP (FA) -> UPRIGHT
 
   for (const a of allAssets) {
     const code = cleanCode(a.govAssetCode);
@@ -46,34 +49,26 @@ async function main() {
 
   console.log(`Group 164 (ERP with Upright): ${group164.length}`);
   console.log(`Group 71 (ERP with empty seller -> 4DEM): ${group71.length}`);
-  console.log(`Group 138 (Not in ERP -> FA items -> clear null): ${group138.length}`);
+  console.log(`Group 138 (Not in ERP -> Upright Simulation): ${group138.length}`);
 
-  // 3. Update DB
-  // Group 71 -> 4DEM
-  console.log('\nUpdating Group 71 to "4DEM"...');
-  for (const a of group71) {
-    await prisma.equipmentAsset.update({
-      where: { id: a.id },
-      data: { supplier: '4DEM' }
-    });
-  }
+  // 3. Batch Update DB using updateMany where possible or loop
+  console.log(`\nUpdating Group 71 to "${FOUR_DEM_NAME}"...`);
+  await prisma.equipmentAsset.updateMany({
+    where: { id: { in: group71.map(a => a.id) } },
+    data: { supplier: FOUR_DEM_NAME }
+  });
 
-  // Group 138 -> null (clearing erroneous upright simulation)
-  console.log('Clearing Group 138 to null (unspecified)...');
-  for (const a of group138) {
-    await prisma.equipmentAsset.update({
-      where: { id: a.id },
-      data: { supplier: null }
-    });
-  }
+  console.log(`Updating Group 138 to "${UPRIGHT_NAME}"...`);
+  await prisma.equipmentAsset.updateMany({
+    where: { id: { in: group138.map(a => a.id) } },
+    data: { supplier: UPRIGHT_NAME }
+  });
 
-  // Group 164 -> ensure it has "บริษัท อัพไรท์ ซิมมูเลชั่น  จำกัด"
-  for (const a of group164) {
-    await prisma.equipmentAsset.update({
-      where: { id: a.id },
-      data: { supplier: 'บริษัท อัพไรท์ ซิมมูเลชั่น  จำกัด' }
-    });
-  }
+  console.log(`Updating Group 164 to "${UPRIGHT_NAME}"...`);
+  await prisma.equipmentAsset.updateMany({
+    where: { id: { in: group164.map(a => a.id) } },
+    data: { supplier: UPRIGHT_NAME }
+  });
 
   console.log('Database update completed.');
 
@@ -94,27 +89,38 @@ async function main() {
       const seller = erp['ชื่อผู้ขาย'] ? String(erp['ชื่อผู้ขาย']).trim() : '';
       if (seller) {
         excel164Count++;
-        row['ผู้จัดจำหน่าย (Supplier)'] = 'บริษัท อัพไรท์ ซิมมูเลชั่น  จำกัด';
+        row['ผู้จัดจำหน่าย (Supplier)'] = UPRIGHT_NAME;
       } else {
         excel71Count++;
-        row['ผู้จัดจำหน่าย (Supplier)'] = '4DEM';
+        row['ผู้จัดจำหน่าย (Supplier)'] = FOUR_DEM_NAME;
       }
     } else {
       excel138Count++;
-      row['ผู้จัดจำหน่าย (Supplier)'] = '';
+      row['ผู้จัดจำหน่าย (Supplier)'] = UPRIGHT_NAME;
     }
     return row;
   });
 
   console.log(`\nExcel template rows updated:`);
-  console.log(`- Upright Simulation: ${excel164Count}`);
-  console.log(`- 4DEM: ${excel71Count}`);
-  console.log(`- Cleared to empty: ${excel138Count}`);
+  console.log(`- Upright Simulation (164 in ERP): ${excel164Count}`);
+  console.log(`- Upright Simulation (138 FA): ${excel138Count}`);
+  console.log(`- 4DEM (71 FT): ${excel71Count}`);
+  console.log(`- Total Upright Simulation: ${excel164Count + excel138Count}`);
 
   const newSheet = xlsx.utils.json_to_sheet(updatedRows);
   wbTemplate.Sheets[sheetName] = newSheet;
-  xlsx.writeFile(wbTemplate, templatePath);
-  console.log(`Excel template saved to ${templatePath}`);
+  try {
+    xlsx.writeFile(wbTemplate, templatePath);
+    console.log(`Excel template saved to ${templatePath}`);
+  } catch (err) {
+    if (err.code === 'EBUSY') {
+      const altPath = path.join(process.cwd(), 'ข้อมูลครุภัณฑ์', 'Template_Items_and_Assets_v3.updated.xlsx');
+      xlsx.writeFile(wbTemplate, altPath);
+      console.log(`Notice: ${templatePath} is currently open in another program (Excel). Saved updated copy to ${altPath}`);
+    } else {
+      throw err;
+    }
+  }
 
   // 5. Verification
   const verifyAssets = await prisma.equipmentAsset.findMany();

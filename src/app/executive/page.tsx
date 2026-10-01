@@ -790,15 +790,15 @@ export default function ExecutiveDashboardPage() {
                 <div className="grid grid-cols-2 gap-2 pt-1">
                   <div>
                     <span className="text-slate-400 block">ยี่ห้อ (Brand):</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-200">{selectedAsset.brand}</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">{selectedAsset.brand || '-'}</span>
                   </div>
                   <div>
                     <span className="text-slate-400 block">รุ่น (Model):</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-200">{selectedAsset.model}</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">{selectedAsset.model || '-'}</span>
                   </div>
                   <div>
                     <span className="text-slate-400 block">หมายเลขเครื่อง (S/N):</span>
-                    <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">{selectedAsset.serialNumber}</span>
+                    <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">{selectedAsset.serialNumber || '-'}</span>
                   </div>
                   <div>
                     <span className="text-slate-400 block">วันที่รับเข้า:</span>
@@ -806,7 +806,7 @@ export default function ExecutiveDashboardPage() {
                   </div>
                   <div>
                     <span className="text-slate-400 block">บริษัทผู้จำหน่าย:</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-200">{selectedAsset.supplier}</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">{selectedAsset.supplier || '-'}</span>
                   </div>
                   <div>
                     <span className="text-slate-400 block">สิ้นสุดรับประกัน:</span>

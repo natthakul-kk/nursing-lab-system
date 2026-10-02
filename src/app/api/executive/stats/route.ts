@@ -71,93 +71,21 @@ export async function GET(req: Request) {
     let totalAcHoursMonth = 0;
     let maintenanceAcHours = 0;
     let teachingAcHours = 0;
-    const roomAcHoursMap: Record<
-      string,
-      {
-        roomId: string;
-        roomCode: string;
-        roomName: string;
-        teachingHours: number;
-        preservationHours: number;
-        totalHours: number;
-        hours: number;
-      }
-    > = {};
+    const roomAcHoursMap: Record<string, { roomName: string; hours: number }> = {};
 
     acLogs.forEach((l) => {
       const h = Number(l.usageHours) || 0;
       if (h <= 0) return;
 
-      const rId = l.roomId;
-      const rName = l.room?.name || 'ห้องปฏิบัติการ';
-      const rCode = l.room?.code || '';
-      const isStorageRoom = rCode.startsWith('LAB-EQ') || rCode.startsWith('LAB-CS');
+      totalAcHoursMonth += h;
+      if (l.purpose?.includes('รักษาอุปกรณ์')) maintenanceAcHours += h;
+      else teachingAcHours += h;
 
-      if (!roomAcHoursMap[rId]) {
-        roomAcHoursMap[rId] = {
-          roomId: rId,
-          roomCode: rCode,
-          roomName: rName,
-          teachingHours: 0,
-          preservationHours: 0,
-          totalHours: 0,
-          hours: 0,
-        };
+      const rName = l.room.name || 'ห้องปฏิบัติการ';
+      if (!roomAcHoursMap[l.roomId]) {
+        roomAcHoursMap[l.roomId] = { roomName: rName, hours: 0 };
       }
-
-      let parsedSessions: any[] = [];
-      if (l.sessionsJson) {
-        try {
-          parsedSessions = JSON.parse(l.sessionsJson);
-        } catch {
-          parsedSessions = [];
-        }
-      }
-
-      if (Array.isArray(parsedSessions) && parsedSessions.length > 0) {
-        parsedSessions.forEach((s) => {
-          const sh = Number(s.hours) || 0;
-          if (sh <= 0) return;
-          totalAcHoursMonth += sh;
-          const isPreserve =
-            isStorageRoom ||
-            s.purpose?.includes('รักษาอุปกรณ์') ||
-            s.purpose?.includes('ถนอมรักษา') ||
-            s.purpose?.includes('บำรุงรักษา');
-
-          if (isPreserve) {
-            maintenanceAcHours += sh;
-            roomAcHoursMap[rId].preservationHours += sh;
-          } else {
-            teachingAcHours += sh;
-            roomAcHoursMap[rId].teachingHours += sh;
-          }
-          roomAcHoursMap[rId].totalHours += sh;
-        });
-      } else {
-        totalAcHoursMonth += h;
-        const isPreserve =
-          isStorageRoom ||
-          l.purpose?.includes('รักษาอุปกรณ์') ||
-          l.purpose?.includes('ถนอมรักษา') ||
-          l.purpose?.includes('บำรุงรักษา');
-
-        if (isPreserve) {
-          maintenanceAcHours += h;
-          roomAcHoursMap[rId].preservationHours += h;
-        } else {
-          teachingAcHours += h;
-          roomAcHoursMap[rId].teachingHours += h;
-        }
-        roomAcHoursMap[rId].totalHours += h;
-      }
-    });
-
-    Object.values(roomAcHoursMap).forEach((r) => {
-      r.teachingHours = Math.round(r.teachingHours * 10) / 10;
-      r.preservationHours = Math.round(r.preservationHours * 10) / 10;
-      r.totalHours = Math.round(r.totalHours * 10) / 10;
-      r.hours = r.totalHours;
+      roomAcHoursMap[l.roomId].hours = Math.round((roomAcHoursMap[l.roomId].hours + h) * 10) / 10;
     });
 
     // 3. Consumables Stock Valuation

@@ -34,6 +34,15 @@ import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { formatUserName, getRoleLabel } from '@/lib/user-utils';
 import { formatImageUrl } from '@/lib/image-helper';
 import { ORG_CONFIG } from '@/lib/constants/organization';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip as RechartsTooltip,
+  CartesianGrid,
+} from 'recharts';
 
 export default function ExecutiveDashboardPage() {
   const { currentUser, isExecutive, isAdmin } = useAuth();
@@ -326,67 +335,161 @@ export default function ExecutiveDashboardPage() {
         </div>
       </div>
 
-      {/* AC Hours Breakdown by Room (Visual Chart) */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+      {/* AC Hours Breakdown by Room (Visual Stacked Bar Chart - แท่งเดียวกัน) */}
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm space-y-5 transition-colors">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
-              <Wind className="w-5 h-5 text-teal-600" />
-              <span>
-                สถิติชั่วโมงการเปิดเครื่องปรับอากาศแยกตามห้อง ({THAI_MONTHS.find((m) => m.value === selectedMonth)?.label} {selectedYear + 543})
-              </span>
-            </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              แสดงความคุ้มค่าของการใช้พลังงานและการรักษาสภาพแวดล้อมสำหรับอุปกรณ์ทางการแพทย์
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-cyan-500"></span>
+              <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <Wind className="w-5 h-5 text-cyan-600" />
+                <span>
+                  สถิติชั่วโมงการเปิดเครื่องปรับอากาศแยกตามห้อง ({THAI_MONTHS.find((m) => m.value === selectedMonth)?.label} {selectedYear + 543})
+                </span>
+              </h3>
+            </div>
+            <p className="text-xs text-slate-500 mt-1">
+              แสดงสัดส่วนการเปิดแอร์ในแต่ละห้องแบบแท่งเดียว (การเรียนการสอน vs ถนอมรักษาอุปกรณ์) เพื่อติดตามนโยบาย Green Lab
             </p>
           </div>
-          <Link
-            href="/air-conditioning"
-            className="text-xs font-bold text-teal-600 hover:text-teal-700 flex items-center gap-1 hover:underline"
-          >
-            ดูตารางบันทึกประจำวัน <ChevronRight className="w-4 h-4" />
-          </Link>
+
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Legend / Badges */}
+            <div className="flex items-center gap-3 text-xs bg-slate-50 dark:bg-slate-800/80 px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
+              <div className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-sm bg-sky-500"></span>
+                <span className="text-slate-700 dark:text-slate-300 font-medium">การเรียนการสอน ({kpis?.teachingAcHours || 0} ชม.)</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-sm bg-emerald-500"></span>
+                <span className="text-emerald-700 dark:text-emerald-400 font-bold">ถนอมรักษาอุปกรณ์ ({kpis?.maintenanceAcHours || 0} ชม.)</span>
+              </div>
+            </div>
+
+            <Link
+              href="/air-conditioning"
+              className="text-xs font-bold text-teal-600 hover:text-teal-700 flex items-center gap-1 hover:underline whitespace-nowrap"
+            >
+              ดูตารางบันทึกประจำวัน <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
         </div>
 
         {(() => {
-          const roomAcBreakdown = (kpis?.roomAcBreakdown || []).filter((r: any) => Number(r.hours) > 0);
+          const roomAcBreakdown = (kpis?.roomAcBreakdown || []).filter(
+            (r: any) => Number(r.totalHours || r.hours) > 0
+          );
+
           if (roomAcBreakdown.length === 0) {
             return (
-              <div className="p-8 text-center text-slate-400 text-xs">
-                ยังไม่มีข้อมูลบันทึกการเปิดแอร์ในเดือน{THAI_MONTHS.find((m) => m.value === selectedMonth)?.label} {selectedYear + 543} สามารถให้เจ้าหน้าที่เริ่มลงบันทึกในระบบบันทึกเวลาแอร์
+              <div className="p-12 text-center text-slate-400 text-xs border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
+                <Wind className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2 opacity-60" />
+                ยังไม่มีข้อมูลบันทึกการเปิดแอร์ในเดือน{THAI_MONTHS.find((m) => m.value === selectedMonth)?.label} {selectedYear + 543}
+                <div className="mt-1 text-[11px] text-slate-400">
+                  สามารถบันทึกเวลาเปิด-ปิดแอร์ได้ที่เมนู "ระบบบันทึกเวลาแอร์"
+                </div>
               </div>
             );
           }
 
-          const maxHours = Math.max(...roomAcBreakdown.map((b: any) => Number(b.hours) || 1), 1);
+          const getRoomShortName = (name: string) => {
+            if (!name) return '-';
+            if (name.includes('Sim Man') || name.includes('SIM MAN')) return 'SIM MAN';
+            if (name.includes('Sim Mom') || name.includes('SIM MOM')) return 'SIM MOM';
+            if (name.includes('Debriefing')) return 'Debriefing';
+            if (name.includes('เก็บครุภัณฑ์')) return 'ห้องเก็บครุภัณฑ์';
+            if (name.includes('เก็บวัสดุ')) return 'ห้องเก็บวัสดุสิ้นเปลือง';
+            if (name.includes('พื้นฐาน 1/3')) return 'พื้นฐาน 1/3';
+            if (name.includes('พื้นฐาน 2/3')) return 'พื้นฐาน 2/3';
+            if (name.includes('พื้นฐาน 3/3')) return 'พื้นฐาน 3/3';
+            if (name.includes('เด็ก')) return 'เด็กและวัยรุ่น';
+            if (name.includes('มารดา')) return 'มารดาทารก';
+            if (name.includes('ผู้ใหญ่')) return 'ผู้ใหญ่/สูงอายุ';
+            if (name.includes('สุขภาพจิต') || name.includes('จิตเวช')) return 'สุขภาพจิต/ชุมชน';
+            return (
+              name
+                .replace('ห้องปฏิบัติการการพยาบาล', '')
+                .replace('ห้องปฏิบัติการทักษะทางการพยาบาลขั้น', '')
+                .replace('ห้องปฏิบัติการ', '')
+                .trim() || name
+            );
+          };
+
+          const chartData = roomAcBreakdown.map((r: any) => ({
+            roomName: r.roomName,
+            shortName: getRoomShortName(r.roomName),
+            teachingHours: Number(r.teachingHours || 0),
+            preservationHours: Number(r.preservationHours || (r.teachingHours ? 0 : r.hours || 0)),
+            totalHours: Number(r.totalHours || r.hours || 0),
+          }));
 
           return (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 pt-2">
-              {roomAcBreakdown.map((r: any, idx: number) => {
-                const percentage = Math.round(((Number(r.hours) || 0) / maxHours) * 100);
+            <div className="space-y-4">
+              <div className="h-72 w-full pt-2">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 25 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.2} />
+                    <XAxis
+                      dataKey="shortName"
+                      tick={{ fill: '#64748b', fontSize: 11 }}
+                      interval={0}
+                      angle={-20}
+                      textAnchor="end"
+                    />
+                    <YAxis tick={{ fill: '#64748b', fontSize: 11 }} unit=" ชม." />
+                    <RechartsTooltip
+                      content={({ active, payload }) => {
+                        if (!active || !payload || !payload.length) return null;
+                        const d = payload[0].payload;
+                        return (
+                          <div className="bg-slate-900 text-white text-xs p-3 rounded-xl shadow-xl border border-slate-700 space-y-1">
+                            <div className="font-bold border-b border-slate-700 pb-1 mb-1.5 text-slate-200">
+                              {d.roomName}
+                            </div>
+                            <div className="flex items-center justify-between gap-4 text-sky-300">
+                              <span>ชั่วโมงการเรียนการสอน:</span>
+                              <span className="font-mono font-bold">{d.teachingHours.toFixed(1)} ชม.</span>
+                            </div>
+                            <div className="flex items-center justify-between gap-4 text-emerald-300">
+                              <span>ชั่วโมงถนอมรักษาอุปกรณ์:</span>
+                              <span className="font-mono font-bold">{d.preservationHours.toFixed(1)} ชม.</span>
+                            </div>
+                            <div className="flex items-center justify-between gap-4 pt-1 border-t border-slate-800 font-bold text-white">
+                              <span>รวมทั้งสิ้น:</span>
+                              <span className="font-mono text-teal-400">{d.totalHours.toFixed(1)} ชม.</span>
+                            </div>
+                          </div>
+                        );
+                      }}
+                    />
+                    {/* แท่งเดียวกันแบบซ้อนชั้น (Stacked Bar) ด้วย stackId="acHours" */}
+                    <Bar
+                      dataKey="teachingHours"
+                      name="การเรียนการสอน"
+                      stackId="acHours"
+                      fill="#0284c7"
+                    />
+                    <Bar
+                      dataKey="preservationHours"
+                      name="ถนอมรักษาอุปกรณ์"
+                      stackId="acHours"
+                      fill="#10b981"
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
 
-                return (
-                  <div
-                    key={idx}
-                    className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 space-y-2"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
-                        {r.roomName}
-                      </span>
-                      <span className="font-mono text-sm font-black text-teal-700 dark:text-teal-300">
-                        {Number(r.hours).toFixed(1)} ชม.
-                      </span>
-                    </div>
-                    <div className="w-full bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
-                      <div
-                        className="bg-gradient-to-r from-teal-500 to-cyan-500 h-full rounded-full transition-all duration-500"
-                        style={{ width: `${percentage}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
+              {/* Strategic Insight Box (Green Lab Policy) */}
+              <div className="p-4 rounded-2xl bg-cyan-50/70 dark:bg-cyan-950/40 border border-cyan-200 dark:border-cyan-500/30 text-xs text-cyan-900 dark:text-cyan-200 flex items-start gap-3 transition-colors">
+                <span className="text-base shrink-0">💡</span>
+                <div>
+                  <strong className="font-bold text-cyan-950 dark:text-cyan-100 block mb-0.5">
+                    ข้อเสนอแนะเชิงกลยุทธ์ (Strategic Insight):
+                  </strong>
+                  ชั่วโมงการเปิดเครื่องปรับอากาศในห้อง SIM MAN และห้องเก็บครุภัณฑ์ส่วนใหญ่เป็นไปตามเกณฑ์การควบคุมอุณหภูมิเพื่อรักษาสภาพวัสดุและเซนเซอร์ของหุ่นจำลองขั้นสูง เพื่อสนับสนุนนโยบายอนุรักษ์พลังงาน (Green Lab) อาจพิจารณาเสริมระบบควบคุมเวลาและอุณหภูมิอัตโนมัติเพื่อให้การใช้พลังงานเกิดประสิทธิภาพสูงสุด
+                </div>
+              </div>
             </div>
           );
         })()}

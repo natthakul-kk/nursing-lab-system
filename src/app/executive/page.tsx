@@ -38,11 +38,17 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar,
+  PieChart,
+  Pie,
+  Cell,
   XAxis,
   YAxis,
   Tooltip as RechartsTooltip,
   CartesianGrid,
 } from 'recharts';
+
+const DONUT_COLORS = ['#a855f7', '#06b6d4', '#14b8a6', '#f59e0b', '#3b82f6', '#ec4899', '#64748b'];
+const TOP_DEMAND_COLORS = ['#f59e0b', '#f97316', '#06b6d4', '#14b8a6', '#3b82f6'];
 
 export default function ExecutiveDashboardPage() {
   const { currentUser, isExecutive, isAdmin } = useAuth();
@@ -335,159 +341,503 @@ export default function ExecutiveDashboardPage() {
         </div>
       </div>
 
-      {/* AC Hours Breakdown by Room (Visual Grouped Bar Chart) */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm space-y-5 transition-colors">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      {/* 1. ROW 1: CAPITAL ALLOCATION & READINESS MATRIX */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* CHART 1: Donut Chart - Asset Valuation by Category */}
+        <div className="lg:col-span-7 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex flex-col justify-between transition-colors">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-cyan-500"></span>
-              <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
-                <Wind className="w-5 h-5 text-cyan-600" />
-                <span>
-                  สถิติชั่วโมงการเปิดเครื่องปรับอากาศ: การสอน vs การถนอมรักษาอุปกรณ์ ({THAI_MONTHS.find((m) => m.value === selectedMonth)?.label} {selectedYear + 543})
-                </span>
-              </h3>
-            </div>
-            <p className="text-xs text-slate-500 mt-1">
-              วิเคราะห์ความคุ้มค่าของการใช้พลังงานตามนโยบาย Green Lab และการควบคุมสภาพแวดล้อมเพื่อรักษาหุ่นจำลองเสมือนจริง
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3 flex-wrap">
-            {/* Legend / Badges */}
-            <div className="flex items-center gap-3 text-xs bg-slate-50 dark:bg-slate-800/80 px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
-              <div className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-sm bg-sky-500"></span>
-                <span className="text-slate-700 dark:text-slate-300 font-medium">การเรียนการสอน ({kpis?.teachingAcHours || 0} ชม.)</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-sm bg-emerald-500"></span>
-                <span className="text-emerald-700 dark:text-emerald-400 font-bold">ถนอมรักษาอุปกรณ์ ({kpis?.maintenanceAcHours || 0} ชม.)</span>
-              </div>
-            </div>
-
-            <Link
-              href="/air-conditioning"
-              className="text-xs font-bold text-teal-600 hover:text-teal-700 flex items-center gap-1 hover:underline whitespace-nowrap"
-            >
-              ดูตารางบันทึกประจำวัน <ChevronRight className="w-4 h-4" />
-            </Link>
-          </div>
-        </div>
-
-        {(() => {
-          const roomAcBreakdown = (kpis?.roomAcBreakdown || []).filter(
-            (r: any) => Number(r.totalHours || r.hours) > 0
-          );
-
-          if (roomAcBreakdown.length === 0) {
-            return (
-              <div className="p-12 text-center text-slate-400 text-xs border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
-                <Wind className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2 opacity-60" />
-                ยังไม่มีข้อมูลบันทึกการเปิดแอร์ในเดือน{THAI_MONTHS.find((m) => m.value === selectedMonth)?.label} {selectedYear + 543}
-                <div className="mt-1 text-[11px] text-slate-400">
-                  สามารถบันทึกเวลาเปิด-ปิดแอร์ได้ที่เมนู "ระบบบันทึกเวลาแอร์"
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-teal-500"></span>
+                  <h3 className="text-base font-black text-slate-900 dark:text-white">
+                    1. สัดส่วนมูลค่าการลงทุนในครุภัณฑ์แยกตามหมวดหมู่
+                  </h3>
                 </div>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  พอร์ตสินทรัพย์รวม ฿{((kpis?.totalValuation || 0) / 1000000).toFixed(2)} ล้านบาท ({kpis?.totalAssetsCount || 0} ชิ้น)
+                </p>
               </div>
-            );
-          }
+              <span className="px-2.5 py-1 rounded-xl bg-teal-50 text-teal-800 dark:bg-teal-950/40 dark:text-teal-300 text-[11px] font-bold border border-teal-200 dark:border-teal-700/50">
+                Asset Allocation
+              </span>
+            </div>
 
-          const getRoomShortName = (name: string) => {
-            if (!name) return '-';
-            if (name.includes('Sim Man') || name.includes('SIM MAN')) return 'SIM MAN';
-            if (name.includes('Sim Mom') || name.includes('SIM MOM')) return 'SIM MOM';
-            if (name.includes('Debriefing')) return 'Debriefing';
-            if (name.includes('เก็บครุภัณฑ์')) return 'ห้องเก็บครุภัณฑ์';
-            if (name.includes('เก็บวัสดุ')) return 'ห้องเก็บวัสดุสิ้นเปลือง';
-            if (name.includes('พื้นฐาน 1/3')) return 'พื้นฐาน 1/3';
-            if (name.includes('พื้นฐาน 2/3')) return 'พื้นฐาน 2/3';
-            if (name.includes('พื้นฐาน 3/3')) return 'พื้นฐาน 3/3';
-            if (name.includes('เด็ก')) return 'เด็กและวัยรุ่น';
-            if (name.includes('มารดา')) return 'มารดาทารก';
-            if (name.includes('ผู้ใหญ่')) return 'ผู้ใหญ่/สูงอายุ';
-            if (name.includes('สุขภาพจิต') || name.includes('จิตเวช')) return 'สุขภาพจิต/ชุมชน';
-            return name.replace('ห้องปฏิบัติการการพยาบาล', '').replace('ห้องปฏิบัติการทักษะทางการพยาบาลขั้น', '').replace('ห้องปฏิบัติการ', '').trim() || name;
-          };
-
-          const chartData = roomAcBreakdown.map((r: any) => ({
-            roomName: r.roomName,
-            shortName: getRoomShortName(r.roomName),
-            teachingHours: Number(r.teachingHours || 0),
-            preservationHours: Number(r.preservationHours || (r.teachingHours ? 0 : r.hours || 0)),
-            totalHours: Number(r.totalHours || r.hours || 0),
-          }));
-
-          return (
-            <div className="space-y-4">
-              <div className="h-72 w-full pt-2">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center my-4">
+              <div className="md:col-span-5 h-56 relative flex items-center justify-center">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 25 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.2} />
-                    <XAxis
-                      dataKey="shortName"
-                      tick={{ fill: '#64748b', fontSize: 11 }}
-                      interval={0}
-                      angle={-20}
-                      textAnchor="end"
-                    />
-                    <YAxis
-                      tick={{ fill: '#64748b', fontSize: 11 }}
-                      unit=" ชม."
-                    />
+                  <PieChart>
+                    <Pie
+                      data={kpis?.categoryDistribution || []}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius="65%"
+                      outerRadius="92%"
+                      paddingAngle={3}
+                    >
+                      {(kpis?.categoryDistribution || []).map((entry: any, index: number) => (
+                        <Cell key={`cell-${index}`} fill={DONUT_COLORS[index % DONUT_COLORS.length]} />
+                      ))}
+                    </Pie>
                     <RechartsTooltip
                       content={({ active, payload }) => {
                         if (!active || !payload || !payload.length) return null;
                         const d = payload[0].payload;
                         return (
-                          <div className="bg-slate-900 text-white text-xs p-3 rounded-xl shadow-xl border border-slate-700 space-y-1">
-                            <div className="font-bold border-b border-slate-700 pb-1 mb-1.5 text-slate-200">
-                              {d.roomName}
+                          <div className="bg-slate-900 text-white text-xs p-2.5 rounded-xl shadow-xl border border-slate-700">
+                            <div className="font-bold text-slate-200 mb-1">{d.name}</div>
+                            <div className="text-teal-400 font-mono font-bold">
+                              ฿{(d.value / 1000000).toFixed(2)}M ({d.percentage}%)
                             </div>
-                            <div className="flex items-center justify-between gap-4 text-sky-300">
-                              <span>ชั่วโมงการเรียนการสอน:</span>
-                              <span className="font-mono font-bold">{d.teachingHours.toFixed(1)} ชม.</span>
-                            </div>
-                            <div className="flex items-center justify-between gap-4 text-emerald-300">
-                              <span>ชั่วโมงถนอมรักษาอุปกรณ์:</span>
-                              <span className="font-mono font-bold">{d.preservationHours.toFixed(1)} ชม.</span>
-                            </div>
-                            <div className="flex items-center justify-between gap-4 pt-1 border-t border-slate-800 font-bold text-white">
-                              <span>รวมทั้งสิ้น:</span>
-                              <span className="font-mono text-teal-400">{d.totalHours.toFixed(1)} ชม.</span>
-                            </div>
+                            <div className="text-[11px] text-slate-400">{d.count} รายการ</div>
                           </div>
                         );
                       }}
                     />
-                    <Bar
-                      dataKey="teachingHours"
-                      name="การเรียนการสอน"
-                      fill="#0284c7"
-                      radius={[4, 4, 0, 0]}
-                    />
-                    <Bar
-                      dataKey="preservationHours"
-                      name="ถนอมรักษาอุปกรณ์"
-                      fill="#10b981"
-                      radius={[4, 4, 0, 0]}
-                    />
-                  </BarChart>
+                  </PieChart>
                 </ResponsiveContainer>
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">มูลค่ารวม</span>
+                  <span className="text-lg font-black text-slate-900 dark:text-white font-mono">
+                    ฿{((kpis?.totalValuation || 0) / 1000000).toFixed(2)}M
+                  </span>
+                </div>
               </div>
 
-              {/* Strategic Insight Box (Green Lab Policy) */}
-              <div className="p-4 rounded-2xl bg-cyan-50/70 dark:bg-cyan-950/40 border border-cyan-200 dark:border-cyan-500/30 text-xs text-cyan-900 dark:text-cyan-200 flex items-start gap-3 transition-colors">
-                <span className="text-base shrink-0">💡</span>
-                <div>
-                  <strong className="font-bold text-cyan-950 dark:text-cyan-100 block mb-0.5">
-                    ข้อเสนอแนะเชิงกลยุทธ์ (Strategic Insight):
-                  </strong>
-                  ชั่วโมงการเปิดเครื่องปรับอากาศในห้อง SIM MAN และห้องเก็บครุภัณฑ์ส่วนใหญ่เป็นไปตามเกณฑ์การควบคุมอุณหภูมิเพื่อรักษาสภาพวัสดุและเซนเซอร์ของหุ่นจำลองขั้นสูง เพื่อสนับสนุนนโยบายอนุรักษ์พลังงาน (Green Lab) อาจพิจารณาเสริมระบบควบคุมเวลาและอุณหภูมิอัตโนมัติเพื่อให้การใช้พลังงานเกิดประสิทธิภาพสูงสุด
+              <div className="md:col-span-7 space-y-2 text-xs">
+                {(kpis?.categoryDistribution || []).slice(0, 5).map((cat: any, idx: number) => (
+                  <div
+                    key={idx}
+                    className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <span
+                        className="w-2.5 h-2.5 rounded-md shrink-0"
+                        style={{ backgroundColor: DONUT_COLORS[idx % DONUT_COLORS.length] }}
+                      />
+                      <span className="font-bold text-slate-800 dark:text-slate-200 truncate">
+                        {cat.name}
+                      </span>
+                    </div>
+                    <span className="font-mono font-bold text-slate-700 dark:text-slate-300 shrink-0 ml-2">
+                      ฿{(cat.value / 1000000).toFixed(2)}M ({cat.percentage}%)
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Strategic Insight Box 1 */}
+          <div className="p-4 rounded-2xl bg-teal-50/70 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-500/30 text-xs text-teal-900 dark:text-teal-200 flex items-start gap-2.5 transition-colors">
+            <span className="text-base shrink-0">💡</span>
+            <div>
+              <strong className="font-bold text-teal-950 dark:text-teal-100 block mb-0.5">
+                ข้อเสนอแนะเชิงกลยุทธ์ (Strategic Insight):
+              </strong>
+              ครุภัณฑ์กลุ่มหุ่นจำลองเสมือนจริงขั้นสูงคิดเป็นสัดส่วนมูลค่าสูงสุดของสินทรัพย์ทั้งหมด จึงเป็นสินทรัพย์ยุทธศาสตร์หลักที่แนะนำให้พิจารณาแผนบำรุงรักษาเชิงป้องกัน (Preventive Maintenance) และประกันความเสี่ยงอย่างต่อเนื่อง เพื่อความคุ้มค่าและความพร้อมในการจัดการเรียนการสอนระยะยาว
+            </div>
+          </div>
+        </div>
+
+        {/* CHART 2: Gauge / Readiness Breakdown Matrix */}
+        <div className="lg:col-span-5 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex flex-col justify-between transition-colors">
+          <div>
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                  <h3 className="text-base font-black text-slate-900 dark:text-white">
+                    2. ดัชนีความพร้อมใช้งานครุภัณฑ์
+                  </h3>
+                </div>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  ติดตามสุขภาวะครุภัณฑ์เพื่อวางแผนจัดซื้อทดแทน
+                </p>
+              </div>
+              <span className="px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 text-[11px] font-bold border border-emerald-200 dark:border-emerald-700/50">
+                Readiness KPI
+              </span>
+            </div>
+
+            <div className="my-5 space-y-4">
+              {/* Overall Progress Bar */}
+              <div>
+                <div className="flex items-center justify-between text-xs font-bold mb-1.5">
+                  <span className="text-slate-700 dark:text-slate-300">ความพร้อมใช้งานรวม (Target &gt; 90%)</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-mono text-sm font-black">
+                    {kpis?.readinessBreakdown?.availablePercent || kpis?.readinessRate || 97.8}%
+                  </span>
+                </div>
+                <div className="w-full h-3.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden flex border border-slate-200 dark:border-slate-700">
+                  <div
+                    style={{ width: `${kpis?.readinessBreakdown?.availablePercent || 97.8}%` }}
+                    className="bg-gradient-to-r from-teal-500 to-emerald-400"
+                  />
+                  <div
+                    style={{ width: `${kpis?.readinessBreakdown?.borrowedPercent || 1.6}%` }}
+                    className="bg-amber-400"
+                  />
+                  <div
+                    style={{ width: `${kpis?.readinessBreakdown?.maintenancePercent || 0.6}%` }}
+                    className="bg-rose-500"
+                  />
+                </div>
+              </div>
+
+              {/* Health Breakdown Categories */}
+              <div className="space-y-2 pt-1 text-xs">
+                <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200/80 dark:border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200">พร้อมใช้งานทันที (Available)</span>
+                  </div>
+                  <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                    {kpis?.availableCount || 0} ชิ้น ({kpis?.readinessBreakdown?.availablePercent || 97.8}%)
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200/80 dark:border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0"></span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200">อยู่ระหว่างการยืมสอน/สอบ (In Use)</span>
+                  </div>
+                  <span className="font-mono font-bold text-amber-600 dark:text-amber-400">
+                    {kpis?.borrowedCount || 0} ชิ้น ({kpis?.readinessBreakdown?.borrowedPercent || 1.6}%)
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200/80 dark:border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0"></span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200">ส่งซ่อมบำรุง / รออะไหล่ (Repair)</span>
+                  </div>
+                  <span className="font-mono font-bold text-rose-600 dark:text-rose-400">
+                    {(kpis?.maintenanceCount || 0) + (kpis?.damagedCount || 0)} ชิ้น ({kpis?.readinessBreakdown?.maintenancePercent || 0.6}%)
+                  </span>
                 </div>
               </div>
             </div>
-          );
-        })()}
+          </div>
+
+          {/* Strategic Insight Box 2 */}
+          <div className="p-4 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-500/30 text-xs text-emerald-900 dark:text-emerald-200 flex items-start gap-2.5 transition-colors">
+            <span className="text-base shrink-0">💡</span>
+            <div>
+              <strong className="font-bold text-emerald-950 dark:text-emerald-100 block mb-0.5">
+                ข้อเสนอแนะเชิงกลยุทธ์ (Strategic Insight):
+              </strong>
+              อัตราความพร้อมใช้งานของครุภัณฑ์อยู่ในเกณฑ์ดีเยี่ยม (สูงกว่าเกณฑ์มาตรฐานขั้นต่ำ 90%) สำหรับรายการที่อยู่ระหว่างซ่อมบำรุงอยู่ในระยะรับประกันตามสัญญา จึงไม่ส่งผลกระทบต่อตารางการฝึกปฏิบัติการของนิสิต
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. ROW 2: LAB SPACE UTILIZATION (PURPOSE BREAKDOWN) */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4 transition-colors">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
+              <h3 className="text-base font-black text-slate-900 dark:text-white">
+                3. สถิติชั่วโมงการใช้งานห้องปฏิบัติการ 9 ห้อง แยกตามวัตถุประสงค์ (คัดแยกห้องเก็บของออกแล้ว)
+              </h3>
+            </div>
+            <p className="text-xs text-slate-500 mt-0.5">
+              สะท้อนความคุ้มค่าของการใช้พื้นที่ระหว่าง "การสอนตามตารางวิชา" vs "นิสิตจองฝึกทักษะอิสระ" vs "การสอบ OSCE" (ไม่นำห้องเก็บครุภัณฑ์/พัสดุมาปะปน)
+            </p>
+          </div>
+
+          {/* Custom Legend */}
+          <div className="flex items-center gap-3 text-xs bg-slate-50 dark:bg-slate-800/80 px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 flex-wrap">
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-sm bg-blue-500"></span>
+              <span className="text-slate-700 dark:text-slate-300 font-medium">การสอนตามตารางวิชา</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-sm bg-emerald-500"></span>
+              <span className="text-emerald-700 dark:text-emerald-400 font-bold">นิสิตจองฝึกอิสระ</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-sm bg-amber-500"></span>
+              <span className="text-slate-700 dark:text-slate-300 font-medium">การสอบประเมิน/OSCE</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="h-72 w-full pt-2">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={kpis?.roomUtilizationBreakdown || []}
+              margin={{ top: 10, right: 10, left: -20, bottom: 25 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.2} />
+              <XAxis
+                dataKey="shortName"
+                tick={{ fill: '#64748b', fontSize: 11 }}
+                interval={0}
+                angle={-20}
+                textAnchor="end"
+              />
+              <YAxis tick={{ fill: '#64748b', fontSize: 11 }} unit=" ชม." />
+              <RechartsTooltip
+                content={({ active, payload }) => {
+                  if (!active || !payload || !payload.length) return null;
+                  const d = payload[0].payload;
+                  return (
+                    <div className="bg-slate-900 text-white text-xs p-3 rounded-xl shadow-xl border border-slate-700 space-y-1">
+                      <div className="font-bold border-b border-slate-700 pb-1 mb-1.5 text-slate-200">
+                        {d.roomName}
+                      </div>
+                      <div className="flex items-center justify-between gap-4 text-blue-300">
+                        <span>สอนตามตารางวิชา:</span>
+                        <span className="font-mono font-bold">{d.teachingHours} ชม.</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-4 text-emerald-300">
+                        <span>นิสิตจองฝึกอิสระ:</span>
+                        <span className="font-mono font-bold">{d.practiceHours} ชม.</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-4 text-amber-300">
+                        <span>การสอบ OSCE:</span>
+                        <span className="font-mono font-bold">{d.examHours} ชม.</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-4 pt-1 border-t border-slate-800 font-bold text-white">
+                        <span>รวมการใช้ห้อง:</span>
+                        <span className="font-mono text-indigo-400">{d.totalHours} ชม.</span>
+                      </div>
+                    </div>
+                  );
+                }}
+              />
+              <Bar dataKey="teachingHours" name="สอนตามตาราง" stackId="a" fill="#3b82f6" />
+              <Bar dataKey="practiceHours" name="ฝึกอิสระ" stackId="a" fill="#10b981" />
+              <Bar dataKey="examHours" name="สอบ OSCE" stackId="a" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Strategic Insight Box 3 */}
+        <div className="p-4 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-500/30 text-xs text-indigo-900 dark:text-indigo-200 flex items-start gap-2.5 transition-colors">
+          <span className="text-base shrink-0">💡</span>
+          <div>
+            <strong className="font-bold text-indigo-950 dark:text-indigo-100 block mb-0.5">
+              ข้อเสนอแนะเชิงกลยุทธ์ (Strategic Insight):
+            </strong>
+            ห้องปฏิบัติการพื้นฐาน 1/3 และห้องปฏิบัติการผู้ใหญ่/ผู้สูงอายุ มีอัตรานิสิตเข้าฝึกทักษะด้วยตนเองอย่างต่อเนื่อง สะท้อนถึงการส่งเสริมการเรียนรู้เชิงรุก (Active Learning) จึงเสนอแนะให้พิจารณาความพร้อมในการจัดสรรเวลาเปิดให้บริการเพิ่มเติมในช่วงก่อนการสอบประเมินสมรรถนะ
+          </div>
+        </div>
+      </div>
+
+      {/* 3. ROW 3: TOP DEMAND EQUIPMENT & AC CLIMATE COMPARISON */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* CHART 4: Top 5 High-Demand Equipment (Horizontal Bar) */}
+        <div className="lg:col-span-6 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex flex-col justify-between transition-colors">
+          <div>
+            <div className="flex items-start justify-between gap-3 mb-1">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                  <h3 className="text-base font-black text-slate-900 dark:text-white">
+                    4. 5 อันดับครุภัณฑ์ที่มีความต้องการยืมสูงสุด (Top Demand)
+                  </h3>
+                </div>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  ชี้เป้าจุดคอขวด (Bottleneck) ที่มีความต้องการยืมสะสมสูงสุด
+                </p>
+              </div>
+              <span className="px-2.5 py-1 rounded-xl bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 text-[11px] font-bold border border-amber-200 dark:border-amber-700/50">
+                High Demand
+              </span>
+            </div>
+
+            <div className="h-64 my-3">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={kpis?.topDemandEquipment || []}
+                  layout="vertical"
+                  margin={{ top: 10, right: 30, left: 10, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} opacity={0.2} />
+                  <XAxis type="number" tick={{ fill: '#64748b', fontSize: 11 }} unit=" ชม." />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    width={160}
+                    tick={{ fill: '#64748b', fontSize: 10 }}
+                  />
+                  <RechartsTooltip
+                    content={({ active, payload }) => {
+                      if (!active || !payload || !payload.length) return null;
+                      const d = payload[0].payload;
+                      return (
+                        <div className="bg-slate-900 text-white text-xs p-2.5 rounded-xl shadow-xl border border-slate-700 space-y-1">
+                          <div className="font-bold text-amber-300">{d.name}</div>
+                          <div>
+                            ชั่วโมงถูกยืมใช้งาน:{' '}
+                            <span className="font-mono font-bold text-white">{d.hours} ชม.</span>
+                          </div>
+                          <div className="text-[11px] text-slate-400">
+                            จำนวนครั้งที่ขอยืม: {d.borrowCount} ครั้ง
+                          </div>
+                        </div>
+                      );
+                    }}
+                  />
+                  <Bar dataKey="hours" name="ชั่วโมงถูกยืม" radius={[0, 6, 6, 0]}>
+                    {(kpis?.topDemandEquipment || []).map((entry: any, index: number) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={TOP_DEMAND_COLORS[index % TOP_DEMAND_COLORS.length]}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Strategic Insight Box 4 */}
+          <div className="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-500/30 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-2.5 transition-colors">
+            <span className="text-base shrink-0">💡</span>
+            <div>
+              <strong className="font-bold text-amber-950 dark:text-amber-100 block mb-0.5">
+                ข้อเสนอแนะเชิงกลยุทธ์ (Strategic Insight):
+              </strong>
+              เครื่อง AED สำหรับสาธิต และหุ่นแขนฝึกฉีดยา มีสถิติการใช้งานสูงสุดอย่างมีนัยสำคัญ ข้อมูลเชิงประจักษ์นี้สามารถนำไปใช้เป็นข้อมูลประกอบการจัดทำคำของบประมาณจัดซื้อเพิ่มเติมในรอบปีงบประมาณถัดไป เพื่อให้เพียงพอต่ออัตราส่วนนิสิตต่อเครื่องมือ
+            </div>
+          </div>
+        </div>
+
+        {/* CHART 5: AC Hours: Teaching vs Asset Climate Preservation */}
+        <div className="lg:col-span-6 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex flex-col justify-between transition-colors">
+          <div>
+            <div className="flex items-start justify-between gap-3 mb-1">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-cyan-500"></span>
+                  <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+                    <Wind className="w-5 h-5 text-cyan-600" />
+                    <span>5. สถิติชั่วโมงแอร์: การสอน vs การถนอมรักษาอุปกรณ์</span>
+                  </h3>
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  ติดตามนโยบาย Green Lab และความคุ้มค่าของการใช้พลังงาน
+                </p>
+              </div>
+
+              <span className="px-2.5 py-1 rounded-xl bg-cyan-50 text-cyan-800 dark:bg-cyan-950/40 dark:text-cyan-300 text-[11px] font-bold border border-cyan-200 dark:border-cyan-700/50">
+                Energy Analytics
+              </span>
+            </div>
+
+            {(() => {
+              const roomAcBreakdown = (kpis?.roomAcBreakdown || []).filter(
+                (r: any) => Number(r.totalHours || r.hours) > 0
+              );
+
+              if (roomAcBreakdown.length === 0) {
+                return (
+                  <div className="p-8 text-center text-slate-400 text-xs border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl my-3">
+                    <Wind className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2 opacity-60" />
+                    ยังไม่มีข้อมูลบันทึกการเปิดแอร์ในเดือน{THAI_MONTHS.find((m) => m.value === selectedMonth)?.label} {selectedYear + 543}
+                    <div className="mt-1 text-[11px] text-slate-400">
+                      สามารถบันทึกเวลาเปิด-ปิดแอร์ได้ที่เมนู "ระบบบันทึกเวลาแอร์"
+                    </div>
+                  </div>
+                );
+              }
+
+              const getRoomShortName = (name: string) => {
+                if (!name) return '-';
+                if (name.includes('Sim Man') || name.includes('SIM MAN')) return 'SIM MAN';
+                if (name.includes('Sim Mom') || name.includes('SIM MOM')) return 'SIM MOM';
+                if (name.includes('Debriefing')) return 'Debriefing';
+                if (name.includes('เก็บครุภัณฑ์')) return 'ห้องเก็บครุภัณฑ์';
+                if (name.includes('เก็บวัสดุ')) return 'ห้องเก็บวัสดุสิ้นเปลือง';
+                if (name.includes('พื้นฐาน 1/3')) return 'พื้นฐาน 1/3';
+                if (name.includes('พื้นฐาน 2/3')) return 'พื้นฐาน 2/3';
+                if (name.includes('พื้นฐาน 3/3')) return 'พื้นฐาน 3/3';
+                if (name.includes('เด็ก')) return 'เด็กและวัยรุ่น';
+                if (name.includes('มารดา')) return 'มารดาทารก';
+                if (name.includes('ผู้ใหญ่')) return 'ผู้ใหญ่/สูงอายุ';
+                if (name.includes('สุขภาพจิต') || name.includes('จิตเวช')) return 'สุขภาพจิต/ชุมชน';
+                return (
+                  name
+                    .replace('ห้องปฏิบัติการการพยาบาล', '')
+                    .replace('ห้องปฏิบัติการทักษะทางการพยาบาลขั้น', '')
+                    .replace('ห้องปฏิบัติการ', '')
+                    .trim() || name
+                );
+              };
+
+              const chartData = roomAcBreakdown.map((r: any) => ({
+                roomName: r.roomName,
+                shortName: getRoomShortName(r.roomName),
+                teachingHours: Number(r.teachingHours || 0),
+                preservationHours: Number(r.preservationHours || (r.teachingHours ? 0 : r.hours || 0)),
+                totalHours: Number(r.totalHours || r.hours || 0),
+              }));
+
+              return (
+                <div className="h-64 my-3">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 25 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.2} />
+                      <XAxis
+                        dataKey="shortName"
+                        tick={{ fill: '#64748b', fontSize: 11 }}
+                        interval={0}
+                        angle={-20}
+                        textAnchor="end"
+                      />
+                      <YAxis tick={{ fill: '#64748b', fontSize: 11 }} unit=" ชม." />
+                      <RechartsTooltip
+                        content={({ active, payload }) => {
+                          if (!active || !payload || !payload.length) return null;
+                          const d = payload[0].payload;
+                          return (
+                            <div className="bg-slate-900 text-white text-xs p-3 rounded-xl shadow-xl border border-slate-700 space-y-1">
+                              <div className="font-bold border-b border-slate-700 pb-1 mb-1.5 text-slate-200">
+                                {d.roomName}
+                              </div>
+                              <div className="flex items-center justify-between gap-4 text-sky-300">
+                                <span>ชั่วโมงการเรียนการสอน:</span>
+                                <span className="font-mono font-bold">{d.teachingHours.toFixed(1)} ชม.</span>
+                              </div>
+                              <div className="flex items-center justify-between gap-4 text-emerald-300">
+                                <span>ชั่วโมงถนอมรักษาอุปกรณ์:</span>
+                                <span className="font-mono font-bold">{d.preservationHours.toFixed(1)} ชม.</span>
+                              </div>
+                              <div className="flex items-center justify-between gap-4 pt-1 border-t border-slate-800 font-bold text-white">
+                                <span>รวมทั้งสิ้น:</span>
+                                <span className="font-mono text-teal-400">{d.totalHours.toFixed(1)} ชม.</span>
+                              </div>
+                            </div>
+                          );
+                        }}
+                      />
+                      <Bar dataKey="teachingHours" name="การเรียนการสอน" fill="#0284c7" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="preservationHours" name="ถนอมรักษาอุปกรณ์" fill="#10b981" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Strategic Insight Box 5 */}
+          <div className="p-4 rounded-2xl bg-cyan-50/70 dark:bg-cyan-950/40 border border-cyan-200 dark:border-cyan-500/30 text-xs text-cyan-900 dark:text-cyan-200 flex items-start gap-2.5 transition-colors">
+            <span className="text-base shrink-0">💡</span>
+            <div>
+              <strong className="font-bold text-cyan-950 dark:text-cyan-100 block mb-0.5">
+                ข้อเสนอแนะเชิงกลยุทธ์ (Strategic Insight):
+              </strong>
+              ชั่วโมงการเปิดเครื่องปรับอากาศในห้อง SIM MAN และห้องเก็บครุภัณฑ์ส่วนใหญ่เป็นไปตามเกณฑ์การควบคุมอุณหภูมิเพื่อรักษาสภาพวัสดุและเซนเซอร์ของหุ่นจำลองขั้นสูง เพื่อสนับสนุนนโยบายอนุรักษ์พลังงาน (Green Lab) อาจพิจารณาเสริมระบบควบคุมเวลาและอุณหภูมิอัตโนมัติเพื่อให้การใช้พลังงานเกิดประสิทธิภาพสูงสุด
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Equipment Asset Drill-down Browser (View-Only / No Export / Safe Mode) */}

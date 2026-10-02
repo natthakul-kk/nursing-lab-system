@@ -818,8 +818,8 @@ export default function ExecutiveDashboardPage() {
                           );
                         }}
                       />
-                      <Bar dataKey="teachingHours" name="การเรียนการสอน" fill="#0284c7" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="preservationHours" name="ถนอมรักษาอุปกรณ์" fill="#10b981" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="teachingHours" name="การเรียนการสอน" stackId="ac" fill="#0284c7" />
+                      <Bar dataKey="preservationHours" name="ถนอมรักษาอุปกรณ์" stackId="ac" fill="#10b981" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>

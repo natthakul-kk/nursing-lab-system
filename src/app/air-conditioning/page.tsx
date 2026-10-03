@@ -47,6 +47,15 @@ const THAI_MONTHS = [
 
 const THAI_DAY_NAMES = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
 
+// Helper to format purpose combined with note (e.g., "อื่นๆ (จัดห้อง)" or "การเรียนการสอน (อ.จิฬาวัจน์)")
+const formatPurposeWithNote = (purpose?: string | null, note?: string | null) => {
+  const p = (purpose || '').trim() || 'เปิดเพื่อรักษาอุปกรณ์';
+  const n = (note || '').trim();
+  if (!n) return p;
+  if (p === 'อื่นๆ') return `อื่นๆ (${n})`;
+  return `${p} (${n})`;
+};
+
 export default function AirConditioningPage() {
   const { currentUser, isOfficer, isApprover, isExecutive, isAdmin } = useAuth();
 
@@ -360,7 +369,7 @@ export default function AirConditioningPage() {
             log.closeTime || '-',
             hours,
             log.temperature ? `${log.temperature}°C` : '22°C',
-            log.purpose || log.recordedName || 'เปิดเพื่อรักษาอุปกรณ์'
+            formatPurposeWithNote(log.purpose, log.note) || log.recordedName || 'เปิดเพื่อรักษาอุปกรณ์'
           );
         } else {
           row.push('', '', '', '', '');
@@ -813,8 +822,11 @@ export default function AirConditioningPage() {
                           >
                             {hasLog ? (
                               <div className="flex items-center justify-between gap-1">
-                                <span className="truncate max-w-[130px] font-medium text-slate-700 dark:text-slate-300">
-                                  {log.purpose || 'เปิดเพื่อรักษาอุปกรณ์'}
+                                <span
+                                  className="truncate max-w-[145px] font-medium text-slate-700 dark:text-slate-300"
+                                  title={formatPurposeWithNote(log.purpose, log.note)}
+                                >
+                                  {formatPurposeWithNote(log.purpose, log.note)}
                                 </span>
                                 {isOfficer && <Edit3 className="w-3 h-3 text-slate-400 shrink-0" />}
                               </div>

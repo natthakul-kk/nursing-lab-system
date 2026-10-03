@@ -126,9 +126,16 @@ export async function GET(req: Request) {
             (s.purpose?.includes('สอน') || s.purpose?.includes('เรียน') || s.purpose?.includes('ฝึก')) &&
             !s.purpose?.includes('รักษาอุปกรณ์');
 
+          const isFacilityPrep =
+            l.note?.includes('จัดห้อง') ||
+            l.note?.includes('เตรียมห้อง') ||
+            l.note?.includes('เคลียร์ห้อง') ||
+            s.purpose?.includes('จัดห้อง');
+
           const isPreserve =
             !isTeaching &&
             (isStorageRoom ||
+              isFacilityPrep ||
               s.purpose?.includes('รักษาอุปกรณ์') ||
               s.purpose?.includes('ถนอมรักษา') ||
               s.purpose?.includes('บำรุงรักษา'));
@@ -148,9 +155,16 @@ export async function GET(req: Request) {
           (l.purpose?.includes('สอน') || l.purpose?.includes('เรียน') || l.purpose?.includes('ฝึก')) &&
           !l.purpose?.includes('รักษาอุปกรณ์');
 
+        const isFacilityPrep =
+          l.note?.includes('จัดห้อง') ||
+          l.note?.includes('เตรียมห้อง') ||
+          l.note?.includes('เคลียร์ห้อง') ||
+          l.purpose?.includes('จัดห้อง');
+
         const isPreserve =
           !isTeaching &&
           (isStorageRoom ||
+            isFacilityPrep ||
             l.purpose?.includes('รักษาอุปกรณ์') ||
             l.purpose?.includes('ถนอมรักษา') ||
             l.purpose?.includes('บำรุงรักษา'));

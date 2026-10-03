@@ -95,7 +95,9 @@ export default function ExecutiveDashboardPage() {
     else setLoading(true);
 
     try {
-      const res = await fetch(`/api/executive/stats?month=${m}&year=${y}`);
+      const res = await fetch(`/api/executive/stats?month=${m}&year=${y}`, {
+        cache: 'no-store',
+      });
       if (res.ok) {
         const json = await res.json();
         setData(json);
@@ -396,7 +398,7 @@ export default function ExecutiveDashboardPage() {
             if (!name) return '-';
             if (name.includes('Sim Man') || name.includes('SIM MAN')) return 'SIM MAN';
             if (name.includes('Sim Mom') || name.includes('SIM MOM')) return 'SIM MOM';
-            if (name.includes('Debriefing')) return 'Debriefing';
+            if (name.includes('Debriefing') || name.includes('debrief') || name.includes('สังเกตการณ์')) return 'สังเกตการณ์';
             if (name.includes('เก็บครุภัณฑ์')) return 'ห้องเก็บครุภัณฑ์';
             if (name.includes('เก็บวัสดุ')) return 'ห้องเก็บวัสดุสิ้นเปลือง';
             if (name.includes('พื้นฐาน 1/3')) return 'พื้นฐาน 1/3';

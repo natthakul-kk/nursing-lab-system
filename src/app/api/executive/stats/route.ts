@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma';
 import { formatImageUrl } from '@/lib/image-helper';
 import { ORG_CONFIG } from '@/lib/constants/organization';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -255,6 +258,12 @@ export async function GET(req: Request) {
         totalRoomsCount,
       },
       equipmentList,
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      }
     });
   } catch (error: any) {
     console.error('Executive stats error:', error);

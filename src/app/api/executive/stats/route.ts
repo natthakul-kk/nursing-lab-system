@@ -119,11 +119,16 @@ export async function GET(req: Request) {
           const sh = Number(s.hours) || 0;
           if (sh <= 0) return;
           totalAcHoursMonth += sh;
+          const isTeaching =
+            (s.purpose?.includes('สอน') || s.purpose?.includes('เรียน') || s.purpose?.includes('ฝึก')) &&
+            !s.purpose?.includes('รักษาอุปกรณ์');
+
           const isPreserve =
-            isStorageRoom ||
-            s.purpose?.includes('รักษาอุปกรณ์') ||
-            s.purpose?.includes('ถนอมรักษา') ||
-            s.purpose?.includes('บำรุงรักษา');
+            !isTeaching &&
+            (isStorageRoom ||
+              s.purpose?.includes('รักษาอุปกรณ์') ||
+              s.purpose?.includes('ถนอมรักษา') ||
+              s.purpose?.includes('บำรุงรักษา'));
 
           if (isPreserve) {
             maintenanceAcHours += sh;
@@ -136,11 +141,16 @@ export async function GET(req: Request) {
         });
       } else {
         totalAcHoursMonth += h;
+        const isTeaching =
+          (l.purpose?.includes('สอน') || l.purpose?.includes('เรียน') || l.purpose?.includes('ฝึก')) &&
+          !l.purpose?.includes('รักษาอุปกรณ์');
+
         const isPreserve =
-          isStorageRoom ||
-          l.purpose?.includes('รักษาอุปกรณ์') ||
-          l.purpose?.includes('ถนอมรักษา') ||
-          l.purpose?.includes('บำรุงรักษา');
+          !isTeaching &&
+          (isStorageRoom ||
+            l.purpose?.includes('รักษาอุปกรณ์') ||
+            l.purpose?.includes('ถนอมรักษา') ||
+            l.purpose?.includes('บำรุงรักษา'));
 
         if (isPreserve) {
           maintenanceAcHours += h;

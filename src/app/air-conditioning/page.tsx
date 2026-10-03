@@ -663,11 +663,11 @@ export default function AirConditioningPage() {
       );
       ws['!merges'] = merges;
 
-      const cols: any[] = [{ wch: 14 }, { wch: 6 }];
+      const cols: any[] = [{ wch: 15 }, { wch: 7 }];
       rooms.forEach(() => {
-        cols.push({ wch: 11 }, { wch: 11 }, { wch: 10 }, { wch: 10 }, { wch: 24 });
+        cols.push({ wch: 7 }, { wch: 7 }, { wch: 6 }, { wch: 7 }, { wch: 36 });
       });
-      cols.push({ wch: 16 });
+      cols.push({ wch: 14 });
       ws['!cols'] = cols;
       ws['!pageSetup'] = { orientation: 'landscape', paperSize: 9, fitToWidth: 1, fitToHeight: 0 };
       ws['!margins'] = { left: 0.3, right: 0.3, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2 };
@@ -803,8 +803,13 @@ export default function AirConditioningPage() {
         width: 235px;
         line-height: 1.2;
       }
-      .weekend-row {
-        background-color: #f1f5f9 !important;
+      .weekend-row,
+      tr.weekend-row,
+      tr.weekend-row td {
+        background-color: #e2e8f0 !important;
+      }
+      tr.weekend-row td.font-bold {
+        background-color: #cbd5e1 !important;
       }
       .legend-box {
         margin-top: 3px;
@@ -933,8 +938,8 @@ export default function AirConditioningPage() {
           <table>
             <thead>
               <tr>
-                <th rowspan="2" style="width: 58px;">วันที่</th>
-                <th rowspan="2" style="width: 28px;">วัน</th>
+                <th rowspan="2" style="width: 50px;">วันที่</th>
+                <th rowspan="2" style="width: 20px;">วัน</th>
                 ${chunkRooms.map((r: any) => `
                   <th colspan="5" style="font-size: 7.2pt; line-height: 1.15; padding: 2px 2px; white-space: normal; height: 26px;">
                     <b>${r.name}</b> ${r.code ? `<span style="font-size: 6.5pt; color: #475569;">(${r.code})</span>` : ''}
@@ -943,11 +948,11 @@ export default function AirConditioningPage() {
               </tr>
               <tr>
                 ${chunkRooms.map(() => `
-                  <th style="width: 44px;">เปิด</th>
-                  <th style="width: 44px;">ปิด</th>
-                  <th style="width: 32px;">ชม.</th>
-                  <th style="width: 40px;">อุณหภูมิ</th>
-                  <th>หมายเหตุ</th>
+                  <th style="width: 28px;">เปิด</th>
+                  <th style="width: 28px;">ปิด</th>
+                  <th style="width: 22px;">ชม.</th>
+                  <th style="width: 28px;">อุณหภูมิ</th>
+                  <th style="width: 225px;">หมายเหตุ</th>
                 `).join('')}
               </tr>
             </thead>
@@ -963,7 +968,7 @@ export default function AirConditioningPage() {
                       <td>${log.closeTime || '-'}</td>
                       <td class="font-bold">${hrs}</td>
                       <td>${log.temperature ? `${log.temperature}°C` : '22°C'}</td>
-                      <td class="text-left" style="font-size: 6.6pt; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                      <td class="text-left" style="font-size: 6.2pt; padding: 0.5px 3px; line-height: 1.15; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${formatPurposeWithNote(log.purpose, log.note)}">
                         ${formatPurposeWithNote(log.purpose, log.note)}
                       </td>
                     `;
@@ -1431,9 +1436,9 @@ export default function AirConditioningPage() {
                     key={d.dateStr}
                     className={`transition ${
                       d.isCustomHoliday
-                        ? 'bg-slate-100/90 dark:bg-slate-900/80 border-l-2 border-l-amber-500'
+                        ? 'bg-amber-50/80 dark:bg-amber-950/40 border-l-4 border-l-amber-500'
                         : d.isWeekend
-                        ? 'bg-slate-50/70 dark:bg-slate-950/40'
+                        ? 'bg-slate-200/75 dark:bg-slate-800/80 border-l-4 border-l-slate-400 dark:border-l-slate-600'
                         : 'hover:bg-teal-50/30 dark:hover:bg-teal-950/20'
                     }`}
                   >
@@ -1445,9 +1450,9 @@ export default function AirConditioningPage() {
                         isOfficer ? 'cursor-pointer hover:bg-teal-100/40 dark:hover:bg-teal-900/30' : ''
                       } ${
                         d.isCustomHoliday
-                          ? 'bg-amber-50/70 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 font-semibold'
+                          ? 'bg-amber-100/80 dark:bg-amber-900/40 text-amber-950 dark:text-amber-200 font-semibold'
                           : d.isWeekend
-                          ? 'text-rose-600 dark:text-rose-400'
+                          ? 'bg-slate-300/60 dark:bg-slate-700/60 text-rose-600 dark:text-rose-400 font-bold'
                           : 'text-slate-700 dark:text-slate-300'
                       }`}
                     >
@@ -1457,7 +1462,7 @@ export default function AirConditioningPage() {
                         </span>
                         {d.isCustomHoliday && (
                           <span
-                            className="text-[10px] bg-amber-200 dark:bg-amber-900/70 text-amber-800 dark:text-amber-200 px-1.5 py-0.2 rounded font-sans font-normal truncate max-w-[130px]"
+                            className="text-[10px] bg-amber-200 dark:bg-amber-900/80 text-amber-900 dark:text-amber-200 px-1.5 py-0.2 rounded font-sans font-bold truncate max-w-[130px]"
                             title={d.holidayName}
                           >
                             {d.holidayName}
@@ -1474,7 +1479,7 @@ export default function AirConditioningPage() {
                         isOfficer ? 'cursor-pointer hover:bg-teal-100/40 dark:hover:bg-teal-900/30' : ''
                       } ${
                         d.isWeekend || d.isCustomHoliday
-                          ? 'text-rose-500 font-extrabold'
+                          ? 'text-rose-600 dark:text-rose-400 font-black'
                           : 'text-slate-600 dark:text-slate-400'
                       }`}
                     >

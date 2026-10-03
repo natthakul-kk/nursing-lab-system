@@ -347,7 +347,7 @@ export default function AirConditioningPage() {
     // Column Headers
     const colHeaderRow: any[] = ['วันที่', 'วัน'];
     activeRooms.forEach(() => {
-      colHeaderRow.push('เวลาเปิด', 'เวลาปิด', 'ชม.ใช้งาน', 'อุณหภูมิ', 'ผู้บันทึก/หมายเหตุ');
+      colHeaderRow.push('เวลาเปิด', 'เวลาปิด', 'ชม.ใช้งาน', 'อุณหภูมิ', 'หมายเหตุ');
     });
     colHeaderRow.push('รวมทั้งวัน (ชม.)');
     rows.push(colHeaderRow);
@@ -725,7 +725,7 @@ export default function AirConditioningPage() {
                     <th className="p-2 border border-slate-600 w-16">เวลาปิด</th>
                     <th className="p-2 border border-slate-600 w-16">ชม.ใช้งาน</th>
                     <th className="p-2 border border-slate-600 w-16">อุณหภูมิ</th>
-                    <th className="p-2 border border-slate-600 min-w-[140px]">ผู้บันทึก/หมายเหตุ</th>
+                    <th className="p-2 border border-slate-600 min-w-[140px]">หมายเหตุ</th>
                   </React.Fragment>
                 ))}
               </tr>

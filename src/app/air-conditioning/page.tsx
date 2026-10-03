@@ -375,32 +375,57 @@ export default function AirConditioningPage() {
 
     // Summary Rows
     // 1. รวมชั่วโมงทั้งเดือน
-    const totalRow: any[] = ['', 'รวมชั่วโมงทั้งเดือน'];
+    const totalRowIndex = rows.length;
+    const totalRow: any[] = ['รวมชั่วโมงทั้งเดือน', ''];
     activeRooms.forEach((r: any, idx: number) => {
-      const colLetter = String.fromCharCode(67 + idx * 5 + 2); // ชม.ใช้งาน column
-      totalRow.push('', '', { f: `SUM(${colLetter}${startDataRow}:${colLetter}${endDataRow})` }, '', '');
+      const hoursColIndex = 2 + idx * 5 + 2;
+      const colLetter = XLSX.utils.encode_col(hoursColIndex);
+      const roomTotal = roomSummaries[r.id]?.totalHours || 0;
+      totalRow.push(
+        '',
+        '',
+        { t: 'n', v: roomTotal, f: `SUM(${colLetter}${startDataRow}:${colLetter}${endDataRow})` },
+        '',
+        ''
+      );
     });
-    const lastColLetter = String.fromCharCode(67 + activeRooms.length * 5);
-    totalRow.push({ f: `SUM(${lastColLetter}${startDataRow}:${lastColLetter}${endDataRow})` });
+    const lastColIndex = 2 + activeRooms.length * 5;
+    const lastColLetter = XLSX.utils.encode_col(lastColIndex);
+    totalRow.push({
+      t: 'n',
+      v: grandTotalHours,
+      f: `SUM(${lastColLetter}${startDataRow}:${lastColLetter}${endDataRow})`,
+    });
     rows.push(totalRow);
 
     // 2. เฉลี่ยต่อวันใช้งาน
-    const avgRow: any[] = ['', 'เฉลี่ยต่อวันใช้งาน'];
+    const avgRowIndex = rows.length;
+    const avgRow: any[] = ['เฉลี่ยต่อวันใช้งาน', ''];
     activeRooms.forEach((r: any) => {
       const summary = roomSummaries[r.id];
       const avgH = summary?.activeDays > 0 ? Math.round((summary.totalHours / summary.activeDays) * 10) / 10 : 0;
       avgRow.push('', '', avgH, `${summary?.avgTemp || 22}°C`, '');
     });
-    avgRow.push('');
+    let totalDaysWithAc = 0;
+    daysArray.forEach((d) => {
+      const hasAnyAc = activeRooms.some((r: any) => {
+        const log = data?.logsMap?.[d.dateStr]?.[r.id];
+        return log && Number(log.usageHours) > 0;
+      });
+      if (hasAnyAc) totalDaysWithAc++;
+    });
+    const grandAvgHours = totalDaysWithAc > 0 ? Math.round((grandTotalHours / totalDaysWithAc) * 10) / 10 : 0;
+    avgRow.push(grandAvgHours);
     rows.push(avgRow);
 
     // 3. จำนวนวันที่เปิดใช้งาน
-    const activeDaysRow: any[] = ['', 'จำนวนวันที่เปิดใช้งาน'];
+    const activeDaysRowIndex = rows.length;
+    const activeDaysRow: any[] = ['จำนวนวันที่เปิดใช้งาน', ''];
     activeRooms.forEach((r: any) => {
       const summary = roomSummaries[r.id];
       activeDaysRow.push('', '', `${summary?.activeDays || 0} วัน`, '', '');
     });
-    activeDaysRow.push('');
+    activeDaysRow.push(`${totalDaysWithAc} วัน`);
     rows.push(activeDaysRow);
 
     // Merges
@@ -414,6 +439,13 @@ export default function AirConditioningPage() {
       const cStart = 2 + idx * 5;
       merges.push({ s: { r: 1, c: cStart }, e: { r: 1, c: cStart + 4 } });
     });
+
+    // Merge labels across cols A and B for summary rows
+    merges.push(
+      { s: { r: totalRowIndex, c: 0 }, e: { r: totalRowIndex, c: 1 } },
+      { s: { r: avgRowIndex, c: 0 }, e: { r: avgRowIndex, c: 1 } },
+      { s: { r: activeDaysRowIndex, c: 0 }, e: { r: activeDaysRowIndex, c: 1 } }
+    );
 
     const ws = XLSX.utils.aoa_to_sheet(rows);
     ws['!merges'] = merges;

@@ -77,8 +77,19 @@ export default function AirConditioningPage() {
 
   // Print Modal State
   const [showPrintModal, setShowPrintModal] = useState(false);
-  const [printLayout, setPrintLayout] = useState<'summary' | 'chunks' | 'single'>('summary');
+  const [printLayout, setPrintLayout] = useState<'bundle' | 'summary' | 'chunks' | 'single'>('bundle');
   const [printSingleRoomId, setPrintSingleRoomId] = useState<string>('');
+
+  // Holiday Modal State (Double-click Date cell)
+  const [showHolidayModal, setShowHolidayModal] = useState(false);
+  const [selectedHolidayDate, setSelectedHolidayDate] = useState<{
+    dateStr: string;
+    day: number;
+    dayOfWeek: string;
+    currentHolidayName: string;
+  } | null>(null);
+  const [holidayFormName, setHolidayFormName] = useState('');
+  const [isSubmittingHoliday, setIsSubmittingHoliday] = useState(false);
 
   // Quick Backdated Log Modal
   const [showBackdateModal, setShowBackdateModal] = useState(false);
@@ -153,15 +164,28 @@ export default function AirConditioningPage() {
   const daysInMonth = data?.daysInMonth || new Date(currentYear, currentMonth, 0).getDate();
   const daysArray = useMemo(() => {
     const arr: any[] = [];
+    const holidaysMap = data?.holidaysMap || {};
     for (let day = 1; day <= daysInMonth; day++) {
       const d = new Date(currentYear, currentMonth - 1, day);
       const dayOfWeek = THAI_DAY_NAMES[d.getDay()];
       const isWeekend = d.getDay() === 0 || d.getDay() === 6;
       const dateStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      arr.push({ day, dayOfWeek, isWeekend, dateStr, dateObj: d });
+      const holidayName = holidaysMap[dateStr] || '';
+      const isCustomHoliday = Boolean(holidayName);
+      const isHoliday = isWeekend || isCustomHoliday;
+      arr.push({
+        day,
+        dayOfWeek,
+        isWeekend,
+        isCustomHoliday,
+        isHoliday,
+        holidayName,
+        dateStr,
+        dateObj: d,
+      });
     }
     return arr;
-  }, [currentYear, currentMonth, daysInMonth]);
+  }, [currentYear, currentMonth, daysInMonth, data?.holidaysMap]);
 
   // Calculate Column Totals & Summaries
   const roomSummaries = useMemo(() => {
@@ -197,6 +221,71 @@ export default function AirConditioningPage() {
   const grandTotalHours = useMemo(() => {
     return Object.values(roomSummaries).reduce((acc, s) => acc + s.totalHours, 0);
   }, [roomSummaries]);
+
+  // Open Holiday Modal (Double click Date cell)
+  const handleOpenHolidayModal = (dayInfo: any) => {
+    if (!isOfficer && !isAdmin) return; // Only Officer or Admin
+    const currentName = data?.holidaysMap?.[dayInfo.dateStr] || '';
+    setSelectedHolidayDate({
+      dateStr: dayInfo.dateStr,
+      day: dayInfo.day,
+      dayOfWeek: dayInfo.dayOfWeek,
+      currentHolidayName: currentName,
+    });
+    setHolidayFormName(currentName);
+    setShowHolidayModal(true);
+  };
+
+  // Save Holiday
+  const handleSaveHoliday = async () => {
+    if (!selectedHolidayDate || !holidayFormName.trim()) return;
+    setIsSubmittingHoliday(true);
+    try {
+      const res = await fetch('/api/holidays', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          dateStr: selectedHolidayDate.dateStr,
+          name: holidayFormName.trim(),
+          createdById: currentUser?.id,
+        }),
+      });
+      const resData = await res.json();
+      if (resData.success) {
+        setShowHolidayModal(false);
+        fetchLogs(true);
+      } else {
+        alert(resData.error || 'เกิดข้อผิดพลาดในการบันทึกวันหยุด');
+      }
+    } catch (err: any) {
+      alert('เกิดข้อผิดพลาดในการบันทึก: ' + err.message);
+    } finally {
+      setIsSubmittingHoliday(false);
+    }
+  };
+
+  // Delete / Cancel Holiday
+  const handleDeleteHoliday = async () => {
+    if (!selectedHolidayDate) return;
+    if (!confirm(`คุณต้องการยกเลิกวันหยุดพิเศษของวันที่ ${selectedHolidayDate.dateStr} ใช่หรือไม่?`)) return;
+    setIsSubmittingHoliday(true);
+    try {
+      const res = await fetch(`/api/holidays?dateStr=${selectedHolidayDate.dateStr}`, {
+        method: 'DELETE',
+      });
+      const resData = await res.json();
+      if (resData.success) {
+        setShowHolidayModal(false);
+        fetchLogs(true);
+      } else {
+        alert(resData.error || 'เกิดข้อผิดพลาดในการยกเลิกวันหยุด');
+      }
+    } catch (err: any) {
+      alert('เกิดข้อผิดพลาดในการยกเลิก: ' + err.message);
+    } finally {
+      setIsSubmittingHoliday(false);
+    }
+  };
 
   // Open Log Modal for specific cell
   const handleOpenCellLog = (dayInfo: any, room: any) => {
@@ -473,7 +562,9 @@ export default function AirConditioningPage() {
       const startDataRow = 4;
 
       daysArray.forEach((d) => {
-        const row: any[] = [`${d.day} ${d.dateObj.toLocaleString('en-US', { month: 'short' })} ${currentYear}`, d.dayOfWeek];
+        const dateText = `${d.day} ${d.dateObj.toLocaleString('th-TH', { month: 'short' })} ${yearBE}${d.holidayName ? ` (${d.holidayName})` : ''}`;
+        const dayText = `${d.dayOfWeek}${d.isWeekend || d.isCustomHoliday ? ' (วันหยุด)' : ''}`;
+        const row: any[] = [dateText, dayText];
         let dayTotal = 0;
 
         rooms.forEach((r: any) => {
@@ -585,13 +676,13 @@ export default function AirConditioningPage() {
     };
 
     // -------------------------------------------------------------
-    // SHEET 2..N: ชีตย่อยจัดหน้า A4 แบ่งชุดละ 3-4 ห้อง
+    // SHEET 2..N: ชีตย่อยจัดหน้า A4 แบ่งชุดละ 3 ห้อง
     // -------------------------------------------------------------
-    if (activeRooms.length > 4) {
-      const chunks = chunkRoomsArray(activeRooms, 4);
+    if (activeRooms.length > 3) {
+      const chunks = chunkRoomsArray(activeRooms, 3);
       chunks.forEach((chunkRooms, idx) => {
         const chunkWs = createDetailedSheet(chunkRooms, `- หน้าที่ ${idx + 1} จาก ${chunks.length}`);
-        XLSX.utils.book_append_sheet(wb, chunkWs, `หน้าที่${idx + 1}(ห้อง${idx * 4 + 1}-${idx * 4 + chunkRooms.length})`);
+        XLSX.utils.book_append_sheet(wb, chunkWs, `หน้าที่${idx + 1}(ห้อง${idx * 3 + 1}-${idx * 3 + chunkRooms.length})`);
       });
     } else {
       const detailedWs = createDetailedSheet(activeRooms, '');
@@ -608,7 +699,7 @@ export default function AirConditioningPage() {
   };
 
   // Web Print Handler (Generates clean printable HTML and triggers browser print dialog)
-  const handlePrintWeb = (layout: 'summary' | 'chunks' | 'single') => {
+  const handlePrintWeb = (layout: 'bundle' | 'summary' | 'chunks' | 'single') => {
     const monthName = THAI_MONTHS[currentMonth - 1];
     const yearBE = currentYear + 543;
     const printWindow = window.open('', '_blank');
@@ -632,7 +723,7 @@ export default function AirConditioningPage() {
         padding: 0;
         background: #fff;
         font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        font-size: ${layout === 'summary' ? '8pt' : '7pt'};
+        font-size: 7pt;
         color: #0f172a;
       }
       .page-container {
@@ -659,7 +750,7 @@ export default function AirConditioningPage() {
         line-height: 1.15;
       }
       .header-subtitle {
-        font-size: 7.5pt;
+        font-size: 7.2pt;
         color: #475569;
         margin-top: 1px;
       }
@@ -702,30 +793,40 @@ export default function AirConditioningPage() {
       .signature-wrap {
         display: flex;
         justify-content: flex-end;
-        margin-top: 4px;
-        font-size: 7.5pt;
+        margin-top: 3px;
+        font-size: 7.2pt;
         page-break-inside: avoid;
         break-inside: avoid;
       }
       .signature-block {
         text-align: center;
-        width: 240px;
-        line-height: 1.25;
+        width: 235px;
+        line-height: 1.2;
       }
       .weekend-row {
-        background-color: #fcfcfc;
+        background-color: #f1f5f9 !important;
+      }
+      .legend-box {
+        margin-top: 3px;
+        border: 1px solid #94a3b8;
+        border-radius: 4px;
+        padding: 3px 6px;
+        font-size: 6.5pt;
+        background-color: #f8fafc;
+        page-break-inside: avoid;
+        break-inside: avoid;
       }
     `;
 
-    let bodyContent = '';
-
-    if (layout === 'summary') {
-      bodyContent = `
+    // 1. Render Summary Page (Room codes, total hours, dynamic legend, signature)
+    const renderSummaryPage = (pageNumber = 1, totalPages = 1) => {
+      const pageInfo = totalPages > 1 ? ` — (หน้าที่ ${pageNumber} จาก ${totalPages} หน้า: สรุปภาพรวม)` : '';
+      return `
         <div class="page-container">
           <div class="header-box">
             <div class="header-title">ตารางสรุปชั่วโมงการเปิด-ปิดเครื่องปรับอากาศ</div>
             <div class="header-subtitle">
-              คณะพยาบาลศาสตร์ • ประจำเดือน${monthName} ปี พ.ศ. ${yearBE} (ค.ศ. ${currentYear})
+              คณะพยาบาลศาสตร์ • ประจำเดือน${monthName} ปี พ.ศ. ${yearBE} (ค.ศ. ${currentYear})${pageInfo}
             </div>
           </div>
 
@@ -734,7 +835,7 @@ export default function AirConditioningPage() {
               <tr>
                 <th style="width: 55px;">วันที่</th>
                 <th style="width: 28px;">วัน</th>
-                ${activeRooms.map((r: any) => `<th>${r.name}</th>`).join('')}
+                ${activeRooms.map((r: any) => `<th>${r.code || r.name}</th>`).join('')}
                 <th style="width: 58px; background-color: #e2e8f0;">รวม (ชม.)</th>
               </tr>
             </thead>
@@ -751,10 +852,12 @@ export default function AirConditioningPage() {
                   return `<td style="color: #94a3b8;">-</td>`;
                 }).join('');
 
+                const isRowHoliday = d.isWeekend || d.isCustomHoliday;
+
                 return `
-                  <tr class="${d.isWeekend ? 'weekend-row' : ''}">
+                  <tr class="${isRowHoliday ? 'weekend-row' : ''}">
                     <td style="white-space: nowrap;">${d.day} ${d.dateObj.toLocaleString('th-TH', { month: 'short' })}</td>
-                    <td>${d.dayOfWeek}</td>
+                    <td style="${isRowHoliday ? 'color: #b91c1c; font-weight: bold;' : ''}">${d.dayOfWeek}</td>
                     ${roomCols}
                     <td class="font-bold" style="background-color: #f1f5f9;">${dayTotal > 0 ? dayTotal : '-'}</td>
                   </tr>
@@ -763,7 +866,7 @@ export default function AirConditioningPage() {
               <tr class="bg-summary" style="border-top: 2px solid #0f172a;">
                 <td colspan="2" class="text-left font-bold" style="padding-left: 6px;">รวมชั่วโมงทั้งเดือน</td>
                 ${activeRooms.map((r: any) => `<td>${roomSummaries[r.id]?.totalHours || 0}</td>`).join('')}
-                <td style="background-color: #e2e8f0; font-size: 9pt;">${grandTotalHours}</td>
+                <td style="background-color: #e2e8f0; font-size: 8.5pt;">${grandTotalHours}</td>
               </tr>
               <tr class="bg-summary">
                 <td colspan="2" class="text-left font-bold" style="padding-left: 6px;">เฉลี่ยต่อวันใช้งาน</td>
@@ -782,6 +885,20 @@ export default function AirConditioningPage() {
             </tbody>
           </table>
 
+          <div class="legend-box">
+            <div style="font-weight: bold; margin-bottom: 2px; color: #1e293b;">หมายเหตุรหัสห้องปฏิบัติการ (Room Code Legend):</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1px 8px; line-height: 1.15;">
+              ${activeRooms.map((r: any) => {
+                const isLong = (r.name || '').length > 35;
+                const fullText = `<b>${r.code}</b>: ${r.name}${r.location ? ` (${r.location})` : ''}`;
+                if (isLong) {
+                  return `<div style="grid-column: 1 / -1; font-weight: 500;">${fullText}</div>`;
+                }
+                return `<div>${fullText}</div>`;
+              }).join('')}
+            </div>
+          </div>
+
           <div class="signature-wrap">
             <div class="signature-block">
               <div>(ลงชื่อ) ................................................................ ผู้รายงาน</div>
@@ -792,117 +909,136 @@ export default function AirConditioningPage() {
           </div>
         </div>
       `;
-    } else if (layout === 'chunks') {
-      const chunks = chunkRoomsArray(activeRooms, 4);
-      bodyContent = chunks.map((chunkRooms, chunkIdx) => {
-        const isLastChunk = chunkIdx === chunks.length - 1;
-        let chunkGrandTotal = 0;
-        chunkRooms.forEach((r: any) => {
-          chunkGrandTotal += roomSummaries[r.id]?.totalHours || 0;
-        });
+    };
 
-        return `
-          <div class="page-container">
-            <div class="header-box">
-              <div class="header-title">ตารางบันทึกการเปิด-ปิดเครื่องปรับอากาศ</div>
-              <div class="header-subtitle">
-                คณะพยาบาลศาสตร์ • ประจำเดือน${monthName} ปี พ.ศ. ${yearBE} (ค.ศ. ${currentYear}) — (หน้าที่ ${chunkIdx + 1} จาก ${chunks.length} หน้า)
-              </div>
+    // 2. Render Detailed Chunk Page (3 rooms per page, 2-line header, no right total, with °C and signatures)
+    const renderChunkPage = (
+      chunkRooms: any[],
+      chunkIdx: number,
+      totalChunksCount: number,
+      pageOffset = 0,
+      totalPages = totalChunksCount
+    ) => {
+      const isLastChunk = chunkIdx === totalChunksCount - 1;
+      const pageNum = chunkIdx + 1 + pageOffset;
+      return `
+        <div class="page-container">
+          <div class="header-box">
+            <div class="header-title">ตารางบันทึกการเปิด-ปิดเครื่องปรับอากาศ</div>
+            <div class="header-subtitle">
+              คณะพยาบาลศาสตร์ • ประจำเดือน${monthName} ปี พ.ศ. ${yearBE} (ค.ศ. ${currentYear}) — (หน้าที่ ${pageNum} จาก ${totalPages} หน้า)
             </div>
+          </div>
 
-            <table>
-              <thead>
-                <tr>
-                  <th rowspan="2" style="width: 48px;">วันที่</th>
-                  <th rowspan="2" style="width: 26px;">วัน</th>
-                  ${chunkRooms.map((r: any) => `<th colspan="5" style="font-size: 6.8pt; line-height: 1.1; padding: 1px 1px;">${r.name}</th>`).join('')}
-                  <th rowspan="2" style="width: 46px; background-color: #e2e8f0;">รวม (ชม.)</th>
-                </tr>
-                <tr>
-                  ${chunkRooms.map(() => `
-                    <th style="width: 38px;">เปิด</th>
-                    <th style="width: 38px;">ปิด</th>
-                    <th style="width: 28px;">ชม.</th>
-                    <th style="width: 32px;">อุณหภูมิ</th>
-                    <th style="width: 95px;">หมายเหตุ</th>
+          <table>
+            <thead>
+              <tr>
+                <th rowspan="2" style="width: 58px;">วันที่</th>
+                <th rowspan="2" style="width: 28px;">วัน</th>
+                ${chunkRooms.map((r: any) => `
+                  <th colspan="5" style="font-size: 7.2pt; line-height: 1.15; padding: 2px 2px; white-space: normal; height: 26px;">
+                    <b>${r.name}</b> ${r.code ? `<span style="font-size: 6.5pt; color: #475569;">(${r.code})</span>` : ''}
+                  </th>
+                `).join('')}
+              </tr>
+              <tr>
+                ${chunkRooms.map(() => `
+                  <th style="width: 44px;">เปิด</th>
+                  <th style="width: 44px;">ปิด</th>
+                  <th style="width: 32px;">ชม.</th>
+                  <th style="width: 40px;">อุณหภูมิ</th>
+                  <th>หมายเหตุ</th>
+                `).join('')}
+              </tr>
+            </thead>
+            <tbody>
+              ${daysArray.map((d: any) => {
+                const isRowHoliday = d.isWeekend || d.isCustomHoliday;
+                const roomCells = chunkRooms.map((r: any) => {
+                  const log = data?.logsMap?.[d.dateStr]?.[r.id];
+                  if (log && Number(log.usageHours) > 0) {
+                    const hrs = Number(log.usageHours);
+                    return `
+                      <td>${log.openTime || '-'}</td>
+                      <td>${log.closeTime || '-'}</td>
+                      <td class="font-bold">${hrs}</td>
+                      <td>${log.temperature ? `${log.temperature}°C` : '22°C'}</td>
+                      <td class="text-left" style="font-size: 6.6pt; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                        ${formatPurposeWithNote(log.purpose, log.note)}
+                      </td>
+                    `;
+                  }
+                  return `<td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>`;
+                }).join('');
+
+                return `
+                  <tr class="${isRowHoliday ? 'weekend-row' : ''}">
+                    <td style="white-space: nowrap; font-size: 6.8pt;">
+                      ${d.day} ${d.dateObj.toLocaleString('th-TH', { month: 'short' })} ${yearBE}
+                    </td>
+                    <td style="${isRowHoliday ? 'color: #b91c1c; font-weight: bold;' : ''}">${d.dayOfWeek}</td>
+                    ${roomCells}
+                  </tr>
+                `;
+              }).join('')}
+              ${isLastChunk ? `
+                <tr class="bg-summary" style="border-top: 2px solid #0f172a;">
+                  <td colspan="2" class="text-left font-bold" style="padding-left: 4px;">รวมชั่วโมงทั้งเดือน</td>
+                  ${chunkRooms.map((r: any) => `
+                    <td></td><td></td>
+                    <td class="font-bold">${roomSummaries[r.id]?.totalHours || 0}</td>
+                    <td></td><td></td>
                   `).join('')}
                 </tr>
-              </thead>
-              <tbody>
-                ${daysArray.map((d: any) => {
-                  let dayTotal = 0;
-                  const roomCells = chunkRooms.map((r: any) => {
-                    const log = data?.logsMap?.[d.dateStr]?.[r.id];
-                    if (log && Number(log.usageHours) > 0) {
-                      const hrs = Number(log.usageHours);
-                      dayTotal += hrs;
-                      return `
-                        <td>${log.openTime || '-'}</td>
-                        <td>${log.closeTime || '-'}</td>
-                        <td class="font-bold">${hrs}</td>
-                        <td>${log.temperature ? `${log.temperature}°` : '22°'}</td>
-                        <td class="text-left" style="font-size: 6.6pt; max-width: 95px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                          ${formatPurposeWithNote(log.purpose, log.note)}
-                        </td>
-                      `;
-                    }
-                    return `<td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>`;
-                  }).join('');
+                <tr class="bg-summary">
+                  <td colspan="2" class="text-left font-bold" style="padding-left: 4px;">เฉลี่ยต่อวันใช้งาน</td>
+                  ${chunkRooms.map((r: any) => {
+                    const s = roomSummaries[r.id];
+                    const avg = s?.activeDays > 0 ? Math.round((s.totalHours / s.activeDays) * 10) / 10 : 0;
+                    return `<td></td><td></td><td>${avg}</td><td>${s?.avgTemp || 22}°C</td><td></td>`;
+                  }).join('')}
+                </tr>
+                <tr class="bg-summary">
+                  <td colspan="2" class="text-left font-bold" style="padding-left: 4px;">จำนวนวันที่เปิดใช้งาน</td>
+                  ${chunkRooms.map((r: any) => `
+                    <td></td><td></td>
+                    <td>${roomSummaries[r.id]?.activeDays || 0} วัน</td>
+                    <td></td><td></td>
+                  `).join('')}
+                </tr>
+              ` : ''}
+            </tbody>
+          </table>
 
-                  return `
-                    <tr class="${d.isWeekend ? 'weekend-row' : ''}">
-                      <td style="white-space: nowrap;">${d.day} ${d.dateObj.toLocaleString('th-TH', { month: 'short' })}</td>
-                      <td>${d.dayOfWeek}</td>
-                      ${roomCells}
-                      <td class="font-bold" style="background-color: #f1f5f9;">${dayTotal > 0 ? dayTotal : '-'}</td>
-                    </tr>
-                  `;
-                }).join('')}
-                ${isLastChunk ? `
-                  <tr class="bg-summary" style="border-top: 2px solid #0f172a;">
-                    <td colspan="2" class="text-left font-bold" style="padding-left: 4px;">รวมชั่วโมงทั้งเดือน</td>
-                    ${chunkRooms.map((r: any) => `
-                      <td></td><td></td>
-                      <td class="font-bold">${roomSummaries[r.id]?.totalHours || 0}</td>
-                      <td></td><td></td>
-                    `).join('')}
-                    <td style="background-color: #e2e8f0; font-size: 9pt;">${grandTotalHours}</td>
-                  </tr>
-                  <tr class="bg-summary">
-                    <td colspan="2" class="text-left font-bold" style="padding-left: 4px;">เฉลี่ยต่อวันใช้งาน</td>
-                    ${chunkRooms.map((r: any) => {
-                      const s = roomSummaries[r.id];
-                      const avg = s?.activeDays > 0 ? Math.round((s.totalHours / s.activeDays) * 10) / 10 : 0;
-                      return `<td></td><td></td><td>${avg}</td><td>${s?.avgTemp || 22}°C</td><td></td>`;
-                    }).join('')}
-                    <td style="background-color: #e2e8f0;">${grandTotalHours > 0 ? Math.round((grandTotalHours / daysInMonth) * 10) / 10 : 0}</td>
-                  </tr>
-                  <tr class="bg-summary">
-                    <td colspan="2" class="text-left font-bold" style="padding-left: 4px;">จำนวนวันที่เปิดใช้งาน</td>
-                    ${chunkRooms.map((r: any) => `
-                      <td></td><td></td>
-                      <td>${roomSummaries[r.id]?.activeDays || 0} วัน</td>
-                      <td></td><td></td>
-                    `).join('')}
-                    <td style="background-color: #e2e8f0;">-</td>
-                  </tr>
-                ` : ''}
-              </tbody>
-            </table>
-
-            ${isLastChunk ? `
-              <div class="signature-wrap">
-                <div class="signature-block">
-                  <div>(ลงชื่อ) ................................................................ ผู้รายงาน</div>
-                  <div style="margin-top: 3px;">( ................................................................ )</div>
-                  <div style="margin-top: 1px;">ตำแหน่ง เจ้าหน้าที่ประจำห้องปฏิบัติการ</div>
-                  <div style="margin-top: 1px;">วันที่ ........ / .................... / ............</div>
-                </div>
-              </div>
-            ` : ''}
+          <div class="signature-wrap">
+            <div class="signature-block">
+              <div>(ลงชื่อ) ................................................................ ผู้รายงาน</div>
+              <div style="margin-top: 3px;">( ................................................................ )</div>
+              <div style="margin-top: 1px;">ตำแหน่ง เจ้าหน้าที่ประจำห้องปฏิบัติการ</div>
+              <div style="margin-top: 1px;">วันที่ ........ / .................... / ............</div>
+            </div>
           </div>
-        `;
-      }).join('');
+        </div>
+      `;
+    };
+
+    let bodyContent = '';
+
+    if (layout === 'bundle') {
+      const chunks = chunkRoomsArray(activeRooms, 3);
+      const totalPages = 1 + chunks.length;
+      const summaryPart = renderSummaryPage(1, totalPages);
+      const chunksPart = chunks.map((chunkRooms, idx) =>
+        renderChunkPage(chunkRooms, idx, chunks.length, 1, totalPages)
+      ).join('');
+      bodyContent = summaryPart + chunksPart;
+    } else if (layout === 'summary') {
+      bodyContent = renderSummaryPage(1, 1);
+    } else if (layout === 'chunks') {
+      const chunks = chunkRoomsArray(activeRooms, 3);
+      bodyContent = chunks.map((chunkRooms, idx) =>
+        renderChunkPage(chunkRooms, idx, chunks.length, 0, chunks.length)
+      ).join('');
     } else if (layout === 'single') {
       const targetRoom = data?.rooms?.find((r: any) => r.id === (printSingleRoomId || activeRooms[0]?.id)) || activeRooms[0];
       const roomSummary = targetRoom ? roomSummaries[targetRoom.id] : null;
@@ -936,10 +1072,12 @@ export default function AirConditioningPage() {
               ${daysArray.map((d: any) => {
                 const log = targetRoom ? data?.logsMap?.[d.dateStr]?.[targetRoom.id] : null;
                 const hasLog = log && Number(log.usageHours) > 0;
+                const isRowHoliday = d.isWeekend || d.isCustomHoliday;
+
                 return `
-                  <tr class="${d.isWeekend ? 'weekend-row' : ''}">
-                    <td style="white-space: nowrap;">${d.day} ${d.dateObj.toLocaleString('th-TH', { month: 'short' })}</td>
-                    <td>${d.dayOfWeek}</td>
+                  <tr class="${isRowHoliday ? 'weekend-row' : ''}">
+                    <td style="white-space: nowrap;">${d.day} ${d.dateObj.toLocaleString('th-TH', { month: 'short' })} ${yearBE}</td>
+                    <td style="${isRowHoliday ? 'color: #b91c1c; font-weight: bold;' : ''}">${d.dayOfWeek}</td>
                     <td>${hasLog ? log.openTime || '-' : '-'}</td>
                     <td>${hasLog ? log.closeTime || '-' : '-'}</td>
                     <td class="font-bold">${hasLog ? log.usageHours : '-'}</td>
@@ -1243,7 +1381,7 @@ export default function AirConditioningPage() {
           </div>
           {isOfficer && (
             <span className="text-[11px] text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 px-2.5 py-1 rounded-lg border border-teal-200 dark:border-teal-800 font-medium">
-              💡 คลิกที่ช่องของวันนั้นเพื่อบันทึก/แก้ไขเวลาเปิด-ปิดแอร์ได้ทันที
+              💡 ดับเบิ้ลคลิกช่องวันที่เพื่อตั้งวันหยุดพิเศษ • คลิกช่องห้องเพื่อบันทึกเวลาแอร์
             </span>
           )}
         </div>
@@ -1292,20 +1430,52 @@ export default function AirConditioningPage() {
                   <tr
                     key={d.dateStr}
                     className={`transition ${
-                      d.isWeekend
+                      d.isCustomHoliday
+                        ? 'bg-slate-100/90 dark:bg-slate-900/80 border-l-2 border-l-amber-500'
+                        : d.isWeekend
                         ? 'bg-slate-50/70 dark:bg-slate-950/40'
                         : 'hover:bg-teal-50/30 dark:hover:bg-teal-950/20'
                     }`}
                   >
                     {/* Day Col */}
-                    <td className="p-2 text-center font-mono font-medium text-slate-700 dark:text-slate-300 border-r border-slate-200 dark:border-slate-800">
-                      {d.day} {d.dateObj.toLocaleString('en-US', { month: 'short' })} {currentYear}
+                    <td
+                      onDoubleClick={() => handleOpenHolidayModal(d)}
+                      title={isOfficer ? "ดับเบิ้ลคลิกเพื่อกำหนด/แก้ไขวันหยุดพิเศษ" : undefined}
+                      className={`p-2 text-center font-mono font-medium border-r border-slate-200 dark:border-slate-800 transition select-none ${
+                        isOfficer ? 'cursor-pointer hover:bg-teal-100/40 dark:hover:bg-teal-900/30' : ''
+                      } ${
+                        d.isCustomHoliday
+                          ? 'bg-amber-50/70 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 font-semibold'
+                          : d.isWeekend
+                          ? 'text-rose-600 dark:text-rose-400'
+                          : 'text-slate-700 dark:text-slate-300'
+                      }`}
+                    >
+                      <div className="flex flex-col items-center justify-center gap-0.5">
+                        <span className="whitespace-nowrap">
+                          {d.day} {d.dateObj.toLocaleString('th-TH', { month: 'short' })} {currentYear + 543}
+                        </span>
+                        {d.isCustomHoliday && (
+                          <span
+                            className="text-[10px] bg-amber-200 dark:bg-amber-900/70 text-amber-800 dark:text-amber-200 px-1.5 py-0.2 rounded font-sans font-normal truncate max-w-[130px]"
+                            title={d.holidayName}
+                          >
+                            {d.holidayName}
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     {/* Day of Week */}
                     <td
-                      className={`p-2 text-center font-bold border-r border-slate-200 dark:border-slate-800 ${
-                        d.isWeekend ? 'text-rose-500 font-extrabold' : 'text-slate-600 dark:text-slate-400'
+                      onDoubleClick={() => handleOpenHolidayModal(d)}
+                      title={isOfficer ? "ดับเบิ้ลคลิกเพื่อกำหนด/แก้ไขวันหยุดพิเศษ" : undefined}
+                      className={`p-2 text-center font-bold border-r border-slate-200 dark:border-slate-800 select-none ${
+                        isOfficer ? 'cursor-pointer hover:bg-teal-100/40 dark:hover:bg-teal-900/30' : ''
+                      } ${
+                        d.isWeekend || d.isCustomHoliday
+                          ? 'text-rose-500 font-extrabold'
+                          : 'text-slate-600 dark:text-slate-400'
                       }`}
                     >
                       {d.dayOfWeek}
@@ -1716,7 +1886,36 @@ export default function AirConditioningPage() {
                 เลือกรูปแบบการจัดหน้ากระดาษ:
               </label>
 
-              {/* Option 1: Executive Summary */}
+              {/* Option 1: Bundle Print (1 summary + 4 detailed sheets = 5 pages) */}
+              <div
+                onClick={() => setPrintLayout('bundle')}
+                className={`p-3.5 rounded-2xl border-2 transition cursor-pointer flex items-start gap-3 ${
+                  printLayout === 'bundle'
+                    ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/30'
+                    : 'border-slate-200 dark:border-slate-800 hover:border-slate-300'
+                }`}
+              >
+                <div className={`w-5 h-5 rounded-full border-2 mt-0.5 flex items-center justify-center ${
+                  printLayout === 'bundle' ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-slate-300'
+                }`}>
+                  {printLayout === 'bundle' && <Check className="w-3 h-3 stroke-[3]" />}
+                </div>
+                <div className="space-y-1 flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-900 dark:text-white">
+                      พิมพ์ทั้งชุด (1 หน้าสรุป + ตารางละเอียดทุกห้อง รวม 5 แผ่น)
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+                      แนะนำ • ครบชุด
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                    พิมพ์ครบทั้งชุดต่อเนื่องในครั้งเดียว: หน้า 1 สรุปภาพรวมทุกห้อง + หน้า 2-5 ตารางบันทึกละเอียดชุดละ 3 ห้อง พร้อมลายมือชื่อผู้รายงานทุกหน้า
+                  </p>
+                </div>
+              </div>
+
+              {/* Option 2: Executive Summary */}
               <div
                 onClick={() => setPrintLayout('summary')}
                 className={`p-3.5 rounded-2xl border-2 transition cursor-pointer flex items-start gap-3 ${
@@ -1733,19 +1932,19 @@ export default function AirConditioningPage() {
                 <div className="space-y-1 flex-1">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-slate-900 dark:text-white">
-                      สรุปภาพรวมทุกห้อง (1 หน้า A4 จบ)
+                      ตารางสรุปภาพรวมรายวันทุกห้อง (หน้า 1 แผ่นเดียว)
                     </span>
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                      แนะนำสำหรับเสนอผู้บริหาร
+                      ภาพรวม
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                    ตาราง 14 คอลัมน์ สรุปชั่วโมงรายวันของทุกห้อง ลงพอดีในกระดาษ A4 แนวนอน 1 แผ่น ตัวหนังสือใหญ่ชัดเจน ไม่แออัด พร้อมช่องลงนาม
+                    ใช้รหัสห้องในตาราง พร้อมกล่องหมายเหตุชื่อเต็มด้านล่าง สรุปชั่วโมงรายวันครบทุกห้อง ลงพอดีใน A4 แนวนอน 1 แผ่น
                   </p>
                 </div>
               </div>
 
-              {/* Option 2: Detailed Multi-Page (3-4 rooms per page) */}
+              {/* Option 3: Detailed Multi-Page (3 rooms per page) */}
               <div
                 onClick={() => setPrintLayout('chunks')}
                 className={`p-3.5 rounded-2xl border-2 transition cursor-pointer flex items-start gap-3 ${
@@ -1762,14 +1961,14 @@ export default function AirConditioningPage() {
                 <div className="space-y-1 flex-1">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-slate-900 dark:text-white">
-                      ตารางละเอียดแบบฟอร์มราชการ (แบ่งตามเลขหน้า หน้าที่ 1-3)
+                      ตารางละเอียดแบบฟอร์มราชการ (ชุดละ 3 ห้อง รวม 4 แผ่น)
                     </span>
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
                       มาตรฐานงานราชการ
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                    แสดงเวลาเปิด-ปิด อุณหภูมิ และหมายเหตุครบถ้วน โดยวันที่ 1-สิ้นเดือนอยู่ในหน้าเดียวกัน สรุปรวมและลายเซ็นผู้รายงานอยู่หน้าสุดท้าย
+                    แสดงเวลาเปิด-ปิด อุณหภูมิ (°C) และหมายเหตุครบถ้วน โดยวันที่ 1-สิ้นเดือนอยู่ในหน้าเดียวกัน ลายเซ็นผู้รายงานอยู่ทุกหน้า
                   </p>
                 </div>
               </div>
@@ -1851,6 +2050,95 @@ export default function AirConditioningPage() {
               >
                 <Printer className="w-4 h-4" />
                 <span>เปิดหน้าต่างพิมพ์ (Print)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Holiday Modal (Double-click Date Cell) */}
+      {showHolidayModal && selectedHolidayDate && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-800 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                  <Calendar className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">
+                    กำหนดวันหยุดพิเศษ
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    วันที่ {selectedHolidayDate.day} {THAI_MONTHS[currentMonth - 1]} {currentYear + 543} ({selectedHolidayDate.dayOfWeek})
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowHolidayModal(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-3.5 bg-amber-50 dark:bg-amber-950/40 rounded-2xl border border-amber-200 dark:border-amber-800/60 text-xs text-amber-900 dark:text-amber-200 space-y-1">
+              <div className="font-bold">
+                {selectedHolidayDate.currentHolidayName ? (
+                  <span>สถานะปัจจุบัน: เป็นวันหยุดพิเศษ "{selectedHolidayDate.currentHolidayName}"</span>
+                ) : (
+                  <span>กำหนดให้วันนี้เป็นวันหยุดพิเศษ (ไม่ใช่เสาร์-อาทิตย์)</span>
+                )}
+              </div>
+              <p className="text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">
+                เมื่อตั้งเป็นวันหยุด แถวของวันนี้จะแสดงเป็นสีเทาทั้งบนหน้าเว็บ, ตอนสั่งพิมพ์เอกสาร A4 และในไฟล์ Excel
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                ชื่อวันหยุด / รายละเอียด <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={holidayFormName}
+                onChange={(e) => setHolidayFormName(e.target.value)}
+                placeholder="เช่น วันแม่แห่งชาติ, วันหยุดชดเชย, วันหยุดพิเศษคณะ"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-medium outline-none focus:border-amber-500"
+                autoFocus
+              />
+            </div>
+
+            <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800 gap-2">
+              {selectedHolidayDate.currentHolidayName ? (
+                <button
+                  type="button"
+                  disabled={isSubmittingHoliday}
+                  onClick={handleDeleteHoliday}
+                  className="py-2.5 px-3.5 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer border border-rose-200 dark:border-rose-900 flex items-center gap-1.5"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>ยกเลิกวันหยุด</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowHolidayModal(false)}
+                  className="py-2.5 px-4 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 transition cursor-pointer"
+                >
+                  ปิด
+                </button>
+              )}
+
+              <button
+                type="button"
+                disabled={isSubmittingHoliday || !holidayFormName.trim()}
+                onClick={handleSaveHoliday}
+                className="py-2.5 px-5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow-md shadow-amber-500/20 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                <Check className="w-4 h-4 stroke-[2.5]" />
+                <span>{selectedHolidayDate.currentHolidayName ? 'บันทึกการแก้ไข' : 'บันทึกวันหยุด'}</span>
               </button>
             </div>
           </div>

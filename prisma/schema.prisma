@@ -635,4 +635,17 @@ model AcOperationLog {
   @@index([date])
 }
 
+model CustomHoliday {
+  id          String   @id @default(cuid())
+  dateStr     String   @unique // รูปแบบ "YYYY-MM-DD" เช่น "2026-10-23"
+  name        String   // ชื่อวันหยุด เช่น "วันปิยมหาราช", "วันหยุดพิเศษคณะ"
+  description String?
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([dateStr])
+}
+
+
 

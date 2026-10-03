@@ -71,6 +71,21 @@ export async function GET(req: Request) {
       logsMap[dateStr][log.roomId] = log;
     });
 
+    // Fetch custom holidays for the selected month
+    const monthPadded = String(month).padStart(2, '0');
+    const holidays = await prisma.customHoliday.findMany({
+      where: {
+        dateStr: {
+          startsWith: `${year}-${monthPadded}`,
+        },
+      },
+      orderBy: { dateStr: 'asc' },
+    });
+    const holidaysMap: Record<string, string> = {};
+    holidays.forEach((h) => {
+      holidaysMap[h.dateStr] = h.name;
+    });
+
     return NextResponse.json({
       success: true,
       month,
@@ -79,6 +94,8 @@ export async function GET(req: Request) {
       daysInMonth,
       rooms,
       logsMap,
+      holidays,
+      holidaysMap,
       rawLogsCount: logs.length,
     });
   } catch (error: any) {

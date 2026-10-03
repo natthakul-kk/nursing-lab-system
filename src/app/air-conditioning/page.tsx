@@ -663,11 +663,11 @@ export default function AirConditioningPage() {
       );
       ws['!merges'] = merges;
 
-      const cols: any[] = [{ wch: 15 }, { wch: 7 }];
+      const cols: any[] = [{ wch: 14 }, { wch: 6 }];
       rooms.forEach(() => {
-        cols.push({ wch: 7 }, { wch: 7 }, { wch: 6 }, { wch: 7 }, { wch: 36 });
+        cols.push({ wch: 11 }, { wch: 11 }, { wch: 10 }, { wch: 10 }, { wch: 24 });
       });
-      cols.push({ wch: 14 });
+      cols.push({ wch: 16 });
       ws['!cols'] = cols;
       ws['!pageSetup'] = { orientation: 'landscape', paperSize: 9, fitToWidth: 1, fitToHeight: 0 };
       ws['!margins'] = { left: 0.3, right: 0.3, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2 };
@@ -847,24 +847,25 @@ export default function AirConditioningPage() {
             <tbody>
               ${daysArray.map((d: any) => {
                 let dayTotal = 0;
+                const isRowHoliday = d.isWeekend || d.isCustomHoliday;
+                const bgStyle = isRowHoliday ? 'background-color: #e2e8f0 !important;' : '';
+
                 const roomCols = activeRooms.map((r: any) => {
                   const log = data?.logsMap?.[d.dateStr]?.[r.id];
                   if (log && Number(log.usageHours) > 0) {
                     const hrs = Number(log.usageHours);
                     dayTotal += hrs;
-                    return `<td class="font-bold">${hrs}</td>`;
+                    return `<td class="font-bold" style="${bgStyle}">${hrs}</td>`;
                   }
-                  return `<td style="color: #94a3b8;">-</td>`;
+                  return `<td style="color: #94a3b8; ${bgStyle}">-</td>`;
                 }).join('');
 
-                const isRowHoliday = d.isWeekend || d.isCustomHoliday;
-
                 return `
-                  <tr class="${isRowHoliday ? 'weekend-row' : ''}">
-                    <td style="white-space: nowrap;">${d.day} ${d.dateObj.toLocaleString('th-TH', { month: 'short' })}</td>
-                    <td style="${isRowHoliday ? 'color: #b91c1c; font-weight: bold;' : ''}">${d.dayOfWeek}</td>
+                  <tr class="${isRowHoliday ? 'weekend-row' : ''}" style="${bgStyle}">
+                    <td style="white-space: nowrap; ${bgStyle}">${d.day} ${d.dateObj.toLocaleString('th-TH', { month: 'short' })}</td>
+                    <td style="${isRowHoliday ? 'color: #b91c1c; font-weight: bold;' : ''} ${bgStyle}">${d.dayOfWeek}</td>
                     ${roomCols}
-                    <td class="font-bold" style="background-color: #f1f5f9;">${dayTotal > 0 ? dayTotal : '-'}</td>
+                    <td class="font-bold" style="${isRowHoliday ? 'background-color: #cbd5e1 !important;' : 'background-color: #f1f5f9;'}">${dayTotal > 0 ? dayTotal : '-'}</td>
                   </tr>
                 `;
               }).join('')}
@@ -948,40 +949,42 @@ export default function AirConditioningPage() {
               </tr>
               <tr>
                 ${chunkRooms.map(() => `
-                  <th style="width: 28px;">เปิด</th>
-                  <th style="width: 28px;">ปิด</th>
-                  <th style="width: 22px;">ชม.</th>
-                  <th style="width: 28px;">อุณหภูมิ</th>
-                  <th style="width: 225px;">หมายเหตุ</th>
+                  <th style="width: 25px;">เปิด</th>
+                  <th style="width: 25px;">ปิด</th>
+                  <th style="width: 20px;">ชม.</th>
+                  <th style="width: 25px;">อุณหภูมิ</th>
+                  <th style="width: 240px;">หมายเหตุ</th>
                 `).join('')}
               </tr>
             </thead>
             <tbody>
               ${daysArray.map((d: any) => {
                 const isRowHoliday = d.isWeekend || d.isCustomHoliday;
+                const bgStyle = isRowHoliday ? 'background-color: #e2e8f0 !important;' : '';
+
                 const roomCells = chunkRooms.map((r: any) => {
                   const log = data?.logsMap?.[d.dateStr]?.[r.id];
                   if (log && Number(log.usageHours) > 0) {
                     const hrs = Number(log.usageHours);
                     return `
-                      <td>${log.openTime || '-'}</td>
-                      <td>${log.closeTime || '-'}</td>
-                      <td class="font-bold">${hrs}</td>
-                      <td>${log.temperature ? `${log.temperature}°C` : '22°C'}</td>
-                      <td class="text-left" style="font-size: 6.2pt; padding: 0.5px 3px; line-height: 1.15; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${formatPurposeWithNote(log.purpose, log.note)}">
+                      <td style="${bgStyle}">${log.openTime || '-'}</td>
+                      <td style="${bgStyle}">${log.closeTime || '-'}</td>
+                      <td class="font-bold" style="${bgStyle}">${hrs}</td>
+                      <td style="${bgStyle}">${log.temperature ? `${log.temperature}°C` : '22°C'}</td>
+                      <td class="text-left" style="font-size: 6.2pt; padding: 0.5px 3px; line-height: 1.15; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; ${bgStyle}" title="${formatPurposeWithNote(log.purpose, log.note)}">
                         ${formatPurposeWithNote(log.purpose, log.note)}
                       </td>
                     `;
                   }
-                  return `<td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>`;
+                  return `<td style="${bgStyle}">-</td><td style="${bgStyle}">-</td><td style="${bgStyle}">-</td><td style="${bgStyle}">-</td><td style="${bgStyle}">-</td>`;
                 }).join('');
 
                 return `
-                  <tr class="${isRowHoliday ? 'weekend-row' : ''}">
-                    <td style="white-space: nowrap; font-size: 6.8pt;">
+                  <tr class="${isRowHoliday ? 'weekend-row' : ''}" style="${bgStyle}">
+                    <td style="white-space: nowrap; font-size: 6.8pt; ${bgStyle}">
                       ${d.day} ${d.dateObj.toLocaleString('th-TH', { month: 'short' })} ${yearBE}
                     </td>
-                    <td style="${isRowHoliday ? 'color: #b91c1c; font-weight: bold;' : ''}">${d.dayOfWeek}</td>
+                    <td style="${isRowHoliday ? 'color: #b91c1c; font-weight: bold;' : ''} ${bgStyle}">${d.dayOfWeek}</td>
                     ${roomCells}
                   </tr>
                 `;
@@ -1435,10 +1438,8 @@ export default function AirConditioningPage() {
                   <tr
                     key={d.dateStr}
                     className={`transition ${
-                      d.isCustomHoliday
-                        ? 'bg-amber-50/80 dark:bg-amber-950/40 border-l-4 border-l-amber-500'
-                        : d.isWeekend
-                        ? 'bg-slate-200/75 dark:bg-slate-800/80 border-l-4 border-l-slate-400 dark:border-l-slate-600'
+                      d.isWeekend || d.isCustomHoliday
+                        ? 'bg-slate-50/70 dark:bg-slate-950/40'
                         : 'hover:bg-teal-50/30 dark:hover:bg-teal-950/20'
                     }`}
                   >
@@ -1446,41 +1447,22 @@ export default function AirConditioningPage() {
                     <td
                       onDoubleClick={() => handleOpenHolidayModal(d)}
                       title={isOfficer ? "ดับเบิ้ลคลิกเพื่อกำหนด/แก้ไขวันหยุดพิเศษ" : undefined}
-                      className={`p-2 text-center font-mono font-medium border-r border-slate-200 dark:border-slate-800 transition select-none ${
-                        isOfficer ? 'cursor-pointer hover:bg-teal-100/40 dark:hover:bg-teal-900/30' : ''
-                      } ${
-                        d.isCustomHoliday
-                          ? 'bg-amber-100/80 dark:bg-amber-900/40 text-amber-950 dark:text-amber-200 font-semibold'
-                          : d.isWeekend
-                          ? 'bg-slate-300/60 dark:bg-slate-700/60 text-rose-600 dark:text-rose-400 font-bold'
-                          : 'text-slate-700 dark:text-slate-300'
-                      }`}
+                      className="p-2 text-center font-mono font-medium text-slate-700 dark:text-slate-300 border-r border-slate-200 dark:border-slate-800"
                     >
-                      <div className="flex flex-col items-center justify-center gap-0.5">
-                        <span className="whitespace-nowrap">
-                          {d.day} {d.dateObj.toLocaleString('th-TH', { month: 'short' })} {currentYear + 543}
-                        </span>
-                        {d.isCustomHoliday && (
-                          <span
-                            className="text-[10px] bg-amber-200 dark:bg-amber-900/80 text-amber-900 dark:text-amber-200 px-1.5 py-0.2 rounded font-sans font-bold truncate max-w-[130px]"
-                            title={d.holidayName}
-                          >
-                            {d.holidayName}
-                          </span>
-                        )}
-                      </div>
+                      {d.day} {d.dateObj.toLocaleString('en-US', { month: 'short' })} {currentYear}
+                      {d.isCustomHoliday && (
+                        <div className="text-[10px] text-amber-600 dark:text-amber-400 font-sans font-medium">
+                          [{d.holidayName}]
+                        </div>
+                      )}
                     </td>
 
                     {/* Day of Week */}
                     <td
                       onDoubleClick={() => handleOpenHolidayModal(d)}
                       title={isOfficer ? "ดับเบิ้ลคลิกเพื่อกำหนด/แก้ไขวันหยุดพิเศษ" : undefined}
-                      className={`p-2 text-center font-bold border-r border-slate-200 dark:border-slate-800 select-none ${
-                        isOfficer ? 'cursor-pointer hover:bg-teal-100/40 dark:hover:bg-teal-900/30' : ''
-                      } ${
-                        d.isWeekend || d.isCustomHoliday
-                          ? 'text-rose-600 dark:text-rose-400 font-black'
-                          : 'text-slate-600 dark:text-slate-400'
+                      className={`p-2 text-center font-bold border-r border-slate-200 dark:border-slate-800 ${
+                        d.isWeekend || d.isCustomHoliday ? 'text-rose-500 font-extrabold' : 'text-slate-600 dark:text-slate-400'
                       }`}
                     >
                       {d.dayOfWeek}

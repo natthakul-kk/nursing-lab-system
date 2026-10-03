@@ -75,6 +75,11 @@ export default function AirConditioningPage() {
     existingLog: any | null;
   } | null>(null);
 
+  // Print Modal State
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [printLayout, setPrintLayout] = useState<'summary' | 'chunks' | 'single'>('summary');
+  const [printSingleRoomId, setPrintSingleRoomId] = useState<string>('');
+
   // Quick Backdated Log Modal
   const [showBackdateModal, setShowBackdateModal] = useState(false);
 
@@ -317,7 +322,16 @@ export default function AirConditioningPage() {
     }
   };
 
-  // Export to Excel matching the exact PDF Government Table layout!
+  // Helper to chunk rooms into batches (e.g. 4 rooms per A4 Landscape sheet)
+  const chunkRoomsArray = (rooms: any[], chunkSize: number = 4) => {
+    const chunks: any[][] = [];
+    for (let i = 0; i < rooms.length; i += chunkSize) {
+      chunks.push(rooms.slice(i, i + chunkSize));
+    }
+    return chunks;
+  };
+
+  // Export to Excel with Multi-Sheet Print Ready Layout
   const handleExportExcel = () => {
     if (!isOfficer) {
       alert('เฉพาะเจ้าหน้าที่และผู้ดูแลระบบเท่านั้นที่มีสิทธิ์ส่งออกรายงาน');
@@ -326,35 +340,25 @@ export default function AirConditioningPage() {
 
     const monthName = THAI_MONTHS[currentMonth - 1];
     const yearBE = currentYear + 543;
+    const wb = XLSX.utils.book_new();
 
-    // Header Rows
-    const rows: any[][] = [
-      [`ตารางบันทึกการเปิด-ปิดเครื่องปรับอากาศ ประจำเดือน${monthName} ปี พ.ศ. ${yearBE} (ค.ศ. ${currentYear})`],
+    // -------------------------------------------------------------
+    // SHEET 1: สรุปภาพรวม A4 (1 หน้าจบ - Executive Summary)
+    // -------------------------------------------------------------
+    const summaryRows: any[][] = [
+      [`ตารางสรุปชั่วโมงการเปิด-ปิดเครื่องปรับอากาศ ประจำเดือน${monthName} ปี พ.ศ. ${yearBE} (ค.ศ. ${currentYear})`],
+      ['คณะพยาบาลศาสตร์ • รายงานสรุปชั่วโมงการใช้งานรายห้องสำหรับพิมพ์ A4 แนวนอน (1 หน้าจบ)'],
     ];
 
-    // Sub-header: Room Names spanning across their 5 columns
-    const roomHeaderRow: any[] = ['', ''];
+    const summaryColHeaders: any[] = ['วันที่', 'วัน'];
     activeRooms.forEach((r: any) => {
-      roomHeaderRow.push(r.name);
-      roomHeaderRow.push('');
-      roomHeaderRow.push('');
-      roomHeaderRow.push('');
-      roomHeaderRow.push('');
+      summaryColHeaders.push(r.name);
     });
-    roomHeaderRow.push('รวมทั้งวัน (ชม.)');
-    rows.push(roomHeaderRow);
+    summaryColHeaders.push('รวมทั้งวัน (ชม.)');
+    summaryRows.push(summaryColHeaders);
 
-    // Column Headers
-    const colHeaderRow: any[] = ['วันที่', 'วัน'];
-    activeRooms.forEach(() => {
-      colHeaderRow.push('เวลาเปิด', 'เวลาปิด', 'ชม.ใช้งาน', 'อุณหภูมิ', 'หมายเหตุ');
-    });
-    colHeaderRow.push('รวมทั้งวัน (ชม.)');
-    rows.push(colHeaderRow);
+    const summaryStartDataRow = 4;
 
-    const startDataRow = 4; // 1-based index in Excel
-
-    // Daily Data Rows
     daysArray.forEach((d) => {
       const row: any[] = [`${d.day} ${d.dateObj.toLocaleString('en-US', { month: 'short' })} ${currentYear}`, d.dayOfWeek];
       let dayTotal = 0;
@@ -364,112 +368,636 @@ export default function AirConditioningPage() {
         if (log && Number(log.usageHours) > 0) {
           const hours = Number(log.usageHours);
           dayTotal += hours;
-          row.push(
-            log.openTime || '-',
-            log.closeTime || '-',
-            hours,
-            log.temperature ? `${log.temperature}°C` : '22°C',
-            formatPurposeWithNote(log.purpose, log.note) || log.recordedName || 'เปิดเพื่อรักษาอุปกรณ์'
-          );
+          row.push(hours);
         } else {
-          row.push('', '', '', '', '');
+          row.push('-');
         }
       });
 
       row.push(dayTotal > 0 ? dayTotal : 0.0);
-      rows.push(row);
+      summaryRows.push(row);
     });
 
-    const endDataRow = rows.length;
+    const summaryEndDataRow = summaryRows.length;
 
-    // Summary Rows
-    // 1. รวมชั่วโมงทั้งเดือน
-    const totalRowIndex = rows.length;
-    const totalRow: any[] = ['รวมชั่วโมงทั้งเดือน', ''];
+    // Summary Row 1: รวมชั่วโมงทั้งเดือน
+    const sumTotalRowIndex = summaryRows.length;
+    const sumTotalRow: any[] = ['รวมชั่วโมงทั้งเดือน', ''];
     activeRooms.forEach((r: any, idx: number) => {
-      const hoursColIndex = 2 + idx * 5 + 2;
-      const colLetter = XLSX.utils.encode_col(hoursColIndex);
+      const colLetter = XLSX.utils.encode_col(2 + idx);
       const roomTotal = roomSummaries[r.id]?.totalHours || 0;
-      totalRow.push(
-        '',
-        '',
-        { t: 'n', v: roomTotal, f: `SUM(${colLetter}${startDataRow}:${colLetter}${endDataRow})` },
-        '',
-        ''
-      );
+      sumTotalRow.push({
+        t: 'n',
+        v: roomTotal,
+        f: `SUM(${colLetter}${summaryStartDataRow}:${colLetter}${summaryEndDataRow})`,
+      });
     });
-    const lastColIndex = 2 + activeRooms.length * 5;
-    const lastColLetter = XLSX.utils.encode_col(lastColIndex);
-    totalRow.push({
+    const sumLastColLetter = XLSX.utils.encode_col(2 + activeRooms.length);
+    sumTotalRow.push({
       t: 'n',
       v: grandTotalHours,
-      f: `SUM(${lastColLetter}${startDataRow}:${lastColLetter}${endDataRow})`,
+      f: `SUM(${sumLastColLetter}${summaryStartDataRow}:${sumLastColLetter}${summaryEndDataRow})`,
     });
-    rows.push(totalRow);
+    summaryRows.push(sumTotalRow);
 
-    // 2. เฉลี่ยต่อวันใช้งาน
-    const avgRowIndex = rows.length;
-    const avgRow: any[] = ['เฉลี่ยต่อวันใช้งาน', ''];
+    // Summary Row 2: เฉลี่ยต่อวันใช้งาน
+    const sumAvgRowIndex = summaryRows.length;
+    const sumAvgRow: any[] = ['เฉลี่ยต่อวันใช้งาน', ''];
     activeRooms.forEach((r: any) => {
-      const summary = roomSummaries[r.id];
-      const avgH = summary?.activeDays > 0 ? Math.round((summary.totalHours / summary.activeDays) * 10) / 10 : 0;
-      avgRow.push('', '', avgH, `${summary?.avgTemp || 22}°C`, '');
+      const s = roomSummaries[r.id];
+      const avg = s?.activeDays > 0 ? Math.round((s.totalHours / s.activeDays) * 10) / 10 : 0;
+      sumAvgRow.push(avg);
     });
     let totalDaysWithAc = 0;
     daysArray.forEach((d) => {
-      const hasAnyAc = activeRooms.some((r: any) => {
+      const hasAny = activeRooms.some((r: any) => {
         const log = data?.logsMap?.[d.dateStr]?.[r.id];
         return log && Number(log.usageHours) > 0;
       });
-      if (hasAnyAc) totalDaysWithAc++;
+      if (hasAny) totalDaysWithAc++;
     });
-    const grandAvgHours = totalDaysWithAc > 0 ? Math.round((grandTotalHours / totalDaysWithAc) * 10) / 10 : 0;
-    avgRow.push(grandAvgHours);
-    rows.push(avgRow);
+    const sumGrandAvg = totalDaysWithAc > 0 ? Math.round((grandTotalHours / totalDaysWithAc) * 10) / 10 : 0;
+    sumAvgRow.push(sumGrandAvg);
+    summaryRows.push(sumAvgRow);
 
-    // 3. จำนวนวันที่เปิดใช้งาน
-    const activeDaysRowIndex = rows.length;
-    const activeDaysRow: any[] = ['จำนวนวันที่เปิดใช้งาน', ''];
+    // Summary Row 3: จำนวนวันที่เปิดใช้งาน
+    const sumDaysRowIndex = summaryRows.length;
+    const sumDaysRow: any[] = ['จำนวนวันที่เปิดใช้งาน', ''];
     activeRooms.forEach((r: any) => {
-      const summary = roomSummaries[r.id];
-      activeDaysRow.push('', '', `${summary?.activeDays || 0} วัน`, '', '');
+      const s = roomSummaries[r.id];
+      sumDaysRow.push(`${s?.activeDays || 0} วัน`);
     });
-    activeDaysRow.push(`${totalDaysWithAc} วัน`);
-    rows.push(activeDaysRow);
+    sumDaysRow.push(`${totalDaysWithAc} วัน`);
+    summaryRows.push(sumDaysRow);
 
-    // Merges
-    const totalCols = 2 + activeRooms.length * 5 + 1;
-    const merges: any[] = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: totalCols - 1 } }, // Title
+    const sumTotalCols = 2 + activeRooms.length + 1;
+    const wsSummary = XLSX.utils.aoa_to_sheet(summaryRows);
+    wsSummary['!merges'] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: sumTotalCols - 1 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: sumTotalCols - 1 } },
+      { s: { r: sumTotalRowIndex, c: 0 }, e: { r: sumTotalRowIndex, c: 1 } },
+      { s: { r: sumAvgRowIndex, c: 0 }, e: { r: sumAvgRowIndex, c: 1 } },
+      { s: { r: sumDaysRowIndex, c: 0 }, e: { r: sumDaysRowIndex, c: 1 } },
     ];
+    const sumCols: any[] = [{ wch: 14 }, { wch: 6 }];
+    activeRooms.forEach(() => sumCols.push({ wch: 14 }));
+    sumCols.push({ wch: 16 });
+    wsSummary['!cols'] = sumCols;
+    wsSummary['!pageSetup'] = { orientation: 'landscape', paperSize: 9, fitToWidth: 1, fitToHeight: 1, scale: 100 };
+    wsSummary['!margins'] = { left: 0.3, right: 0.3, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2 };
 
-    // Merge room headers (5 cols per room)
-    activeRooms.forEach((_: any, idx: number) => {
-      const cStart = 2 + idx * 5;
-      merges.push({ s: { r: 1, c: cStart }, e: { r: 1, c: cStart + 4 } });
-    });
+    XLSX.utils.book_append_sheet(wb, wsSummary, 'สรุปภาพรวม_A4');
 
-    // Merge labels across cols A and B for summary rows
-    merges.push(
-      { s: { r: totalRowIndex, c: 0 }, e: { r: totalRowIndex, c: 1 } },
-      { s: { r: avgRowIndex, c: 0 }, e: { r: avgRowIndex, c: 1 } },
-      { s: { r: activeDaysRowIndex, c: 0 }, e: { r: activeDaysRowIndex, c: 1 } }
-    );
+    // -------------------------------------------------------------
+    // Helper to generate a detailed worksheet for a given list of rooms
+    // -------------------------------------------------------------
+    const createDetailedSheet = (rooms: any[], titleSuffix: string) => {
+      const rows: any[][] = [
+        [`ตารางบันทึกการเปิด-ปิดเครื่องปรับอากาศ ประจำเดือน${monthName} ปี พ.ศ. ${yearBE} (ค.ศ. ${currentYear}) ${titleSuffix}`],
+      ];
 
-    const ws = XLSX.utils.aoa_to_sheet(rows);
-    ws['!merges'] = merges;
+      const roomHeaderRow: any[] = ['', ''];
+      rooms.forEach((r: any) => {
+        roomHeaderRow.push(r.name, '', '', '', '');
+      });
+      roomHeaderRow.push('รวมทั้งวัน (ชม.)');
+      rows.push(roomHeaderRow);
 
-    // Column widths
-    const cols: any[] = [{ wch: 14 }, { wch: 6 }];
-    activeRooms.forEach(() => {
-      cols.push({ wch: 11 }, { wch: 11 }, { wch: 10 }, { wch: 10 }, { wch: 24 });
-    });
-    cols.push({ wch: 16 });
-    ws['!cols'] = cols;
+      const colHeaderRow: any[] = ['วันที่', 'วัน'];
+      rooms.forEach(() => {
+        colHeaderRow.push('เวลาเปิด', 'เวลาปิด', 'ชม.ใช้งาน', 'อุณหภูมิ', 'หมายเหตุ');
+      });
+      colHeaderRow.push('รวมทั้งวัน (ชม.)');
+      rows.push(colHeaderRow);
 
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, `บันทึกแอร์_${monthName}_${yearBE}`);
+      const startDataRow = 4;
+
+      daysArray.forEach((d) => {
+        const row: any[] = [`${d.day} ${d.dateObj.toLocaleString('en-US', { month: 'short' })} ${currentYear}`, d.dayOfWeek];
+        let dayTotal = 0;
+
+        rooms.forEach((r: any) => {
+          const log = data?.logsMap?.[d.dateStr]?.[r.id];
+          if (log && Number(log.usageHours) > 0) {
+            const hours = Number(log.usageHours);
+            dayTotal += hours;
+            row.push(
+              log.openTime || '-',
+              log.closeTime || '-',
+              hours,
+              log.temperature ? `${log.temperature}°C` : '22°C',
+              formatPurposeWithNote(log.purpose, log.note) || log.recordedName || 'เปิดเพื่อรักษาอุปกรณ์'
+            );
+          } else {
+            row.push('', '', '', '', '');
+          }
+        });
+
+        row.push(dayTotal > 0 ? dayTotal : 0.0);
+        rows.push(row);
+      });
+
+      const endDataRow = rows.length;
+
+      // Summary Rows
+      const totalRowIndex = rows.length;
+      const totalRow: any[] = ['รวมชั่วโมงทั้งเดือน', ''];
+      let chunkGrandTotal = 0;
+      rooms.forEach((r: any, idx: number) => {
+        const hoursColIndex = 2 + idx * 5 + 2;
+        const colLetter = XLSX.utils.encode_col(hoursColIndex);
+        const roomTotal = roomSummaries[r.id]?.totalHours || 0;
+        chunkGrandTotal += roomTotal;
+        totalRow.push(
+          '',
+          '',
+          { t: 'n', v: roomTotal, f: `SUM(${colLetter}${startDataRow}:${colLetter}${endDataRow})` },
+          '',
+          ''
+        );
+      });
+      const lastColIndex = 2 + rooms.length * 5;
+      const lastColLetter = XLSX.utils.encode_col(lastColIndex);
+      totalRow.push({
+        t: 'n',
+        v: Math.round(chunkGrandTotal * 10) / 10,
+        f: `SUM(${lastColLetter}${startDataRow}:${lastColLetter}${endDataRow})`,
+      });
+      rows.push(totalRow);
+
+      // Row 2: เฉลี่ยต่อวันใช้งาน
+      const avgRowIndex = rows.length;
+      const avgRow: any[] = ['เฉลี่ยต่อวันใช้งาน', ''];
+      rooms.forEach((r: any) => {
+        const summary = roomSummaries[r.id];
+        const avgH = summary?.activeDays > 0 ? Math.round((summary.totalHours / summary.activeDays) * 10) / 10 : 0;
+        avgRow.push('', '', avgH, `${summary?.avgTemp || 22}°C`, '');
+      });
+      let chunkDaysWithAc = 0;
+      daysArray.forEach((d) => {
+        const hasAny = rooms.some((r: any) => {
+          const log = data?.logsMap?.[d.dateStr]?.[r.id];
+          return log && Number(log.usageHours) > 0;
+        });
+        if (hasAny) chunkDaysWithAc++;
+      });
+      const chunkGrandAvg = chunkDaysWithAc > 0 ? Math.round((chunkGrandTotal / chunkDaysWithAc) * 10) / 10 : 0;
+      avgRow.push(chunkGrandAvg);
+      rows.push(avgRow);
+
+      // Row 3: จำนวนวันที่เปิดใช้งาน
+      const activeDaysRowIndex = rows.length;
+      const activeDaysRow: any[] = ['จำนวนวันที่เปิดใช้งาน', ''];
+      rooms.forEach((r: any) => {
+        const summary = roomSummaries[r.id];
+        activeDaysRow.push('', '', `${summary?.activeDays || 0} วัน`, '', '');
+      });
+      activeDaysRow.push(`${chunkDaysWithAc} วัน`);
+      rows.push(activeDaysRow);
+
+      const totalCols = 2 + rooms.length * 5 + 1;
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+
+      const merges: any[] = [
+        { s: { r: 0, c: 0 }, e: { r: 0, c: totalCols - 1 } },
+      ];
+      rooms.forEach((_: any, idx: number) => {
+        const cStart = 2 + idx * 5;
+        merges.push({ s: { r: 1, c: cStart }, e: { r: 1, c: cStart + 4 } });
+      });
+      merges.push(
+        { s: { r: totalRowIndex, c: 0 }, e: { r: totalRowIndex, c: 1 } },
+        { s: { r: avgRowIndex, c: 0 }, e: { r: avgRowIndex, c: 1 } },
+        { s: { r: activeDaysRowIndex, c: 0 }, e: { r: activeDaysRowIndex, c: 1 } }
+      );
+      ws['!merges'] = merges;
+
+      const cols: any[] = [{ wch: 14 }, { wch: 6 }];
+      rooms.forEach(() => {
+        cols.push({ wch: 11 }, { wch: 11 }, { wch: 10 }, { wch: 10 }, { wch: 24 });
+      });
+      cols.push({ wch: 16 });
+      ws['!cols'] = cols;
+      ws['!pageSetup'] = { orientation: 'landscape', paperSize: 9, fitToWidth: 1, fitToHeight: 0 };
+      ws['!margins'] = { left: 0.3, right: 0.3, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2 };
+
+      return ws;
+    };
+
+    // -------------------------------------------------------------
+    // SHEET 2..N: ชีตย่อยจัดหน้า A4 แบ่งชุดละ 3-4 ห้อง
+    // -------------------------------------------------------------
+    if (activeRooms.length > 4) {
+      const chunks = chunkRoomsArray(activeRooms, 4);
+      chunks.forEach((chunkRooms, idx) => {
+        const chunkWs = createDetailedSheet(chunkRooms, `- ชุดที่ ${idx + 1}`);
+        XLSX.utils.book_append_sheet(wb, chunkWs, `ละเอียด_ชุด${idx + 1}(ห้อง${idx * 4 + 1}-${idx * 4 + chunkRooms.length})`);
+      });
+    } else {
+      const detailedWs = createDetailedSheet(activeRooms, '');
+      XLSX.utils.book_append_sheet(wb, detailedWs, 'บันทึกละเอียด');
+    }
+
+    // -------------------------------------------------------------
+    // SHEET MASTER: รวมทุกห้อง (Master Data)
+    // -------------------------------------------------------------
+    const masterWs = createDetailedSheet(activeRooms, '(รวมทุกห้อง)');
+    XLSX.utils.book_append_sheet(wb, masterWs, 'รวมทุกห้อง_MasterData');
+
     XLSX.writeFile(wb, `ตารางบันทึกการเปิดปิดเครื่องปรับอากาศ_${monthName}_${yearBE}.xlsx`);
+  };
+
+  // Web Print Handler (Generates clean printable HTML and triggers browser print dialog)
+  const handlePrintWeb = (layout: 'summary' | 'chunks' | 'single') => {
+    const monthName = THAI_MONTHS[currentMonth - 1];
+    const yearBE = currentYear + 543;
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('กรุณาอนุญาตให้เบราว์เซอร์เปิดหน้าต่าง Pop-up เพื่อพิมพ์เอกสาร');
+      return;
+    }
+
+    const css = `
+      @page {
+        size: ${layout === 'single' ? 'A4 portrait' : 'A4 landscape'};
+        margin: ${layout === 'single' ? '12mm 10mm' : '7mm 7mm'};
+      }
+      * {
+        box-sizing: border-box;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      body {
+        font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-size: ${layout === 'summary' ? '9pt' : '8.5pt'};
+        color: #0f172a;
+        margin: 0;
+        padding: 0;
+        background: #fff;
+      }
+      .page-container {
+        width: 100%;
+        page-break-after: always;
+        break-after: page;
+        padding-bottom: 8px;
+      }
+      .page-container:last-child {
+        page-break-after: auto;
+        break-after: auto;
+      }
+      .header-box {
+        text-align: center;
+        margin-bottom: 8px;
+      }
+      .header-title {
+        font-size: 13pt;
+        font-weight: bold;
+        color: #0f172a;
+        line-height: 1.3;
+      }
+      .header-subtitle {
+        font-size: 9.5pt;
+        color: #475569;
+        margin-top: 2px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: auto;
+      }
+      th, td {
+        border: 1px solid #475569;
+        padding: 3px 4px;
+        text-align: center;
+        vertical-align: middle;
+        line-height: 1.25;
+      }
+      th {
+        background-color: #f1f5f9;
+        font-weight: bold;
+        color: #0f172a;
+      }
+      .text-left { text-align: left; }
+      .text-right { text-align: right; }
+      .font-bold { font-weight: bold; }
+      .bg-summary {
+        background-color: #f8fafc;
+        font-weight: bold;
+      }
+      .signatures {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 14px;
+        font-size: 9pt;
+        page-break-inside: avoid;
+      }
+      .signature-block {
+        text-align: center;
+        width: 45%;
+        line-height: 1.5;
+      }
+      .weekend-row {
+        background-color: #fafafa;
+      }
+    `;
+
+    let bodyContent = '';
+
+    if (layout === 'summary') {
+      bodyContent = `
+        <div class="page-container">
+          <div class="header-box">
+            <div class="header-title">ตารางสรุปชั่วโมงการเปิด-ปิดเครื่องปรับอากาศ</div>
+            <div class="header-subtitle">
+              คณะพยาบาลศาสตร์ • ประจำเดือน${monthName} ปี พ.ศ. ${yearBE} (ค.ศ. ${currentYear})
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 75px;">วันที่</th>
+                <th style="width: 38px;">วัน</th>
+                ${activeRooms.map((r: any) => `<th>${r.name}</th>`).join('')}
+                <th style="width: 75px; background-color: #e2e8f0;">รวม (ชม.)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${daysArray.map((d: any) => {
+                let dayTotal = 0;
+                const roomCols = activeRooms.map((r: any) => {
+                  const log = data?.logsMap?.[d.dateStr]?.[r.id];
+                  if (log && Number(log.usageHours) > 0) {
+                    const hrs = Number(log.usageHours);
+                    dayTotal += hrs;
+                    return `<td class="font-bold">${hrs}</td>`;
+                  }
+                  return `<td style="color: #94a3b8;">-</td>`;
+                }).join('');
+
+                return `
+                  <tr class="${d.isWeekend ? 'weekend-row' : ''}">
+                    <td>${d.day} ${d.dateObj.toLocaleString('th-TH', { month: 'short' })} ${yearBE}</td>
+                    <td>${d.dayOfWeek}</td>
+                    ${roomCols}
+                    <td class="font-bold" style="background-color: #f1f5f9;">${dayTotal > 0 ? dayTotal : '-'}</td>
+                  </tr>
+                `;
+              }).join('')}
+              <tr class="bg-summary" style="border-top: 2px solid #0f172a;">
+                <td colspan="2" class="text-left font-bold" style="padding-left: 6px;">รวมชั่วโมงทั้งเดือน</td>
+                ${activeRooms.map((r: any) => `<td>${roomSummaries[r.id]?.totalHours || 0}</td>`).join('')}
+                <td style="background-color: #e2e8f0; font-size: 10pt;">${grandTotalHours}</td>
+              </tr>
+              <tr class="bg-summary">
+                <td colspan="2" class="text-left font-bold" style="padding-left: 6px;">เฉลี่ยต่อวันใช้งาน</td>
+                ${activeRooms.map((r: any) => {
+                  const s = roomSummaries[r.id];
+                  const avg = s?.activeDays > 0 ? Math.round((s.totalHours / s.activeDays) * 10) / 10 : 0;
+                  return `<td>${avg}</td>`;
+                }).join('')}
+                <td style="background-color: #e2e8f0;">${grandTotalHours > 0 ? (Math.round((grandTotalHours / daysInMonth) * 10) / 10) : 0}</td>
+              </tr>
+              <tr class="bg-summary">
+                <td colspan="2" class="text-left font-bold" style="padding-left: 6px;">จำนวนวันที่เปิดใช้งาน</td>
+                ${activeRooms.map((r: any) => `<td>${roomSummaries[r.id]?.activeDays || 0} วัน</td>`).join('')}
+                <td style="background-color: #e2e8f0;">-</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="signatures">
+            <div class="signature-block">
+              <div>ลงชื่อ ................................................................ ผู้บันทึก</div>
+              <div>( ................................................................ )</div>
+              <div>ตำแหน่ง เจ้าหน้าที่ประจำห้องปฏิบัติการ</div>
+            </div>
+            <div class="signature-block">
+              <div>ลงชื่อ ................................................................ ผู้รับรอง</div>
+              <div>( ................................................................ )</div>
+              <div>ตำแหน่ง รองคณบดีฝ่ายบริหาร / ผู้ช่วยคณบดี</div>
+              <div>วันที่ ........ / .................... / ............</div>
+            </div>
+          </div>
+        </div>
+      `;
+    } else if (layout === 'chunks') {
+      const chunks = chunkRoomsArray(activeRooms, 4);
+      bodyContent = chunks.map((chunkRooms, chunkIdx) => {
+        let chunkGrandTotal = 0;
+        chunkRooms.forEach((r: any) => {
+          chunkGrandTotal += roomSummaries[r.id]?.totalHours || 0;
+        });
+
+        return `
+          <div class="page-container">
+            <div class="header-box">
+              <div class="header-title">ตารางบันทึกการเปิด-ปิดเครื่องปรับอากาศ</div>
+              <div class="header-subtitle">
+                คณะพยาบาลศาสตร์ • ประจำเดือน${monthName} ปี พ.ศ. ${yearBE} (ชุดที่ ${chunkIdx + 1}/${chunks.length})
+              </div>
+            </div>
+
+            <table>
+              <thead>
+                <tr>
+                  <th rowspan="2" style="width: 70px;">วันที่</th>
+                  <th rowspan="2" style="width: 35px;">วัน</th>
+                  ${chunkRooms.map((r: any) => `<th colspan="5">${r.name}</th>`).join('')}
+                  <th rowspan="2" style="width: 60px; background-color: #e2e8f0;">รวม (ชม.)</th>
+                </tr>
+                <tr>
+                  ${chunkRooms.map(() => `
+                    <th style="width: 48px;">เปิด</th>
+                    <th style="width: 48px;">ปิด</th>
+                    <th style="width: 38px;">ชม.</th>
+                    <th style="width: 42px;">อุณหภูมิ</th>
+                    <th>หมายเหตุ</th>
+                  `).join('')}
+                </tr>
+              </thead>
+              <tbody>
+                ${daysArray.map((d: any) => {
+                  let dayTotal = 0;
+                  const roomCells = chunkRooms.map((r: any) => {
+                    const log = data?.logsMap?.[d.dateStr]?.[r.id];
+                    if (log && Number(log.usageHours) > 0) {
+                      const hrs = Number(log.usageHours);
+                      dayTotal += hrs;
+                      return `
+                        <td>${log.openTime || '-'}</td>
+                        <td>${log.closeTime || '-'}</td>
+                        <td class="font-bold">${hrs}</td>
+                        <td>${log.temperature ? `${log.temperature}°` : '22°'}</td>
+                        <td class="text-left" style="font-size: 7.5pt; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                          ${formatPurposeWithNote(log.purpose, log.note)}
+                        </td>
+                      `;
+                    }
+                    return `<td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>`;
+                  }).join('');
+
+                  return `
+                    <tr class="${d.isWeekend ? 'weekend-row' : ''}">
+                      <td>${d.day} ${d.dateObj.toLocaleString('th-TH', { month: 'short' })} ${yearBE}</td>
+                      <td>${d.dayOfWeek}</td>
+                      ${roomCells}
+                      <td class="font-bold" style="background-color: #f1f5f9;">${dayTotal > 0 ? dayTotal : '-'}</td>
+                    </tr>
+                  `;
+                }).join('')}
+                <tr class="bg-summary" style="border-top: 2px solid #0f172a;">
+                  <td colspan="2" class="text-left font-bold" style="padding-left: 6px;">รวมชั่วโมงทั้งเดือน</td>
+                  ${chunkRooms.map((r: any) => `
+                    <td></td><td></td>
+                    <td class="font-bold">${roomSummaries[r.id]?.totalHours || 0}</td>
+                    <td></td><td></td>
+                  `).join('')}
+                  <td style="background-color: #e2e8f0; font-size: 10pt;">${Math.round(chunkGrandTotal * 10) / 10}</td>
+                </tr>
+                <tr class="bg-summary">
+                  <td colspan="2" class="text-left font-bold" style="padding-left: 6px;">เฉลี่ยต่อวันใช้งาน</td>
+                  ${chunkRooms.map((r: any) => {
+                    const s = roomSummaries[r.id];
+                    const avg = s?.activeDays > 0 ? Math.round((s.totalHours / s.activeDays) * 10) / 10 : 0;
+                    return `<td></td><td></td><td>${avg}</td><td>${s?.avgTemp || 22}°C</td><td></td>`;
+                  }).join('')}
+                  <td style="background-color: #e2e8f0;">-</td>
+                </tr>
+                <tr class="bg-summary">
+                  <td colspan="2" class="text-left font-bold" style="padding-left: 6px;">จำนวนวันที่เปิดใช้งาน</td>
+                  ${chunkRooms.map((r: any) => `
+                    <td></td><td></td>
+                    <td>${roomSummaries[r.id]?.activeDays || 0} วัน</td>
+                    <td></td><td></td>
+                  `).join('')}
+                  <td style="background-color: #e2e8f0;">-</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="signatures">
+              <div class="signature-block">
+                <div>ลงชื่อ ................................................................ ผู้บันทึก</div>
+                <div>( ................................................................ )</div>
+                <div>ตำแหน่ง เจ้าหน้าที่ประจำห้องปฏิบัติการ</div>
+              </div>
+              <div class="signature-block">
+                <div>ลงชื่อ ................................................................ ผู้รับรอง</div>
+                <div>( ................................................................ )</div>
+                <div>ตำแหน่ง รองคณบดีฝ่ายบริหาร / ผู้ช่วยคณบดี</div>
+                <div>วันที่ ........ / .................... / ............</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    } else if (layout === 'single') {
+      const targetRoom = data?.rooms?.find((r: any) => r.id === (printSingleRoomId || activeRooms[0]?.id)) || activeRooms[0];
+      const roomSummary = targetRoom ? roomSummaries[targetRoom.id] : null;
+
+      bodyContent = `
+        <div class="page-container">
+          <div class="header-box">
+            <div class="header-title">ตารางบันทึกการเปิด-ปิดเครื่องปรับอากาศประจำห้อง</div>
+            <div class="header-subtitle font-bold" style="font-size: 11pt; color: #0284c7; margin-top: 4px;">
+              ${targetRoom?.name || 'ห้องปฏิบัติการ'} (${targetRoom?.code || '-'})
+            </div>
+            <div class="header-subtitle">
+              คณะพยาบาลศาสตร์ • ประจำเดือน${monthName} ปี พ.ศ. ${yearBE} (ค.ศ. ${currentYear})
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 80px;">วันที่</th>
+                <th style="width: 45px;">วัน</th>
+                <th style="width: 70px;">เวลาเปิด</th>
+                <th style="width: 70px;">เวลาปิด</th>
+                <th style="width: 60px;">ชม.ใช้งาน</th>
+                <th style="width: 60px;">อุณหภูมิ</th>
+                <th>วัตถุประสงค์ / หมายเหตุ</th>
+                <th style="width: 100px;">ผู้บันทึก</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${daysArray.map((d: any) => {
+                const log = targetRoom ? data?.logsMap?.[d.dateStr]?.[targetRoom.id] : null;
+                const hasLog = log && Number(log.usageHours) > 0;
+                return `
+                  <tr class="${d.isWeekend ? 'weekend-row' : ''}">
+                    <td>${d.day} ${d.dateObj.toLocaleString('th-TH', { month: 'short' })} ${yearBE}</td>
+                    <td>${d.dayOfWeek}</td>
+                    <td>${hasLog ? log.openTime || '-' : '-'}</td>
+                    <td>${hasLog ? log.closeTime || '-' : '-'}</td>
+                    <td class="font-bold">${hasLog ? log.usageHours : '-'}</td>
+                    <td>${hasLog ? `${log.temperature || 22}°C` : '-'}</td>
+                    <td class="text-left" style="padding-left: 8px;">
+                      ${hasLog ? formatPurposeWithNote(log.purpose, log.note) : '-'}
+                    </td>
+                    <td>${hasLog ? log.recordedName || 'เจ้าหน้าที่' : ''}</td>
+                  </tr>
+                `;
+              }).join('')}
+              <tr class="bg-summary" style="border-top: 2px solid #0f172a;">
+                <td colspan="4" class="text-left font-bold" style="padding-left: 8px;">รวมชั่วโมงทั้งเดือน</td>
+                <td class="font-bold" style="font-size: 10pt; background-color: #e2e8f0;">${roomSummary?.totalHours || 0}</td>
+                <td colspan="3"></td>
+              </tr>
+              <tr class="bg-summary">
+                <td colspan="4" class="text-left font-bold" style="padding-left: 8px;">เฉลี่ยต่อวันใช้งาน</td>
+                <td class="font-bold">${roomSummary?.activeDays ? Math.round((roomSummary.totalHours / roomSummary.activeDays) * 10) / 10 : 0}</td>
+                <td>${roomSummary?.avgTemp || 22}°C</td>
+                <td colspan="2"></td>
+              </tr>
+              <tr class="bg-summary">
+                <td colspan="4" class="text-left font-bold" style="padding-left: 8px;">จำนวนวันที่เปิดใช้งาน</td>
+                <td class="font-bold">${roomSummary?.activeDays || 0} วัน</td>
+                <td colspan="3"></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="signatures" style="margin-top: 24px;">
+            <div class="signature-block">
+              <div>ลงชื่อ ................................................................ ผู้บันทึก</div>
+              <div>( ................................................................ )</div>
+              <div>ตำแหน่ง เจ้าหน้าที่ประจำห้องปฏิบัติการ</div>
+            </div>
+            <div class="signature-block">
+              <div>ลงชื่อ ................................................................ ผู้รับรอง</div>
+              <div>( ................................................................ )</div>
+              <div>ตำแหน่ง รองคณบดีฝ่ายบริหาร / ผู้ช่วยคณบดี</div>
+              <div>วันที่ ........ / .................... / ............</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    const html = `
+      <!DOCTYPE html>
+      <html lang="th">
+        <head>
+          <meta charset="utf-8" />
+          <title>พิมพ์ตารางบันทึกการเปิด-ปิดเครื่องปรับอากาศ - ${monthName} ${yearBE}</title>
+          <style>${css}</style>
+        </head>
+        <body>
+          ${bodyContent}
+          <script>
+            window.onload = () => {
+              window.print();
+            };
+          </script>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(html);
+    printWindow.document.close();
   };
 
   if (loading) {
@@ -553,16 +1081,34 @@ export default function AirConditioningPage() {
             </button>
           </div>
 
+          {/* Print Report (A4) */}
+          <button
+            type="button"
+            onClick={() => {
+              if (selectedRoomIds.length > 0) {
+                setPrintSingleRoomId(selectedRoomIds[0]);
+              } else if (data?.rooms?.length > 0) {
+                setPrintSingleRoomId(data.rooms[0].id);
+              }
+              setShowPrintModal(true);
+            }}
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md shadow-indigo-600/20 transition cursor-pointer"
+            title="พิมพ์เอกสารตารางบันทึกแอร์ (จัดรูปแบบ A4 สวยงาม)"
+          >
+            <Printer className="w-4 h-4" />
+            <span>พิมพ์รายงาน (A4)</span>
+          </button>
+
           {/* Export Excel (Only Officer and Admin) */}
           {isOfficer && (
             <button
               type="button"
               onClick={handleExportExcel}
               className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition cursor-pointer"
-              title="ดาวน์โหลดไฟล์ Excel ตามแบบฟอร์มเอกสารราชการ"
+              title="ดาวน์โหลดไฟล์ Excel พร้อมชีตจัดหน้า A4 สำหรับพิมพ์"
             >
               <FileSpreadsheet className="w-4 h-4" />
-              <span className="hidden sm:inline">ส่งออก</span> Excel แบบฟอร์มราชการ
+              <span className="hidden sm:inline">ส่งออก</span> Excel (พร้อมพิมพ์ A4)
             </button>
           )}
 
@@ -1125,6 +1671,181 @@ export default function AirConditioningPage() {
                   <span>{isSubmitting ? 'กำลังบันทึก...' : 'บันทึกเวลา'}</span>
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Print Options Modal */}
+      {showPrintModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-800 space-y-5">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                  <Printer className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">
+                    พิมพ์รายงานการเปิด-ปิดแอร์ (A4)
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    ประจำเดือน{monthName} {yearBE} • จัดรูปแบบสำหรับเครื่องพิมพ์/PDF
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPrintModal(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Print Layout Options */}
+            <div className="space-y-3">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                เลือกรูปแบบการจัดหน้ากระดาษ:
+              </label>
+
+              {/* Option 1: Executive Summary */}
+              <div
+                onClick={() => setPrintLayout('summary')}
+                className={`p-3.5 rounded-2xl border-2 transition cursor-pointer flex items-start gap-3 ${
+                  printLayout === 'summary'
+                    ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/30'
+                    : 'border-slate-200 dark:border-slate-800 hover:border-slate-300'
+                }`}
+              >
+                <div className={`w-5 h-5 rounded-full border-2 mt-0.5 flex items-center justify-center ${
+                  printLayout === 'summary' ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-slate-300'
+                }`}>
+                  {printLayout === 'summary' && <Check className="w-3 h-3 stroke-[3]" />}
+                </div>
+                <div className="space-y-1 flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-900 dark:text-white">
+                      สรุปภาพรวมทุกห้อง (1 หน้า A4 จบ)
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                      แนะนำสำหรับเสนอผู้บริหาร
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                    ตาราง 14 คอลัมน์ สรุปชั่วโมงรายวันของทุกห้อง ลงพอดีในกระดาษ A4 แนวนอน 1 แผ่น ตัวหนังสือใหญ่ชัดเจน ไม่แออัด พร้อมช่องลงนาม
+                  </p>
+                </div>
+              </div>
+
+              {/* Option 2: Detailed Multi-Page (3-4 rooms per page) */}
+              <div
+                onClick={() => setPrintLayout('chunks')}
+                className={`p-3.5 rounded-2xl border-2 transition cursor-pointer flex items-start gap-3 ${
+                  printLayout === 'chunks'
+                    ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/30'
+                    : 'border-slate-200 dark:border-slate-800 hover:border-slate-300'
+                }`}
+              >
+                <div className={`w-5 h-5 rounded-full border-2 mt-0.5 flex items-center justify-center ${
+                  printLayout === 'chunks' ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-slate-300'
+                }`}>
+                  {printLayout === 'chunks' && <Check className="w-3 h-3 stroke-[3]" />}
+                </div>
+                <div className="space-y-1 flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-900 dark:text-white">
+                      ตารางละเอียดแบบฟอร์มราชการ (ชุดละ 3-4 ห้อง)
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+                      มาตรฐานงานราชการ
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                    แสดงเวลาเปิด-ปิด อุณหภูมิ วัตถุประสงค์ และหมายเหตุครบถ้วน โดยแบ่งหน้าพิมพ์ให้อัตโนมัติ (แผ่นละ 4 ห้อง) ตัวหนังสือขนาดมาตรฐานอ่านง่าย
+                  </p>
+                </div>
+              </div>
+
+              {/* Option 3: Single Room Sheet */}
+              <div
+                onClick={() => setPrintLayout('single')}
+                className={`p-3.5 rounded-2xl border-2 transition cursor-pointer flex items-start gap-3 ${
+                  printLayout === 'single'
+                    ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/30'
+                    : 'border-slate-200 dark:border-slate-800 hover:border-slate-300'
+                }`}
+              >
+                <div className={`w-5 h-5 rounded-full border-2 mt-0.5 flex items-center justify-center ${
+                  printLayout === 'single' ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-slate-300'
+                }`}>
+                  {printLayout === 'single' && <Check className="w-3 h-3 stroke-[3]" />}
+                </div>
+                <div className="space-y-1.5 flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-900 dark:text-white">
+                      แบบฟอร์มประจำห้องเดี่ยว (Single Room Sheet)
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300">
+                      สำหรับติดแฟ้มห้อง
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                    พิมพ์บันทึกเฉพาะ 1 ห้อง (A4 แนวตั้ง) พร้อมช่องลายมือชื่อผู้ปฏิบัติงาน เหมาะสำหรับใส่แฟ้มหรือติดบอร์ดหน้าห้อง
+                  </p>
+
+                  {printLayout === 'single' && (
+                    <div className="pt-2">
+                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        เลือกห้องที่ต้องการพิมพ์:
+                      </label>
+                      <select
+                        value={printSingleRoomId || (data?.rooms?.[0]?.id || '')}
+                        onChange={(e) => setPrintSingleRoomId(e.target.value)}
+                        className="w-full py-2 px-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-semibold outline-none focus:border-indigo-500"
+                      >
+                        {data?.rooms?.map((r: any) => (
+                          <option key={r.id} value={r.id}>
+                            {r.name} ({r.code})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Tip Notice */}
+            <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-start gap-2 text-[11px] text-slate-600 dark:text-slate-300">
+              <Info className="w-4 h-4 text-indigo-500 shrink-0 mt-0.5" />
+              <span>
+                <b>คำแนะนำการพิมพ์:</b> ระบบจะเปิดหน้าต่างพิมพ์ให้อัตโนมัติ สามารถเลือกบันทึกเป็น <b>PDF</b> หรือส่งออกไปยังเครื่องพิมพ์ได้ทันที
+              </span>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setShowPrintModal(false)}
+                className="py-2.5 px-4 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 transition cursor-pointer"
+              >
+                ยกเลิก
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPrintModal(false);
+                  handlePrintWeb(printLayout);
+                }}
+                className="inline-flex items-center gap-2 py-2.5 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md shadow-indigo-600/20 transition cursor-pointer"
+              >
+                <Printer className="w-4 h-4" />
+                <span>เปิดหน้าต่างพิมพ์ (Print)</span>
+              </button>
             </div>
           </div>
         </div>

@@ -803,13 +803,43 @@ export default function AirConditioningPage() {
         width: 235px;
         line-height: 1.2;
       }
+      @media print {
+        * {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        body {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        table, tr, td, th {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        .weekend-row,
+        tr.weekend-row,
+        tr.weekend-row td {
+          background-color: #cbd5e1 !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        tr.weekend-row td.font-bold {
+          background-color: #94a3b8 !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+      }
       .weekend-row,
       tr.weekend-row,
       tr.weekend-row td {
-        background-color: #e2e8f0 !important;
+        background-color: #cbd5e1 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
       }
       tr.weekend-row td.font-bold {
-        background-color: #cbd5e1 !important;
+        background-color: #94a3b8 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
       }
       .legend-box {
         margin-top: 3px;
@@ -836,19 +866,25 @@ export default function AirConditioningPage() {
           </div>
 
           <table>
+            <colgroup>
+              <col style="width: 55px;" />
+              <col style="width: 28px;" />
+              ${activeRooms.map(() => `<col style="width: auto;" />`).join('')}
+              <col style="width: 58px;" />
+            </colgroup>
             <thead>
               <tr>
                 <th style="width: 55px;">วันที่</th>
                 <th style="width: 28px;">วัน</th>
                 ${activeRooms.map((r: any) => `<th>${r.code || r.name}</th>`).join('')}
-                <th style="width: 58px; background-color: #e2e8f0;">รวม (ชม.)</th>
+                <th style="width: 58px; background-color: #cbd5e1;">รวม (ชม.)</th>
               </tr>
             </thead>
             <tbody>
               ${daysArray.map((d: any) => {
                 let dayTotal = 0;
                 const isRowHoliday = d.isWeekend || d.isCustomHoliday;
-                const bgStyle = isRowHoliday ? 'background-color: #e2e8f0 !important;' : '';
+                const bgStyle = isRowHoliday ? 'background-color: #cbd5e1 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;' : '';
 
                 const roomCols = activeRooms.map((r: any) => {
                   const log = data?.logsMap?.[d.dateStr]?.[r.id];
@@ -862,10 +898,10 @@ export default function AirConditioningPage() {
 
                 return `
                   <tr class="${isRowHoliday ? 'weekend-row' : ''}" style="${bgStyle}">
-                    <td style="white-space: nowrap; ${bgStyle}">${d.day} ${d.dateObj.toLocaleString('th-TH', { month: 'short' })}</td>
+                    <td style="white-space: nowrap; ${bgStyle}">${d.day} ${d.dateObj.toLocaleString('th-TH', { month: 'short' })} ${yearBE}</td>
                     <td style="${isRowHoliday ? 'color: #b91c1c; font-weight: bold;' : ''} ${bgStyle}">${d.dayOfWeek}</td>
                     ${roomCols}
-                    <td class="font-bold" style="${isRowHoliday ? 'background-color: #cbd5e1 !important;' : 'background-color: #f1f5f9;'}">${dayTotal > 0 ? dayTotal : '-'}</td>
+                    <td class="font-bold" style="${isRowHoliday ? 'background-color: #94a3b8 !important;' : 'background-color: #f1f5f9;'}">${dayTotal > 0 ? dayTotal : '-'}</td>
                   </tr>
                 `;
               }).join('')}
@@ -937,10 +973,21 @@ export default function AirConditioningPage() {
           </div>
 
           <table>
+            <colgroup>
+              <col style="width: 52px;" />
+              <col style="width: 22px;" />
+              ${chunkRooms.map(() => `
+                <col style="width: 32px;" />
+                <col style="width: 32px;" />
+                <col style="width: 24px;" />
+                <col style="width: 36px;" />
+                <col style="width: auto;" />
+              `).join('')}
+            </colgroup>
             <thead>
               <tr>
-                <th rowspan="2" style="width: 50px;">วันที่</th>
-                <th rowspan="2" style="width: 20px;">วัน</th>
+                <th rowspan="2" style="width: 52px;">วันที่</th>
+                <th rowspan="2" style="width: 22px;">วัน</th>
                 ${chunkRooms.map((r: any) => `
                   <th colspan="5" style="font-size: 7.2pt; line-height: 1.15; padding: 2px 2px; white-space: normal; height: 26px;">
                     <b>${r.name}</b> ${r.code ? `<span style="font-size: 6.5pt; color: #475569;">(${r.code})</span>` : ''}
@@ -949,18 +996,18 @@ export default function AirConditioningPage() {
               </tr>
               <tr>
                 ${chunkRooms.map(() => `
-                  <th style="width: 25px;">เปิด</th>
-                  <th style="width: 25px;">ปิด</th>
-                  <th style="width: 20px;">ชม.</th>
-                  <th style="width: 25px;">อุณหภูมิ</th>
-                  <th style="width: 240px;">หมายเหตุ</th>
+                  <th style="font-size: 6.8pt; padding: 1px 0;">เปิด</th>
+                  <th style="font-size: 6.8pt; padding: 1px 0;">ปิด</th>
+                  <th style="font-size: 6.8pt; padding: 1px 0;">ชม.</th>
+                  <th style="font-size: 6.2pt; padding: 1px 0;">อุณหภูมิ</th>
+                  <th style="font-size: 6.8pt;">หมายเหตุ</th>
                 `).join('')}
               </tr>
             </thead>
             <tbody>
               ${daysArray.map((d: any) => {
                 const isRowHoliday = d.isWeekend || d.isCustomHoliday;
-                const bgStyle = isRowHoliday ? 'background-color: #e2e8f0 !important;' : '';
+                const bgStyle = isRowHoliday ? 'background-color: #cbd5e1 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;' : '';
 
                 const roomCells = chunkRooms.map((r: any) => {
                   const log = data?.logsMap?.[d.dateStr]?.[r.id];
@@ -1064,16 +1111,26 @@ export default function AirConditioningPage() {
           </div>
 
           <table>
+            <colgroup>
+              <col style="width: 60px;" />
+              <col style="width: 32px;" />
+              <col style="width: 50px;" />
+              <col style="width: 50px;" />
+              <col style="width: 45px;" />
+              <col style="width: 48px;" />
+              <col style="width: auto;" />
+              <col style="width: 75px;" />
+            </colgroup>
             <thead>
               <tr>
                 <th style="width: 60px;">วันที่</th>
                 <th style="width: 32px;">วัน</th>
-                <th style="width: 55px;">เวลาเปิด</th>
-                <th style="width: 55px;">เวลาปิด</th>
-                <th style="width: 48px;">ชม.ใช้งาน</th>
+                <th style="width: 50px;">เวลาเปิด</th>
+                <th style="width: 50px;">เวลาปิด</th>
+                <th style="width: 45px;">ชม.ใช้งาน</th>
                 <th style="width: 48px;">อุณหภูมิ</th>
-                <th>วัตถุประสงค์ / หมายเหตุ</th>
-                <th style="width: 80px;">ผู้บันทึก</th>
+                <th style="width: auto;">วัตถุประสงค์ / หมายเหตุ</th>
+                <th style="width: 75px;">ผู้บันทึก</th>
               </tr>
             </thead>
             <tbody>
@@ -1081,19 +1138,20 @@ export default function AirConditioningPage() {
                 const log = targetRoom ? data?.logsMap?.[d.dateStr]?.[targetRoom.id] : null;
                 const hasLog = log && Number(log.usageHours) > 0;
                 const isRowHoliday = d.isWeekend || d.isCustomHoliday;
+                const bgStyle = isRowHoliday ? 'background-color: #cbd5e1 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;' : '';
 
                 return `
-                  <tr class="${isRowHoliday ? 'weekend-row' : ''}">
-                    <td style="white-space: nowrap;">${d.day} ${d.dateObj.toLocaleString('th-TH', { month: 'short' })} ${yearBE}</td>
-                    <td style="${isRowHoliday ? 'color: #b91c1c; font-weight: bold;' : ''}">${d.dayOfWeek}</td>
-                    <td>${hasLog ? log.openTime || '-' : '-'}</td>
-                    <td>${hasLog ? log.closeTime || '-' : '-'}</td>
-                    <td class="font-bold">${hasLog ? log.usageHours : '-'}</td>
-                    <td>${hasLog ? `${log.temperature || 22}°C` : '-'}</td>
-                    <td class="text-left" style="padding-left: 6px; font-size: 6.8pt;">
+                  <tr class="${isRowHoliday ? 'weekend-row' : ''}" style="${bgStyle}">
+                    <td style="white-space: nowrap; ${bgStyle}">${d.day} ${d.dateObj.toLocaleString('th-TH', { month: 'short' })} ${yearBE}</td>
+                    <td style="${isRowHoliday ? 'color: #b91c1c; font-weight: bold;' : ''} ${bgStyle}">${d.dayOfWeek}</td>
+                    <td style="${bgStyle}">${hasLog ? log.openTime || '-' : '-'}</td>
+                    <td style="${bgStyle}">${hasLog ? log.closeTime || '-' : '-'}</td>
+                    <td class="font-bold" style="${bgStyle}">${hasLog ? log.usageHours : '-'}</td>
+                    <td style="${bgStyle}">${hasLog ? `${log.temperature || 22}°C` : '-'}</td>
+                    <td class="text-left" style="padding-left: 6px; font-size: 6.8pt; ${bgStyle}">
                       ${hasLog ? formatPurposeWithNote(log.purpose, log.note) : '-'}
                     </td>
-                    <td>${hasLog ? log.recordedName || 'เจ้าหน้าที่' : ''}</td>
+                    <td style="${bgStyle}">${hasLog ? log.recordedName || 'เจ้าหน้าที่' : ''}</td>
                   </tr>
                 `;
               }).join('')}

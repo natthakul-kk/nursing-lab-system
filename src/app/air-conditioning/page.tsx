@@ -620,26 +620,29 @@ export default function AirConditioningPage() {
     const css = `
       @page {
         size: ${layout === 'single' ? 'A4 portrait' : 'A4 landscape'};
-        margin: ${layout === 'single' ? '8mm 8mm' : '4mm 6mm'};
+        margin: ${layout === 'single' ? '6mm 8mm' : '3mm 5mm'};
       }
       * {
         box-sizing: border-box;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
       }
-      body {
-        font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        font-size: ${layout === 'summary' ? '8.5pt' : '7.6pt'};
-        color: #0f172a;
+      html, body {
         margin: 0;
         padding: 0;
         background: #fff;
+        font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-size: ${layout === 'summary' ? '8pt' : '7pt'};
+        color: #0f172a;
       }
       .page-container {
         width: 100%;
         page-break-after: always;
         break-after: page;
-        padding-bottom: 4px;
+        page-break-inside: avoid;
+        break-inside: avoid;
+        padding: 0;
+        margin: 0;
       }
       .page-container:last-child {
         page-break-after: auto;
@@ -647,36 +650,47 @@ export default function AirConditioningPage() {
       }
       .header-box {
         text-align: center;
-        margin-bottom: 5px;
+        margin-bottom: 2px;
       }
       .header-title {
-        font-size: 12pt;
+        font-size: 11pt;
         font-weight: bold;
         color: #0f172a;
-        line-height: 1.2;
+        line-height: 1.15;
       }
       .header-subtitle {
-        font-size: 8.5pt;
+        font-size: 7.5pt;
         color: #475569;
         margin-top: 1px;
       }
       table {
         width: 100%;
         border-collapse: collapse;
-        table-layout: auto;
+        table-layout: fixed;
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+      tr {
+        page-break-inside: avoid;
+        break-inside: avoid;
+        height: 14.5px;
       }
       th, td {
         border: 1px solid #475569;
-        padding: 1.5px 3px;
+        padding: 0.5px 2px;
         text-align: center;
         vertical-align: middle;
-        line-height: 1.15;
+        line-height: 1.1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
       th {
         background-color: #f1f5f9;
         font-weight: bold;
         color: #0f172a;
-        font-size: 7.8pt;
+        font-size: 7pt;
+        padding: 1px 1px;
       }
       .text-left { text-align: left; }
       .text-right { text-align: right; }
@@ -688,17 +702,18 @@ export default function AirConditioningPage() {
       .signature-wrap {
         display: flex;
         justify-content: flex-end;
-        margin-top: 10px;
-        font-size: 8.5pt;
+        margin-top: 4px;
+        font-size: 7.5pt;
         page-break-inside: avoid;
+        break-inside: avoid;
       }
       .signature-block {
         text-align: center;
-        width: 270px;
-        line-height: 1.4;
+        width: 240px;
+        line-height: 1.25;
       }
       .weekend-row {
-        background-color: #fafafa;
+        background-color: #fcfcfc;
       }
     `;
 
@@ -717,10 +732,10 @@ export default function AirConditioningPage() {
           <table>
             <thead>
               <tr>
-                <th style="width: 72px;">วันที่</th>
-                <th style="width: 35px;">วัน</th>
+                <th style="width: 55px;">วันที่</th>
+                <th style="width: 28px;">วัน</th>
                 ${activeRooms.map((r: any) => `<th>${r.name}</th>`).join('')}
-                <th style="width: 70px; background-color: #e2e8f0;">รวม (ชม.)</th>
+                <th style="width: 58px; background-color: #e2e8f0;">รวม (ชม.)</th>
               </tr>
             </thead>
             <tbody>
@@ -738,7 +753,7 @@ export default function AirConditioningPage() {
 
                 return `
                   <tr class="${d.isWeekend ? 'weekend-row' : ''}">
-                    <td>${d.day} ${d.dateObj.toLocaleString('th-TH', { month: 'short' })} ${yearBE}</td>
+                    <td style="white-space: nowrap;">${d.day} ${d.dateObj.toLocaleString('th-TH', { month: 'short' })}</td>
                     <td>${d.dayOfWeek}</td>
                     ${roomCols}
                     <td class="font-bold" style="background-color: #f1f5f9;">${dayTotal > 0 ? dayTotal : '-'}</td>
@@ -748,7 +763,7 @@ export default function AirConditioningPage() {
               <tr class="bg-summary" style="border-top: 2px solid #0f172a;">
                 <td colspan="2" class="text-left font-bold" style="padding-left: 6px;">รวมชั่วโมงทั้งเดือน</td>
                 ${activeRooms.map((r: any) => `<td>${roomSummaries[r.id]?.totalHours || 0}</td>`).join('')}
-                <td style="background-color: #e2e8f0; font-size: 9.5pt;">${grandTotalHours}</td>
+                <td style="background-color: #e2e8f0; font-size: 9pt;">${grandTotalHours}</td>
               </tr>
               <tr class="bg-summary">
                 <td colspan="2" class="text-left font-bold" style="padding-left: 6px;">เฉลี่ยต่อวันใช้งาน</td>
@@ -770,9 +785,9 @@ export default function AirConditioningPage() {
           <div class="signature-wrap">
             <div class="signature-block">
               <div>(ลงชื่อ) ................................................................ ผู้รายงาน</div>
-              <div style="margin-top: 4px;">( ................................................................ )</div>
-              <div style="margin-top: 2px;">ตำแหน่ง เจ้าหน้าที่ประจำห้องปฏิบัติการ</div>
-              <div style="margin-top: 2px;">วันที่ ........ / .................... / ............</div>
+              <div style="margin-top: 3px;">( ................................................................ )</div>
+              <div style="margin-top: 1px;">ตำแหน่ง เจ้าหน้าที่ประจำห้องปฏิบัติการ</div>
+              <div style="margin-top: 1px;">วันที่ ........ / .................... / ............</div>
             </div>
           </div>
         </div>
@@ -798,18 +813,18 @@ export default function AirConditioningPage() {
             <table>
               <thead>
                 <tr>
-                  <th rowspan="2" style="width: 65px;">วันที่</th>
-                  <th rowspan="2" style="width: 30px;">วัน</th>
-                  ${chunkRooms.map((r: any) => `<th colspan="5">${r.name}</th>`).join('')}
-                  <th rowspan="2" style="width: 55px; background-color: #e2e8f0;">รวม (ชม.)</th>
+                  <th rowspan="2" style="width: 48px;">วันที่</th>
+                  <th rowspan="2" style="width: 26px;">วัน</th>
+                  ${chunkRooms.map((r: any) => `<th colspan="5" style="font-size: 6.8pt; line-height: 1.1; padding: 1px 1px;">${r.name}</th>`).join('')}
+                  <th rowspan="2" style="width: 46px; background-color: #e2e8f0;">รวม (ชม.)</th>
                 </tr>
                 <tr>
                   ${chunkRooms.map(() => `
-                    <th style="width: 42px;">เปิด</th>
-                    <th style="width: 42px;">ปิด</th>
-                    <th style="width: 34px;">ชม.</th>
-                    <th style="width: 36px;">อุณหภูมิ</th>
-                    <th>หมายเหตุ</th>
+                    <th style="width: 38px;">เปิด</th>
+                    <th style="width: 38px;">ปิด</th>
+                    <th style="width: 28px;">ชม.</th>
+                    <th style="width: 32px;">อุณหภูมิ</th>
+                    <th style="width: 95px;">หมายเหตุ</th>
                   `).join('')}
                 </tr>
               </thead>
@@ -826,7 +841,7 @@ export default function AirConditioningPage() {
                         <td>${log.closeTime || '-'}</td>
                         <td class="font-bold">${hrs}</td>
                         <td>${log.temperature ? `${log.temperature}°` : '22°'}</td>
-                        <td class="text-left" style="font-size: 7pt; max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                        <td class="text-left" style="font-size: 6.6pt; max-width: 95px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                           ${formatPurposeWithNote(log.purpose, log.note)}
                         </td>
                       `;
@@ -836,7 +851,7 @@ export default function AirConditioningPage() {
 
                   return `
                     <tr class="${d.isWeekend ? 'weekend-row' : ''}">
-                      <td>${d.day} ${d.dateObj.toLocaleString('th-TH', { month: 'short' })} ${yearBE}</td>
+                      <td style="white-space: nowrap;">${d.day} ${d.dateObj.toLocaleString('th-TH', { month: 'short' })}</td>
                       <td>${d.dayOfWeek}</td>
                       ${roomCells}
                       <td class="font-bold" style="background-color: #f1f5f9;">${dayTotal > 0 ? dayTotal : '-'}</td>
@@ -845,16 +860,16 @@ export default function AirConditioningPage() {
                 }).join('')}
                 ${isLastChunk ? `
                   <tr class="bg-summary" style="border-top: 2px solid #0f172a;">
-                    <td colspan="2" class="text-left font-bold" style="padding-left: 6px;">รวมชั่วโมงทั้งเดือน</td>
+                    <td colspan="2" class="text-left font-bold" style="padding-left: 4px;">รวมชั่วโมงทั้งเดือน</td>
                     ${chunkRooms.map((r: any) => `
                       <td></td><td></td>
                       <td class="font-bold">${roomSummaries[r.id]?.totalHours || 0}</td>
                       <td></td><td></td>
                     `).join('')}
-                    <td style="background-color: #e2e8f0; font-size: 9.5pt;">${grandTotalHours}</td>
+                    <td style="background-color: #e2e8f0; font-size: 9pt;">${grandTotalHours}</td>
                   </tr>
                   <tr class="bg-summary">
-                    <td colspan="2" class="text-left font-bold" style="padding-left: 6px;">เฉลี่ยต่อวันใช้งาน</td>
+                    <td colspan="2" class="text-left font-bold" style="padding-left: 4px;">เฉลี่ยต่อวันใช้งาน</td>
                     ${chunkRooms.map((r: any) => {
                       const s = roomSummaries[r.id];
                       const avg = s?.activeDays > 0 ? Math.round((s.totalHours / s.activeDays) * 10) / 10 : 0;
@@ -863,7 +878,7 @@ export default function AirConditioningPage() {
                     <td style="background-color: #e2e8f0;">${grandTotalHours > 0 ? Math.round((grandTotalHours / daysInMonth) * 10) / 10 : 0}</td>
                   </tr>
                   <tr class="bg-summary">
-                    <td colspan="2" class="text-left font-bold" style="padding-left: 6px;">จำนวนวันที่เปิดใช้งาน</td>
+                    <td colspan="2" class="text-left font-bold" style="padding-left: 4px;">จำนวนวันที่เปิดใช้งาน</td>
                     ${chunkRooms.map((r: any) => `
                       <td></td><td></td>
                       <td>${roomSummaries[r.id]?.activeDays || 0} วัน</td>
@@ -879,9 +894,9 @@ export default function AirConditioningPage() {
               <div class="signature-wrap">
                 <div class="signature-block">
                   <div>(ลงชื่อ) ................................................................ ผู้รายงาน</div>
-                  <div style="margin-top: 4px;">( ................................................................ )</div>
-                  <div style="margin-top: 2px;">ตำแหน่ง เจ้าหน้าที่ประจำห้องปฏิบัติการ</div>
-                  <div style="margin-top: 2px;">วันที่ ........ / .................... / ............</div>
+                  <div style="margin-top: 3px;">( ................................................................ )</div>
+                  <div style="margin-top: 1px;">ตำแหน่ง เจ้าหน้าที่ประจำห้องปฏิบัติการ</div>
+                  <div style="margin-top: 1px;">วันที่ ........ / .................... / ............</div>
                 </div>
               </div>
             ` : ''}
@@ -896,7 +911,7 @@ export default function AirConditioningPage() {
         <div class="page-container">
           <div class="header-box">
             <div class="header-title">ตารางบันทึกการเปิด-ปิดเครื่องปรับอากาศประจำห้อง</div>
-            <div class="header-subtitle font-bold" style="font-size: 11pt; color: #0284c7; margin-top: 4px;">
+            <div class="header-subtitle font-bold" style="font-size: 10.5pt; color: #0284c7; margin-top: 2px;">
               ${targetRoom?.name || 'ห้องปฏิบัติการ'} (${targetRoom?.code || '-'})
             </div>
             <div class="header-subtitle">
@@ -907,14 +922,14 @@ export default function AirConditioningPage() {
           <table>
             <thead>
               <tr>
-                <th style="width: 75px;">วันที่</th>
-                <th style="width: 40px;">วัน</th>
-                <th style="width: 65px;">เวลาเปิด</th>
-                <th style="width: 65px;">เวลาปิด</th>
-                <th style="width: 55px;">ชม.ใช้งาน</th>
-                <th style="width: 55px;">อุณหภูมิ</th>
+                <th style="width: 60px;">วันที่</th>
+                <th style="width: 32px;">วัน</th>
+                <th style="width: 55px;">เวลาเปิด</th>
+                <th style="width: 55px;">เวลาปิด</th>
+                <th style="width: 48px;">ชม.ใช้งาน</th>
+                <th style="width: 48px;">อุณหภูมิ</th>
                 <th>วัตถุประสงค์ / หมายเหตุ</th>
-                <th style="width: 90px;">ผู้บันทึก</th>
+                <th style="width: 80px;">ผู้บันทึก</th>
               </tr>
             </thead>
             <tbody>
@@ -923,13 +938,13 @@ export default function AirConditioningPage() {
                 const hasLog = log && Number(log.usageHours) > 0;
                 return `
                   <tr class="${d.isWeekend ? 'weekend-row' : ''}">
-                    <td>${d.day} ${d.dateObj.toLocaleString('th-TH', { month: 'short' })} ${yearBE}</td>
+                    <td style="white-space: nowrap;">${d.day} ${d.dateObj.toLocaleString('th-TH', { month: 'short' })}</td>
                     <td>${d.dayOfWeek}</td>
                     <td>${hasLog ? log.openTime || '-' : '-'}</td>
                     <td>${hasLog ? log.closeTime || '-' : '-'}</td>
                     <td class="font-bold">${hasLog ? log.usageHours : '-'}</td>
                     <td>${hasLog ? `${log.temperature || 22}°C` : '-'}</td>
-                    <td class="text-left" style="padding-left: 8px;">
+                    <td class="text-left" style="padding-left: 6px; font-size: 6.8pt;">
                       ${hasLog ? formatPurposeWithNote(log.purpose, log.note) : '-'}
                     </td>
                     <td>${hasLog ? log.recordedName || 'เจ้าหน้าที่' : ''}</td>
@@ -937,30 +952,30 @@ export default function AirConditioningPage() {
                 `;
               }).join('')}
               <tr class="bg-summary" style="border-top: 2px solid #0f172a;">
-                <td colspan="4" class="text-left font-bold" style="padding-left: 8px;">รวมชั่วโมงทั้งเดือน</td>
-                <td class="font-bold" style="font-size: 9.5pt; background-color: #e2e8f0;">${roomSummary?.totalHours || 0}</td>
+                <td colspan="4" class="text-left font-bold" style="padding-left: 6px;">รวมชั่วโมงทั้งเดือน</td>
+                <td class="font-bold" style="font-size: 9pt; background-color: #e2e8f0;">${roomSummary?.totalHours || 0}</td>
                 <td colspan="3"></td>
               </tr>
               <tr class="bg-summary">
-                <td colspan="4" class="text-left font-bold" style="padding-left: 8px;">เฉลี่ยต่อวันใช้งาน</td>
+                <td colspan="4" class="text-left font-bold" style="padding-left: 6px;">เฉลี่ยต่อวันใช้งาน</td>
                 <td class="font-bold">${roomSummary?.activeDays ? Math.round((roomSummary.totalHours / roomSummary.activeDays) * 10) / 10 : 0}</td>
                 <td>${roomSummary?.avgTemp || 22}°C</td>
                 <td colspan="2"></td>
               </tr>
               <tr class="bg-summary">
-                <td colspan="4" class="text-left font-bold" style="padding-left: 8px;">จำนวนวันที่เปิดใช้งาน</td>
+                <td colspan="4" class="text-left font-bold" style="padding-left: 6px;">จำนวนวันที่เปิดใช้งาน</td>
                 <td class="font-bold">${roomSummary?.activeDays || 0} วัน</td>
                 <td colspan="3"></td>
               </tr>
             </tbody>
           </table>
 
-          <div class="signature-wrap" style="margin-top: 20px;">
+          <div class="signature-wrap" style="margin-top: 12px;">
             <div class="signature-block">
               <div>(ลงชื่อ) ................................................................ ผู้รายงาน</div>
-              <div style="margin-top: 4px;">( ................................................................ )</div>
-              <div style="margin-top: 2px;">ตำแหน่ง เจ้าหน้าที่ประจำห้องปฏิบัติการ</div>
-              <div style="margin-top: 2px;">วันที่ ........ / .................... / ............</div>
+              <div style="margin-top: 3px;">( ................................................................ )</div>
+              <div style="margin-top: 1px;">ตำแหน่ง เจ้าหน้าที่ประจำห้องปฏิบัติการ</div>
+              <div style="margin-top: 1px;">วันที่ ........ / .................... / ............</div>
             </div>
           </div>
         </div>

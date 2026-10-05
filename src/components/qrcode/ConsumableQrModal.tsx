@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
-import { QrCode, Printer, X, Tag, Calendar, MapPin, SlidersHorizontal, Copy, Check } from 'lucide-react';
+import { QrCode, Printer, X, Tag, Calendar, MapPin, SlidersHorizontal, Copy, Check, FileDown } from 'lucide-react';
+import { downloadStickerDocx, type DocxCardItem } from '@/lib/exportStickerDocx';
 
 interface ConsumableQrModalProps {
   item: {
@@ -32,6 +33,7 @@ export default function ConsumableQrModal({ item, lot, onClose }: ConsumableQrMo
   const [startPosition, setStartPosition] = useState<number>(1);
   const [showBorders, setShowBorders] = useState<boolean>(true);
   const [printCopies, setPrintCopies] = useState<number>(1);
+  const [isExportingDocx, setIsExportingDocx] = useState<boolean>(false);
 
   useEffect(() => {
     async function generateQr() {
@@ -60,6 +62,33 @@ export default function ConsumableQrModal({ item, lot, onClose }: ConsumableQrMo
     ? new Date(lot.expiryDate).toLocaleDateString('th-TH')
     : 'ไม่ระบุ';
 
+  const handleExportDocx = async () => {
+    if (!qrDataUrl) return;
+    try {
+      setIsExportingDocx(true);
+      const cardItem: DocxCardItem = {
+        qrBase64: qrDataUrl,
+        orgText: 'คณะพยาบาลศาสตร์ ม.เกษตรศาสตร์',
+        codeText: `Lot: ${lot.lotNumber}`,
+        badgeText: item.code,
+        titleText: item.name,
+        locOrExpText: `EXP: ${formattedExpiry}`,
+      };
+
+      const copiesCount = Math.max(1, Math.min(100, printCopies || 1));
+      const cards = Array.from({ length: copiesCount }).map(() => ({ ...cardItem }));
+      await downloadStickerDocx(
+        `สติกเกอร์เวชภัณฑ์_Lot_${lot.lotNumber}_ตราช้าง_A7`,
+        cards,
+        { startPosition, showBorders }
+      );
+    } catch (err) {
+      console.error('Error generating docx:', err);
+    } finally {
+      setIsExportingDocx(false);
+    }
+  };
+
   const handlePrint = () => {
     const printWindow = window.open('', '_blank', 'width=750,height=750');
     if (!printWindow) {
@@ -77,7 +106,7 @@ export default function ConsumableQrModal({ item, lot, onClose }: ConsumableQrMo
       // 205 x 175 mm Elephant / ตราช้าง A7 template (8 rows x 5 cols = 40 stickers, 38x19 mm landscape)
       pageCss = `
         @page {
-          size: 205mm 175mm;
+          size: 205mm 175mm landscape;
           margin: 0;
         }
         body {
@@ -92,7 +121,7 @@ export default function ConsumableQrModal({ item, lot, onClose }: ConsumableQrMo
         .doc-sheet-page {
           width: 202mm;
           height: 168mm;
-          margin: 2.5mm auto 0 auto;
+          margin: 3.5mm 0 0 1.5mm;
           page-break-after: always;
           break-after: page;
           box-sizing: border-box;
@@ -617,9 +646,14 @@ export default function ConsumableQrModal({ item, lot, onClose }: ConsumableQrMo
             </div>
 
             {/* Print Help Guide */}
-            <div className="p-2 rounded-xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-[11px] text-amber-900 dark:text-amber-200 flex items-center gap-2">
-              <span className="font-bold flex-shrink-0">💡 การตั้งค่าตอนสั่งพิมพ์:</span>
-              <span>Margins (ระยะขอบ) เลือก <b>&quot;None&quot; (ไม่มี)</b> • Scale เลือก <b>100%</b> • เอาติ๊กถูกออกที่ <b>&quot;ส่วนหัวและส่วนท้าย&quot;</b> • ติ๊กถูกที่ <b>&quot;กราฟิกพื้นหลัง&quot;</b></span>
+            <div className="p-2.5 rounded-xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-[11px] text-amber-900 dark:text-amber-200 space-y-1">
+              <div className="flex items-center gap-1.5 font-bold text-amber-800 dark:text-amber-300">
+                <span>💡 พิมพ์ลงกระดาษตราช้าง A7 (19×38 มม.):</span>
+              </div>
+              <div className="text-[10.5px] leading-relaxed text-amber-700 dark:text-amber-300 space-y-0.5">
+                <div>• <b>แนะนำที่สุด (ตรงช่อง 100%):</b> กดปุ่ม <b>&quot;ดาวน์โหลดไฟล์ Word (.docx)&quot;</b> ด้านล่าง แล้วเปิดสั่งพิมพ์ใน Word ได้ทันทีโดยไม่เพี้ยน</div>
+                <div>• <b>พิมพ์ผ่านเบราว์เซอร์ Chrome:</b> ตั้งระยะขอบ (Margins) = <b>&quot;None&quot; (ไม่มี)</b> • มาตราส่วน (Scale) = <b>100%</b> • เอาติ๊กถูกออกที่ &quot;ส่วนหัวและส่วนท้าย&quot;</div>
+              </div>
             </div>
           </div>
         )}
@@ -777,6 +811,18 @@ export default function ConsumableQrModal({ item, lot, onClose }: ConsumableQrMo
           >
             ปิด
           </button>
+          {labelSize === 'template_doc' && (
+            <button
+              type="button"
+              onClick={handleExportDocx}
+              disabled={isExportingDocx}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md shadow-blue-600/20 transition cursor-pointer disabled:opacity-50"
+              title="ดาวน์โหลดไฟล์ Microsoft Word (.docx) เพื่อเปิดพิมพ์ใน Word ได้ตรงช่องสติกเกอร์ 100%"
+            >
+              <FileDown className="w-4 h-4" />
+              <span>{isExportingDocx ? 'กำลังสร้างไฟล์ Word...' : 'ดาวน์โหลดไฟล์ Word (.docx)'}</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={handlePrint}

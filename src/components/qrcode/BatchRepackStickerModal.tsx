@@ -14,7 +14,9 @@ import {
   ChevronRight,
   Scissors,
   PackageCheck,
+  FileDown,
 } from 'lucide-react';
+import { downloadStickerDocx, type DocxCardItem } from '@/lib/exportStickerDocx';
 
 export interface RepackRecordForBatch {
   id: string;
@@ -182,6 +184,98 @@ export default function BatchRepackStickerModal({
     };
   }, [records, selectedPackCodes, includeLotStickers]);
 
+  const handleExportDocx = async () => {
+    if (printableStats.totalPacks === 0) {
+      alert('กรุณาเลือกซองเวชภัณฑ์อย่างน้อย 1 ซองเพื่อพิมพ์สติกเกอร์');
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      const qrs: Record<string, string> = { ...qrCache };
+
+      for (const rec of records) {
+        const packs = getRecordPacks(rec);
+        const selectedInRec = packs.filter((p) => selectedPackCodes.includes(p.packCode));
+        if (selectedInRec.length === 0) continue;
+
+        if (includeLotStickers) {
+          const lotPayload = `${origin}/consumable/${encodeURIComponent(rec.subLotNumber)}`;
+          if (!qrs[lotPayload]) {
+            qrs[lotPayload] = await QRCode.toDataURL(lotPayload, {
+              width: 250,
+              margin: 1,
+              color: { dark: '#0f172a', light: '#ffffff' },
+            });
+          }
+        }
+
+        for (const pack of selectedInRec) {
+          const packPayload = `${origin}/consumable/${encodeURIComponent(pack.packCode)}`;
+          if (!qrs[packPayload]) {
+            qrs[packPayload] = await QRCode.toDataURL(packPayload, {
+              width: 250,
+              margin: 1,
+              color: { dark: '#0f172a', light: '#ffffff' },
+            });
+          }
+        }
+      }
+      setQrCache(qrs);
+
+      const docxCards: DocxCardItem[] = [];
+
+      for (const rec of records) {
+        const packs = getRecordPacks(rec);
+        const selectedInRec = packs.filter((p) => selectedPackCodes.includes(p.packCode));
+        if (selectedInRec.length === 0) continue;
+
+        const itemName = rec.targetItem?.name || rec.sourceItem?.name || 'เวชภัณฑ์ปลอดเชื้อ';
+        const usageUnit = rec.sourceItem?.usageUnit || 'ชิ้น';
+        const totalPacksInLot = rec.totalPacksProduced || packs.length;
+        const formattedExpiry = rec.sterileExpiryDate
+          ? new Date(rec.sterileExpiryDate).toLocaleDateString('th-TH')
+          : 'ไม่ระบุ';
+
+        if (includeLotStickers) {
+          const lotQr = qrs[`${origin}/consumable/${encodeURIComponent(rec.subLotNumber)}`] || '';
+          docxCards.push({
+            qrBase64: lotQr,
+            orgText: 'คณะพยาบาลศาสตร์ ม.เกษตรศาสตร์',
+            codeText: `SUB-LOT: ${rec.subLotNumber}`,
+            badgeText: `ป้าย Sub-lot (${totalPacksInLot} ซอง)`,
+            titleText: itemName,
+            locOrExpText: `EXP: ${formattedExpiry}`,
+          });
+        }
+
+        for (const pack of selectedInRec) {
+          const packQr = qrs[`${origin}/consumable/${encodeURIComponent(pack.packCode)}`] || '';
+          const packUnits = pack.unitsCount || rec.unitsPerPack;
+          docxCards.push({
+            qrBase64: packQr,
+            orgText: 'คณะพยาบาลศาสตร์ ม.เกษตรศาสตร์',
+            codeText: pack.packCode,
+            badgeText: `#${pack.packNumber}/${totalPacksInLot} (${packUnits} ${usageUnit})`,
+            titleText: itemName,
+            locOrExpText: `EXP: ${formattedExpiry}`,
+          });
+        }
+      }
+
+      await downloadStickerDocx(
+        `สติกเกอร์ซองรีแพ็ค_รวม_${docxCards.length}ดวง_ตราช้าง_A7`,
+        docxCards,
+        { startPosition, showBorders }
+      );
+    } catch (err) {
+      console.error('Error generating docx:', err);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   // Print Handler
   const handlePrint = async () => {
     if (printableStats.totalPacks === 0) {
@@ -288,7 +382,7 @@ export default function BatchRepackStickerModal({
 
         pageCss = `
           @page {
-            size: 205mm 175mm;
+            size: 205mm 175mm landscape;
             margin: 0;
           }
           html, body {
@@ -303,7 +397,7 @@ export default function BatchRepackStickerModal({
           .doc-sheet-page {
             width: 202mm;
             height: 168mm;
-            margin: 2.5mm auto 0 auto;
+            margin: 3.5mm 0 0 1.5mm;
             box-sizing: border-box;
             page-break-after: always;
             break-after: page;
@@ -1001,9 +1095,14 @@ export default function BatchRepackStickerModal({
             </div>
 
             {/* Print Help Guide */}
-            <div className="p-2 rounded-xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-[11px] text-amber-900 dark:text-amber-200 flex items-center gap-2">
-              <span className="font-bold flex-shrink-0">💡 การตั้งค่าตอนสั่งพิมพ์:</span>
-              <span>Margins (ระยะขอบ) เลือก <b>&quot;None&quot; (ไม่มี)</b> • Scale เลือก <b>100%</b> • เอาติ๊กถูกออกที่ <b>&quot;ส่วนหัวและส่วนท้าย&quot;</b> • ติ๊กถูกที่ <b>&quot;กราฟิกพื้นหลัง&quot;</b></span>
+            <div className="p-2.5 rounded-xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-[11px] text-amber-900 dark:text-amber-200 space-y-1">
+              <div className="flex items-center gap-1.5 font-bold text-amber-800 dark:text-amber-300">
+                <span>💡 พิมพ์ลงกระดาษตราช้าง A7 (19×38 มม.):</span>
+              </div>
+              <div className="text-[10.5px] leading-relaxed text-amber-700 dark:text-amber-300 space-y-0.5">
+                <div>• <b>แนะนำที่สุด (ตรงช่อง 100%):</b> กดปุ่ม <b>&quot;ดาวน์โหลดไฟล์ Word (.docx)&quot;</b> ด้านล่าง แล้วเปิดสั่งพิมพ์ใน Word ได้ทันทีโดยไม่เพี้ยน</div>
+                <div>• <b>พิมพ์ผ่านเบราว์เซอร์ Chrome:</b> ตั้งระยะขอบ (Margins) = <b>&quot;None&quot; (ไม่มี)</b> • มาตราส่วน (Scale) = <b>100%</b> • เอาติ๊กถูกออกที่ &quot;ส่วนหัวและส่วนท้าย&quot;</div>
+              </div>
             </div>
           </div>
         )}
@@ -1155,6 +1254,18 @@ export default function BatchRepackStickerModal({
             >
               ยกเลิก
             </button>
+            {labelSize === 'template_doc' && (
+              <button
+                type="button"
+                onClick={handleExportDocx}
+                disabled={isGenerating || printableStats.totalPacks === 0}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md shadow-blue-600/20 transition cursor-pointer disabled:opacity-50"
+                title="ดาวน์โหลดไฟล์ Microsoft Word (.docx) เพื่อเปิดพิมพ์ใน Word ได้ตรงช่องสติกเกอร์ 100%"
+              >
+                <FileDown className="w-4 h-4" />
+                <span>{isGenerating ? 'กำลังสร้างไฟล์ Word...' : 'ดาวน์โหลดไฟล์ Word (.docx)'}</span>
+              </button>
+            )}
             <button
               onClick={handlePrint}
               disabled={isGenerating || printableStats.totalPacks === 0}

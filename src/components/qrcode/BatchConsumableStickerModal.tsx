@@ -20,7 +20,9 @@ import {
   ChevronDown,
   ChevronRight,
   Sparkles,
+  FileDown,
 } from 'lucide-react';
+import { downloadStickerDocx, type DocxCardItem } from '@/lib/exportStickerDocx';
 
 export interface ConsumableItemForBatch {
   id: string;
@@ -199,6 +201,111 @@ export default function BatchConsumableStickerModal({
     } catch (e) {
       console.error('Error generating QR:', e);
       return '';
+    }
+  };
+
+  const handleExportDocx = async () => {
+    if (printableStats.totalBoxes === 0) {
+      alert('กรุณาเลือกกล่องพัสดุอย่างน้อย 1 กล่องเพื่อพิมพ์สติกเกอร์');
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      const qrs: Record<string, string> = { ...qrCache };
+      const boxesToPrint: Array<{
+        box: any;
+        lot: any;
+        item: ConsumableItemForBatch;
+      }> = [];
+
+      availableItems.forEach((item) => {
+        item.stockLots?.forEach((lot) => {
+          lot.boxes?.forEach((b) => {
+            if (selectedBoxIds.includes(b.id)) {
+              boxesToPrint.push({ box: b, lot, item });
+            }
+          });
+        });
+      });
+
+      for (const { box } of boxesToPrint) {
+        const payload = `${origin}/consumable/${encodeURIComponent(box.boxCode)}`;
+        if (!qrs[payload]) {
+          qrs[payload] = await QRCode.toDataURL(payload, {
+            width: 250,
+            margin: 1,
+            color: { dark: '#0f172a', light: '#ffffff' },
+          });
+        }
+      }
+
+      if (includeLotStickers) {
+        const lotMap = new Map<string, { item: ConsumableItemForBatch; lot: any }>();
+        boxesToPrint.forEach(({ item, lot }) => {
+          lotMap.set(lot.id, { item, lot });
+        });
+        for (const { item, lot } of Array.from(lotMap.values())) {
+          const payload = `${origin}/consumable/${encodeURIComponent(item.code)}?lot=${encodeURIComponent(lot.lotNumber)}`;
+          if (!qrs[payload]) {
+            qrs[payload] = await QRCode.toDataURL(payload, {
+              width: 250,
+              margin: 1,
+              color: { dark: '#0f172a', light: '#ffffff' },
+            });
+          }
+        }
+      }
+      setQrCache(qrs);
+
+      const docxCards: DocxCardItem[] = [];
+
+      for (const item of availableItems) {
+        for (const lot of item.stockLots || []) {
+          const selectedInLot = lot.boxes?.filter((b) => selectedBoxIds.includes(b.id)) || [];
+          if (selectedInLot.length === 0) continue;
+
+          const unitLabel = lot.packageUnit || item.unit || 'กล่อง';
+          const formattedExpiry = lot.expiryDate
+            ? new Date(lot.expiryDate).toLocaleDateString('th-TH')
+            : 'ไม่ระบุ';
+
+          if (includeLotStickers) {
+            const lotQrUrl = qrs[`${origin}/consumable/${encodeURIComponent(item.code)}?lot=${encodeURIComponent(lot.lotNumber)}`] || '';
+            docxCards.push({
+              qrBase64: lotQrUrl,
+              orgText: 'คณะพยาบาลศาสตร์ ม.เกษตรศาสตร์',
+              codeText: `LOT: ${lot.lotNumber}`,
+              badgeText: `ป้ายล็อต (${unitLabel})`,
+              titleText: item.name,
+              locOrExpText: `EXP: ${formattedExpiry}`,
+            });
+          }
+
+          for (const box of selectedInLot) {
+            const boxQrUrl = qrs[`${origin}/consumable/${encodeURIComponent(box.boxCode)}`] || '';
+            docxCards.push({
+              qrBase64: boxQrUrl,
+              orgText: 'คณะพยาบาลศาสตร์ ม.เกษตรศาสตร์',
+              codeText: box.boxCode,
+              badgeText: `${unitLabel}ที่ #${box.boxNumberInYear}`,
+              titleText: item.name,
+              locOrExpText: `EXP: ${formattedExpiry}`,
+            });
+          }
+        }
+      }
+
+      await downloadStickerDocx(
+        `สติกเกอร์กล่องเวชภัณฑ์_รวม_${docxCards.length}ดวง_ตราช้าง_A7`,
+        docxCards,
+        { startPosition, showBorders }
+      );
+    } catch (err) {
+      console.error('Error generating docx:', err);
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -448,7 +555,7 @@ export default function BatchConsumableStickerModal({
       if (labelSize === 'template_doc') {
         pageCss = `
           @page {
-            size: 205mm 175mm;
+            size: 205mm 175mm landscape;
             margin: 0;
           }
           html, body {
@@ -463,7 +570,7 @@ export default function BatchConsumableStickerModal({
           .doc-sheet-page {
             width: 202mm;
             height: 168mm;
-            margin: 2.5mm auto 0 auto;
+            margin: 3.5mm 0 0 1.5mm;
             box-sizing: border-box;
             page-break-after: always;
             break-after: page;
@@ -1025,9 +1132,14 @@ export default function BatchConsumableStickerModal({
             </div>
 
             {/* Print Help Guide */}
-            <div className="p-2 rounded-xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-[11px] text-amber-900 dark:text-amber-200 flex items-center gap-2">
-              <span className="font-bold flex-shrink-0">💡 การตั้งค่าตอนสั่งพิมพ์:</span>
-              <span>Margins (ระยะขอบ) เลือก <b>&quot;None&quot; (ไม่มี)</b> • Scale เลือก <b>100%</b> • เอาติ๊กถูกออกที่ <b>&quot;ส่วนหัวและส่วนท้าย&quot;</b> • ติ๊กถูกที่ <b>&quot;กราฟิกพื้นหลัง&quot;</b></span>
+            <div className="p-2.5 rounded-xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-[11px] text-amber-900 dark:text-amber-200 space-y-1">
+              <div className="flex items-center gap-1.5 font-bold text-amber-800 dark:text-amber-300">
+                <span>💡 พิมพ์ลงกระดาษตราช้าง A7 (19×38 มม.):</span>
+              </div>
+              <div className="text-[10.5px] leading-relaxed text-amber-700 dark:text-amber-300 space-y-0.5">
+                <div>• <b>แนะนำที่สุด (ตรงช่อง 100%):</b> กดปุ่ม <b>&quot;ดาวน์โหลดไฟล์ Word (.docx)&quot;</b> ด้านล่าง แล้วเปิดสั่งพิมพ์ใน Word ได้ทันทีโดยไม่เพี้ยน</div>
+                <div>• <b>พิมพ์ผ่านเบราว์เซอร์ Chrome:</b> ตั้งระยะขอบ (Margins) = <b>&quot;None&quot; (ไม่มี)</b> • มาตราส่วน (Scale) = <b>100%</b> • เอาติ๊กถูกออกที่ &quot;ส่วนหัวและส่วนท้าย&quot;</div>
+              </div>
             </div>
           </div>
         )}
@@ -1215,6 +1327,18 @@ export default function BatchConsumableStickerModal({
             >
               ยกเลิก
             </button>
+            {labelSize === 'template_doc' && (
+              <button
+                type="button"
+                onClick={handleExportDocx}
+                disabled={isGenerating || printableStats.totalBoxes === 0}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md shadow-blue-600/20 transition cursor-pointer disabled:opacity-50"
+                title="ดาวน์โหลดไฟล์ Microsoft Word (.docx) เพื่อเปิดพิมพ์ใน Word ได้ตรงช่องสติกเกอร์ 100%"
+              >
+                <FileDown className="w-4 h-4" />
+                <span>{isGenerating ? 'กำลังสร้างไฟล์ Word...' : 'ดาวน์โหลดไฟล์ Word (.docx)'}</span>
+              </button>
+            )}
             <button
               onClick={handlePrint}
               disabled={isGenerating || printableStats.totalBoxes === 0}

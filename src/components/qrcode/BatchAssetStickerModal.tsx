@@ -1078,8 +1078,8 @@ export default function BatchAssetStickerModal({
 
             {/* Print Help Guide */}
             <div className="p-2 rounded-xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-[11px] text-amber-900 dark:text-amber-200 flex items-center gap-2">
-              <span className="font-bold flex-shrink-0">💡 คำแนะนำการพิมพ์:</span>
-              <span>เลือกแนวนอน (Landscape) • ขนาดกระดาษ A4 หรือ 205×175 มม. • Scale 100% • เอาติ๊กถูกออกที่ &quot;ส่วนหัวและส่วนท้าย&quot; (Headers and footers)</span>
+              <span className="font-bold flex-shrink-0">💡 การตั้งค่าตอนสั่งพิมพ์:</span>
+              <span>Margins (ระยะขอบ) เลือก <b>&quot;None&quot; (ไม่มี)</b> • Scale เลือก <b>100%</b> • เอาติ๊กถูกออกที่ <b>&quot;ส่วนหัวและส่วนท้าย&quot;</b> • ติ๊กถูกที่ <b>&quot;กราฟิกพื้นหลัง&quot;</b></span>
             </div>
           </div>
         )}

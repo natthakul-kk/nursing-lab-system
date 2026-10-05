@@ -702,6 +702,7 @@ export default function AirConditioningPage() {
   const handlePrintWeb = (layout: 'bundle' | 'summary' | 'chunks' | 'single') => {
     const monthName = THAI_MONTHS[currentMonth - 1];
     const yearBE = currentYear + 543;
+    const yearShortBE = String(yearBE).slice(-2);
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       alert('กรุณาอนุญาตให้เบราว์เซอร์เปิดหน้าต่าง Pop-up เพื่อพิมพ์เอกสาร');
@@ -898,7 +899,7 @@ export default function AirConditioningPage() {
 
                 return `
                   <tr class="${isRowHoliday ? 'weekend-row' : ''}" style="${bgStyle}">
-                    <td style="white-space: nowrap; ${bgStyle}">${d.day} ${d.dateObj.toLocaleString('th-TH', { month: 'short' })} ${yearBE}</td>
+                    <td style="white-space: nowrap; ${bgStyle}">${d.day} ${d.dateObj.toLocaleString('th-TH', { month: 'short' })} ${yearShortBE}</td>
                     <td style="${isRowHoliday ? 'color: #b91c1c; font-weight: bold;' : ''} ${bgStyle}">${d.dayOfWeek}</td>
                     ${roomCols}
                     <td class="font-bold" style="${isRowHoliday ? 'background-color: #94a3b8 !important;' : 'background-color: #f1f5f9;'}">${dayTotal > 0 ? dayTotal : '-'}</td>
@@ -974,7 +975,7 @@ export default function AirConditioningPage() {
 
           <table>
             <colgroup>
-              <col style="width: 52px;" />
+              <col style="width: 54px;" />
               <col style="width: 22px;" />
               ${chunkRooms.map(() => `
                 <col style="width: 32px;" />
@@ -986,7 +987,7 @@ export default function AirConditioningPage() {
             </colgroup>
             <thead>
               <tr>
-                <th rowspan="2" style="width: 52px;">วันที่</th>
+                <th rowspan="2" style="width: 54px;">วันที่</th>
                 <th rowspan="2" style="width: 22px;">วัน</th>
                 ${chunkRooms.map((r: any) => `
                   <th colspan="5" style="font-size: 7.2pt; line-height: 1.15; padding: 2px 2px; white-space: normal; height: 26px;">
@@ -1029,7 +1030,7 @@ export default function AirConditioningPage() {
                 return `
                   <tr class="${isRowHoliday ? 'weekend-row' : ''}" style="${bgStyle}">
                     <td style="white-space: nowrap; font-size: 6.8pt; ${bgStyle}">
-                      ${d.day} ${d.dateObj.toLocaleString('th-TH', { month: 'short' })} ${yearBE}
+                      ${d.day} ${d.dateObj.toLocaleString('th-TH', { month: 'short' })} ${yearShortBE}
                     </td>
                     <td style="${isRowHoliday ? 'color: #b91c1c; font-weight: bold;' : ''} ${bgStyle}">${d.dayOfWeek}</td>
                     ${roomCells}
@@ -1142,7 +1143,7 @@ export default function AirConditioningPage() {
 
                 return `
                   <tr class="${isRowHoliday ? 'weekend-row' : ''}" style="${bgStyle}">
-                    <td style="white-space: nowrap; ${bgStyle}">${d.day} ${d.dateObj.toLocaleString('th-TH', { month: 'short' })} ${yearBE}</td>
+                    <td style="white-space: nowrap; ${bgStyle}">${d.day} ${d.dateObj.toLocaleString('th-TH', { month: 'short' })} ${yearShortBE}</td>
                     <td style="${isRowHoliday ? 'color: #b91c1c; font-weight: bold;' : ''} ${bgStyle}">${d.dayOfWeek}</td>
                     <td style="${bgStyle}">${hasLog ? log.openTime || '-' : '-'}</td>
                     <td style="${bgStyle}">${hasLog ? log.closeTime || '-' : '-'}</td>

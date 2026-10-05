@@ -51,7 +51,7 @@ const THAI_DAY_NAMES = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', '�
 const formatPurposeWithNote = (purpose?: string | null, note?: string | null) => {
   const p = (purpose || '').trim() || 'เปิดเพื่อรักษาอุปกรณ์';
   const n = (note || '').trim();
-  if (!n) return p;
+  if (!n || n.includes('Preset 10:00')) return p;
   if (p === 'อื่นๆ') return `อื่นๆ (${n})`;
   return `${p} (${n})`;
 };
@@ -372,7 +372,7 @@ export default function AirConditioningPage() {
               closeTime: '14:00',
               temperature: 22.0,
               purpose: 'เปิดเพื่อรักษาอุปกรณ์',
-              note: 'Preset 10:00-14:00 (4 ชม.)',
+              note: '',
             },
           ],
         }),

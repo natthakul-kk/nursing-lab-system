@@ -907,12 +907,12 @@ export default function AirConditioningPage() {
                 `;
               }).join('')}
               <tr class="bg-summary" style="border-top: 2px solid #0f172a;">
-                <td colspan="2" class="text-left font-bold" style="padding-left: 6px;">รวมชั่วโมงทั้งเดือน</td>
+                <td colspan="2" class="text-left font-bold" style="padding-left: 3px; font-size: 6.2pt; white-space: nowrap;">รวมชั่วโมงทั้งเดือน</td>
                 ${activeRooms.map((r: any) => `<td>${roomSummaries[r.id]?.totalHours || 0}</td>`).join('')}
                 <td style="background-color: #e2e8f0; font-size: 8.5pt;">${grandTotalHours}</td>
               </tr>
               <tr class="bg-summary">
-                <td colspan="2" class="text-left font-bold" style="padding-left: 6px;">เฉลี่ยต่อวันใช้งาน</td>
+                <td colspan="2" class="text-left font-bold" style="padding-left: 3px; font-size: 6.2pt; white-space: nowrap;">เฉลี่ยต่อวันใช้งาน</td>
                 ${activeRooms.map((r: any) => {
                   const s = roomSummaries[r.id];
                   const avg = s?.activeDays > 0 ? Math.round((s.totalHours / s.activeDays) * 10) / 10 : 0;
@@ -921,7 +921,7 @@ export default function AirConditioningPage() {
                 <td style="background-color: #e2e8f0;">${grandTotalHours > 0 ? (Math.round((grandTotalHours / daysInMonth) * 10) / 10) : 0}</td>
               </tr>
               <tr class="bg-summary">
-                <td colspan="2" class="text-left font-bold" style="padding-left: 6px;">จำนวนวันที่เปิดใช้งาน</td>
+                <td colspan="2" class="text-left font-bold" style="padding-left: 3px; font-size: 6.2pt; white-space: nowrap;">จำนวนวันที่เปิดใช้งาน</td>
                 ${activeRooms.map((r: any) => `<td>${roomSummaries[r.id]?.activeDays || 0} วัน</td>`).join('')}
                 <td style="background-color: #e2e8f0;">-</td>
               </tr>
@@ -1039,24 +1039,33 @@ export default function AirConditioningPage() {
               }).join('')}
               ${isLastChunk ? `
                 <tr class="bg-summary" style="border-top: 2px solid #0f172a;">
-                  <td colspan="2" class="text-left font-bold" style="padding-left: 4px;">รวมชั่วโมงทั้งเดือน</td>
-                  ${chunkRooms.map((r: any) => `
+                  <td colspan="4" class="text-left font-bold" style="padding-left: 4px; font-size: 6.8pt; white-space: nowrap;">รวมชั่วโมงทั้งเดือน</td>
+                  <td class="font-bold">${roomSummaries[chunkRooms[0]?.id]?.totalHours || 0}</td>
+                  <td></td>
+                  <td></td>
+                  ${chunkRooms.slice(1).map((r: any) => `
                     <td></td><td></td>
                     <td class="font-bold">${roomSummaries[r.id]?.totalHours || 0}</td>
                     <td></td><td></td>
                   `).join('')}
                 </tr>
                 <tr class="bg-summary">
-                  <td colspan="2" class="text-left font-bold" style="padding-left: 4px;">เฉลี่ยต่อวันใช้งาน</td>
-                  ${chunkRooms.map((r: any) => {
+                  <td colspan="4" class="text-left font-bold" style="padding-left: 4px; font-size: 6.8pt; white-space: nowrap;">เฉลี่ยต่อวันใช้งาน</td>
+                  <td>${roomSummaries[chunkRooms[0]?.id]?.activeDays > 0 ? Math.round((roomSummaries[chunkRooms[0]?.id].totalHours / roomSummaries[chunkRooms[0]?.id].activeDays) * 10) / 10 : 0}</td>
+                  <td>${roomSummaries[chunkRooms[0]?.id]?.avgTemp || 24}°C</td>
+                  <td></td>
+                  ${chunkRooms.slice(1).map((r: any) => {
                     const s = roomSummaries[r.id];
                     const avg = s?.activeDays > 0 ? Math.round((s.totalHours / s.activeDays) * 10) / 10 : 0;
-                    return `<td></td><td></td><td>${avg}</td><td>${s?.avgTemp || 22}°C</td><td></td>`;
+                    return `<td></td><td></td><td>${avg}</td><td>${s?.avgTemp || 24}°C</td><td></td>`;
                   }).join('')}
                 </tr>
                 <tr class="bg-summary">
-                  <td colspan="2" class="text-left font-bold" style="padding-left: 4px;">จำนวนวันที่เปิดใช้งาน</td>
-                  ${chunkRooms.map((r: any) => `
+                  <td colspan="4" class="text-left font-bold" style="padding-left: 4px; font-size: 6.8pt; white-space: nowrap;">จำนวนวันที่เปิดใช้งาน</td>
+                  <td>${roomSummaries[chunkRooms[0]?.id]?.activeDays || 0} วัน</td>
+                  <td></td>
+                  <td></td>
+                  ${chunkRooms.slice(1).map((r: any) => `
                     <td></td><td></td>
                     <td>${roomSummaries[r.id]?.activeDays || 0} วัน</td>
                     <td></td><td></td>

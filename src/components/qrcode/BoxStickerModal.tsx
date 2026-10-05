@@ -437,11 +437,11 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
     } else if (labelSize === 'template_doc') {
       pageCss = `
         @page {
-          size: 175mm 205mm;
-          margin: 1.5mm 3.5mm 0mm 3.5mm;
+          size: 205mm 175mm landscape;
+          margin: 0;
         }
         html, body {
-          width: 175mm;
+          width: 205mm;
           margin: 0;
           padding: 0;
           background: #fff;
@@ -450,10 +450,9 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
           print-color-adjust: exact;
         }
         .doc-sheet-page {
-          width: 168mm;
-          height: 202mm;
-          max-height: 202mm;
-          margin: 0 auto;
+          width: 202mm;
+          height: 168mm;
+          margin: 3.5mm auto;
           box-sizing: border-box;
           page-break-after: always;
           break-after: page;
@@ -464,80 +463,61 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
           break-after: avoid;
         }
         .doc-table {
-          width: 168mm;
+          width: 202mm;
           border-collapse: collapse;
           table-layout: fixed;
           margin: 0;
           padding: 0;
         }
         .doc-sticker-row {
-          height: 38mm;
-          max-height: 38mm;
-          min-height: 38mm;
-        }
-        .doc-spacer-row {
-          height: 3mm;
-          max-height: 3mm;
-          min-height: 3mm;
+          height: 21mm;
+          max-height: 21mm;
+          min-height: 21mm;
         }
         .doc-cell {
-          width: 21mm;
-          max-width: 21mm;
-          height: 38mm;
-          max-height: 38mm;
-          min-height: 38mm;
-          padding: 0 1mm;
-          vertical-align: top;
+          width: 38mm;
+          max-width: 38mm;
+          height: 21mm;
+          max-height: 21mm;
+          min-height: 21mm;
+          padding: 1mm 0;
+          vertical-align: middle;
           box-sizing: border-box;
           overflow: hidden;
         }
-        .doc-spacer-cell {
-          height: 3mm;
+        .doc-spacer-col {
+          width: 3mm;
+          max-width: 3mm;
+          min-width: 3mm;
           padding: 0;
           margin: 0;
           border: none;
         }
         .doc-empty-cell {
-          width: 19mm;
-          height: 38mm;
-          margin: 0 auto;
+          width: 38mm;
+          height: 19mm;
           box-sizing: border-box;
           ${showBorders ? 'border: 0.5px dashed #f1f5f9;' : 'border: none;'}
         }
         .doc-card-inner {
-          width: 19mm;
-          max-width: 19mm;
-          height: 38mm;
-          max-height: 38mm;
-          margin: 0 auto;
+          width: 38mm;
+          max-width: 38mm;
+          height: 19mm;
+          max-height: 19mm;
           display: flex;
-          flex-direction: column;
           align-items: center;
-          justify-content: flex-start;
-          text-align: center;
+          gap: 1.5mm;
           box-sizing: border-box;
           overflow: hidden;
-          padding: 0.5mm 0.5mm;
+          padding: 1mm 1.2mm;
           ${showBorders ? 'border: 0.5px dashed #cbd5e1;' : 'border: none;'}
         }
-        .doc-org-text {
-          font-size: 6px;
-          font-weight: 800;
-          color: #0f766e;
-          line-height: 1.1;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          width: 100%;
-          margin-bottom: 0.5px;
-        }
         .doc-qr-wrap {
-          width: 16.5mm;
-          height: 16.5mm;
+          width: 13.5mm;
+          height: 13.5mm;
           display: flex;
           align-items: center;
           justify-content: center;
-          margin: 0.5px auto;
           flex-shrink: 0;
         }
         .doc-qr {
@@ -546,43 +526,64 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
           object-fit: contain;
           display: block;
         }
+        .doc-info {
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          overflow: hidden;
+          line-height: 1.15;
+          flex: 1;
+          min-width: 0;
+          text-align: left;
+        }
+        .doc-org-text {
+          font-size: 5.5px;
+          font-weight: 800;
+          color: #0f766e;
+          line-height: 1.1;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .doc-code-row {
+          display: flex;
+          align-items: center;
+          gap: 2px;
+          margin-top: 0.5px;
+        }
         .doc-code {
           font-family: monospace;
           font-size: 6.5px;
           font-weight: 900;
           color: #0f172a;
-          line-height: 1.1;
+          line-height: 1;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
-          width: 100%;
-          letter-spacing: -0.2px;
-          margin-top: 0.5px;
         }
         .doc-seq {
-          font-size: 5.5px;
+          font-size: 5px;
           font-weight: 700;
           color: #0f766e;
           background: #f0fdfa;
           border: 0.4px solid #99f6e4;
           border-radius: 1.5px;
-          padding: 0 1.5px;
+          padding: 0 1px;
           line-height: 1;
-          display: inline-block;
-          margin: 0.5px 0;
           white-space: nowrap;
+          flex-shrink: 0;
         }
         .doc-name {
           font-size: 5.5px;
           font-weight: 700;
           color: #334155;
-          line-height: 1.1;
+          line-height: 1.12;
           display: -webkit-box;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
           overflow: hidden;
           word-break: break-word;
-          width: 100%;
+          margin-top: 0.5px;
         }
         .doc-loc {
           font-size: 5px;
@@ -592,8 +593,7 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
-          width: 100%;
-          margin-top: auto;
+          margin-top: 0.5px;
         }
       `;
 
@@ -602,14 +602,18 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
       if (includeLotSticker && lot?.lotNumber) {
         allCardItems.push(`
           <div class="doc-card-inner">
-            <div class="doc-org-text">คณะพยาบาลศาสตร์ มก.</div>
             <div class="doc-qr-wrap">
               <img src="${boxQrs[lot.lotNumber] || ''}" class="doc-qr" />
             </div>
-            <div class="doc-code">LOT: ${lot.lotNumber}</div>
-            <div class="doc-seq">ป้ายล็อต (${unitLabel})</div>
-            <div class="doc-name" title="${item.name}">${item.name}</div>
-            <div class="doc-loc">EXP: ${formattedExpiry}</div>
+            <div class="doc-info">
+              <div class="doc-org-text">คณะพยาบาลศาสตร์ ม.เกษตรศาสตร์</div>
+              <div class="doc-code-row">
+                <span class="doc-code">LOT: ${lot.lotNumber}</span>
+                <span class="doc-seq">ป้ายล็อต (${unitLabel})</span>
+              </div>
+              <div class="doc-name" title="${item.name}">${item.name}</div>
+              <div class="doc-loc">EXP: ${formattedExpiry}</div>
+            </div>
           </div>
         `);
       }
@@ -617,14 +621,18 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
       for (const box of boxesToPrint) {
         allCardItems.push(`
           <div class="doc-card-inner">
-            <div class="doc-org-text">คณะพยาบาลศาสตร์ มก.</div>
             <div class="doc-qr-wrap">
               <img src="${boxQrs[box.boxCode] || ''}" class="doc-qr" />
             </div>
-            <div class="doc-code">${box.boxCode}</div>
-            <div class="doc-seq">${unitLabel}ที่ #${box.boxNumberInYear}</div>
-            <div class="doc-name" title="${item.name}">${item.name}</div>
-            <div class="doc-loc">EXP: ${formattedExpiry}</div>
+            <div class="doc-info">
+              <div class="doc-org-text">คณะพยาบาลศาสตร์ ม.เกษตรศาสตร์</div>
+              <div class="doc-code-row">
+                <span class="doc-code">${box.boxCode}</span>
+                <span class="doc-seq">${unitLabel}ที่ #${box.boxNumberInYear}</span>
+              </div>
+              <div class="doc-name" title="${item.name}">${item.name}</div>
+              <div class="doc-loc">EXP: ${formattedExpiry}</div>
+            </div>
           </div>
         `);
       }
@@ -647,23 +655,21 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
         }
 
         let sheetTableRows = '';
-        for (let r = 0; r < 5; r++) {
-          const rowCards = sheetCards.slice(r * 8, (r + 1) * 8);
-          const cellsHtml = rowCards
-            .map(
-              (c) => `
-                <td class="doc-cell ${showBorders ? 'has-border' : ''}">
-                  ${c || '<div class="doc-empty-cell"></div>'}
-                </td>
-              `
-            )
-            .join('');
-
-          sheetTableRows += `<tr class="doc-sticker-row">${cellsHtml}</tr>`;
-
-          if (r < 4) {
-            sheetTableRows += `<tr class="doc-spacer-row"><td colspan="8" class="doc-spacer-cell"></td></tr>`;
+        for (let r = 0; r < 8; r++) {
+          const rowCards = sheetCards.slice(r * 5, (r + 1) * 5);
+          let rowCellsHtml = '';
+          for (let c = 0; c < 5; c++) {
+            const cardContent = rowCards[c];
+            rowCellsHtml += `
+              <td class="doc-cell">
+                ${cardContent || '<div class="doc-empty-cell"></div>'}
+              </td>
+            `;
+            if (c < 4) {
+              rowCellsHtml += `<td class="doc-spacer-col"></td>`;
+            }
           }
+          sheetTableRows += `<tr class="doc-sticker-row">${rowCellsHtml}</tr>`;
         }
 
         sheetHtmlOutput += `
@@ -685,7 +691,7 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
       <html>
         <head>
           <meta charset="utf-8" />
-          <title>สติกเกอร์กล่อง - ${item.name}</title>
+          <title>${labelSize === 'template_doc' ? '' : `สติกเกอร์กล่อง - ${item.name}`}</title>
           <style>
             ${pageCss}
           </style>
@@ -772,7 +778,7 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
                   ? 'bg-teal-600 text-white shadow-sm'
                   : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
               }`}
-              title="เทมเพลตกระดาษสติกเกอร์ 175×205 มม. (5 แถว × 8 ช่อง = 40 ดวง/แผ่น • สติกเกอร์ 19 × 38 มม.)"
+              title="เทมเพลตกระดาษสติกเกอร์ 205×175 มม. (8 แถว × 5 ช่อง แนวนอน = 40 ดวง/แผ่น • สติกเกอร์ 38 × 19 มม.)"
             >
               <Tag className="w-3.5 h-3.5" />
               <span>เทมเพลต 19×38 มม. (40 ดวง)</span>
@@ -800,36 +806,44 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
 
         {/* Template Doc configuration panel */}
         {labelSize === 'template_doc' && (
-          <div className="p-3 rounded-2xl bg-teal-50/80 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 flex flex-wrap items-center justify-between gap-3 text-xs animate-fadeIn">
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="font-bold text-teal-900 dark:text-teal-200 flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-teal-500 animate-pulse inline-block" />
-                <span>แผ่นสติกเกอร์ 175 × 205 มม. (5 แถว × 8 ช่อง = 40 ดวง/แผ่น • สติกเกอร์ 19 × 38 มม. ช่องไฟ 3 มม.)</span>
+          <div className="p-3 rounded-2xl bg-teal-50/80 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 space-y-2 text-xs animate-fadeIn">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="font-bold text-teal-900 dark:text-teal-200 flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-teal-500 animate-pulse inline-block" />
+                  <span>แผ่นสติกเกอร์ 40 ดวง (8 แถว × 5 ช่อง แนวนอน • สติกเกอร์ 38 × 19 มม.)</span>
+                </div>
+                <span className="text-teal-300 dark:text-teal-700 hidden sm:inline">|</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-semibold text-slate-700 dark:text-slate-300">เริ่มพิมพ์จากช่องที่:</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={40}
+                    value={startPosition}
+                    onChange={(e) => setStartPosition(Math.max(1, Math.min(40, parseInt(e.target.value) || 1)))}
+                    className="w-14 px-2 py-1 text-center font-bold bg-white dark:bg-slate-800 border border-teal-300 dark:border-teal-700 rounded-lg text-teal-800 dark:text-teal-200 focus:ring-2 focus:ring-teal-500"
+                  />
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400">(1-40 สำหรับแผ่นเดิมที่แกะใช้ไปบางส่วน)</span>
+                </div>
               </div>
-              <span className="text-teal-300 dark:text-teal-700 hidden sm:inline">|</span>
-              <div className="flex items-center gap-1.5">
-                <span className="font-semibold text-slate-700 dark:text-slate-300">เริ่มพิมพ์จากช่องที่:</span>
+
+              <label className="flex items-center gap-1.5 cursor-pointer select-none font-semibold text-slate-700 dark:text-slate-300">
                 <input
-                  type="number"
-                  min={1}
-                  max={40}
-                  value={startPosition}
-                  onChange={(e) => setStartPosition(Math.max(1, Math.min(40, parseInt(e.target.value) || 1)))}
-                  className="w-14 px-2 py-1 text-center font-bold bg-white dark:bg-slate-800 border border-teal-300 dark:border-teal-700 rounded-lg text-teal-800 dark:text-teal-200 focus:ring-2 focus:ring-teal-500"
+                  type="checkbox"
+                  checked={showBorders}
+                  onChange={(e) => setShowBorders(e.target.checked)}
+                  className="w-3.5 h-3.5 rounded text-teal-600 focus:ring-teal-500 border-slate-300"
                 />
-                <span className="text-[11px] text-slate-500 dark:text-slate-400">(1-40 สำหรับแผ่นเดิมที่แกะใช้ไปบางส่วน)</span>
-              </div>
+                <span>แสดงเส้นประไกด์ตำแหน่งดวงสติกเกอร์</span>
+              </label>
             </div>
 
-            <label className="flex items-center gap-1.5 cursor-pointer select-none font-semibold text-slate-700 dark:text-slate-300">
-              <input
-                type="checkbox"
-                checked={showBorders}
-                onChange={(e) => setShowBorders(e.target.checked)}
-                className="w-3.5 h-3.5 rounded text-teal-600 focus:ring-teal-500 border-slate-300"
-              />
-              <span>แสดงเส้นประไกด์ตำแหน่งดวงสติกเกอร์</span>
-            </label>
+            {/* Print Help Guide */}
+            <div className="p-2 rounded-xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-[11px] text-amber-900 dark:text-amber-200 flex items-center gap-2">
+              <span className="font-bold flex-shrink-0">💡 คำแนะนำการพิมพ์:</span>
+              <span>เลือกแนวนอน (Landscape) • ขนาดกระดาษ A4 หรือ 205×175 มม. • Scale 100% • เอาติ๊กถูกออกที่ &quot;ส่วนหัวและส่วนท้าย&quot; (Headers and footers)</span>
+            </div>
           </div>
         )}
 

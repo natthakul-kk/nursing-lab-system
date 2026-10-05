@@ -288,22 +288,22 @@ export default function BatchRepackStickerModal({
 
         pageCss = `
           @page {
-            size: 205mm 175mm landscape;
+            size: 205mm 175mm;
             margin: 0;
           }
-          body {
+          html, body {
             width: 205mm;
             margin: 0;
             padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Sarabun", sans-serif;
             background: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Sarabun", sans-serif;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
           }
           .doc-sheet-page {
             width: 202mm;
             height: 168mm;
-            margin: 3.5mm auto;
+            margin: 2.5mm auto 0 auto;
             box-sizing: border-box;
             page-break-after: always;
             break-after: page;

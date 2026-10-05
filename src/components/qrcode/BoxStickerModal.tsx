@@ -437,7 +437,7 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
     } else if (labelSize === 'template_doc') {
       pageCss = `
         @page {
-          size: 205mm 175mm landscape;
+          size: 205mm 175mm;
           margin: 0;
         }
         html, body {
@@ -452,7 +452,7 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
         .doc-sheet-page {
           width: 202mm;
           height: 168mm;
-          margin: 3.5mm auto;
+          margin: 2.5mm auto 0 auto;
           box-sizing: border-box;
           page-break-after: always;
           break-after: page;

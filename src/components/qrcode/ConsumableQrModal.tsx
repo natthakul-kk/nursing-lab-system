@@ -77,7 +77,7 @@ export default function ConsumableQrModal({ item, lot, onClose }: ConsumableQrMo
       // 205 x 175 mm Elephant / ตราช้าง A7 template (8 rows x 5 cols = 40 stickers, 38x19 mm landscape)
       pageCss = `
         @page {
-          size: 205mm 175mm landscape;
+          size: 205mm 175mm;
           margin: 0;
         }
         body {
@@ -92,7 +92,7 @@ export default function ConsumableQrModal({ item, lot, onClose }: ConsumableQrMo
         .doc-sheet-page {
           width: 202mm;
           height: 168mm;
-          margin: 3.5mm auto;
+          margin: 2.5mm auto 0 auto;
           page-break-after: always;
           break-after: page;
           box-sizing: border-box;

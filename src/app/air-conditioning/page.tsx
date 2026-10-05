@@ -1830,10 +1830,19 @@ export default function AirConditioningPage() {
                   </label>
                   <select
                     value={formPurpose}
-                    onChange={(e) => setFormPurpose(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setFormPurpose(val);
+                      if (val.includes('การเรียนการสอน') || val === 'ฝึกซ้อมทักษะทางการพยาบาล' || val === 'สอบประเมินผล OSCE') {
+                        setFormTemp('24.0');
+                      } else if (val === 'เปิดเพื่อรักษาอุปกรณ์') {
+                        setFormTemp('22.0');
+                      }
+                    }}
                     className="w-full py-2 px-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-semibold outline-none focus:border-teal-500"
                   >
                     <option value="เปิดเพื่อรักษาอุปกรณ์">เปิดเพื่อรักษาอุปกรณ์</option>
+                    <option value="การเรียนการสอน">การเรียนการสอน</option>
                     <option value="การเรียนการสอนรายวิชา">การเรียนการสอนรายวิชา</option>
                     <option value="ฝึกซ้อมทักษะทางการพยาบาล">ฝึกซ้อมทักษะทางการพยาบาล</option>
                     <option value="สอบประเมินผล OSCE">สอบประเมินผล OSCE</option>

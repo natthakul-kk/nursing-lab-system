@@ -486,13 +486,10 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
           height: 38mm;
           max-height: 38mm;
           min-height: 38mm;
-          padding: 1mm 1mm;
+          padding: 0 1mm;
           vertical-align: top;
           box-sizing: border-box;
           overflow: hidden;
-        }
-        .doc-cell.has-border {
-          border: 0.5px dashed #cbd5e1;
         }
         .doc-spacer-cell {
           height: 3mm;
@@ -501,12 +498,18 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
           border: none;
         }
         .doc-empty-cell {
-          width: 100%;
-          height: 100%;
+          width: 19mm;
+          height: 38mm;
+          margin: 0 auto;
+          box-sizing: border-box;
+          ${showBorders ? 'border: 0.5px dashed #f1f5f9;' : 'border: none;'}
         }
         .doc-card-inner {
-          width: 100%;
-          height: 100%;
+          width: 19mm;
+          max-width: 19mm;
+          height: 38mm;
+          max-height: 38mm;
+          margin: 0 auto;
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -514,6 +517,8 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
           text-align: center;
           box-sizing: border-box;
           overflow: hidden;
+          padding: 0.5mm 0.5mm;
+          ${showBorders ? 'border: 0.5px dashed #cbd5e1;' : 'border: none;'}
         }
         .doc-org-text {
           font-size: 6px;
@@ -767,10 +772,10 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
                   ? 'bg-teal-600 text-white shadow-sm'
                   : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
               }`}
-              title="เทมเพลตกระดาษสติกเกอร์ 175×205 มม. (5 แถว × 8 ช่อง = 40 ดวง/แผ่น)"
+              title="เทมเพลตกระดาษสติกเกอร์ 175×205 มม. (5 แถว × 8 ช่อง = 40 ดวง/แผ่น • สติกเกอร์ 19 × 38 มม.)"
             >
               <Tag className="w-3.5 h-3.5" />
-              <span>เทมเพลต 175×205 มม. (40 ช่อง)</span>
+              <span>เทมเพลต 19×38 มม. (40 ดวง)</span>
             </button>
             <label className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer select-none ml-2 border-l pl-3 border-teal-200 dark:border-teal-800">
               <input
@@ -799,7 +804,7 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
             <div className="flex flex-wrap items-center gap-3">
               <div className="font-bold text-teal-900 dark:text-teal-200 flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-teal-500 animate-pulse inline-block" />
-                <span>แผ่นสติกเกอร์ 175 × 205 มม. (5 แถว × 8 ช่อง = 40 ดวง/แผ่น • ดวงละ 21 × 38 มม. ช่องไฟ 3 มม.)</span>
+                <span>แผ่นสติกเกอร์ 175 × 205 มม. (5 แถว × 8 ช่อง = 40 ดวง/แผ่น • สติกเกอร์ 19 × 38 มม. ช่องไฟ 3 มม.)</span>
               </div>
               <span className="text-teal-300 dark:text-teal-700 hidden sm:inline">|</span>
               <div className="flex items-center gap-1.5">

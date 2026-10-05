@@ -514,13 +514,10 @@ export default function AssetQrModal({ asset, itemName, itemUnit, onClose }: Ass
           height: 38mm;
           max-height: 38mm;
           min-height: 38mm;
-          padding: 1mm 1mm;
+          padding: 0 1mm;
           vertical-align: top;
           box-sizing: border-box;
           overflow: hidden;
-        }
-        .doc-cell.has-border {
-          border: 0.5px dashed #cbd5e1;
         }
         .doc-spacer-cell {
           height: 3mm;
@@ -529,12 +526,18 @@ export default function AssetQrModal({ asset, itemName, itemUnit, onClose }: Ass
           border: none;
         }
         .doc-empty-cell {
-          width: 100%;
-          height: 100%;
+          width: 19mm;
+          height: 38mm;
+          margin: 0 auto;
+          box-sizing: border-box;
+          ${showBorders ? 'border: 0.5px dashed #f1f5f9;' : 'border: none;'}
         }
         .doc-card-inner {
-          width: 100%;
-          height: 100%;
+          width: 19mm;
+          max-width: 19mm;
+          height: 38mm;
+          max-height: 38mm;
+          margin: 0 auto;
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -542,6 +545,8 @@ export default function AssetQrModal({ asset, itemName, itemUnit, onClose }: Ass
           text-align: center;
           box-sizing: border-box;
           overflow: hidden;
+          padding: 0.5mm 0.5mm;
+          ${showBorders ? 'border: 0.5px dashed #cbd5e1;' : 'border: none;'}
         }
         .doc-org-text {
           font-size: 6px;
@@ -797,8 +802,8 @@ export default function AssetQrModal({ asset, itemName, itemUnit, onClose }: Ass
               }`}
               title="เทมเพลต 175×205 มม. (5 แถว × 8 ช่อง = 40 ดวง/แผ่น)"
             >
-              <div>เทมเพลต</div>
-              <div className={`text-[10px] font-normal ${labelSize === 'template_doc' ? 'text-teal-100' : 'text-slate-400'}`}>175×205 มม.</div>
+              <div>เทมเพลต 19×38</div>
+              <div className={`text-[10px] font-normal ${labelSize === 'template_doc' ? 'text-teal-100' : 'text-slate-400'}`}>40 ดวง (175×205)</div>
             </button>
           </div>
         </div>
@@ -809,7 +814,7 @@ export default function AssetQrModal({ asset, itemName, itemUnit, onClose }: Ass
             <div className="flex flex-wrap items-center gap-3">
               <div className="font-bold text-teal-900 dark:text-teal-200 flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-teal-500 animate-pulse inline-block" />
-                <span>แผ่น 175 × 205 มม. (40 ช่อง • 21 × 38 มม.)</span>
+                <span>แผ่น 175 × 205 มม. (5 แถว × 8 ช่อง = 40 ดวง • สติกเกอร์ 19 × 38 มม.)</span>
               </div>
               <span className="text-teal-300 dark:text-teal-700 hidden sm:inline">|</span>
               <div className="flex items-center gap-1.5">

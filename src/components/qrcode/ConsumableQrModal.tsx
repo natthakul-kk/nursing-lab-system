@@ -120,11 +120,10 @@ export default function ConsumableQrModal({ item, lot, onClose }: ConsumableQrMo
           height: 38mm;
           min-height: 38mm;
           max-height: 38mm;
-          padding: 1mm 1mm;
+          padding: 0 1mm;
           vertical-align: top;
           box-sizing: border-box;
           overflow: hidden;
-          ${showBorders ? 'border: 0.5px dashed #cbd5e1;' : 'border: none;'}
         }
         .doc-spacer-row {
           height: 3mm;
@@ -140,12 +139,18 @@ export default function ConsumableQrModal({ item, lot, onClose }: ConsumableQrMo
           border: none;
         }
         .doc-empty-cell {
-          width: 100%;
-          height: 100%;
+          width: 19mm;
+          height: 38mm;
+          margin: 0 auto;
+          box-sizing: border-box;
+          ${showBorders ? 'border: 0.5px dashed #f1f5f9;' : 'border: none;'}
         }
         .doc-card-inner {
-          width: 100%;
-          height: 100%;
+          width: 19mm;
+          max-width: 19mm;
+          height: 38mm;
+          max-height: 38mm;
+          margin: 0 auto;
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -153,6 +158,8 @@ export default function ConsumableQrModal({ item, lot, onClose }: ConsumableQrMo
           text-align: center;
           box-sizing: border-box;
           overflow: hidden;
+          padding: 0.5mm 0.5mm;
+          ${showBorders ? 'border: 0.5px dashed #cbd5e1;' : 'border: none;'}
         }
         .doc-org-text {
           font-size: 6px;
@@ -568,8 +575,8 @@ export default function ConsumableQrModal({ item, lot, onClose }: ConsumableQrMo
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
               }`}
             >
-              <div>เทมเพลต 175×205</div>
-              <div className="text-[10px] font-normal opacity-85">40 ช่อง (21x38 มม.)</div>
+              <div>เทมเพลต 19×38</div>
+              <div className="text-[10px] font-normal opacity-85">40 ดวง (175×205)</div>
             </button>
           </div>
         </div>
@@ -579,7 +586,7 @@ export default function ConsumableQrModal({ item, lot, onClose }: ConsumableQrMo
           <div className="p-3 rounded-2xl bg-teal-50/80 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 space-y-2 text-xs animate-fadeIn">
             <div className="font-bold text-teal-900 dark:text-teal-200 flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-teal-500 animate-pulse inline-block" />
-              <span>เทมเพลตกระดาษสติกเกอร์ 175 × 205 มม. (5 แถว × 8 ช่อง = 40 ดวง)</span>
+              <span>เทมเพลตกระดาษสติกเกอร์ 175 × 205 มม. (5 แถว × 8 ช่อง = 40 ดวง • สติกเกอร์ 19 × 38 มม.)</span>
             </div>
             <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-teal-100 dark:border-teal-900/60">
               <div className="flex items-center gap-1.5">

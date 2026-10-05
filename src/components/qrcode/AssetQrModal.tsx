@@ -31,7 +31,9 @@ interface AssetQrModalProps {
 
 export default function AssetQrModal({ asset, itemName, itemUnit, onClose }: AssetQrModalProps) {
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
-  const [labelSize, setLabelSize] = useState<'standard' | 'compact' | 'mini'>('compact');
+  const [labelSize, setLabelSize] = useState<'standard' | 'compact' | 'mini' | 'template_doc'>('compact');
+  const [startPosition, setStartPosition] = useState<number>(1);
+  const [showBorders, setShowBorders] = useState<boolean>(true);
   const [copies, setCopies] = useState<number>(1);
   const title = itemName || asset.item?.name || 'ครุภัณฑ์ห้องปฏิบัติการพยาบาล';
   const unit = itemUnit || asset.item?.unit || 'ชิ้น';
@@ -344,7 +346,7 @@ export default function AssetQrModal({ asset, itemName, itemUnit, onClose }: Ass
           </div>
         </div>
       `;
-    } else {
+    } else if (labelSize === 'standard') {
       // Standard: Full card ~60x38 mm (ย่อขนาดลงพอดี 230px, QR 90px, แยก 2 บรรทัดไม่ตัดคำ, ชื่อเต็มไม่ตัดคำ)
       pageCss = `
         @page { size: A4 portrait; margin: 8mm; }
@@ -460,11 +462,233 @@ export default function AssetQrModal({ asset, itemName, itemUnit, onClose }: Ass
           </div>
         </div>
       `;
+    } else if (labelSize === 'template_doc') {
+      pageCss = `
+        @page {
+          size: 175mm 205mm;
+          margin: 1.5mm 3.5mm 0mm 3.5mm;
+        }
+        html, body {
+          width: 175mm;
+          margin: 0;
+          padding: 0;
+          background: #fff;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Sarabun", sans-serif;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        .doc-sheet-page {
+          width: 168mm;
+          height: 202mm;
+          max-height: 202mm;
+          margin: 0 auto;
+          box-sizing: border-box;
+          page-break-after: always;
+          break-after: page;
+          overflow: hidden;
+        }
+        .doc-sheet-page:last-child {
+          page-break-after: avoid;
+          break-after: avoid;
+        }
+        .doc-table {
+          width: 168mm;
+          border-collapse: collapse;
+          table-layout: fixed;
+          margin: 0;
+          padding: 0;
+        }
+        .doc-sticker-row {
+          height: 38mm;
+          max-height: 38mm;
+          min-height: 38mm;
+        }
+        .doc-spacer-row {
+          height: 3mm;
+          max-height: 3mm;
+          min-height: 3mm;
+        }
+        .doc-cell {
+          width: 21mm;
+          max-width: 21mm;
+          height: 38mm;
+          max-height: 38mm;
+          min-height: 38mm;
+          padding: 1mm 1mm;
+          vertical-align: top;
+          box-sizing: border-box;
+          overflow: hidden;
+        }
+        .doc-cell.has-border {
+          border: 0.5px dashed #cbd5e1;
+        }
+        .doc-spacer-cell {
+          height: 3mm;
+          padding: 0;
+          margin: 0;
+          border: none;
+        }
+        .doc-empty-cell {
+          width: 100%;
+          height: 100%;
+        }
+        .doc-card-inner {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: flex-start;
+          text-align: center;
+          box-sizing: border-box;
+          overflow: hidden;
+        }
+        .doc-org-text {
+          font-size: 6px;
+          font-weight: 800;
+          color: #0f766e;
+          line-height: 1.1;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          width: 100%;
+          margin-bottom: 0.5px;
+        }
+        .doc-qr-wrap {
+          width: 16.5mm;
+          height: 16.5mm;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0.5px auto;
+          flex-shrink: 0;
+        }
+        .doc-qr {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+          display: block;
+        }
+        .doc-code {
+          font-family: monospace;
+          font-size: 6.5px;
+          font-weight: 900;
+          color: #0f172a;
+          line-height: 1.1;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          width: 100%;
+          letter-spacing: -0.2px;
+          margin-top: 0.5px;
+        }
+        .doc-seq {
+          font-size: 5.5px;
+          font-weight: 700;
+          color: #0f766e;
+          background: #f0fdfa;
+          border: 0.4px solid #99f6e4;
+          border-radius: 1.5px;
+          padding: 0 1.5px;
+          line-height: 1;
+          display: inline-block;
+          margin: 0.5px 0;
+          white-space: nowrap;
+        }
+        .doc-name {
+          font-size: 5.5px;
+          font-weight: 700;
+          color: #334155;
+          line-height: 1.1;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          word-break: break-word;
+          width: 100%;
+        }
+        .doc-loc {
+          font-size: 5px;
+          color: #64748b;
+          line-height: 1;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          width: 100%;
+          margin-top: auto;
+        }
+      `;
+
+      const singleCard = `
+        <div class="doc-card-inner">
+          <div class="doc-org-text">คณะพยาบาลศาสตร์ มก.</div>
+          <div class="doc-qr-wrap">
+            <img src="${qrDataUrl}" class="doc-qr" />
+          </div>
+          <div class="doc-code">${asset.govAssetCode || asset.assetCode}</div>
+          <div class="doc-seq">${unit}ที่ ${asset.sequenceNumber || 1}</div>
+          <div class="doc-name" title="${title}">${title}</div>
+          <div class="doc-loc">📍 ${asset.location || 'ห้องปฏิบัติการ'}</div>
+        </div>
+      `;
+
+      const allCardItems = Array.from({ length: copies }).map(() => singleCard);
+      const effectiveCards: string[] = [];
+      const startOffset = Math.max(0, startPosition - 1);
+      for (let i = 0; i < startOffset; i++) {
+        effectiveCards.push('');
+      }
+      effectiveCards.push(...allCardItems);
+
+      const CARDS_PER_PAGE = 40;
+      const totalSheets = Math.ceil(effectiveCards.length / CARDS_PER_PAGE) || 1;
+
+      let sheetHtmlOutput = '';
+      for (let s = 0; s < totalSheets; s++) {
+        const sheetCards = effectiveCards.slice(s * CARDS_PER_PAGE, (s + 1) * CARDS_PER_PAGE);
+        while (sheetCards.length < CARDS_PER_PAGE) {
+          sheetCards.push('');
+        }
+
+        let sheetTableRows = '';
+        for (let r = 0; r < 5; r++) {
+          const rowCards = sheetCards.slice(r * 8, (r + 1) * 8);
+          const cellsHtml = rowCards
+            .map(
+              (c) => `
+                <td class="doc-cell ${showBorders ? 'has-border' : ''}">
+                  ${c || '<div class="doc-empty-cell"></div>'}
+                </td>
+              `
+            )
+            .join('');
+
+          sheetTableRows += `<tr class="doc-sticker-row">${cellsHtml}</tr>`;
+
+          if (r < 4) {
+            sheetTableRows += `<tr class="doc-spacer-row"><td colspan="8" class="doc-spacer-cell"></td></tr>`;
+          }
+        }
+
+        sheetHtmlOutput += `
+          <div class="doc-sheet-page">
+            <table class="doc-table">
+              <tbody>
+                ${sheetTableRows}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+
+      singleCardHtml = sheetHtmlOutput;
     }
 
-    const cardsHtml = Array.from({ length: copies })
-      .map(() => singleCardHtml)
-      .join('');
+    const cardsHtml = labelSize === 'template_doc'
+      ? singleCardHtml
+      : Array.from({ length: copies })
+          .map(() => singleCardHtml)
+          .join('');
 
     const html = `
       <!DOCTYPE html>
@@ -477,9 +701,7 @@ export default function AssetQrModal({ asset, itemName, itemUnit, onClose }: Ass
           </style>
         </head>
         <body>
-          <div class="labels-container">
-            ${cardsHtml}
-          </div>
+          ${labelSize === 'template_doc' ? cardsHtml : `<div class="labels-container">${cardsHtml}</div>`}
           <script>
             window.onload = () => {
               window.print();
@@ -528,7 +750,7 @@ export default function AssetQrModal({ asset, itemName, itemUnit, onClose }: Ass
               เลือกขนาดสติกเกอร์:
             </span>
           </div>
-          <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl">
             <button
               type="button"
               onClick={() => setLabelSize('compact')}
@@ -565,8 +787,56 @@ export default function AssetQrModal({ asset, itemName, itemUnit, onClose }: Ass
               <div>แถบจิ๋ว</div>
               <div className="text-[10px] font-normal text-slate-400">~4.5x1.5 ซม.</div>
             </button>
+            <button
+              type="button"
+              onClick={() => setLabelSize('template_doc')}
+              className={`py-1.5 px-2 rounded-lg text-xs font-bold transition cursor-pointer text-center ${
+                labelSize === 'template_doc'
+                  ? 'bg-teal-600 text-white shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+              }`}
+              title="เทมเพลต 175×205 มม. (5 แถว × 8 ช่อง = 40 ดวง/แผ่น)"
+            >
+              <div>เทมเพลต</div>
+              <div className={`text-[10px] font-normal ${labelSize === 'template_doc' ? 'text-teal-100' : 'text-slate-400'}`}>175×205 มม.</div>
+            </button>
           </div>
         </div>
+
+        {/* Template Doc Configuration */}
+        {labelSize === 'template_doc' && (
+          <div className="p-3 rounded-2xl bg-teal-50/80 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 flex flex-wrap items-center justify-between gap-3 text-xs animate-fadeIn">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="font-bold text-teal-900 dark:text-teal-200 flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-teal-500 animate-pulse inline-block" />
+                <span>แผ่น 175 × 205 มม. (40 ช่อง • 21 × 38 มม.)</span>
+              </div>
+              <span className="text-teal-300 dark:text-teal-700 hidden sm:inline">|</span>
+              <div className="flex items-center gap-1.5">
+                <span className="font-semibold text-slate-700 dark:text-slate-300">เริ่มพิมพ์ช่องที่:</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={40}
+                  value={startPosition}
+                  onChange={(e) => setStartPosition(Math.max(1, Math.min(40, parseInt(e.target.value) || 1)))}
+                  className="w-14 px-2 py-1 text-center font-bold bg-white dark:bg-slate-800 border border-teal-300 dark:border-teal-700 rounded-lg text-teal-800 dark:text-teal-200 focus:ring-2 focus:ring-teal-500"
+                />
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">(1-40)</span>
+              </div>
+            </div>
+
+            <label className="flex items-center gap-1.5 cursor-pointer select-none font-semibold text-slate-700 dark:text-slate-300">
+              <input
+                type="checkbox"
+                checked={showBorders}
+                onChange={(e) => setShowBorders(e.target.checked)}
+                className="w-3.5 h-3.5 rounded text-teal-600 focus:ring-teal-500 border-slate-300"
+              />
+              <span>เส้นประไกด์จัดตำแหน่ง</span>
+            </label>
+          </div>
+        )}
 
         {/* Copy Count Selector */}
         <div className="flex items-center justify-between text-xs px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800">
@@ -676,7 +946,7 @@ export default function AssetQrModal({ asset, itemName, itemUnit, onClose }: Ass
               </div>
             </div>
           </div>
-        ) : (
+        ) : labelSize === 'standard' ? (
           /* Standard Card Preview */
           <div className="bg-slate-50 dark:bg-slate-950/60 p-4 rounded-2xl border-2 border-dashed border-teal-500/40 flex items-center justify-center">
             <div className="bg-white dark:bg-slate-900 border border-slate-700 rounded-xl p-3.5 text-center space-y-1.5 max-w-[240px] w-full">
@@ -753,6 +1023,34 @@ export default function AssetQrModal({ asset, itemName, itemUnit, onClose }: Ass
               </div>
             </div>
           </div>
+        ) : (
+          /* Template 175x205 mm Preview */
+          <div className="bg-slate-50 dark:bg-slate-950/60 p-4 rounded-2xl border-2 border-dashed border-teal-500/40 flex items-center justify-center">
+            <div className="bg-white dark:bg-slate-900 border border-slate-700 rounded-lg p-2.5 flex flex-col items-center text-center shadow-sm w-[140px]">
+              <div className="text-[8px] font-bold text-teal-700 dark:text-teal-400 truncate w-full">
+                คณะพยาบาลศาสตร์ มก.
+              </div>
+              <div className="w-16 h-16 my-1 bg-white p-0.5 border border-slate-200 dark:border-slate-700 rounded flex items-center justify-center">
+                {qrDataUrl ? (
+                  <img src={qrDataUrl} alt={`QR Code ${asset.assetCode}`} className="w-full h-full object-contain" />
+                ) : (
+                  <div className="w-full h-full bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />
+                )}
+              </div>
+              <div className="font-mono font-black text-[9px] text-slate-900 dark:text-slate-100 truncate w-full">
+                {asset.govAssetCode || asset.assetCode}
+              </div>
+              <span className="text-[7.5px] font-extrabold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 px-1 rounded border border-teal-200 dark:border-teal-800 mt-0.5">
+                {unit}ที่ {asset.sequenceNumber || 1}
+              </span>
+              <div className="text-[8px] font-bold text-slate-700 dark:text-slate-300 line-clamp-2 leading-tight mt-0.5 w-full">
+                {title}
+              </div>
+              <div className="text-[7.5px] text-slate-500 dark:text-slate-400 truncate mt-1 w-full">
+                📍 {asset.location || 'ห้องปฏิบัติการ'}
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Photo Preview if Available */}
@@ -786,7 +1084,7 @@ export default function AssetQrModal({ asset, itemName, itemUnit, onClose }: Ass
         {/* Action Buttons */}
         <div className="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-slate-800">
           <span className="text-xs text-slate-500 dark:text-slate-400">
-            พิมพ์ {copies} ดวง ({labelSize === 'mini' ? 'จิ๋ว' : labelSize === 'compact' ? 'กะทัดรัด' : 'มาตรฐาน'})
+            พิมพ์ {copies} ดวง ({labelSize === 'mini' ? 'จิ๋ว' : labelSize === 'compact' ? 'กะทัดรัด' : labelSize === 'template_doc' ? 'เทมเพลต 175×205 มม.' : 'มาตรฐาน'})
           </span>
           <div className="flex items-center gap-2">
             <button

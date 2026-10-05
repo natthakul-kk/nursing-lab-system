@@ -33,7 +33,9 @@ interface BoxStickerModalProps {
 
 export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxStickerModalProps) {
   const [boxQrs, setBoxQrs] = useState<{ [key: string]: string }>({});
-  const [labelSize, setLabelSize] = useState<'compact' | 'mini'>('compact');
+  const [labelSize, setLabelSize] = useState<'compact' | 'mini' | 'template_doc'>('compact');
+  const [startPosition, setStartPosition] = useState<number>(1);
+  const [showBorders, setShowBorders] = useState<boolean>(true);
   const [showDepleted, setShowDepleted] = useState(false);
   const [includeLotSticker, setIncludeLotSticker] = useState(true);
   // Default: only select in-stock boxes (exclude DEPLETED and DISPENSED)
@@ -253,7 +255,7 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
       `
         )
         .join('');
-    } else {
+    } else if (labelSize === 'compact') {
       // Compact: ~48x28 mm (ขนาดกะทัดรัด สัดส่วนพอดี ไม่เวิ้งว้าง ไม่ล้นขอบ)
       pageCss = `
         @page {
@@ -432,6 +434,245 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
       `
         )
         .join('');
+    } else if (labelSize === 'template_doc') {
+      pageCss = `
+        @page {
+          size: 175mm 205mm;
+          margin: 1.5mm 3.5mm 0mm 3.5mm;
+        }
+        html, body {
+          width: 175mm;
+          margin: 0;
+          padding: 0;
+          background: #fff;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Sarabun", sans-serif;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        .doc-sheet-page {
+          width: 168mm;
+          height: 202mm;
+          max-height: 202mm;
+          margin: 0 auto;
+          box-sizing: border-box;
+          page-break-after: always;
+          break-after: page;
+          overflow: hidden;
+        }
+        .doc-sheet-page:last-child {
+          page-break-after: avoid;
+          break-after: avoid;
+        }
+        .doc-table {
+          width: 168mm;
+          border-collapse: collapse;
+          table-layout: fixed;
+          margin: 0;
+          padding: 0;
+        }
+        .doc-sticker-row {
+          height: 38mm;
+          max-height: 38mm;
+          min-height: 38mm;
+        }
+        .doc-spacer-row {
+          height: 3mm;
+          max-height: 3mm;
+          min-height: 3mm;
+        }
+        .doc-cell {
+          width: 21mm;
+          max-width: 21mm;
+          height: 38mm;
+          max-height: 38mm;
+          min-height: 38mm;
+          padding: 1mm 1mm;
+          vertical-align: top;
+          box-sizing: border-box;
+          overflow: hidden;
+        }
+        .doc-cell.has-border {
+          border: 0.5px dashed #cbd5e1;
+        }
+        .doc-spacer-cell {
+          height: 3mm;
+          padding: 0;
+          margin: 0;
+          border: none;
+        }
+        .doc-empty-cell {
+          width: 100%;
+          height: 100%;
+        }
+        .doc-card-inner {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: flex-start;
+          text-align: center;
+          box-sizing: border-box;
+          overflow: hidden;
+        }
+        .doc-org-text {
+          font-size: 6px;
+          font-weight: 800;
+          color: #0f766e;
+          line-height: 1.1;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          width: 100%;
+          margin-bottom: 0.5px;
+        }
+        .doc-qr-wrap {
+          width: 16.5mm;
+          height: 16.5mm;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0.5px auto;
+          flex-shrink: 0;
+        }
+        .doc-qr {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+          display: block;
+        }
+        .doc-code {
+          font-family: monospace;
+          font-size: 6.5px;
+          font-weight: 900;
+          color: #0f172a;
+          line-height: 1.1;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          width: 100%;
+          letter-spacing: -0.2px;
+          margin-top: 0.5px;
+        }
+        .doc-seq {
+          font-size: 5.5px;
+          font-weight: 700;
+          color: #0f766e;
+          background: #f0fdfa;
+          border: 0.4px solid #99f6e4;
+          border-radius: 1.5px;
+          padding: 0 1.5px;
+          line-height: 1;
+          display: inline-block;
+          margin: 0.5px 0;
+          white-space: nowrap;
+        }
+        .doc-name {
+          font-size: 5.5px;
+          font-weight: 700;
+          color: #334155;
+          line-height: 1.1;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          word-break: break-word;
+          width: 100%;
+        }
+        .doc-loc {
+          font-size: 5px;
+          color: #e11d48;
+          font-weight: 700;
+          line-height: 1;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          width: 100%;
+          margin-top: auto;
+        }
+      `;
+
+      const allCardItems: string[] = [];
+
+      if (includeLotSticker && lot?.lotNumber) {
+        allCardItems.push(`
+          <div class="doc-card-inner">
+            <div class="doc-org-text">คณะพยาบาลศาสตร์ มก.</div>
+            <div class="doc-qr-wrap">
+              <img src="${boxQrs[lot.lotNumber] || ''}" class="doc-qr" />
+            </div>
+            <div class="doc-code">LOT: ${lot.lotNumber}</div>
+            <div class="doc-seq">ป้ายล็อต (${unitLabel})</div>
+            <div class="doc-name" title="${item.name}">${item.name}</div>
+            <div class="doc-loc">EXP: ${formattedExpiry}</div>
+          </div>
+        `);
+      }
+
+      for (const box of boxesToPrint) {
+        allCardItems.push(`
+          <div class="doc-card-inner">
+            <div class="doc-org-text">คณะพยาบาลศาสตร์ มก.</div>
+            <div class="doc-qr-wrap">
+              <img src="${boxQrs[box.boxCode] || ''}" class="doc-qr" />
+            </div>
+            <div class="doc-code">${box.boxCode}</div>
+            <div class="doc-seq">${unitLabel}ที่ #${box.boxNumberInYear}</div>
+            <div class="doc-name" title="${item.name}">${item.name}</div>
+            <div class="doc-loc">EXP: ${formattedExpiry}</div>
+          </div>
+        `);
+      }
+
+      const effectiveCards: string[] = [];
+      const startOffset = Math.max(0, startPosition - 1);
+      for (let i = 0; i < startOffset; i++) {
+        effectiveCards.push('');
+      }
+      effectiveCards.push(...allCardItems);
+
+      const CARDS_PER_PAGE = 40;
+      const totalSheets = Math.ceil(effectiveCards.length / CARDS_PER_PAGE) || 1;
+
+      let sheetHtmlOutput = '';
+      for (let s = 0; s < totalSheets; s++) {
+        const sheetCards = effectiveCards.slice(s * CARDS_PER_PAGE, (s + 1) * CARDS_PER_PAGE);
+        while (sheetCards.length < CARDS_PER_PAGE) {
+          sheetCards.push('');
+        }
+
+        let sheetTableRows = '';
+        for (let r = 0; r < 5; r++) {
+          const rowCards = sheetCards.slice(r * 8, (r + 1) * 8);
+          const cellsHtml = rowCards
+            .map(
+              (c) => `
+                <td class="doc-cell ${showBorders ? 'has-border' : ''}">
+                  ${c || '<div class="doc-empty-cell"></div>'}
+                </td>
+              `
+            )
+            .join('');
+
+          sheetTableRows += `<tr class="doc-sticker-row">${cellsHtml}</tr>`;
+
+          if (r < 4) {
+            sheetTableRows += `<tr class="doc-spacer-row"><td colspan="8" class="doc-spacer-cell"></td></tr>`;
+          }
+        }
+
+        sheetHtmlOutput += `
+          <div class="doc-sheet-page">
+            <table class="doc-table">
+              <tbody>
+                ${sheetTableRows}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+
+      cardsHtml = sheetHtmlOutput;
     }
 
     const html = `
@@ -445,9 +686,7 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
           </style>
         </head>
         <body>
-          <div class="labels-grid">
-            ${cardsHtml}
-          </div>
+          ${labelSize === 'template_doc' ? cardsHtml : `<div class="labels-grid">${cardsHtml}</div>`}
           <script>
             window.onload = () => {
               window.print();
@@ -497,7 +736,7 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
               Lot: <b className="font-mono">{lot.lotNumber}</b> | ทั้งหมด {boxes.length} {unitLabel} | รับเข้า: {formattedReceived} | หมดอายุ: {formattedExpiry}
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => setLabelSize('compact')}
@@ -520,6 +759,19 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
             >
               ขนาดแถบจิ๋ว (~47x14.5 มม.)
             </button>
+            <button
+              type="button"
+              onClick={() => setLabelSize('template_doc')}
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                labelSize === 'template_doc'
+                  ? 'bg-teal-600 text-white shadow-sm'
+                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+              }`}
+              title="เทมเพลตกระดาษสติกเกอร์ 175×205 มม. (5 แถว × 8 ช่อง = 40 ดวง/แผ่น)"
+            >
+              <Tag className="w-3.5 h-3.5" />
+              <span>เทมเพลต 175×205 มม. (40 ช่อง)</span>
+            </button>
             <label className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer select-none ml-2 border-l pl-3 border-teal-200 dark:border-teal-800">
               <input
                 type="checkbox"
@@ -540,6 +792,41 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
             </label>
           </div>
         </div>
+
+        {/* Template Doc configuration panel */}
+        {labelSize === 'template_doc' && (
+          <div className="p-3 rounded-2xl bg-teal-50/80 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 flex flex-wrap items-center justify-between gap-3 text-xs animate-fadeIn">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="font-bold text-teal-900 dark:text-teal-200 flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-teal-500 animate-pulse inline-block" />
+                <span>แผ่นสติกเกอร์ 175 × 205 มม. (5 แถว × 8 ช่อง = 40 ดวง/แผ่น • ดวงละ 21 × 38 มม. ช่องไฟ 3 มม.)</span>
+              </div>
+              <span className="text-teal-300 dark:text-teal-700 hidden sm:inline">|</span>
+              <div className="flex items-center gap-1.5">
+                <span className="font-semibold text-slate-700 dark:text-slate-300">เริ่มพิมพ์จากช่องที่:</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={40}
+                  value={startPosition}
+                  onChange={(e) => setStartPosition(Math.max(1, Math.min(40, parseInt(e.target.value) || 1)))}
+                  className="w-14 px-2 py-1 text-center font-bold bg-white dark:bg-slate-800 border border-teal-300 dark:border-teal-700 rounded-lg text-teal-800 dark:text-teal-200 focus:ring-2 focus:ring-teal-500"
+                />
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">(1-40 สำหรับแผ่นเดิมที่แกะใช้ไปบางส่วน)</span>
+              </div>
+            </div>
+
+            <label className="flex items-center gap-1.5 cursor-pointer select-none font-semibold text-slate-700 dark:text-slate-300">
+              <input
+                type="checkbox"
+                checked={showBorders}
+                onChange={(e) => setShowBorders(e.target.checked)}
+                className="w-3.5 h-3.5 rounded text-teal-600 focus:ring-teal-500 border-slate-300"
+              />
+              <span>แสดงเส้นประไกด์ตำแหน่งดวงสติกเกอร์</span>
+            </label>
+          </div>
+        )}
 
         {/* Multi-Select Toolbar */}
         <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300 px-1">
@@ -651,7 +938,11 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
               className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition disabled:opacity-50 cursor-pointer"
             >
               <Printer className="w-4 h-4" />
-              <span>พิมพ์สติกเกอร์{unitLabel} ({selectedBoxIds.length} {unitLabel})</span>
+              <span>
+                {labelSize === 'template_doc'
+                  ? `พิมพ์สติกเกอร์${unitLabel} (${selectedBoxIds.length + (includeLotSticker ? 1 : 0)} ดวง • เทมเพลต ${Math.ceil(((startPosition - 1) + selectedBoxIds.length + (includeLotSticker ? 1 : 0)) / 40)} แผ่น)`
+                  : `พิมพ์สติกเกอร์${unitLabel} (${selectedBoxIds.length} ${unitLabel})`}
+              </span>
             </button>
           </div>
         </div>

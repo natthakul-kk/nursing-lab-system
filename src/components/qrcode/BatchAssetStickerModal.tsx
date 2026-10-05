@@ -70,7 +70,9 @@ export default function BatchAssetStickerModal({
     return ids;
   });
 
-  const [labelSize, setLabelSize] = useState<'compact' | 'standard' | 'mini'>('compact');
+  const [labelSize, setLabelSize] = useState<'compact' | 'standard' | 'mini' | 'template_doc'>('compact');
+  const [startPosition, setStartPosition] = useState<number>(1);
+  const [showBorders, setShowBorders] = useState<boolean>(true);
   const [copiesPerAsset, setCopiesPerAsset] = useState<1 | 2>(1);
   const [isGenerating, setIsGenerating] = useState(false);
   const [qrCache, setQrCache] = useState<Record<string, string>>({});
@@ -178,79 +180,154 @@ export default function BatchAssetStickerModal({
       // Generate HTML cards
       let cardsHtml = '';
 
-      for (const { asset, item } of assetsToPrint) {
-        const payload = `${origin}/equipment/${encodeURIComponent(asset.assetCode || asset.govAssetCode)}`;
-        const qrUrl = qrs[payload] || '';
-        const rawCode = asset.govAssetCode || asset.assetCode;
-        const subCode = asset.govAssetCode ? asset.assetCode : '';
-        const unitName = item.unit || 'เครื่อง';
-        const brandModel = [asset.brand || item.brand, asset.model || item.model].filter(Boolean).join(' ');
+      if (labelSize === 'template_doc') {
+        const allCardItems: string[] = [];
 
-        for (let copy = 0; copy < copiesPerAsset; copy++) {
-          if (labelSize === 'mini') {
-            cardsHtml += `
-              <div class="mini-card">
-                <img src="${qrUrl}" class="mini-qr" />
-                <div class="mini-info">
-                  <div class="mini-org">คณะพยาบาลศาสตร์ ม.เกษตรศาสตร์</div>
-                  <div class="mini-code-row">
-                    <span class="mini-code">${rawCode}</span>
-                    <span class="mini-seq">${unitName}ที่ ${asset.sequenceNumber || 1}</span>
-                  </div>
-                  <div class="mini-title">${item.name}</div>
-                  <div class="mini-loc">📍 ${asset.location || item.location || 'ห้องแล็บพยาบาล'}</div>
+        for (const { asset, item } of assetsToPrint) {
+          const payload = `${origin}/equipment/${encodeURIComponent(asset.assetCode || asset.govAssetCode)}`;
+          const qrUrl = qrs[payload] || '';
+          const rawCode = asset.govAssetCode || asset.assetCode;
+          const unitName = item.unit || 'เครื่อง';
+
+          for (let copy = 0; copy < copiesPerAsset; copy++) {
+            allCardItems.push(`
+              <div class="doc-card-inner">
+                <div class="doc-org-text">คณะพยาบาลศาสตร์ มก.</div>
+                <div class="doc-qr-wrap">
+                  <img src="${qrUrl}" class="doc-qr" />
                 </div>
+                <div class="doc-code">${rawCode}</div>
+                <div class="doc-seq">${unitName}ที่ ${asset.sequenceNumber || 1}</div>
+                <div class="doc-name">${item.name}</div>
+                <div class="doc-loc">📍 ${asset.location || item.location || 'ห้องปฏิบัติการ'}</div>
               </div>
-            `;
-          } else if (labelSize === 'compact') {
-            cardsHtml += `
-              <div class="compact-card">
-                <div class="compact-header">
-                  <span class="compact-org-text">คณะพยาบาลศาสตร์ มหาวิทยาลัยเกษตรศาสตร์</span>
-                  <span class="compact-org-sub">ห้องปฏิบัติการ</span>
-                </div>
-                <div class="compact-body">
-                  <img src="${qrUrl}" class="compact-qr" />
-                  <div class="compact-info">
-                    <div class="compact-code-row">
-                      <span class="compact-code">${rawCode}</span>
-                      <span class="compact-seq">${unitName}ที่ ${asset.sequenceNumber || 1}</span>
+            `);
+          }
+        }
+
+        // Apply starting position offset
+        const effectiveCards: string[] = [];
+        const startOffset = Math.max(0, startPosition - 1);
+        for (let i = 0; i < startOffset; i++) {
+          effectiveCards.push('');
+        }
+        effectiveCards.push(...allCardItems);
+
+        // Group into pages of 40 (5 rows x 8 cols)
+        const CARDS_PER_PAGE = 40;
+        const totalSheets = Math.ceil(effectiveCards.length / CARDS_PER_PAGE) || 1;
+
+        for (let s = 0; s < totalSheets; s++) {
+          const sheetCards = effectiveCards.slice(s * CARDS_PER_PAGE, (s + 1) * CARDS_PER_PAGE);
+          while (sheetCards.length < CARDS_PER_PAGE) {
+            sheetCards.push('');
+          }
+
+          let sheetTableRows = '';
+          for (let r = 0; r < 5; r++) {
+            const rowCards = sheetCards.slice(r * 8, (r + 1) * 8);
+            const cellsHtml = rowCards
+              .map(
+                (c) => `
+                  <td class="doc-cell ${showBorders ? 'has-border' : ''}">
+                    ${c || '<div class="doc-empty-cell"></div>'}
+                  </td>
+                `
+              )
+              .join('');
+
+            sheetTableRows += `<tr class="doc-sticker-row">${cellsHtml}</tr>`;
+
+            if (r < 4) {
+              sheetTableRows += `<tr class="doc-spacer-row"><td colspan="8" class="doc-spacer-cell"></td></tr>`;
+            }
+          }
+
+          cardsHtml += `
+            <div class="doc-sheet-page">
+              <table class="doc-table">
+                <tbody>
+                  ${sheetTableRows}
+                </tbody>
+              </table>
+            </div>
+          `;
+        }
+      } else {
+        for (const { asset, item } of assetsToPrint) {
+          const payload = `${origin}/equipment/${encodeURIComponent(asset.assetCode || asset.govAssetCode)}`;
+          const qrUrl = qrs[payload] || '';
+          const rawCode = asset.govAssetCode || asset.assetCode;
+          const subCode = asset.govAssetCode ? asset.assetCode : '';
+          const unitName = item.unit || 'เครื่อง';
+          const brandModel = [asset.brand || item.brand, asset.model || item.model].filter(Boolean).join(' ');
+
+          for (let copy = 0; copy < copiesPerAsset; copy++) {
+            if (labelSize === 'mini') {
+              cardsHtml += `
+                <div class="mini-card">
+                  <img src="${qrUrl}" class="mini-qr" />
+                  <div class="mini-info">
+                    <div class="mini-org">คณะพยาบาลศาสตร์ ม.เกษตรศาสตร์</div>
+                    <div class="mini-code-row">
+                      <span class="mini-code">${rawCode}</span>
+                      <span class="mini-seq">${unitName}ที่ ${asset.sequenceNumber || 1}</span>
                     </div>
-                    <div class="compact-title">${item.name}</div>
-                    ${brandModel ? `<div class="compact-brand">${brandModel}</div>` : ''}
-                    <div class="compact-meta">
-                      <span>📍 ${asset.location || item.location || 'ห้องปฏิบัติการ'}</span>
-                      ${subCode ? `<span class="compact-subcode">(${subCode})</span>` : ''}
+                    <div class="mini-title">${item.name}</div>
+                    <div class="mini-loc">📍 ${asset.location || item.location || 'ห้องแล็บพยาบาล'}</div>
+                  </div>
+                </div>
+              `;
+            } else if (labelSize === 'compact') {
+              cardsHtml += `
+                <div class="compact-card">
+                  <div class="compact-header">
+                    <span class="compact-org-text">คณะพยาบาลศาสตร์ มหาวิทยาลัยเกษตรศาสตร์</span>
+                    <span class="compact-org-sub">ห้องปฏิบัติการ</span>
+                  </div>
+                  <div class="compact-body">
+                    <img src="${qrUrl}" class="compact-qr" />
+                    <div class="compact-info">
+                      <div class="compact-code-row">
+                        <span class="compact-code">${rawCode}</span>
+                        <span class="compact-seq">${unitName}ที่ ${asset.sequenceNumber || 1}</span>
+                      </div>
+                      <div class="compact-title">${item.name}</div>
+                      ${brandModel ? `<div class="compact-brand">${brandModel}</div>` : ''}
+                      <div class="compact-meta">
+                        <span>📍 ${asset.location || item.location || 'ห้องปฏิบัติการ'}</span>
+                        ${subCode ? `<span class="compact-subcode">(${subCode})</span>` : ''}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            `;
-          } else {
-            // Standard
-            cardsHtml += `
-              <div class="std-card">
-                <div class="std-header">
-                  <div class="std-org-main">คณะพยาบาลศาสตร์ มหาวิทยาลัยเกษตรศาสตร์</div>
-                  <div class="std-org-sub">ห้องปฏิบัติการ</div>
-                </div>
-                <div class="std-body">
-                  <img src="${qrUrl}" class="std-qr" />
-                  <div class="std-info">
-                    <div class="std-code-row">
-                      <div class="std-gov-code">${rawCode}</div>
-                      <div class="std-seq-badge">${unitName}ที่ ${asset.sequenceNumber || 1}</div>
-                    </div>
-                    <div class="std-title">${item.name}</div>
-                    ${brandModel ? `<div class="std-model">${brandModel}</div>` : ''}
-                    <div class="std-footer-row">
-                      <div class="std-loc">📍 ${asset.location || item.location || 'ห้องปฏิบัติการ'}</div>
-                      ${subCode ? `<div class="std-internal-code">${subCode}</div>` : ''}
+              `;
+            } else {
+              // Standard
+              cardsHtml += `
+                <div class="std-card">
+                  <div class="std-header">
+                    <div class="std-org-main">คณะพยาบาลศาสตร์ มหาวิทยาลัยเกษตรศาสตร์</div>
+                    <div class="std-org-sub">ห้องปฏิบัติการ</div>
+                  </div>
+                  <div class="std-body">
+                    <img src="${qrUrl}" class="std-qr" />
+                    <div class="std-info">
+                      <div class="std-code-row">
+                        <div class="std-gov-code">${rawCode}</div>
+                        <div class="std-seq-badge">${unitName}ที่ ${asset.sequenceNumber || 1}</div>
+                      </div>
+                      <div class="std-title">${item.name}</div>
+                      ${brandModel ? `<div class="std-model">${brandModel}</div>` : ''}
+                      <div class="std-footer-row">
+                        <div class="std-loc">📍 ${asset.location || item.location || 'ห้องปฏิบัติการ'}</div>
+                        ${subCode ? `<div class="std-internal-code">${subCode}</div>` : ''}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            `;
+              `;
+            }
           }
         }
       }
@@ -258,7 +335,163 @@ export default function BatchAssetStickerModal({
       // Page CSS
       let pageCss = '';
 
-      if (labelSize === 'mini') {
+      if (labelSize === 'template_doc') {
+        pageCss = `
+          @page {
+            size: 175mm 205mm;
+            margin: 1.5mm 3.5mm 0mm 3.5mm;
+          }
+          html, body {
+            width: 175mm;
+            margin: 0;
+            padding: 0;
+            background: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Sarabun", sans-serif;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          .doc-sheet-page {
+            width: 168mm;
+            height: 202mm;
+            max-height: 202mm;
+            margin: 0 auto;
+            box-sizing: border-box;
+            page-break-after: always;
+            break-after: page;
+            overflow: hidden;
+          }
+          .doc-sheet-page:last-child {
+            page-break-after: avoid;
+            break-after: avoid;
+          }
+          .doc-table {
+            width: 168mm;
+            border-collapse: collapse;
+            table-layout: fixed;
+            margin: 0;
+            padding: 0;
+          }
+          .doc-sticker-row {
+            height: 38mm;
+            max-height: 38mm;
+            min-height: 38mm;
+          }
+          .doc-spacer-row {
+            height: 3mm;
+            max-height: 3mm;
+            min-height: 3mm;
+          }
+          .doc-cell {
+            width: 21mm;
+            max-width: 21mm;
+            height: 38mm;
+            max-height: 38mm;
+            min-height: 38mm;
+            padding: 1mm 1mm;
+            vertical-align: top;
+            box-sizing: border-box;
+            overflow: hidden;
+          }
+          .doc-cell.has-border {
+            border: 0.5px dashed #cbd5e1;
+          }
+          .doc-spacer-cell {
+            height: 3mm;
+            padding: 0;
+            margin: 0;
+            border: none;
+          }
+          .doc-empty-cell {
+            width: 100%;
+            height: 100%;
+          }
+          .doc-card-inner {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            text-align: center;
+            box-sizing: border-box;
+            overflow: hidden;
+          }
+          .doc-org-text {
+            font-size: 6px;
+            font-weight: 800;
+            color: #0f766e;
+            line-height: 1.1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+            margin-bottom: 0.5px;
+          }
+          .doc-qr-wrap {
+            width: 16.5mm;
+            height: 16.5mm;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0.5px auto;
+            flex-shrink: 0;
+          }
+          .doc-qr {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+          }
+          .doc-code {
+            font-family: monospace;
+            font-size: 6.5px;
+            font-weight: 900;
+            color: #0f172a;
+            line-height: 1.1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+            letter-spacing: -0.2px;
+            margin-top: 0.5px;
+          }
+          .doc-seq {
+            font-size: 5.5px;
+            font-weight: 700;
+            color: #0f766e;
+            background: #f0fdfa;
+            border: 0.4px solid #99f6e4;
+            border-radius: 1.5px;
+            padding: 0 1.5px;
+            line-height: 1;
+            display: inline-block;
+            margin: 0.5px 0;
+            white-space: nowrap;
+          }
+          .doc-name {
+            font-size: 5.5px;
+            font-weight: 700;
+            color: #334155;
+            line-height: 1.1;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            word-break: break-word;
+            width: 100%;
+          }
+          .doc-loc {
+            font-size: 5px;
+            color: #64748b;
+            line-height: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+            margin-top: auto;
+          }
+        `;
+      } else if (labelSize === 'mini') {
         pageCss = `
           @page { size: A4 portrait; margin: 6mm 5mm; }
           body {
@@ -654,7 +887,7 @@ export default function BatchAssetStickerModal({
             <style>${pageCss}</style>
           </head>
           <body>
-            <div class="labels-container">${cardsHtml}</div>
+            ${labelSize === 'template_doc' ? cardsHtml : `<div class="labels-container">${cardsHtml}</div>`}
             <script>
               window.onload = function() {
                 setTimeout(function() {
@@ -716,7 +949,7 @@ export default function BatchAssetStickerModal({
           </div>
 
           {/* Label size switch */}
-          <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+          <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
             <button
               onClick={() => setLabelSize('compact')}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
@@ -746,6 +979,18 @@ export default function BatchAssetStickerModal({
               }`}
             >
               แถบจิ๋ว (4 แถว)
+            </button>
+            <button
+              onClick={() => setLabelSize('template_doc')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                labelSize === 'template_doc'
+                  ? 'bg-teal-600 text-white shadow-sm'
+                  : 'text-slate-500 hover:text-slate-900 dark:text-slate-400'
+              }`}
+              title="เทมเพลตกระดาษสติกเกอร์ 175×205 มม. (5 แถว × 8 ช่อง = 40 ดวง/แผ่น)"
+            >
+              <Tag className="w-3.5 h-3.5" />
+              <span>เทมเพลต 175×205 มม. (40 ช่อง)</span>
             </button>
           </div>
 
@@ -787,6 +1032,41 @@ export default function BatchAssetStickerModal({
             <span>รวมครุภัณฑ์ที่แทงจำหน่ายแล้ว (Retired)</span>
           </label>
         </div>
+
+        {/* Template Doc configuration panel */}
+        {labelSize === 'template_doc' && (
+          <div className="p-3 my-2 rounded-2xl bg-teal-50/80 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 flex flex-wrap items-center justify-between gap-3 text-xs animate-fadeIn">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="font-bold text-teal-900 dark:text-teal-200 flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-teal-500 animate-pulse inline-block" />
+                <span>แผ่นสติกเกอร์ 175 × 205 มม. (5 แถว × 8 ช่อง = 40 ดวง/แผ่น • ดวงละ 21 × 38 มม. ช่องไฟ 3 มม.)</span>
+              </div>
+              <span className="text-teal-300 dark:text-teal-700 hidden sm:inline">|</span>
+              <div className="flex items-center gap-1.5">
+                <span className="font-semibold text-slate-700 dark:text-slate-300">เริ่มพิมพ์จากช่องที่:</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={40}
+                  value={startPosition}
+                  onChange={(e) => setStartPosition(Math.max(1, Math.min(40, parseInt(e.target.value) || 1)))}
+                  className="w-14 px-2 py-1 text-center font-bold bg-white dark:bg-slate-800 border border-teal-300 dark:border-teal-700 rounded-lg text-teal-800 dark:text-teal-200 focus:ring-2 focus:ring-teal-500"
+                />
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">(1-40 สำหรับแผ่นเดิมที่แกะใช้ไปบางส่วน)</span>
+              </div>
+            </div>
+
+            <label className="flex items-center gap-1.5 cursor-pointer select-none font-semibold text-slate-700 dark:text-slate-300">
+              <input
+                type="checkbox"
+                checked={showBorders}
+                onChange={(e) => setShowBorders(e.target.checked)}
+                className="w-3.5 h-3.5 rounded text-teal-600 focus:ring-teal-500 border-slate-300"
+              />
+              <span>แสดงเส้นประไกด์ตำแหน่งดวงสติกเกอร์</span>
+            </label>
+          </div>
+        )}
 
         {/* Selection summary & quick actions */}
         <div className="py-2.5 flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
@@ -942,6 +1222,8 @@ export default function BatchAssetStickerModal({
               <span>
                 {isGenerating
                   ? 'กำลังสร้างสติกเกอร์...'
+                  : labelSize === 'template_doc'
+                  ? `พิมพ์ ${totalStickersCount} ดวง (เทมเพลต 175×205 มม. • ${Math.ceil((totalStickersCount + (startPosition - 1)) / 40)} แผ่น)`
                   : `พิมพ์ ${totalStickersCount} ใบ (A4)`}
               </span>
             </button>

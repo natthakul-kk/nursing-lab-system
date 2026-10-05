@@ -17,6 +17,7 @@ import {
   FileDown,
 } from 'lucide-react';
 import { downloadStickerDocx, type DocxCardItem } from '@/lib/exportStickerDocx';
+import { downloadStickerPdf, type PdfCardItem } from '@/lib/exportStickerPdf';
 
 export interface EquipmentItemForBatch {
   id: string;
@@ -139,13 +140,87 @@ export default function BatchAssetStickerModal({
   const totalAssetsCount = selectedAssetIds.length;
   const totalStickersCount = totalAssetsCount * copiesPerAsset;
 
+  const [isExportingPdf, setIsExportingPdf] = useState<boolean>(false);
+  const [isExportingDocx, setIsExportingDocx] = useState<boolean>(false);
+
+  const handleExportPdf = async () => {
+    if (totalAssetsCount === 0) {
+      alert('กรุณาเลือกครุภัณฑ์อย่างน้อย 1 ชิ้นเพื่อพิมพ์สติกเกอร์');
+      return;
+    }
+
+    setIsExportingPdf(true);
+    try {
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      const qrs: Record<string, string> = { ...qrCache };
+      const assetsToPrint: Array<{
+        asset: any;
+        item: EquipmentItemForBatch;
+      }> = [];
+
+      availableItems.forEach((item) => {
+        item.assetItems?.forEach((a) => {
+          if (selectedAssetIds.includes(a.id)) {
+            assetsToPrint.push({ asset: a, item });
+          }
+        });
+      });
+
+      for (const { asset } of assetsToPrint) {
+        const payload = `${origin}/asset/${encodeURIComponent(asset.assetCode || asset.govAssetCode)}`;
+        if (!qrs[payload]) {
+          qrs[payload] = await QRCode.toDataURL(payload, {
+            width: 250,
+            margin: 1,
+            color: { dark: '#0f172a', light: '#ffffff' },
+          });
+        }
+      }
+      setQrCache(qrs);
+
+      const pdfCards: PdfCardItem[] = [];
+      for (const { asset, item } of assetsToPrint) {
+        const payload = `${origin}/asset/${encodeURIComponent(asset.assetCode || asset.govAssetCode)}`;
+        const qrUrl = qrs[payload] || '';
+        const rawCode = asset.govAssetCode || asset.assetCode;
+        const unitName = item.unit || 'เครื่อง';
+        const cardTitle = item.name && asset.brand && asset.model
+          ? `${item.name} (${asset.brand} / ${asset.model})`
+          : item.name;
+
+        const cardItem: PdfCardItem = {
+          qrBase64: qrUrl,
+          orgText: 'คณะพยาบาลศาสตร์ ม.เกษตรศาสตร์',
+          codeText: rawCode,
+          badgeText: `${unitName}ที่ ${asset.sequenceNumber || 1}`,
+          titleText: cardTitle,
+          locOrExpText: `📍 ${asset.location || item.location || 'ห้องปฏิบัติการ'}`,
+        };
+
+        for (let copy = 0; copy < copiesPerAsset; copy++) {
+          pdfCards.push({ ...cardItem });
+        }
+      }
+
+      await downloadStickerPdf(
+        `สติกเกอร์ครุภัณฑ์_รวม_${pdfCards.length}ดวง_ตราช้าง_A7`,
+        pdfCards,
+        { startPosition, showBorders }
+      );
+    } catch (err) {
+      console.error('Error generating PDF:', err);
+    } finally {
+      setIsExportingPdf(false);
+    }
+  };
+
   const handleExportDocx = async () => {
     if (totalAssetsCount === 0) {
       alert('กรุณาเลือกครุภัณฑ์อย่างน้อย 1 ชิ้นเพื่อพิมพ์สติกเกอร์');
       return;
     }
 
-    setIsGenerating(true);
+    setIsExportingDocx(true);
     try {
       const origin = typeof window !== 'undefined' ? window.location.origin : '';
       const qrs: Record<string, string> = { ...qrCache };
@@ -206,7 +281,7 @@ export default function BatchAssetStickerModal({
     } catch (err) {
       console.error('Error generating docx:', err);
     } finally {
-      setIsGenerating(false);
+      setIsExportingDocx(false);
     }
   };
 
@@ -1155,7 +1230,7 @@ export default function BatchAssetStickerModal({
                 <span>💡 พิมพ์ลงกระดาษตราช้าง A7 (19×38 มม.):</span>
               </div>
               <div className="text-[10.5px] leading-relaxed text-amber-700 dark:text-amber-300 space-y-0.5">
-                <div>• <b>แนะนำที่สุด (ตรงช่อง 100%):</b> กดปุ่ม <b>&quot;ดาวน์โหลดไฟล์ Word (.docx)&quot;</b> ด้านล่าง แล้วเปิดสั่งพิมพ์ใน Word ได้ทันทีโดยไม่เพี้ยน</div>
+                <div>• <b>แนะนำที่สุด (ตรงช่อง 100%):</b> กดปุ่ม <b>&quot;ดาวน์โหลด PDF (ตราช้าง A7)&quot;</b> ด้านล่าง เพื่อพิมพ์ไฟล์ PDF ล็อกขนาดพอดีเป๊ะ หรือดาวน์โหลดเป็นไฟล์ Word (.docx)</div>
                 <div>• <b>พิมพ์ผ่านเบราว์เซอร์ Chrome:</b> ตั้งระยะขอบ (Margins) = <b>&quot;None&quot; (ไม่มี)</b> • มาตราส่วน (Scale) = <b>100%</b> • เอาติ๊กถูกออกที่ &quot;ส่วนหัวและส่วนท้าย&quot;</div>
               </div>
             </div>
@@ -1308,16 +1383,27 @@ export default function BatchAssetStickerModal({
               ยกเลิก
             </button>
             {labelSize === 'template_doc' && (
-              <button
-                type="button"
-                onClick={handleExportDocx}
-                disabled={isGenerating || totalAssetsCount === 0}
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md shadow-blue-600/20 transition cursor-pointer disabled:opacity-50"
-                title="ดาวน์โหลดไฟล์ Microsoft Word (.docx) เพื่อเปิดพิมพ์ใน Word ได้ตรงช่องสติกเกอร์ 100%"
-              >
-                <FileDown className="w-4 h-4" />
-                <span>{isGenerating ? 'กำลังสร้างไฟล์ Word...' : 'ดาวน์โหลดไฟล์ Word (.docx)'}</span>
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={handleExportPdf}
+                  disabled={isGenerating || totalAssetsCount === 0 || isExportingPdf}
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-md shadow-rose-600/20 transition cursor-pointer disabled:opacity-50"
+                  title="ดาวน์โหลดไฟล์ PDF ขนาด 205×175 มม. ล็อกขนาดพอดีเป๊ะ สั่งพิมพ์ได้ตรงช่องสติกเกอร์ 100%"
+                >
+                  <FileDown className="w-4 h-4" />
+                  <span>{isExportingPdf ? 'กำลังสร้าง PDF...' : 'ดาวน์โหลด PDF (ตราช้าง A7)'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleExportDocx}
+                  disabled={isGenerating || totalAssetsCount === 0 || isExportingDocx}
+                  className="inline-flex items-center gap-1 px-3 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold transition cursor-pointer disabled:opacity-50"
+                  title="ดาวน์โหลดไฟล์ Microsoft Word (.docx)"
+                >
+                  <span>Word (.docx)</span>
+                </button>
+              </>
             )}
             <button
               onClick={handlePrint}

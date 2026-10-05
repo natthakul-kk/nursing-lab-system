@@ -23,6 +23,7 @@ import {
   FileDown,
 } from 'lucide-react';
 import { downloadStickerDocx, type DocxCardItem } from '@/lib/exportStickerDocx';
+import { downloadStickerPdf, type PdfCardItem } from '@/lib/exportStickerPdf';
 
 export interface ConsumableItemForBatch {
   id: string;
@@ -93,6 +94,8 @@ export default function BatchConsumableStickerModal({
   const [startPosition, setStartPosition] = useState<number>(1);
   const [showBorders, setShowBorders] = useState<boolean>(true);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [isExportingDocx, setIsExportingDocx] = useState(false);
   const [qrCache, setQrCache] = useState<Record<string, string>>({});
 
   // Filter items by search
@@ -204,13 +207,118 @@ export default function BatchConsumableStickerModal({
     }
   };
 
+  const handleExportPdf = async () => {
+    if (printableStats.totalBoxes === 0) {
+      alert('กรุณาเลือกกล่องพัสดุอย่างน้อย 1 กล่องเพื่อพิมพ์สติกเกอร์');
+      return;
+    }
+
+    setIsExportingPdf(true);
+    try {
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      const qrs: Record<string, string> = { ...qrCache };
+      const boxesToPrint: Array<{
+        box: any;
+        lot: any;
+        item: ConsumableItemForBatch;
+      }> = [];
+
+      availableItems.forEach((item) => {
+        item.stockLots?.forEach((lot) => {
+          lot.boxes?.forEach((b) => {
+            if (selectedBoxIds.includes(b.id)) {
+              boxesToPrint.push({ box: b, lot, item });
+            }
+          });
+        });
+      });
+
+      for (const { box } of boxesToPrint) {
+        const payload = `${origin}/consumable/${encodeURIComponent(box.boxCode)}`;
+        if (!qrs[payload]) {
+          qrs[payload] = await QRCode.toDataURL(payload, {
+            width: 250,
+            margin: 1,
+            color: { dark: '#0f172a', light: '#ffffff' },
+          });
+        }
+      }
+
+      if (includeLotStickers) {
+        const lotMap = new Map<string, { item: ConsumableItemForBatch; lot: any }>();
+        boxesToPrint.forEach(({ item, lot }) => {
+          lotMap.set(lot.id, { item, lot });
+        });
+        for (const { item, lot } of Array.from(lotMap.values())) {
+          const payload = `${origin}/consumable/${encodeURIComponent(item.code)}?lot=${encodeURIComponent(lot.lotNumber)}`;
+          if (!qrs[payload]) {
+            qrs[payload] = await QRCode.toDataURL(payload, {
+              width: 250,
+              margin: 1,
+              color: { dark: '#0f172a', light: '#ffffff' },
+            });
+          }
+        }
+      }
+      setQrCache(qrs);
+
+      const pdfCards: PdfCardItem[] = [];
+
+      for (const item of availableItems) {
+        for (const lot of item.stockLots || []) {
+          const selectedInLot = lot.boxes?.filter((b) => selectedBoxIds.includes(b.id)) || [];
+          if (selectedInLot.length === 0) continue;
+
+          const unitLabel = lot.packageUnit || item.unit || 'กล่อง';
+          const formattedExpiry = lot.expiryDate
+            ? new Date(lot.expiryDate).toLocaleDateString('th-TH')
+            : 'ไม่ระบุ';
+
+          if (includeLotStickers) {
+            const lotQrUrl = qrs[`${origin}/consumable/${encodeURIComponent(item.code)}?lot=${encodeURIComponent(lot.lotNumber)}`] || '';
+            pdfCards.push({
+              qrBase64: lotQrUrl,
+              orgText: 'คณะพยาบาลศาสตร์ ม.เกษตรศาสตร์',
+              codeText: `LOT: ${lot.lotNumber}`,
+              badgeText: `ป้ายล็อต (${unitLabel})`,
+              titleText: item.name,
+              locOrExpText: `EXP: ${formattedExpiry}`,
+            });
+          }
+
+          for (const box of selectedInLot) {
+            const boxQrUrl = qrs[`${origin}/consumable/${encodeURIComponent(box.boxCode)}`] || '';
+            pdfCards.push({
+              qrBase64: boxQrUrl,
+              orgText: 'คณะพยาบาลศาสตร์ ม.เกษตรศาสตร์',
+              codeText: box.boxCode,
+              badgeText: `${unitLabel}ที่ #${box.boxNumberInYear}`,
+              titleText: item.name,
+              locOrExpText: `EXP: ${formattedExpiry}`,
+            });
+          }
+        }
+      }
+
+      await downloadStickerPdf(
+        `สติกเกอร์กล่องเวชภัณฑ์_รวม_${pdfCards.length}ดวง_ตราช้าง_A7`,
+        pdfCards,
+        { startPosition, showBorders }
+      );
+    } catch (err) {
+      console.error('Error generating PDF:', err);
+    } finally {
+      setIsExportingPdf(false);
+    }
+  };
+
   const handleExportDocx = async () => {
     if (printableStats.totalBoxes === 0) {
       alert('กรุณาเลือกกล่องพัสดุอย่างน้อย 1 กล่องเพื่อพิมพ์สติกเกอร์');
       return;
     }
 
-    setIsGenerating(true);
+    setIsExportingDocx(true);
     try {
       const origin = typeof window !== 'undefined' ? window.location.origin : '';
       const qrs: Record<string, string> = { ...qrCache };
@@ -305,7 +413,7 @@ export default function BatchConsumableStickerModal({
     } catch (err) {
       console.error('Error generating docx:', err);
     } finally {
-      setIsGenerating(false);
+      setIsExportingDocx(false);
     }
   };
 
@@ -1137,7 +1245,7 @@ export default function BatchConsumableStickerModal({
                 <span>💡 พิมพ์ลงกระดาษตราช้าง A7 (19×38 มม.):</span>
               </div>
               <div className="text-[10.5px] leading-relaxed text-amber-700 dark:text-amber-300 space-y-0.5">
-                <div>• <b>แนะนำที่สุด (ตรงช่อง 100%):</b> กดปุ่ม <b>&quot;ดาวน์โหลดไฟล์ Word (.docx)&quot;</b> ด้านล่าง แล้วเปิดสั่งพิมพ์ใน Word ได้ทันทีโดยไม่เพี้ยน</div>
+                <div>• <b>แนะนำที่สุด (ตรงช่อง 100%):</b> กดปุ่ม <b>&quot;ดาวน์โหลด PDF (ตราช้าง A7)&quot;</b> ล็อกขนาด 205×175 มม. สั่งพิมพ์ได้ตรงช่องสติกเกอร์ทันที (หรือดาวน์โหลด Word .docx ได้เช่นกัน)</div>
                 <div>• <b>พิมพ์ผ่านเบราว์เซอร์ Chrome:</b> ตั้งระยะขอบ (Margins) = <b>&quot;None&quot; (ไม่มี)</b> • มาตราส่วน (Scale) = <b>100%</b> • เอาติ๊กถูกออกที่ &quot;ส่วนหัวและส่วนท้าย&quot;</div>
               </div>
             </div>
@@ -1328,16 +1436,27 @@ export default function BatchConsumableStickerModal({
               ยกเลิก
             </button>
             {labelSize === 'template_doc' && (
-              <button
-                type="button"
-                onClick={handleExportDocx}
-                disabled={isGenerating || printableStats.totalBoxes === 0}
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md shadow-blue-600/20 transition cursor-pointer disabled:opacity-50"
-                title="ดาวน์โหลดไฟล์ Microsoft Word (.docx) เพื่อเปิดพิมพ์ใน Word ได้ตรงช่องสติกเกอร์ 100%"
-              >
-                <FileDown className="w-4 h-4" />
-                <span>{isGenerating ? 'กำลังสร้างไฟล์ Word...' : 'ดาวน์โหลดไฟล์ Word (.docx)'}</span>
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={handleExportPdf}
+                  disabled={isGenerating || printableStats.totalBoxes === 0 || isExportingPdf}
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-md shadow-rose-600/20 transition cursor-pointer disabled:opacity-50"
+                  title="ดาวน์โหลดไฟล์ PDF ขนาด 205×175 มม. ล็อกขนาดพอดีเป๊ะ สั่งพิมพ์ได้ตรงช่องสติกเกอร์ 100%"
+                >
+                  <FileDown className="w-4 h-4" />
+                  <span>{isExportingPdf ? 'กำลังสร้าง PDF...' : 'ดาวน์โหลด PDF (ตราช้าง A7)'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleExportDocx}
+                  disabled={isGenerating || printableStats.totalBoxes === 0 || isExportingDocx}
+                  className="inline-flex items-center gap-1 px-3 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold transition cursor-pointer disabled:opacity-50"
+                  title="ดาวน์โหลดไฟล์ Microsoft Word (.docx)"
+                >
+                  <span>Word (.docx)</span>
+                </button>
+              </>
             )}
             <button
               onClick={handlePrint}

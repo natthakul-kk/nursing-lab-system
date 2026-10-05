@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
 import { QrCode, Printer, X, Tag, Calendar, MapPin, SlidersHorizontal, Layers, CheckSquare, Square, Box, FileDown } from 'lucide-react';
 import { downloadStickerDocx, type DocxCardItem } from '@/lib/exportStickerDocx';
+import { downloadStickerPdf, type PdfCardItem } from '@/lib/exportStickerPdf';
 
 export interface BoxItem {
   id: string;
@@ -114,7 +115,53 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
     ? new Date(lot.expiryDate).toLocaleDateString('th-TH')
     : 'ไม่ระบุ';
 
+  const [isExportingPdf, setIsExportingPdf] = useState<boolean>(false);
   const [isExportingDocx, setIsExportingDocx] = useState<boolean>(false);
+
+  const handleExportPdf = async () => {
+    const boxesToPrint = boxes.filter((b) => selectedBoxIds.includes(b.id));
+    if (boxesToPrint.length === 0 && !includeLotSticker) {
+      alert('กรุณาเลือกกล่องที่ต้องการพิมพ์อย่างน้อย 1 กล่อง');
+      return;
+    }
+
+    setIsExportingPdf(true);
+    try {
+      const pdfCards: PdfCardItem[] = [];
+
+      if (includeLotSticker && lot?.lotNumber) {
+        pdfCards.push({
+          qrBase64: boxQrs[lot.lotNumber] || '',
+          orgText: 'คณะพยาบาลศาสตร์ ม.เกษตรศาสตร์',
+          codeText: `LOT: ${lot.lotNumber}`,
+          badgeText: `ป้ายล็อต (${unitLabel})`,
+          titleText: item.name,
+          locOrExpText: `EXP: ${formattedExpiry}`,
+        });
+      }
+
+      for (const box of boxesToPrint) {
+        pdfCards.push({
+          qrBase64: boxQrs[box.boxCode] || '',
+          orgText: 'คณะพยาบาลศาสตร์ ม.เกษตรศาสตร์',
+          codeText: box.boxCode,
+          badgeText: `${unitLabel}ที่ #${box.boxNumberInYear}`,
+          titleText: item.name,
+          locOrExpText: `EXP: ${formattedExpiry}`,
+        });
+      }
+
+      await downloadStickerPdf(
+        `สติกเกอร์กล่อง_${item.code}_Lot_${lot.lotNumber}_ตราช้าง_A7`,
+        pdfCards,
+        { startPosition, showBorders }
+      );
+    } catch (err) {
+      console.error('Error generating PDF:', err);
+    } finally {
+      setIsExportingPdf(false);
+    }
+  };
 
   const handleExportDocx = async () => {
     const boxesToPrint = boxes.filter((b) => selectedBoxIds.includes(b.id));
@@ -893,7 +940,7 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
                 <span>💡 พิมพ์ลงกระดาษตราช้าง A7 (19×38 มม.):</span>
               </div>
               <div className="text-[10.5px] leading-relaxed text-amber-700 dark:text-amber-300 space-y-0.5">
-                <div>• <b>แนะนำที่สุด (ตรงช่อง 100%):</b> กดปุ่ม <b>&quot;ดาวน์โหลดไฟล์ Word (.docx)&quot;</b> ด้านล่าง แล้วเปิดสั่งพิมพ์ใน Word ได้ทันทีโดยไม่เพี้ยน</div>
+                <div>• <b>แนะนำที่สุด (ตรงช่อง 100%):</b> กดปุ่ม <b>&quot;ดาวน์โหลด PDF (ตราช้าง A7)&quot;</b> ล็อกขนาด 205×175 มม. สั่งพิมพ์ได้ตรงช่องสติกเกอร์ทันที (หรือดาวน์โหลด Word .docx ได้เช่นกัน)</div>
                 <div>• <b>พิมพ์ผ่านเบราว์เซอร์ Chrome:</b> ตั้งระยะขอบ (Margins) = <b>&quot;None&quot; (ไม่มี)</b> • มาตราส่วน (Scale) = <b>100%</b> • เอาติ๊กถูกออกที่ &quot;ส่วนหัวและส่วนท้าย&quot;</div>
               </div>
             </div>
@@ -1004,16 +1051,27 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
               ปิด
             </button>
             {labelSize === 'template_doc' && (
-              <button
-                type="button"
-                onClick={handleExportDocx}
-                disabled={isExportingDocx || (selectedBoxIds.length === 0 && !includeLotSticker)}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md shadow-blue-600/20 transition cursor-pointer disabled:opacity-50"
-                title="ดาวน์โหลดไฟล์ Microsoft Word (.docx) เพื่อเปิดพิมพ์ใน Word ได้ตรงช่องสติกเกอร์ 100%"
-              >
-                <FileDown className="w-4 h-4" />
-                <span>{isExportingDocx ? 'กำลังสร้างไฟล์ Word...' : 'ดาวน์โหลดไฟล์ Word (.docx)'}</span>
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={handleExportPdf}
+                  disabled={isExportingPdf || (selectedBoxIds.length === 0 && !includeLotSticker)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-md shadow-rose-600/20 transition cursor-pointer disabled:opacity-50"
+                  title="ดาวน์โหลดไฟล์ PDF ขนาด 205×175 มม. ล็อกขนาดพอดีเป๊ะ สั่งพิมพ์ได้ตรงช่องสติกเกอร์ 100%"
+                >
+                  <FileDown className="w-4 h-4" />
+                  <span>{isExportingPdf ? 'กำลังสร้าง PDF...' : 'ดาวน์โหลด PDF (ตราช้าง A7)'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleExportDocx}
+                  disabled={isExportingDocx || (selectedBoxIds.length === 0 && !includeLotSticker)}
+                  className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold transition cursor-pointer disabled:opacity-50"
+                  title="ดาวน์โหลดไฟล์ Microsoft Word (.docx)"
+                >
+                  <span>Word (.docx)</span>
+                </button>
+              </>
             )}
             <button
               type="button"

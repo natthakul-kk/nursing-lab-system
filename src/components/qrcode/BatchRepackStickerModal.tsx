@@ -17,6 +17,7 @@ import {
   FileDown,
 } from 'lucide-react';
 import { downloadStickerDocx, type DocxCardItem } from '@/lib/exportStickerDocx';
+import { downloadStickerPdf, type PdfCardItem } from '@/lib/exportStickerPdf';
 
 export interface RepackRecordForBatch {
   id: string;
@@ -67,6 +68,8 @@ export default function BatchRepackStickerModal({
   const [startPosition, setStartPosition] = useState<number>(1);
   const [showBorders, setShowBorders] = useState<boolean>(true);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [isExportingDocx, setIsExportingDocx] = useState(false);
   const [qrCache, setQrCache] = useState<Record<string, string>>({});
 
   // Get effective packs for a record
@@ -184,13 +187,105 @@ export default function BatchRepackStickerModal({
     };
   }, [records, selectedPackCodes, includeLotStickers]);
 
+  const handleExportPdf = async () => {
+    if (printableStats.totalPacks === 0) {
+      alert('กรุณาเลือกซองเวชภัณฑ์อย่างน้อย 1 ซองเพื่อพิมพ์สติกเกอร์');
+      return;
+    }
+
+    setIsExportingPdf(true);
+    try {
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      const qrs: Record<string, string> = { ...qrCache };
+
+      for (const rec of records) {
+        const packs = getRecordPacks(rec);
+        const selectedInRec = packs.filter((p) => selectedPackCodes.includes(p.packCode));
+        if (selectedInRec.length === 0) continue;
+
+        if (includeLotStickers) {
+          const lotPayload = `${origin}/consumable/${encodeURIComponent(rec.subLotNumber)}`;
+          if (!qrs[lotPayload]) {
+            qrs[lotPayload] = await QRCode.toDataURL(lotPayload, {
+              width: 250,
+              margin: 1,
+              color: { dark: '#0f172a', light: '#ffffff' },
+            });
+          }
+        }
+
+        for (const pack of selectedInRec) {
+          const packPayload = `${origin}/consumable/${encodeURIComponent(pack.packCode)}`;
+          if (!qrs[packPayload]) {
+            qrs[packPayload] = await QRCode.toDataURL(packPayload, {
+              width: 250,
+              margin: 1,
+              color: { dark: '#0f172a', light: '#ffffff' },
+            });
+          }
+        }
+      }
+      setQrCache(qrs);
+
+      const pdfCards: PdfCardItem[] = [];
+
+      for (const rec of records) {
+        const packs = getRecordPacks(rec);
+        const selectedInRec = packs.filter((p) => selectedPackCodes.includes(p.packCode));
+        if (selectedInRec.length === 0) continue;
+
+        const itemName = rec.targetItem?.name || rec.sourceItem?.name || 'เวชภัณฑ์ปลอดเชื้อ';
+        const usageUnit = rec.sourceItem?.usageUnit || 'ชิ้น';
+        const totalPacksInLot = rec.totalPacksProduced || packs.length;
+        const formattedExpiry = rec.sterileExpiryDate
+          ? new Date(rec.sterileExpiryDate).toLocaleDateString('th-TH')
+          : 'ไม่ระบุ';
+
+        if (includeLotStickers) {
+          const lotQr = qrs[`${origin}/consumable/${encodeURIComponent(rec.subLotNumber)}`] || '';
+          pdfCards.push({
+            qrBase64: lotQr,
+            orgText: 'คณะพยาบาลศาสตร์ ม.เกษตรศาสตร์',
+            codeText: `SUB-LOT: ${rec.subLotNumber}`,
+            badgeText: `ป้าย Sub-lot (${totalPacksInLot} ซอง)`,
+            titleText: itemName,
+            locOrExpText: `EXP: ${formattedExpiry}`,
+          });
+        }
+
+        for (const pack of selectedInRec) {
+          const packQr = qrs[`${origin}/consumable/${encodeURIComponent(pack.packCode)}`] || '';
+          const packUnits = pack.unitsCount || rec.unitsPerPack;
+          pdfCards.push({
+            qrBase64: packQr,
+            orgText: 'คณะพยาบาลศาสตร์ ม.เกษตรศาสตร์',
+            codeText: pack.packCode,
+            badgeText: `#${pack.packNumber}/${totalPacksInLot} (${packUnits} ${usageUnit})`,
+            titleText: itemName,
+            locOrExpText: `EXP: ${formattedExpiry}`,
+          });
+        }
+      }
+
+      await downloadStickerPdf(
+        `สติกเกอร์ซองรีแพ็ค_รวม_${pdfCards.length}ดวง_ตราช้าง_A7`,
+        pdfCards,
+        { startPosition, showBorders }
+      );
+    } catch (err) {
+      console.error('Error generating PDF:', err);
+    } finally {
+      setIsExportingPdf(false);
+    }
+  };
+
   const handleExportDocx = async () => {
     if (printableStats.totalPacks === 0) {
       alert('กรุณาเลือกซองเวชภัณฑ์อย่างน้อย 1 ซองเพื่อพิมพ์สติกเกอร์');
       return;
     }
 
-    setIsGenerating(true);
+    setIsExportingDocx(true);
     try {
       const origin = typeof window !== 'undefined' ? window.location.origin : '';
       const qrs: Record<string, string> = { ...qrCache };
@@ -272,7 +367,7 @@ export default function BatchRepackStickerModal({
     } catch (err) {
       console.error('Error generating docx:', err);
     } finally {
-      setIsGenerating(false);
+      setIsExportingDocx(false);
     }
   };
 
@@ -1100,7 +1195,7 @@ export default function BatchRepackStickerModal({
                 <span>💡 พิมพ์ลงกระดาษตราช้าง A7 (19×38 มม.):</span>
               </div>
               <div className="text-[10.5px] leading-relaxed text-amber-700 dark:text-amber-300 space-y-0.5">
-                <div>• <b>แนะนำที่สุด (ตรงช่อง 100%):</b> กดปุ่ม <b>&quot;ดาวน์โหลดไฟล์ Word (.docx)&quot;</b> ด้านล่าง แล้วเปิดสั่งพิมพ์ใน Word ได้ทันทีโดยไม่เพี้ยน</div>
+                <div>• <b>แนะนำที่สุด (ตรงช่อง 100%):</b> กดปุ่ม <b>&quot;ดาวน์โหลด PDF (ตราช้าง A7)&quot;</b> ล็อกขนาด 205×175 มม. สั่งพิมพ์ได้ตรงช่องสติกเกอร์ทันที (หรือดาวน์โหลด Word .docx ได้เช่นกัน)</div>
                 <div>• <b>พิมพ์ผ่านเบราว์เซอร์ Chrome:</b> ตั้งระยะขอบ (Margins) = <b>&quot;None&quot; (ไม่มี)</b> • มาตราส่วน (Scale) = <b>100%</b> • เอาติ๊กถูกออกที่ &quot;ส่วนหัวและส่วนท้าย&quot;</div>
               </div>
             </div>
@@ -1255,16 +1350,27 @@ export default function BatchRepackStickerModal({
               ยกเลิก
             </button>
             {labelSize === 'template_doc' && (
-              <button
-                type="button"
-                onClick={handleExportDocx}
-                disabled={isGenerating || printableStats.totalPacks === 0}
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md shadow-blue-600/20 transition cursor-pointer disabled:opacity-50"
-                title="ดาวน์โหลดไฟล์ Microsoft Word (.docx) เพื่อเปิดพิมพ์ใน Word ได้ตรงช่องสติกเกอร์ 100%"
-              >
-                <FileDown className="w-4 h-4" />
-                <span>{isGenerating ? 'กำลังสร้างไฟล์ Word...' : 'ดาวน์โหลดไฟล์ Word (.docx)'}</span>
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={handleExportPdf}
+                  disabled={isGenerating || printableStats.totalPacks === 0 || isExportingPdf}
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-md shadow-rose-600/20 transition cursor-pointer disabled:opacity-50"
+                  title="ดาวน์โหลดไฟล์ PDF ขนาด 205×175 มม. ล็อกขนาดพอดีเป๊ะ สั่งพิมพ์ได้ตรงช่องสติกเกอร์ 100%"
+                >
+                  <FileDown className="w-4 h-4" />
+                  <span>{isExportingPdf ? 'กำลังสร้าง PDF...' : 'ดาวน์โหลด PDF (ตราช้าง A7)'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleExportDocx}
+                  disabled={isGenerating || printableStats.totalPacks === 0 || isExportingDocx}
+                  className="inline-flex items-center gap-1 px-3 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold transition cursor-pointer disabled:opacity-50"
+                  title="ดาวน์โหลดไฟล์ Microsoft Word (.docx)"
+                >
+                  <span>Word (.docx)</span>
+                </button>
+              </>
             )}
             <button
               onClick={handlePrint}

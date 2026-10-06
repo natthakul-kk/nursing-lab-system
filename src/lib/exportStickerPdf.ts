@@ -77,9 +77,15 @@ function wrapText(
 /**
  * Render a single 38mm x 19mm sticker card onto an HTML5 Canvas at 450x225 px (300 DPI)
  */
+/**
+ * Render a single 38mm x 19mm sticker card onto an HTML5 Canvas at 450x225 px (300 DPI)
+ * Supports colIndex (0-4) to add safe-area padding for edge columns (col 0 on left edge, col 4 on right edge)
+ * so that laser printers without borderless mode (which have 4-5 mm hardware margins) will never clip QR or text.
+ */
 async function renderStickerCardToDataUrl(
   card: PdfCardItem,
-  showBorders: boolean
+  showBorders: boolean,
+  colIndex: number = 2
 ): Promise<string> {
   const canvas = document.createElement('canvas');
   canvas.width = 450;
@@ -100,6 +106,17 @@ async function renderStickerCardToDataUrl(
     ctx.setLineDash([]);
   }
 
+  // Calculate safe X offsets depending on column position
+  // Sheet left margin is 1.5mm (~18px). Printer hardware margin is ~4.5mm (~53px).
+  // Column 0 needs QR offset to be at least 35px from card left edge to stay within printable area.
+  // Column 4 needs right text offset to stay at least 35px from card right edge.
+  const isLeftEdge = colIndex === 0;
+  const isRightEdge = colIndex === 4;
+
+  const qrX = isLeftEdge ? 36 : 14;
+  const qrSize = 152;
+  const qrY = 36;
+
   // Draw QR code
   if (card.qrBase64) {
     try {
@@ -109,15 +126,16 @@ async function renderStickerCardToDataUrl(
         qrImg.onerror = () => resolve();
         qrImg.src = card.qrBase64;
       });
-      // 160 x 160 px centered vertically on left side
-      ctx.drawImage(qrImg, 14, 32, 160, 160);
+      ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
     } catch {
       // Ignore image load error
     }
   }
 
-  const leftTextX = 186;
-  const maxTextWidth = 250;
+  const leftTextX = isLeftEdge ? 200 : 180;
+  // If right edge, shorten maxTextWidth so it doesn't touch the printer's right unprintable margin
+  const maxRightX = isRightEdge ? 414 : 438;
+  const maxTextWidth = maxRightX - leftTextX;
 
   // 1. Organization Header
   ctx.font = 'bold 15px Sarabun, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
@@ -135,7 +153,7 @@ async function renderStickerCardToDataUrl(
     ctx.font = 'bold 13px Sarabun, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
     const badgeMetrics = ctx.measureText(card.badgeText);
     const badgeWidth = badgeMetrics.width + 10;
-    const badgeX = Math.min(450 - badgeWidth - 10, leftTextX + codeMetrics.width + 8);
+    const badgeX = Math.min(maxRightX - badgeWidth, leftTextX + codeMetrics.width + 8);
     const badgeY = 51;
 
     ctx.fillStyle = '#f0fdfa';
@@ -192,16 +210,10 @@ export async function generateStickerPdf(
     format: [175, 205],
   });
 
-  // Pre-render unique cards to cache rendering
-  const cardDataUrlCache = new Map<PdfCardItem, string>();
   const showBorders = options?.showBorders ?? true;
 
-  for (const item of effectiveCards) {
-    if (item && !cardDataUrlCache.has(item)) {
-      const dataUrl = await renderStickerCardToDataUrl(item, showBorders);
-      cardDataUrlCache.set(item, dataUrl);
-    }
-  }
+  // Pre-render cache with colIndex support
+  const cardDataUrlCache = new Map<string, string>();
 
   // Elephant A7 exact layout metrics
   // Width: 205mm. Left margin = 1.5mm, 5 cols x 38mm = 190mm, 4 gaps x 3mm = 12mm. Total = 203.5mm (+1.5mm right margin = 205mm)
@@ -228,10 +240,13 @@ export async function generateStickerPdf(
         const y = TOP_MARGIN + r * ROW_PITCH;
 
         if (item) {
-          const imgData = cardDataUrlCache.get(item);
-          if (imgData) {
-            doc.addImage(imgData, 'PNG', x, y, STICKER_WIDTH, STICKER_HEIGHT);
+          const cacheKey = `${item.codeText}_${c}_${showBorders}`;
+          let imgData = cardDataUrlCache.get(cacheKey);
+          if (!imgData) {
+            imgData = await renderStickerCardToDataUrl(item, showBorders, c);
+            cardDataUrlCache.set(cacheKey, imgData);
           }
+          doc.addImage(imgData, 'PNG', x, y, STICKER_WIDTH, STICKER_HEIGHT);
         } else if (showBorders) {
           // Draw empty dashed guide box
           doc.setDrawColor(226, 232, 240); // slate-200

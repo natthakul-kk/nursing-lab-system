@@ -108,14 +108,13 @@ async function renderStickerCardToDataUrl(
   }
 
   // Column-aware edge padding:
-  // Sheet left margin is 1.5mm. Printer hardware unprintable margin is typically 5.0 - 6.5mm.
+  // Sheet left margin is 1.5mm. User requested exactly 5.0mm safe margin from paper edge:
   // In Column 0 (leftmost):
-  // We offset qrX by 150 px (6.33 mm inside sticker + 1.5 mm paper margin = 7.83 mm from paper edge!).
-  // This guarantees that the printer's roller/gripper margin will NEVER cut off the QR code!
+  // Offset qrX by 83 px (3.5 mm inside sticker + 1.5 mm paper margin = 5.0 mm from paper edge).
   const isLeftEdge = colIndex === 0;
   const isRightEdge = colIndex === 4;
 
-  const qrX = isLeftEdge ? 150 : 28;
+  const qrX = isLeftEdge ? 83 : 28;
   const qrSize = 270;
   const qrY = 90; // (450 - 270) / 2 = 90 (vertically centered)
 
@@ -137,9 +136,9 @@ async function renderStickerCardToDataUrl(
     }
   }
 
-  const leftTextX = isLeftEdge ? 440 : 320;
-  // If right edge, add padding from right edge so right margin of paper (1.5mm) doesn't clip text
-  const maxRightX = isRightEdge ? 750 : 876;
+  const leftTextX = isLeftEdge ? 375 : 320;
+  // If right edge, add 5.0mm padding from paper right edge (3.5mm inside card = 83px)
+  const maxRightX = isRightEdge ? 817 : 876;
   const maxTextWidth = maxRightX - leftTextX;
 
   // 1. Organization Header

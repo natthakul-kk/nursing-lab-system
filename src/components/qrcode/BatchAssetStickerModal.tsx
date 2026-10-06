@@ -170,7 +170,7 @@ export default function BatchAssetStickerModal({
         const payload = `${origin}/asset/${encodeURIComponent(asset.assetCode || asset.govAssetCode)}`;
         if (!qrs[payload]) {
           qrs[payload] = await QRCode.toDataURL(payload, {
-            width: 250,
+            width: 450,
             margin: 1,
             color: { dark: '#0f172a', light: '#ffffff' },
           });

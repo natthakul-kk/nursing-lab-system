@@ -78,9 +78,9 @@ function wrapText(
  * Render a single 38mm x 19mm sticker card onto an HTML5 Canvas at 450x225 px (300 DPI)
  */
 /**
- * Render a single 38mm x 19mm sticker card onto an HTML5 Canvas at 450x225 px (300 DPI)
+ * Render a single 38mm x 19mm sticker card onto an HTML5 Canvas at 900x450 px (600 DPI Ultra-HD)
  * Supports colIndex (0-4) to add safe-area padding for edge columns (col 0 on left edge, col 4 on right edge)
- * so that laser printers without borderless mode (which have 4-5 mm hardware margins) will never clip QR or text.
+ * so that laser printers without borderless mode (which have 5-6.5 mm hardware margins) will NEVER clip QR or text.
  */
 async function renderStickerCardToDataUrl(
   card: PdfCardItem,
@@ -88,29 +88,38 @@ async function renderStickerCardToDataUrl(
   colIndex: number = 2
 ): Promise<string> {
   const canvas = document.createElement('canvas');
-  canvas.width = 450;
-  canvas.height = 225;
+  // 900 x 450 px gives true 600 DPI Ultra-HD resolution for laser printers
+  canvas.width = 900;
+  canvas.height = 450;
   const ctx = canvas.getContext('2d');
   if (!ctx) return '';
 
   // Background
   ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, 450, 225);
+  ctx.fillRect(0, 0, 900, 450);
 
   // Border if requested
   if (showBorders) {
     ctx.strokeStyle = '#cbd5e1';
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([4, 4]);
-    ctx.strokeRect(1, 1, 448, 223);
+    ctx.lineWidth = 2.5;
+    ctx.setLineDash([8, 8]);
+    ctx.strokeRect(2, 2, 896, 446);
     ctx.setLineDash([]);
   }
 
-  const qrX = 14;
-  const qrSize = 136;
-  const qrY = 44;
+  // Column-aware edge padding:
+  // Sheet left margin is 1.5mm. Printer hardware unprintable margin is typically 5.0 - 6.5mm.
+  // In Column 0 (leftmost):
+  // We offset qrX by 150 px (6.33 mm inside sticker + 1.5 mm paper margin = 7.83 mm from paper edge!).
+  // This guarantees that the printer's roller/gripper margin will NEVER cut off the QR code!
+  const isLeftEdge = colIndex === 0;
+  const isRightEdge = colIndex === 4;
 
-  // Draw QR code
+  const qrX = isLeftEdge ? 150 : 28;
+  const qrSize = 270;
+  const qrY = 90; // (450 - 270) / 2 = 90 (vertically centered)
+
+  // Draw QR code with nearest-neighbor crispness (imageSmoothingEnabled = false)
   if (card.qrBase64) {
     try {
       const qrImg = new Image();
@@ -119,37 +128,41 @@ async function renderStickerCardToDataUrl(
         qrImg.onerror = () => resolve();
         qrImg.src = card.qrBase64;
       });
+      // Crisp pixel rendering without anti-aliasing blur for barcodes
+      ctx.imageSmoothingEnabled = false;
       ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
+      ctx.imageSmoothingEnabled = true;
     } catch {
       // Ignore image load error
     }
   }
 
-  const leftTextX = 162;
-  const maxRightX = 436;
+  const leftTextX = isLeftEdge ? 440 : 320;
+  // If right edge, add padding from right edge so right margin of paper (1.5mm) doesn't clip text
+  const maxRightX = isRightEdge ? 750 : 876;
   const maxTextWidth = maxRightX - leftTextX;
 
   // 1. Organization Header
-  ctx.font = 'bold 14px Sarabun, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.font = 'bold 28px Sarabun, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
   ctx.fillStyle = '#0f766e';
-  ctx.fillText(card.orgText || 'คณะพยาบาลศาสตร์ ม.เกษตรศาสตร์', leftTextX, 36);
+  ctx.fillText(card.orgText || 'คณะพยาบาลศาสตร์ ม.เกษตรศาสตร์', leftTextX, 74);
 
   // 2. Code & Badge (Dynamically sized and positioned to guarantee NO overlapping)
   const codeText = card.codeText || '';
   let badgeWidth = 0;
   if (card.badgeText) {
-    ctx.font = 'bold 12px Sarabun, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    badgeWidth = ctx.measureText(card.badgeText).width + 10;
+    ctx.font = 'bold 24px Sarabun, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    badgeWidth = ctx.measureText(card.badgeText).width + 20;
   }
 
   // Calculate available horizontal space for the code
-  const maxCodeWidth = card.badgeText ? (maxTextWidth - badgeWidth - 6) : maxTextWidth;
+  const maxCodeWidth = card.badgeText ? (maxTextWidth - badgeWidth - 12) : maxTextWidth;
 
   // Dynamically shrink code font size so code never collides with badge
-  let codeFontSize = 15;
+  let codeFontSize = 30;
   ctx.font = `900 ${codeFontSize}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace`;
-  while (ctx.measureText(codeText).width > maxCodeWidth && codeFontSize > 10.5) {
-    codeFontSize -= 0.5;
+  while (ctx.measureText(codeText).width > maxCodeWidth && codeFontSize > 21) {
+    codeFontSize -= 1;
     ctx.font = `900 ${codeFontSize}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace`;
   }
 
@@ -163,40 +176,40 @@ async function renderStickerCardToDataUrl(
   }
 
   ctx.fillStyle = '#0f172a';
-  ctx.fillText(displayCode, leftTextX, 66);
+  ctx.fillText(displayCode, leftTextX, 134);
   const actualCodeWidth = ctx.measureText(displayCode).width;
 
   if (card.badgeText) {
     // Badge is ALWAYS positioned immediately after the code text (never overlaps)
-    const badgeX = leftTextX + actualCodeWidth + 6;
-    const badgeY = 51;
-    const badgeHeight = 17;
+    const badgeX = leftTextX + actualCodeWidth + 12;
+    const badgeY = 104;
+    const badgeHeight = 34;
 
     ctx.fillStyle = '#f0fdfa';
     ctx.fillRect(badgeX, badgeY, badgeWidth, badgeHeight);
     ctx.strokeStyle = '#99f6e4';
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 1.5;
     ctx.strokeRect(badgeX, badgeY, badgeWidth, badgeHeight);
 
     ctx.fillStyle = '#0f766e';
-    ctx.font = 'bold 12px Sarabun, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.fillText(card.badgeText, badgeX + 5, badgeY + 13);
+    ctx.font = 'bold 24px Sarabun, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillText(card.badgeText, badgeX + 10, badgeY + 26);
   }
 
   // 3. Title / Name (1-2 lines)
-  ctx.font = 'bold 15px Sarabun, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.font = 'bold 30px Sarabun, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
   ctx.fillStyle = '#1e293b';
   const titleLines = wrapText(ctx, card.titleText || '', maxTextWidth, 2);
-  let textY = 96;
+  let textY = 194;
   for (const line of titleLines) {
     ctx.fillText(line, leftTextX, textY);
-    textY += 22;
+    textY += 44;
   }
 
   // 4. Location or Expiry Meta Line
-  ctx.font = '600 13.5px Sarabun, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.font = '600 27px Sarabun, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
   ctx.fillStyle = (card.locOrExpText || '').includes('EXP') ? '#e11d48' : '#64748b';
-  const metaY = Math.max(textY + 2, 175);
+  const metaY = Math.max(textY + 4, 350);
   ctx.fillText(card.locOrExpText || '', leftTextX, metaY);
 
   return canvas.toDataURL('image/png');
@@ -257,10 +270,10 @@ export async function generateStickerPdf(
         const y = TOP_MARGIN + r * ROW_PITCH;
 
         if (item) {
-          const cacheKey = `${item.codeText}_${showBorders}`;
+          const cacheKey = `${item.codeText}_${c}_${showBorders}`;
           let imgData = cardDataUrlCache.get(cacheKey);
           if (!imgData) {
-            imgData = await renderStickerCardToDataUrl(item, showBorders);
+            imgData = await renderStickerCardToDataUrl(item, showBorders, c);
             cardDataUrlCache.set(cacheKey, imgData);
           }
           doc.addImage(imgData, 'PNG', x, y, STICKER_WIDTH, STICKER_HEIGHT);

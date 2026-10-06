@@ -237,7 +237,7 @@ export default function BatchConsumableStickerModal({
         const payload = `${origin}/consumable/${encodeURIComponent(box.boxCode)}`;
         if (!qrs[payload]) {
           qrs[payload] = await QRCode.toDataURL(payload, {
-            width: 250,
+            width: 450,
             margin: 1,
             color: { dark: '#0f172a', light: '#ffffff' },
           });
@@ -253,7 +253,7 @@ export default function BatchConsumableStickerModal({
           const payload = `${origin}/consumable/${encodeURIComponent(item.code)}?lot=${encodeURIComponent(lot.lotNumber)}`;
           if (!qrs[payload]) {
             qrs[payload] = await QRCode.toDataURL(payload, {
-              width: 250,
+              width: 450,
               margin: 1,
               color: { dark: '#0f172a', light: '#ffffff' },
             });

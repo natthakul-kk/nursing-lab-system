@@ -58,7 +58,7 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
         try {
           const lotPayload = `${origin}/consumable/${encodeURIComponent(item.code)}?lot=${encodeURIComponent(lot.lotNumber)}`;
           qrs[lot.lotNumber] = await QRCode.toDataURL(lotPayload, {
-            width: 160,
+            width: 450,
             margin: 1,
             color: { dark: '#0f172a', light: '#ffffff' },
           });
@@ -72,7 +72,7 @@ export default function BoxStickerModal({ item, lot, boxes, onClose }: BoxSticke
         try {
           const payload = `${origin}/consumable/${encodeURIComponent(box.boxCode)}`;
           qrs[box.boxCode] = await QRCode.toDataURL(payload, {
-            width: 160,
+            width: 450,
             margin: 1,
             color: {
               dark: '#0f172a',

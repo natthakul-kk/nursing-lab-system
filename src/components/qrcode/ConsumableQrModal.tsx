@@ -44,7 +44,7 @@ export default function ConsumableQrModal({ item, lot, onClose }: ConsumableQrMo
         const qrPayload = `${origin}/consumable/${encodeURIComponent(item.code)}?lot=${encodeURIComponent(lot.lotNumber)}`;
 
         const url = await QRCode.toDataURL(qrPayload, {
-          width: 300,
+          width: 450,
           margin: 1,
           color: {
             dark: '#0f172a',

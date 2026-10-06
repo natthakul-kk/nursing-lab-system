@@ -207,7 +207,7 @@ export default function BatchRepackStickerModal({
           const lotPayload = `${origin}/consumable/${encodeURIComponent(rec.subLotNumber)}`;
           if (!qrs[lotPayload]) {
             qrs[lotPayload] = await QRCode.toDataURL(lotPayload, {
-              width: 250,
+              width: 450,
               margin: 1,
               color: { dark: '#0f172a', light: '#ffffff' },
             });
@@ -218,7 +218,7 @@ export default function BatchRepackStickerModal({
           const packPayload = `${origin}/consumable/${encodeURIComponent(pack.packCode)}`;
           if (!qrs[packPayload]) {
             qrs[packPayload] = await QRCode.toDataURL(packPayload, {
-              width: 250,
+              width: 450,
               margin: 1,
               color: { dark: '#0f172a', light: '#ffffff' },
             });

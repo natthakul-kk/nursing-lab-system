@@ -108,13 +108,13 @@ async function renderStickerCardToDataUrl(
   }
 
   // Column-aware edge padding:
-  // Sheet left margin is 1.5mm. User requested exactly 5.0mm safe margin from paper edge:
-  // In Column 0 (leftmost):
-  // Offset qrX by 83 px (3.5 mm inside sticker + 1.5 mm paper margin = 5.0 mm from paper edge).
+  // Sheet left margin is 1.5mm. User requested:
+  // - Column 0 (leftmost): qrX = 83px (3.5mm inside sticker + 1.5mm paper margin = 5.0mm from paper edge)
+  // - Other columns: moved inward from the sticker border by +0.5mm (12px): qrX = 40px (~1.7mm from border)
   const isLeftEdge = colIndex === 0;
   const isRightEdge = colIndex === 4;
 
-  const qrX = isLeftEdge ? 83 : 28;
+  const qrX = isLeftEdge ? 83 : 40;
   const qrSize = 270;
   const qrY = 90; // (450 - 270) / 2 = 90 (vertically centered)
 
@@ -136,9 +136,9 @@ async function renderStickerCardToDataUrl(
     }
   }
 
-  const leftTextX = isLeftEdge ? 375 : 320;
-  // If right edge, add 5.0mm padding from paper right edge (3.5mm inside card = 83px)
-  const maxRightX = isRightEdge ? 817 : 876;
+  const leftTextX = isLeftEdge ? 375 : 332;
+  // Right border padding: shifted inward by 0.5mm (12px)
+  const maxRightX = isRightEdge ? 805 : 864;
   const maxTextWidth = maxRightX - leftTextX;
 
   // 1. Organization Header

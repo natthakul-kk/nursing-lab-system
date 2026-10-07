@@ -652,7 +652,7 @@ export default function MasterRoomCalendar({
             {[
               { id: 'ALL', label: 'ทุกห้อง', count: rooms.length },
               { id: 'SKILL', label: '🩺 ทักษะพื้นฐาน (Skill)', count: rooms.filter((r) => getRoomCategory(r.code, r.name) === 'SKILL').length },
-              { id: 'SIMULATION', label: '🤖 จำลองเสมือน (Sim)', count: rooms.filter((r) => getRoomCategory(r.code, r.name) === 'SIMULATION').length },
+              { id: 'SIMULATION', label: '🤖 SIM', count: rooms.filter((r) => getRoomCategory(r.code, r.name) === 'SIMULATION').length },
               { id: 'SPECIALTY', label: '🏥 เฉพาะทาง', count: rooms.filter((r) => getRoomCategory(r.code, r.name) === 'SPECIALTY').length },
             ].map((cat) => (
               <button
@@ -698,7 +698,7 @@ export default function MasterRoomCalendar({
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-teal-600 dark:text-teal-400" />
               <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                ผังการใช้ห้องปฏิบัติการประจำวัน: {formatThaiDisplayDate(selectedDate)}
+                ตารางการใช้ห้องประจำวัน: {formatThaiDisplayDate(selectedDate)}
               </h3>
               <span className="text-[10px] bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 px-2.5 py-0.5 rounded-full font-bold border border-emerald-200 dark:border-emerald-800">
                 {dailyActivities.length} กิจกรรม

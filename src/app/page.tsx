@@ -148,7 +148,7 @@ export default function DashboardPage() {
           }`}
         >
           <CalendarDays className="w-4 h-4" />
-          <span>📅 ปฏิทินกิจกรรม & ผังการใช้ห้องรวม (Master Calendar)</span>
+          <span>📅 ปฏิทินกิจกรรม & ตารางการใช้ห้องรวม (Master Calendar)</span>
         </button>
 
         <button

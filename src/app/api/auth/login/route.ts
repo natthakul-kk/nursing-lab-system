@@ -17,12 +17,22 @@ export async function POST(req: Request) {
 
     const trimmedInput = String(rawIdentifier).trim();
 
+    // Prepare candidate identifiers for flexible matching (e.g. '6811700262' or 'b6811700262')
+    const candidates = [trimmedInput];
+    if (/^\d{8,12}$/.test(trimmedInput)) {
+      candidates.push(`b${trimmedInput}`);
+    } else if (/^b\d{8,12}$/i.test(trimmedInput)) {
+      candidates.push(trimmedInput.slice(1));
+    }
+
     // Match by email OR studentId (case-insensitive)
     const user = await prisma.user.findFirst({
       where: {
         OR: [
           { email: { equals: trimmedInput, mode: 'insensitive' } },
-          { studentId: { equals: trimmedInput, mode: 'insensitive' } },
+          ...candidates.map((cand) => ({
+            studentId: { equals: cand, mode: 'insensitive' as const },
+          })),
         ],
       },
     });

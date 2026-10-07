@@ -232,7 +232,10 @@ export async function POST(req: Request) {
       }
 
       const role = normalizeRole(u.role);
-      const studentId = u.studentId || null;
+      let studentId = u.studentId || null;
+      if (studentId && role === 'USER' && /^\d{10}$/.test(studentId)) {
+        studentId = `b${studentId}`;
+      }
       const department = u.department || 'คณะพยาบาลศาสตร์';
       const phone = u.phone || null;
       const prefix = u.prefix || null;

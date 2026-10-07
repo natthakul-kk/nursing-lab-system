@@ -22,7 +22,8 @@ import {
   Sparkles,
   QrCode,
   Building2,
-  CalendarDays
+  CalendarDays,
+  Package
 } from 'lucide-react';
 
 import StudentDashboard from '@/components/dashboard/StudentDashboard';
@@ -71,12 +72,8 @@ export default function DashboardPage() {
     }
   }, [currentUser]);
 
-  // If currentUser is USER (Student / general student borrower), show student view
-  if (currentUser?.role === 'USER') {
-    return <StudentDashboard />;
-  }
-
-  if (loading) {
+  // If loading staff dashboard analytics, show spinner
+  if (loading && currentUser?.role !== 'USER') {
     return (
       <LoadingSpinner
         message="กำลังโหลดข้อมูลภาพรวมห้องปฏิบัติการ..."
@@ -151,18 +148,33 @@ export default function DashboardPage() {
           <span>📅 ปฏิทินกิจกรรม & ตารางการใช้ห้องรวม (Master Calendar)</span>
         </button>
 
-        <button
-          type="button"
-          onClick={() => setActiveTab('ANALYTICS')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition cursor-pointer ${
-            activeTab === 'ANALYTICS'
-              ? 'bg-teal-600 text-white shadow-md shadow-teal-600/30 font-black'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-          }`}
-        >
-          <BarChart3 className="w-4 h-4" />
-          <span>📊 สถิติคลังพัสดุ & งบประมาณรายวิชา (Analytics)</span>
-        </button>
+        {currentUser?.role === 'USER' ? (
+          <button
+            type="button"
+            onClick={() => setActiveTab('ANALYTICS')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition cursor-pointer ${
+              activeTab === 'ANALYTICS'
+                ? 'bg-teal-600 text-white shadow-md shadow-teal-600/30 font-black'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <Package className="w-4 h-4" />
+            <span>🎒 รายการยืมครุภัณฑ์ & สถานะของฉัน</span>
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setActiveTab('ANALYTICS')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition cursor-pointer ${
+              activeTab === 'ANALYTICS'
+                ? 'bg-teal-600 text-white shadow-md shadow-teal-600/30 font-black'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <BarChart3 className="w-4 h-4" />
+            <span>📊 สถิติคลังพัสดุ & งบประมาณรายวิชา (Analytics)</span>
+          </button>
+        )}
       </div>
 
       {/* TAB 1: MASTER ROOM CALENDAR VIEW (DEFAULT) */}
@@ -170,9 +182,12 @@ export default function DashboardPage() {
         <MasterRoomCalendar hideHeaderBanner={true} />
       )}
 
-      {/* TAB 2: DETAILED WAREHOUSE & BUDGET ANALYTICS VIEW */}
+      {/* TAB 2: SECONDARY VIEW (Student Personal Dashboard vs Staff Analytics) */}
       {activeTab === 'ANALYTICS' && (
-        <div className="space-y-6">
+        currentUser?.role === 'USER' ? (
+          <StudentDashboard embedded={true} />
+        ) : (
+          <div className="space-y-6">
           {/* Self-Practice Highlight Banner */}
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors">
         <div className="flex items-center gap-4">
@@ -544,6 +559,7 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
+    )
   )}
 </div>
 );

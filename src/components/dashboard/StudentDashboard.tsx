@@ -24,7 +24,11 @@ import LoadingSpinner from '@/components/common/LoadingSpinner';
 import EditRequestModal from '@/components/requests/EditRequestModal';
 import { formatUserName, formatTeacherName, formatApproverDisplay, formatAcknowledgeDisplay } from '@/lib/user-utils';
 
-export default function StudentDashboard() {
+interface StudentDashboardProps {
+  embedded?: boolean;
+}
+
+export default function StudentDashboard({ embedded = false }: StudentDashboardProps) {
   const { currentUser } = useAuth();
   const [borrowRequests, setBorrowRequests] = useState<any[]>([]);
   const [practiceStats, setPracticeStats] = useState<any>(null);
@@ -211,38 +215,40 @@ export default function StudentDashboard() {
   return (
     <div className="space-y-6">
       {/* Student Welcome Header */}
-      <div className="bg-gradient-to-r from-teal-700 via-cyan-800 to-slate-900 rounded-2xl p-6 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-cyan-300 text-xs font-semibold uppercase tracking-wider mb-1">
-            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-            แดชบอร์ดนิสิต & ผู้ใช้งาน | คณะพยาบาลศาสตร์
+      {!embedded && (
+        <div className="bg-gradient-to-r from-teal-700 via-cyan-800 to-slate-900 rounded-2xl p-6 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 text-cyan-300 text-xs font-semibold uppercase tracking-wider mb-1">
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+              แดชบอร์ดนิสิต & ผู้ใช้งาน | คณะพยาบาลศาสตร์
+            </div>
+            <h2 className="text-2xl font-black tracking-tight">
+              สวัสดี, {formatUserName(currentUser) || 'นิสิตพยาบาล'}
+            </h2>
+            <p className="text-slate-300 text-xs mt-1">
+              {currentUser?.studentId ? `รหัสนิสิต: ${currentUser.studentId} | ` : ''}
+              {currentUser?.department || 'สาขาวิชาพยาบาลศาสตร์'}
+            </p>
           </div>
-          <h2 className="text-2xl font-black tracking-tight">
-            สวัสดี, {formatUserName(currentUser) || 'นิสิตพยาบาล'}
-          </h2>
-          <p className="text-slate-300 text-xs mt-1">
-            {currentUser?.studentId ? `รหัสนิสิต: ${currentUser.studentId} | ` : ''}
-            {currentUser?.department || 'สาขาวิชาพยาบาลศาสตร์'}
-          </p>
-        </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
-          <Link
-            href="/borrow"
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white dark:bg-slate-800 text-teal-800 dark:text-teal-200 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs font-bold transition shadow-lg dark:border dark:border-slate-700"
-          >
-            <PlusCircle className="w-4 h-4 text-teal-600" />
-            <span>ยื่นขอยืมอุปกรณ์ฝึกซ้อม</span>
-          </Link>
-          <Link
-            href="/requisitions"
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold backdrop-blur-sm border border-white/10 transition shadow"
-          >
-            <Layers className="w-4 h-4 text-teal-300" />
-            <span>ขอเบิกวัสดุฝึกปฏิบัติ</span>
-          </Link>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <Link
+              href="/borrow"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white dark:bg-slate-800 text-teal-800 dark:text-teal-200 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs font-bold transition shadow-lg dark:border dark:border-slate-700"
+            >
+              <PlusCircle className="w-4 h-4 text-teal-600" />
+              <span>ยื่นขอยืมอุปกรณ์ฝึกซ้อม</span>
+            </Link>
+            <Link
+              href="/requisitions"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold backdrop-blur-sm border border-white/10 transition shadow"
+            >
+              <Layers className="w-4 h-4 text-teal-300" />
+              <span>ขอเบิกวัสดุฝึกปฏิบัติ</span>
+            </Link>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* DEDICATED UNRETURNED EQUIPMENT ASSET STATUS CENTER */}
       {unreturnedEquipments.length > 0 ? (

@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ตัวอย่าง UI: ปฏิทินกิจกรรมรวมห้อง & สรุปชั่วโมงฝึกนิสิต</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Sarabun', sans-serif;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen p-4 sm:p-6 lg:p-8">
+
+  <!-- Top Navigation / Tab Selector -->
+  <div class="max-w-7xl mx-auto space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+      <div>
+        <div class="flex items-center gap-2 text-teal-400 text-xs font-bold tracking-wider uppercase mb-1">
+          <span class="w-2 h-2 rounded-full bg-teal-400 animate-ping"></span>
+          <span>UI Interactive Mockup Preview (ระบบห้องปฏิบัติการพยาบาล)</span>
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-black text-white">
+          ตัวอย่างหน้าจอ 2 ฟีเจอร์ใหม่
+        </h1>
+        <p class="text-slate-400 text-xs sm:text-sm mt-0.5">
+          คลิกสลับแท็บด้านล่างเพื่อดูตัวอย่างหน้าจอของแต่ละฟังก์ชันแบบเสมือนจริง
+        </p>
+      </div>
+
+      <!-- Feature Switcher Buttons -->
+      <div class="flex items-center bg-slate-800 p-1.5 rounded-2xl border border-slate-700">
+        <button id="btnTab1" onclick="switchFeature('f1')" class="px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center gap-2 bg-teal-600 text-white shadow-lg shadow-teal-600/30">
+          <span>📅 ตัวอย่างที่ 1: ปฏิทินรวมทุกห้อง</span>
+        </button>
+        <button id="btnTab2" onclick="switchFeature('f2')" class="px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center gap-2 text-slate-400 hover:text-white">
+          <span>📊 ตัวอย่างที่ 2: สรุปชั่วโมงฝึกนิสิต</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- FEATURE 1: MASTER ALL-ROOMS ACTIVITY CALENDAR                  -->
+    <!-- ============================================================== -->
+    <div id="feature1" class="space-y-6">
+      <!-- Feature 1 Header Banner -->
+      <div class="bg-gradient-to-r from-teal-900 via-slate-900 to-indigo-950 p-6 rounded-3xl border border-teal-500/30 relative overflow-hidden shadow-2xl">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+          <div>
+            <span class="px-3 py-1 rounded-full text-[11px] font-bold bg-teal-500/20 text-teal-300 border border-teal-500/40">
+              ฟีเจอร์ที่ 1 • All-in-One Master Timeline
+            </span>
+            <h2 class="text-xl sm:text-2xl font-black text-white mt-2">
+              ปฏิทินกิจกรรมการใช้ห้องปฏิบัติการรวมทุกห้อง
+            </h2>
+            <p class="text-slate-300 text-xs sm:text-sm mt-1 max-w-2xl">
+              มองเห็นภาพรวมการใช้ห้องทั้งคณะพร้อมกันในหน้าจอเดียว รวมทั้งการเรียนการสอน การสอบ OSCE และรอบฝึกหัตถการของนิสิต
+            </p>
+          </div>
+
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-xs bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700 text-slate-300">
+              📅 วันศุกร์ที่ 10 ต.ค. 2569
+            </span>
+            <button class="px-4 py-2 rounded-xl bg-teal-500 hover:bg-teal-400 text-white text-xs font-bold shadow-md transition">
+              + ขอจองห้องใช้งาน
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filter Controls & Legend -->
+      <div class="bg-slate-850 p-4 rounded-2xl border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+        <!-- Room Category Filters -->
+        <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+          <span class="text-slate-400 font-bold mr-1">หมวดหมู่:</span>
+          <button class="px-3 py-1.5 rounded-xl bg-teal-600 text-white font-bold">ทั้งหมด (6 ห้อง)</button>
+          <button class="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-750">🩺 ทักษะพื้นฐาน (Skill)</button>
+          <button class="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-750">🤖 จำลองเสมือน (Sim)</button>
+          <button class="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-750">🏥 เฉพาะทาง (ICU/LR)</button>
+        </div>
+
+        <!-- Color Legend -->
+        <div class="flex items-center gap-3 text-[11px] text-slate-400 flex-wrap">
+          <span class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded bg-blue-500"></span> การสอนบรรยาย/ปฏิบัติ
+          </span>
+          <span class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded bg-purple-500"></span> สอบประเมิน OSCE
+          </span>
+          <span class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded bg-emerald-500"></span> รอบซ้อมทักษะนิสิต
+          </span>
+          <span class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded bg-amber-500"></span> อบรม/กิจกรรม
+          </span>
+        </div>
+      </div>
+
+      <!-- DAILY TIMELINE MATRIX (THE CORE INNOVATION) -->
+      <div class="bg-slate-850 rounded-3xl border border-slate-800 overflow-hidden shadow-xl">
+        <div class="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/60">
+          <div class="flex items-center gap-2">
+            <h3 class="text-sm font-bold text-white">ตารางไทม์ไลน์รายชั่วโมง (Timeline Grid Matrix)</h3>
+            <span class="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-full font-bold">
+              ● แสดงสถานะสด Real-time
+            </span>
+          </div>
+          <span class="text-xs text-slate-400">ช่องเวลาละ 1 ชั่วโมง (08:00 - 18:00 น.)</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <div class="min-w-[900px]">
+            <!-- Timeline Time Header -->
+            <div class="grid grid-cols-12 bg-slate-900 text-slate-400 text-xs font-bold border-b border-slate-800 text-center py-2.5">
+              <div class="col-span-2 text-left pl-4 text-slate-300">ห้องปฏิบัติการ</div>
+              <div>08:00</div>
+              <div>09:00</div>
+              <div>10:00</div>
+              <div>11:00</div>
+              <div>12:00</div>
+              <div>13:00</div>
+              <div>14:00</div>
+              <div>15:00</div>
+              <div>16:00</div>
+              <div>17:00</div>
+            </div>
+
+            <!-- ROW 1: LAB-01 -->
+            <div class="grid grid-cols-12 border-b border-slate-800/80 items-center min-h-[64px] hover:bg-slate-800/40 transition">
+              <div class="col-span-2 pl-4 py-2">
+                <span class="font-mono text-xs font-bold text-teal-400 bg-teal-950/60 px-2 py-0.5 rounded border border-teal-800/40">LAB-01</span>
+                <div class="text-xs font-bold text-white mt-1">ห้องฝึกทักษะ 1</div>
+                <div class="text-[10px] text-slate-400">ชั้น 3 • 20 ที่นั่ง</div>
+              </div>
+
+              <!-- Empty 08:00 -->
+              <div class="h-full border-l border-slate-800/60 p-1 flex items-center justify-center group cursor-pointer hover:bg-slate-800/60">
+                <span class="text-[10px] text-slate-600 group-hover:text-teal-400">+ จอง</span>
+              </div>
+
+              <!-- Event Block: 09:00 - 12:00 (3 cols) -->
+              <div class="col-span-3 h-[46px] m-1 p-2 rounded-xl bg-gradient-to-r from-blue-600/90 to-blue-500/90 text-white shadow-md border border-blue-400/40 flex flex-col justify-center cursor-pointer hover:scale-[1.01] transition">
+                <div class="flex items-center justify-between text-[11px] font-bold">
+                  <span class="truncate">📘 NUR201 การพยาบาลพื้นฐาน</span>
+                  <span class="text-[9px] bg-black/30 px-1.5 py-0.2 rounded font-mono">09:00-12:00</span>
+                </div>
+                <div class="text-[10px] text-blue-100 truncate mt-0.5">อ.ดร.พรพิมล • นิสิต 24 คน (ฉีดยา/ให้สารน้ำ)</div>
+              </div>
+
+              <!-- Empty 12:00 (Lunch) -->
+              <div class="h-full border-l border-slate-800/60 p-1 flex items-center justify-center text-[10px] text-slate-600 bg-slate-900/30">
+                พักเที่ยง
+              </div>
+
+              <!-- Event Block: 13:00 - 16:00 (3 cols) - Open Practice -->
+              <div class="col-span-3 h-[46px] m-1 p-2 rounded-xl bg-gradient-to-r from-emerald-600/90 to-teal-500/90 text-white shadow-md border border-emerald-400/40 flex flex-col justify-center cursor-pointer hover:scale-[1.01] transition">
+                <div class="flex items-center justify-between text-[11px] font-bold">
+                  <span class="truncate">🟢 รอบฝึกหัตถการอิสระนิสิต</span>
+                  <span class="text-[9px] bg-black/30 px-1.5 py-0.2 rounded font-mono">13:00-16:00</span>
+                </div>
+                <div class="text-[10px] text-emerald-100 truncate mt-0.5">เปิดซ้อมฉีดยา & ใส่สายสวน (นิสิตจอง 6/6 คน เต็ม)</div>
+              </div>
+
+              <!-- Empty 16:00 & 17:00 -->
+              <div class="col-span-2 h-full border-l border-slate-800/60 p-1 flex items-center justify-center group cursor-pointer hover:bg-slate-800/60">
+                <span class="text-[10px] text-slate-500 group-hover:text-teal-400">+ ว่าง (คลิกจองรอบเย็น)</span>
+              </div>
+            </div>
+
+            <!-- ROW 2: LAB-02 -->
+            <div class="grid grid-cols-12 border-b border-slate-800/80 items-center min-h-[64px] hover:bg-slate-800/40 transition">
+              <div class="col-span-2 pl-4 py-2">
+                <span class="font-mono text-xs font-bold text-teal-400 bg-teal-950/60 px-2 py-0.5 rounded border border-teal-800/40">LAB-02</span>
+                <div class="text-xs font-bold text-white mt-1">ห้องฝึกทักษะ 2</div>
+                <div class="text-[10px] text-slate-400">ชั้น 3 • 20 ที่นั่ง</div>
+              </div>
+
+              <!-- Empty 08:00 - 13:00 (5 cols) -->
+              <div class="col-span-5 h-full border-l border-slate-800/60 p-2 flex items-center justify-center text-slate-500 text-xs group cursor-pointer hover:bg-slate-800/40">
+                <span class="text-[11px] text-slate-500 group-hover:text-teal-400">✨ ห้องว่างตลอดช่วงเช้า (+ คลิกเพื่อจอง)</span>
+              </div>
+
+              <!-- Event Block: 13:00 - 17:00 (4 cols) - OSCE Mock Exam -->
+              <div class="col-span-4 h-[46px] m-1 p-2 rounded-xl bg-gradient-to-r from-purple-600/90 to-indigo-600/90 text-white shadow-md border border-purple-400/40 flex flex-col justify-center cursor-pointer hover:scale-[1.01] transition">
+                <div class="flex items-center justify-between text-[11px] font-bold">
+                  <span class="truncate">🟣 ซ้อมสอบประเมินทักษะ OSCE</span>
+                  <span class="text-[9px] bg-black/30 px-1.5 py-0.2 rounded font-mono">13:00-17:00</span>
+                </div>
+                <div class="text-[10px] text-purple-100 truncate mt-0.5">ผศ.ดร.นิตยา • นิสิตชั้นปีที่ 3 (สถานีหัตถการทำแผล)</div>
+              </div>
+
+              <!-- Empty 17:00 -->
+              <div class="h-full border-l border-slate-800/60 p-1 flex items-center justify-center text-[10px] text-slate-600">
+                ว่าง
+              </div>
+            </div>
+
+            <!-- ROW 3: SIM-01 -->
+            <div class="grid grid-cols-12 border-b border-slate-800/80 items-center min-h-[64px] hover:bg-slate-800/40 transition">
+              <div class="col-span-2 pl-4 py-2">
+                <span class="font-mono text-xs font-bold text-indigo-400 bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-800/40">SIM-01</span>
+                <div class="text-xs font-bold text-white mt-1">ห้องจำลองเสมือนจริง</div>
+                <div class="text-[10px] text-slate-400">ชั้น 4 • SimMan 3G</div>
+              </div>
+
+              <!-- Event Block: 08:30 - 11:30 (3 cols) -->
+              <div class="col-span-3 h-[46px] m-1 p-2 rounded-xl bg-gradient-to-r from-blue-600/90 to-cyan-600/90 text-white shadow-md border border-blue-400/40 flex flex-col justify-center cursor-pointer hover:scale-[1.01] transition">
+                <div class="flex items-center justify-between text-[11px] font-bold">
+                  <span class="truncate">📘 NUR305 ภาวะวิกฤตทางเดินหายใจ</span>
+                  <span class="text-[9px] bg-black/30 px-1.5 py-0.2 rounded font-mono">08:30-11:30</span>
+                </div>
+                <div class="text-[10px] text-blue-100 truncate mt-0.5">อ.สมชาย • นิสิต 12 คน (SimMan ฝึกใส่ท่อช่วยหายใจ)</div>
+              </div>
+
+              <!-- Empty 11:00 - 13:00 -->
+              <div class="col-span-2 h-full border-l border-slate-800/60 p-1 flex items-center justify-center text-[10px] text-slate-500">
+                ว่าง / พัก
+              </div>
+
+              <!-- Event Block: 13:00 - 15:00 (2 cols) - Workshop -->
+              <div class="col-span-2 h-[46px] m-1 p-2 rounded-xl bg-gradient-to-r from-amber-600/90 to-orange-500/90 text-white shadow-md border border-amber-400/40 flex flex-col justify-center cursor-pointer hover:scale-[1.01] transition">
+                <div class="flex items-center justify-between text-[11px] font-bold">
+                  <span class="truncate">🟠 อบรมเครื่อง Defibrillator</span>
+                  <span class="text-[9px] bg-black/30 px-1.5 py-0.2 rounded font-mono">13:00-15:00</span>
+                </div>
+                <div class="text-[10px] text-amber-100 truncate mt-0.5">ทีมวิทยากรบริษัท Philips</div>
+              </div>
+
+              <!-- Empty 15:00 - 18:00 (3 cols) -->
+              <div class="col-span-3 h-full border-l border-slate-800/60 p-1 flex items-center justify-center group cursor-pointer hover:bg-slate-800/60">
+                <span class="text-[10px] text-slate-500 group-hover:text-teal-400">+ ว่าง (คลิกเพื่อจองใช้งาน)</span>
+              </div>
+            </div>
+
+            <!-- ROW 4: ICU-01 -->
+            <div class="grid grid-cols-12 items-center min-h-[64px] hover:bg-slate-800/40 transition">
+              <div class="col-span-2 pl-4 py-2">
+                <span class="font-mono text-xs font-bold text-rose-400 bg-rose-950/60 px-2 py-0.5 rounded border border-rose-800/40">ICU-01</span>
+                <div class="text-xs font-bold text-white mt-1">หอผู้ป่วยวิกฤตจำลอง</div>
+                <div class="text-[10px] text-slate-400">ชั้น 4 • 4 เตียง ICU</div>
+              </div>
+
+              <!-- Empty all day with 1 event -->
+              <div class="col-span-5 h-full border-l border-slate-800/60 p-2 flex items-center justify-center text-[10px] text-slate-500">
+                ว่างตลอดช่วงเช้า
+              </div>
+
+              <!-- Event Block: 13:00 - 16:00 (3 cols) - Open Practice -->
+              <div class="col-span-3 h-[46px] m-1 p-2 rounded-xl bg-gradient-to-r from-emerald-600/90 to-teal-500/90 text-white shadow-md border border-emerald-400/40 flex flex-col justify-center cursor-pointer hover:scale-[1.01] transition">
+                <div class="flex items-center justify-between text-[11px] font-bold">
+                  <span class="truncate">🟢 รอบฝึกซ้อมเครื่องช่วยหายใจ</span>
+                  <span class="text-[9px] bg-black/30 px-1.5 py-0.2 rounded font-mono">13:00-16:00</span>
+                </div>
+                <div class="text-[10px] text-emerald-100 truncate mt-0.5">นิสิตกลุ่ม 4 (4 คน) • อ.สุภาพร ที่ปรึกษา</div>
+              </div>
+
+              <div class="col-span-2 h-full border-l border-slate-800/60 p-1 flex items-center justify-center text-[10px] text-slate-600">
+                ว่าง
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ============================================================== -->
+    <!-- FEATURE 2: STUDENT PRACTICE HOURS SUMMARY & LOGBOOK           -->
+    <!-- ============================================================== -->
+    <div id="feature2" class="space-y-6 hidden">
+      <!-- Feature 2 Header Banner -->
+      <div class="bg-gradient-to-r from-indigo-900 via-slate-900 to-teal-950 p-6 rounded-3xl border border-indigo-500/30 relative overflow-hidden shadow-2xl">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+          <div>
+            <span class="px-3 py-1 rounded-full text-[11px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
+              ฟีเจอร์ที่ 2 • Individual Practice Hours & Logbook
+            </span>
+            <h2 class="text-xl sm:text-2xl font-black text-white mt-2">
+              ระบบสรุปชั่วโมงฝึกสะสมและบันทึกเวลาจริงของนิสิต
+            </h2>
+            <p class="text-slate-300 text-xs sm:text-sm mt-1 max-w-2xl">
+              ติดตามชั่วโมงการเข้าฝึกปฏิบัติการของนิสิตรายบุคคล คำนวณเวลา Check-in / Check-out จริง พร้อมส่งออกรายงาน Excel ส่งอาจารย์
+            </p>
+          </div>
+
+          <!-- Role Toggle for Mockup -->
+          <div class="flex items-center bg-slate-800 p-1 rounded-xl border border-slate-700 text-xs font-bold">
+            <span class="text-slate-400 px-2">มุมมองทดสอบ:</span>
+            <button onclick="switchRoleView('student')" id="btnRoleStudent" class="px-3 py-1.5 rounded-lg bg-teal-600 text-white font-bold transition">
+              👩‍⚕️ นิสิต
+            </button>
+            <button onclick="switchRoleView('teacher')" id="btnRoleTeacher" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition">
+              👨‍🏫 อาจารย์ / เจ้าหน้าที่
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW A: FOR STUDENT (PERSONAL LOGBOOK) -->
+      <div id="viewStudent" class="space-y-6">
+        <!-- Student KPI Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <div class="bg-slate-850 p-4 rounded-2xl border border-slate-800 shadow-sm">
+            <span class="text-slate-400 text-xs font-medium block">ชั่วโมงฝึกสะสมของฉัน</span>
+            <div class="text-2xl font-black text-teal-400 mt-1">18.5 <span class="text-xs font-normal text-slate-400">ชั่วโมง</span></div>
+            <span class="text-[11px] text-slate-500 mt-0.5 block">รวม 1,110 นาทีจากการสแกนจริง</span>
+          </div>
+
+          <div class="bg-slate-850 p-4 rounded-2xl border border-slate-800 shadow-sm">
+            <span class="text-slate-400 text-xs font-medium block">จำนวนรอบที่ฝึกสำเร็จ</span>
+            <div class="text-2xl font-black text-emerald-400 mt-1">6 <span class="text-xs font-normal text-slate-400">รอบหัตถการ</span></div>
+            <span class="text-[11px] text-emerald-500 mt-0.5 block">● สแกนเข้า-ออกครบ 100%</span>
+          </div>
+
+          <div class="bg-slate-850 p-4 rounded-2xl border border-slate-800 shadow-sm">
+            <span class="text-slate-400 text-xs font-medium block">หัตถการที่ฝึกไปแล้ว</span>
+            <div class="text-2xl font-black text-indigo-400 mt-1">4 <span class="text-xs font-normal text-slate-400">ทักษะ</span></div>
+            <span class="text-[11px] text-slate-500 mt-0.5 block">ฉีดยา, ทำแผล, สายสวน, สารน้ำ</span>
+          </div>
+
+          <div class="bg-slate-850 p-4 rounded-2xl border border-slate-800 shadow-sm flex flex-col justify-between">
+            <span class="text-slate-400 text-xs font-medium">สมุดบันทึกชั่วโมง (Logbook)</span>
+            <button class="w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-1.5 mt-2">
+              <span>📄 ดาวน์โหลด Logbook PDF</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Student Attendance History Table -->
+        <div class="bg-slate-850 rounded-3xl border border-slate-800 overflow-hidden shadow-xl">
+          <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+            <h3 class="text-sm font-bold text-white">ประวัติการเข้าฝึกปฏิบัติการของฉัน (Attendance Log)</h3>
+            <span class="text-xs text-slate-400">นิสิต: น.ส.กัญญาภัทร มั่นคง (รหัส 6601234)</span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-900 text-slate-400 font-bold border-b border-slate-800">
+                <tr>
+                  <th class="p-3.5">วันที่</th>
+                  <th class="p-3.5">หัตถการที่ฝึก</th>
+                  <th class="p-3.5">ห้องแล็บ</th>
+                  <th class="p-3.5 text-center">เวลา Check-in</th>
+                  <th class="p-3.5 text-center">เวลา Check-out</th>
+                  <th class="p-3.5 text-center">เวลาที่ได้จริง</th>
+                  <th class="p-3.5">อาจารย์ผู้ดูแล</th>
+                  <th class="p-3.5 text-center">สถานะ</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-800 text-slate-300">
+                <tr class="hover:bg-slate-800/40">
+                  <td class="p-3.5 font-bold text-white">08 ต.ค. 2569</td>
+                  <td class="p-3.5 font-bold text-teal-300">การฉีดยาเข้ากล้ามเนื้อ (IM Injection)</td>
+                  <td class="p-3.5">LAB-01 (เตียง 3)</td>
+                  <td class="p-3.5 text-center font-mono text-emerald-400">13:02 น.</td>
+                  <td class="p-3.5 text-center font-mono text-emerald-400">15:58 น.</td>
+                  <td class="p-3.5 text-center font-bold text-white bg-slate-900/50">176 นาที (2.9 ชม.)</td>
+                  <td class="p-3.5 text-slate-400">อ.ดร.พรพิมล</td>
+                  <td class="p-3.5 text-center">
+                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                      ✓ สมบูรณ์
+                    </span>
+                  </td>
+                </tr>
+
+                <tr class="hover:bg-slate-800/40">
+                  <td class="p-3.5 font-bold text-white">05 ต.ค. 2569</td>
+                  <td class="p-3.5 font-bold text-teal-300">การใส่สายสวนปัสสาวะแบบคาสาย (Foley)</td>
+                  <td class="p-3.5">LAB-02 (เตียง 1)</td>
+                  <td class="p-3.5 text-center font-mono text-emerald-400">09:05 น.</td>
+                  <td class="p-3.5 text-center font-mono text-emerald-400">11:55 น.</td>
+                  <td class="p-3.5 text-center font-bold text-white bg-slate-900/50">170 นาที (2.8 ชม.)</td>
+                  <td class="p-3.5 text-slate-400">ผศ.ดร.นิตยา</td>
+                  <td class="p-3.5 text-center">
+                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                      ✓ สมบูรณ์
+                    </span>
+                  </td>
+                </tr>
+
+                <tr class="hover:bg-slate-800/40">
+                  <td class="p-3.5 font-bold text-white">02 ต.ค. 2569</td>
+                  <td class="p-3.5 font-bold text-teal-300">การทำแผลปลอดเชื้อและตัดไหม (Dressing)</td>
+                  <td class="p-3.5">LAB-01 (เตียง 5)</td>
+                  <td class="p-3.5 text-center font-mono text-emerald-400">16:32 น.</td>
+                  <td class="p-3.5 text-center font-mono text-emerald-400">19:25 น.</td>
+                  <td class="p-3.5 text-center font-bold text-white bg-slate-900/50">173 นาที (2.9 ชม.)</td>
+                  <td class="p-3.5 text-slate-400">อ.สมชาย</td>
+                  <td class="p-3.5 text-center">
+                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                      ✓ สมบูรณ์
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW B: FOR TEACHER / OFFICER (COHORT OVERVIEW) -->
+      <div id="viewTeacher" class="space-y-6 hidden">
+        <!-- Search & Export Toolbar -->
+        <div class="bg-slate-850 p-4 rounded-2xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div class="flex items-center gap-2 flex-1 max-w-md">
+            <span class="text-slate-400 font-bold">🔍 ค้นหา:</span>
+            <input type="text" placeholder="ค้นหารหัสนิสิต หรือชื่อ-นามสกุล..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-teal-500">
+          </div>
+
+          <div class="flex items-center gap-2">
+            <select class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-slate-300">
+              <option>ทุกชั้นปี (ปี 1 - ปี 4)</option>
+              <option>นิสิตชั้นปีที่ 2</option>
+              <option>นิสิตชั้นปีที่ 3</option>
+            </select>
+            <button class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition flex items-center gap-1.5 shadow-md">
+              <span>📊 ส่งออก Excel (รวมชั้นปี)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Cohort Table -->
+        <div class="bg-slate-850 rounded-3xl border border-slate-800 overflow-hidden shadow-xl">
+          <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+            <h3 class="text-sm font-bold text-white">ตารางสรุปชั่วโมงฝึกสะสมของนิสิต (Cohort Practice Ledger)</h3>
+            <span class="text-xs text-slate-400">พบ 64 คน • ผ่านเกณฑ์แล้ว 58 คน</span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-900 text-slate-400 font-bold border-b border-slate-800">
+                <tr>
+                  <th class="p-3.5">รหัสนิสิต</th>
+                  <th class="p-3.5">ชื่อ - นามสกุล</th>
+                  <th class="p-3.5 text-center">ชั้นปี</th>
+                  <th class="p-3.5 text-center">จำนวนครั้งที่ซ้อม</th>
+                  <th class="p-3.5 text-center">ชั่วโมงสะสม</th>
+                  <th class="p-3.5">หัตถการหลักที่ฝึก</th>
+                  <th class="p-3.5 text-center">เข้าซ้อมล่าสุด</th>
+                  <th class="p-3.5 text-center">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-800 text-slate-300">
+                <tr class="hover:bg-slate-800/40">
+                  <td class="p-3.5 font-mono font-bold text-teal-400">66010023</td>
+                  <td class="p-3.5 font-bold text-white">น.ส.กัญญาภัทร มั่นคง</td>
+                  <td class="p-3.5 text-center">ปี 3</td>
+                  <td class="p-3.5 text-center font-bold">6 ครั้ง</td>
+                  <td class="p-3.5 text-center font-black text-emerald-400 bg-slate-900/50">18.5 ชม.</td>
+                  <td class="p-3.5 text-slate-400">ฉีดยา, ทำแผล, ใส่สายสวน</td>
+                  <td class="p-3.5 text-center text-slate-400 font-mono text-[11px]">
+                    08 ต.ค. 69
+                  </td>
+                  <td class="p-3.5 text-center">
+                    <button class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-teal-300 rounded-lg font-bold text-[11px] border border-slate-700 transition">
+                      ดูประวัติ ➔
+                    </button>
+                  </td>
+                </tr>
+
+                <tr class="hover:bg-slate-800/40">
+                  <td class="p-3.5 font-mono font-bold text-teal-400">66010045</td>
+                  <td class="p-3.5 font-bold text-white">นายธนกฤต ชัยเรืองสุข</td>
+                  <td class="p-3.5 text-center">ปี 3</td>
+                  <td class="p-3.5 text-center font-bold">8 ครั้ง</td>
+                  <td class="p-3.5 text-center font-black text-emerald-400 bg-slate-900/50">24.0 ชม.</td>
+                  <td class="p-3.5 text-slate-400">CPR, ให้สารน้ำ, พ่นยา</td>
+                  <td class="p-3.5 text-center text-slate-400 font-mono text-[11px]">
+                    07 ต.ค. 69
+                  </td>
+                  <td class="p-3.5 text-center">
+                    <button class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-teal-300 rounded-lg font-bold text-[11px] border border-slate-700 transition">
+                      ดูประวัติ ➔
+                    </button>
+                  </td>
+                </tr>
+
+                <tr class="hover:bg-slate-800/40">
+                  <td class="p-3.5 font-mono font-bold text-teal-400">66010088</td>
+                  <td class="p-3.5 font-bold text-white">น.ส.วิภาดา ศรีสวัสดิ์</td>
+                  <td class="p-3.5 text-center">ปี 3</td>
+                  <td class="p-3.5 text-center font-bold">2 ครั้ง</td>
+                  <td class="p-3.5 text-center font-black text-amber-400 bg-slate-900/50">5.5 ชม.</td>
+                  <td class="p-3.5 text-slate-400">ทำแผลปลอดเชื้อ</td>
+                  <td class="p-3.5 text-center text-slate-400 font-mono text-[11px]">
+                    02 ต.ค. 69
+                  </td>
+                  <td class="p-3.5 text-center">
+                    <button class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-teal-300 rounded-lg font-bold text-[11px] border border-slate-700 transition">
+                      ดูประวัติ ➔
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function switchFeature(feature) {
+      const f1 = document.getElementById('feature1');
+      const f2 = document.getElementById('feature2');
+      const b1 = document.getElementById('btnTab1');
+      const b2 = document.getElementById('btnTab2');
+
+      if (feature === 'f1') {
+        f1.classList.remove('hidden');
+        f2.classList.add('hidden');
+        b1.className = 'px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center gap-2 bg-teal-600 text-white shadow-lg shadow-teal-600/30';
+        b2.className = 'px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center gap-2 text-slate-400 hover:text-white';
+      } else {
+        f1.classList.add('hidden');
+        f2.classList.remove('hidden');
+        b2.className = 'px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center gap-2 bg-teal-600 text-white shadow-lg shadow-teal-600/30';
+        b1.className = 'px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center gap-2 text-slate-400 hover:text-white';
+      }
+    }
+
+    function switchRoleView(role) {
+      const vStudent = document.getElementById('viewStudent');
+      const vTeacher = document.getElementById('viewTeacher');
+      const bStudent = document.getElementById('btnRoleStudent');
+      const bTeacher = document.getElementById('btnRoleTeacher');
+
+      if (role === 'student') {
+        vStudent.classList.remove('hidden');
+        vTeacher.classList.add('hidden');
+        bStudent.className = 'px-3 py-1.5 rounded-lg bg-teal-600 text-white font-bold transition';
+        bTeacher.className = 'px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition';
+      } else {
+        vStudent.classList.add('hidden');
+        vTeacher.classList.remove('hidden');
+        bTeacher.className = 'px-3 py-1.5 rounded-lg bg-teal-600 text-white font-bold transition';
+        bStudent.className = 'px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition';
+      }
+    }
+  </script>
+</body>
+</html>

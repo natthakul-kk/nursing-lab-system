@@ -44,6 +44,7 @@ import {
   Boxes,
 } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import PracticeHoursSummary from '@/components/practice/PracticeHoursSummary';
 import { formatUserName, formatTeacherName } from '@/lib/user-utils';
 
 export default function PracticePage() {
@@ -52,7 +53,7 @@ export default function PracticePage() {
   const canApprove = isOfficer || isAdmin || isTeacher || isApprover;
 
   // Navigation Tabs
-  const [activeTab, setActiveTab] = useState<'TIMETABLE' | 'BOOKINGS' | 'SCANNER' | 'SETTINGS'>('TIMETABLE');
+  const [activeTab, setActiveTab] = useState<'TIMETABLE' | 'BOOKINGS' | 'SCANNER' | 'HOURS_LOG' | 'SETTINGS'>('TIMETABLE');
 
   // Main Data States
   const [slots, setSlots] = useState<any[]>([]);
@@ -1050,6 +1051,18 @@ export default function PracticePage() {
           >
             <QrCode className="w-4 h-4" />
             <span>จุดสแกน QR เช็คอิน-เช็คเอาท์</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('HOURS_LOG')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+              activeTab === 'HOURS_LOG'
+                ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/30 font-black'
+                : 'bg-white/5 hover:bg-white/10 text-slate-200'
+            }`}
+          >
+            <Clock className="w-4 h-4" />
+            <span>📊 สรุปชั่วโมงฝึกสะสม (Logbook)</span>
           </button>
 
           {canManageSlots && (
@@ -2372,6 +2385,20 @@ export default function PracticePage() {
           </form>
           </div>
         </div>
+      )}
+
+      {/* TAB 5: HOURS_LOG (Student Personal Log & Staff/Teacher Cohort Summary) */}
+      {activeTab === 'HOURS_LOG' && (
+        <PracticeHoursSummary
+          bookings={bookings}
+          currentUser={currentUser}
+          isOfficer={isOfficer}
+          isApprover={isApprover}
+          isTeacher={isTeacher}
+          isAdmin={isAdmin}
+          canManageSlots={canManageSlots}
+          rooms={rooms}
+        />
       )}
 
       {/* MODAL: CREATE OPEN PRACTICE SESSION / EVENT (Staff / Teacher) */}

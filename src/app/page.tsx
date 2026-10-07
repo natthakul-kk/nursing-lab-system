@@ -20,19 +20,23 @@ import {
   ShieldCheck,
   ChevronRight,
   Sparkles,
-  QrCode
+  QrCode,
+  Building2,
+  CalendarDays
 } from 'lucide-react';
 
 import StudentDashboard from '@/components/dashboard/StudentDashboard';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import CourseBudgetDonut from '@/components/dashboard/CourseBudgetDonut';
 import DashboardCharts from '@/components/dashboard/DashboardCharts';
+import MasterRoomCalendar from '@/components/calendar/MasterRoomCalendar';
 import { formatUserName } from '@/lib/user-utils';
 
 export default function DashboardPage() {
   const { currentUser, isOfficer, isApprover } = useAuth();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'CALENDAR' | 'ANALYTICS'>('CALENDAR');
 
   const fetchDashboard = async () => {
     try {
@@ -132,8 +136,45 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Self-Practice Highlight Banner */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors">
+      {/* Main Dashboard Navigation Tabs */}
+      <div className="flex flex-wrap items-center gap-2 p-1.5 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 w-fit text-xs font-bold">
+        <button
+          type="button"
+          onClick={() => setActiveTab('CALENDAR')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition cursor-pointer ${
+            activeTab === 'CALENDAR'
+              ? 'bg-teal-600 text-white shadow-md shadow-teal-600/30 font-black'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <CalendarDays className="w-4 h-4" />
+          <span>📅 ปฏิทินกิจกรรม & ผังการใช้ห้องรวม (Master Calendar)</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('ANALYTICS')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition cursor-pointer ${
+            activeTab === 'ANALYTICS'
+              ? 'bg-teal-600 text-white shadow-md shadow-teal-600/30 font-black'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <BarChart3 className="w-4 h-4" />
+          <span>📊 สถิติคลังพัสดุ & งบประมาณรายวิชา (Analytics)</span>
+        </button>
+      </div>
+
+      {/* TAB 1: MASTER ROOM CALENDAR VIEW (DEFAULT) */}
+      {activeTab === 'CALENDAR' && (
+        <MasterRoomCalendar hideHeaderBanner={true} />
+      )}
+
+      {/* TAB 2: DETAILED WAREHOUSE & BUDGET ANALYTICS VIEW */}
+      {activeTab === 'ANALYTICS' && (
+        <div className="space-y-6">
+          {/* Self-Practice Highlight Banner */}
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 flex items-center justify-center flex-shrink-0">
             <Sparkles className="w-6 h-6" />
@@ -503,5 +544,7 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
-  );
+  )}
+</div>
+);
 }

@@ -25,7 +25,8 @@ import {
   Printer,
   ChevronDown,
   Layers,
-  ArrowUpDown
+  ArrowUpDown,
+  QrCode
 } from 'lucide-react';
 import { formatUserName } from '@/lib/user-utils';
 
@@ -38,6 +39,7 @@ interface PracticeHoursSummaryProps {
   isAdmin: boolean;
   canManageSlots: boolean;
   rooms?: any[];
+  onOpenQrCode?: (booking: any) => void;
 }
 
 export default function PracticeHoursSummary({
@@ -49,6 +51,7 @@ export default function PracticeHoursSummary({
   isAdmin,
   canManageSlots,
   rooms = [],
+  onOpenQrCode,
 }: PracticeHoursSummaryProps) {
   const isStudent = currentUser?.role === 'USER' && !isTeacher && !isOfficer && !isAdmin;
 
@@ -448,14 +451,38 @@ export default function PracticeHoursSummary({
                                 <span>ฝึกสำเร็จ</span>
                               </span>
                             ) : b.status === 'CHECKED_IN' ? (
-                              <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/60 inline-flex items-center gap-1 animate-pulse">
-                                <Clock className="w-3 h-3" />
-                                <span>กำลังฝึก</span>
-                              </span>
+                              <div className="flex flex-col items-center gap-1">
+                                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/60 inline-flex items-center gap-1 animate-pulse">
+                                  <Clock className="w-3 h-3" />
+                                  <span>กำลังฝึก</span>
+                                </span>
+                                {onOpenQrCode && (
+                                  <button
+                                    type="button"
+                                    onClick={() => onOpenQrCode(b)}
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold shadow-sm transition cursor-pointer"
+                                  >
+                                    <QrCode className="w-3 h-3" />
+                                    <span>เปิด QR</span>
+                                  </button>
+                                )}
+                              </div>
                             ) : b.status === 'APPROVED' ? (
-                              <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/70 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
-                                อนุมัติแล้ว
-                              </span>
+                              <div className="flex flex-col items-center gap-1">
+                                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/70 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
+                                  อนุมัติแล้ว
+                                </span>
+                                {onOpenQrCode && (
+                                  <button
+                                    type="button"
+                                    onClick={() => onOpenQrCode(b)}
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold shadow-sm transition cursor-pointer"
+                                  >
+                                    <QrCode className="w-3 h-3" />
+                                    <span>เปิด QR</span>
+                                  </button>
+                                )}
+                              </div>
                             ) : (
                               <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
                                 {b.status}

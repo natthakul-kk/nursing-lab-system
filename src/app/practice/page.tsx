@@ -2398,6 +2398,7 @@ export default function PracticePage() {
           isAdmin={isAdmin}
           canManageSlots={canManageSlots}
           rooms={rooms}
+          onOpenQrCode={(b) => setActiveBookingForQr(b)}
         />
       )}
 

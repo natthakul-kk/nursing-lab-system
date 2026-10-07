@@ -5,115 +5,129 @@ const path = require('path');
 const fs = require('fs');
 
 async function main() {
-  console.log('=== Updating Brand: Riester and Omron ===');
+  console.log('=== Updating Exact 14 Brand and Model Items ===');
 
-  // 1. Update ชุดตรวจหูตรวจตา -> Riester
-  const diaItem = await prisma.item.findUnique({
-    where: { code: 'EQ-DIA-0001' }
-  });
-  if (diaItem) {
-    await prisma.item.update({
-      where: { id: diaItem.id },
-      data: { brand: 'Riester' }
-    });
-    console.log('✓ Updated Item EQ-DIA-0001 (ชุดตรวจหูตรวจตา) brand to "Riester".');
-  }
+  const updateRules = [
+    { prefix: '1-B9701-FT17-65450010003/', range: [1, 5], newBrand: 'Prestan พรีสแตน', newModel: 'PP AM 100M MS' },
+    { prefix: '1-B9701-FT17-65300010001/', range: [21, 21], newBrand: 'เตียงเฟาร์เลอร์ 2 ไกร์', newModel: 'แบบ ดิจิตอล' },
+    { prefix: '1-B9701-FT17-65450010002/001-68', isExact: true, newBrand: '4DEM', newModel: 'หุ่น SIM MAN Gaumard Scientific' },
+    { prefix: '1-B9701-FT17-65450010002/002-68', isExact: true, newBrand: '4DEM', newModel: 'Qube AVPro' },
+    { prefix: '1-B9701-FT17-65450010004/', range: [11, 15], newBrand: 'KOKEN', newModel: 'LM-097B' },
+    { prefix: '1-B9701-FT17-65450010004/016-68', isExact: true, newName: 'หุ่นจำลองผู้ใหญ่ (SIM MAN)', newBrand: 'Gaumard Scientific', newModel: 'S3201.PK' },
+    { prefix: '1-B9701-FT17-65450010004/', range: [34, 38], newBrand: 'CLA Nursing Doll', newModel: 'CLA 1M' },
+    { prefix: '1-B9701-FT17-65450010004/', range: [39, 43], newBrand: 'CLA Nursing Doll', newModel: 'CLA 1F' },
+    { prefix: '1-B9701-FT17-65450010004/', range: [1, 5], newBrand: 'Limbs & Things', newModel: '60850' },
+    { prefix: '1-B9701-FT17-65450010004/', range: [6, 10], newBrand: 'Limbs & Things', newModel: '60851' },
+    { prefix: '1-B9701-FT17-65450010004/', range: [17, 23], newBrand: 'Koken', newModel: 'LM-028' },
+    { prefix: '1-B9701-FT17-65450010004/', range: [24, 28], newBrand: 'Nasco Healthcare', newModel: 'LF00929U' },
+    { prefix: '1-B9701-FT17-65450010004/', range: [29, 33], newBrand: '4DEM', newModel: 'L-IMD' },
+    { prefix: '1-B9701-FA17-65450010004/', range: [45, 54], newBrand: 'อัพไรท์ ซิมมูเลชั่น', newModel: '800-816' },
+  ];
 
-  const diaAssetsUpdated = await prisma.equipmentAsset.updateMany({
-    where: {
-      item: { code: 'EQ-DIA-0001' }
-    },
-    data: { brand: 'Riester' }
-  });
-  console.log(`✓ Updated ${diaAssetsUpdated.count} assets for ชุดตรวจหูตรวจตา to brand "Riester".`);
-
-  // 2. Update เครื่องวัดความดันโลหิตอัตโนมัติ (Digital BP) -> Omron
-  const bpItem = await prisma.item.findUnique({
-    where: { code: 'EQ-BP-0006' }
-  });
-  if (bpItem) {
-    await prisma.item.update({
-      where: { id: bpItem.id },
-      data: { brand: 'Omron' }
-    });
-    console.log('✓ Updated Item EQ-BP-0006 (เครื่องวัดความดันโลหิตอัตโนมัติ) brand to "Omron".');
-  }
-
-  const bpAssetsUpdated = await prisma.equipmentAsset.updateMany({
-    where: {
-      item: { code: 'EQ-BP-0006' }
-    },
-    data: { brand: 'Omron' }
-  });
-  console.log(`✓ Updated ${bpAssetsUpdated.count} assets for เครื่องวัดความดันโลหิตอัตโนมัติ to brand "Omron".`);
-
-  // 3. Update Excel Template
-  const templatePath = path.join(process.cwd(), 'ข้อมูลครุภัณฑ์', 'Template_Items_and_Assets_v3.xlsx');
-  const updatedPath = path.join(process.cwd(), 'ข้อมูลครุภัณฑ์', 'Template_Items_and_Assets_v3.updated.xlsx');
-  
-  // Read from updatedPath if exists, else templatePath
-  const sourcePath = fs.existsSync(updatedPath) ? updatedPath : templatePath;
-  const wb = xlsx.readFile(sourcePath);
-  const sheetName = wb.SheetNames[0];
-  const rows = xlsx.utils.sheet_to_json(wb.Sheets[sheetName], { defval: '' });
-
-  let excelDiaCount = 0;
-  let excelBpCount = 0;
-
-  const clean = s => s ? String(s).replace(/[\s\r\n\t]/g, '').trim() : '';
-
-  const newRows = rows.map(r => {
-    const code = clean(r['รหัสพัสดุ'] || '');
-    const name = clean(r['ชื่อรายการ'] || '');
-
-    if (code.startsWith('EQ-DIA-0001') || code.startsWith('EQ-DIA-000') || name.includes('ชุดตรวจหูตรวจตา')) {
-      // Check if it's the 10 diagnostic sets
-      if (code === 'EQ-DIA-0001' || (code.startsWith('EQ-DIA-00') && !['EQ-DIA-0011', 'EQ-DIA-0012'].includes(code))) {
-        r['ยี่ห้อ (Brand)'] = 'Riester';
-        excelDiaCount++;
+  function matchRule(govCode) {
+    if (!govCode) return null;
+    const clean = String(govCode).trim();
+    for (const rule of updateRules) {
+      if (rule.isExact) {
+        if (clean === rule.prefix) return rule;
+      } else {
+        if (clean.startsWith(rule.prefix)) {
+          const remainder = clean.slice(rule.prefix.length);
+          const match = remainder.match(/^(\d+)-/);
+          if (match) {
+            const num = parseInt(match[1], 10);
+            if (num >= rule.range[0] && num <= rule.range[1]) return rule;
+          }
+        }
       }
     }
+    return null;
+  }
 
-    if (code.startsWith('EQ-BP-000') || name.includes('เครื่องวัดความดันโลหิตอัตโนมัติ')) {
-      if (['EQ-BP-0006', 'EQ-BP-0007', 'EQ-BP-0008', 'EQ-BP-0009', 'EQ-BP-0010', 'EQ-BP-0011', 'EQ-BP-0012', 'EQ-BP-0013', 'EQ-BP-0014', 'EQ-BP-0015'].includes(code) || name === 'เครื่องวัดความดันโลหิตอัตโนมัติ') {
-        r['ยี่ห้อ (Brand)'] = 'Omron';
-        excelBpCount++;
+  // 1. Update Database Assets
+  const assets = await prisma.equipmentAsset.findMany({ include: { item: true } });
+  let dbAssetCount = 0;
+  const affectedItemIds = new Set();
+
+  for (const a of assets) {
+    const rule = matchRule(a.govAssetCode);
+    if (rule) {
+      await prisma.equipmentAsset.update({
+        where: { id: a.id },
+        data: {
+          brand: rule.newBrand,
+          model: rule.newModel,
+        },
+      });
+      affectedItemIds.add(a.itemId);
+      dbAssetCount++;
+      console.log(`✓ Updated Asset ${a.assetCode} (${a.govAssetCode}): ${rule.newBrand} / ${rule.newModel}`);
+    }
+  }
+
+  console.log(`Total database assets updated: ${dbAssetCount}`);
+
+  // 2. Update Database Parent Items
+  for (const itemId of affectedItemIds) {
+    const it = await prisma.item.findUnique({
+      where: { id: itemId },
+      include: { assets: true },
+    });
+    if (it && it.assets.length > 0) {
+      const sampleAsset = it.assets.find((ast) => matchRule(ast.govAssetCode));
+      if (sampleAsset) {
+        const rule = matchRule(sampleAsset.govAssetCode);
+        if (rule) {
+          await prisma.item.update({
+            where: { id: it.id },
+            data: {
+              brand: rule.newBrand,
+              model: rule.newModel,
+              ...(rule.newName ? { name: rule.newName } : {}),
+            },
+          });
+          console.log(`✓ Updated Item ${it.code} (${rule.newName || it.name}): ${rule.newBrand} / ${rule.newModel}`);
+        }
       }
     }
+  }
 
-    return r;
-  });
+  // 3. Update Excel Templates
+  const excelFiles = [
+    path.join(process.cwd(), 'ข้อมูลครุภัณฑ์', 'Template_Items_and_Assets_v3.updated.xlsx'),
+    path.join(process.cwd(), 'ข้อมูลครุภัณฑ์', 'Template_Items_and_Assets_v3.xlsx'),
+  ];
 
-  console.log(`Excel adjustments: ${excelDiaCount} rows set to Riester, ${excelBpCount} rows set to Omron.`);
-
-  wb.Sheets[sheetName] = xlsx.utils.json_to_sheet(newRows);
-  xlsx.writeFile(wb, updatedPath);
-  console.log(`✓ Saved to: ${updatedPath}`);
-
-  try {
-    xlsx.writeFile(wb, templatePath);
-    console.log(`✓ Also saved directly to main template: ${templatePath}`);
-  } catch (err) {
-    if (err.code === 'EBUSY') {
-      console.log(`Notice: Main template ${templatePath} is currently locked by Excel.`);
+  for (const filePath of excelFiles) {
+    if (!fs.existsSync(filePath)) continue;
+    try {
+      const wb = xlsx.readFile(filePath);
+      const sheetName = wb.SheetNames[0];
+      const rows = xlsx.utils.sheet_to_json(wb.Sheets[sheetName], { defval: '' });
+      let excelCount = 0;
+      const updatedRows = rows.map((r) => {
+        const rule = matchRule(r['เลขครุภัณฑ์ราชการ']);
+        if (rule) {
+          r['ยี่ห้อ (Brand)'] = rule.newBrand;
+          r['รุ่น (Model)'] = rule.newModel;
+          if (rule.newName) r['ชื่อรายการ'] = rule.newName;
+          excelCount++;
+        }
+        return r;
+      });
+      wb.Sheets[sheetName] = xlsx.utils.json_to_sheet(updatedRows);
+      xlsx.writeFile(wb, filePath);
+      console.log(`✓ Excel updated: ${path.basename(filePath)} (${excelCount} rows)`);
+    } catch (e) {
+      console.log(`Notice: Could not write ${filePath} (${e.message})`);
     }
   }
 
-  // 4. Verification in Database
-  const allAssets = await prisma.equipmentAsset.findMany();
-  const brandStats = {};
-  for (const a of allAssets) {
-    const b = a.brand || 'NULL';
-    brandStats[b] = (brandStats[b] || 0) + 1;
-  }
-
-  console.log('\n=== Verification: Updated Brand Distribution ===');
-  console.table(Object.entries(brandStats).sort((a, b) => b[1] - a[1]));
-
+  console.log('=== Update finished successfully ===');
   await prisma.$disconnect();
 }
 
-main().catch(e => {
+main().catch((e) => {
   console.error(e);
   process.exit(1);
 });

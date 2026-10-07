@@ -31,10 +31,10 @@ import LoadingSpinner from '@/components/common/LoadingSpinner';
 import CourseBudgetDonut from '@/components/dashboard/CourseBudgetDonut';
 import DashboardCharts from '@/components/dashboard/DashboardCharts';
 import MasterRoomCalendar from '@/components/calendar/MasterRoomCalendar';
-import { formatUserName } from '@/lib/user-utils';
+import { formatUserName, formatTeacherName } from '@/lib/user-utils';
 
 export default function DashboardPage() {
-  const { currentUser, isOfficer, isApprover } = useAuth();
+  const { currentUser, isTeacher, isOfficer, isApprover } = useAuth();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'CALENDAR' | 'ANALYTICS'>('CALENDAR');
@@ -92,7 +92,7 @@ export default function DashboardPage() {
             ห้องปฏิบัติการทักษะและสถานการณ์จำลองทางการพยาบาล
           </div>
           <h2 className="text-2xl font-black tracking-tight">
-            สวัสดี, {formatUserName(currentUser) || 'ผู้ใช้งาน'}
+            สวัสดี, {isTeacher ? formatTeacherName(currentUser) : (formatUserName(currentUser) || 'ผู้ใช้งาน')}
           </h2>
           <p className="text-slate-300 text-xs mt-1">
             {currentUser?.department || 'คณะพยาบาลศาสตร์'} | ภาคเรียนที่ 1 / ปีการศึกษา 2569

@@ -96,6 +96,33 @@ export function formatUserName(
     return str;
   }
 
+  if (typeof user === 'object' && user !== null) {
+    const role = (user as any).role;
+    const isExplicitStaff =
+      role === 'ADMIN' ||
+      role === 'OFFICER' ||
+      (user.name || '').includes('แอดมิน') ||
+      (user.name || '').includes('เจ้าหน้าที่') ||
+      (user.name || '').includes('ผู้ดูแลระบบ');
+
+    const isTeacherUser =
+      !isExplicitStaff &&
+      (role === 'TEACHER' ||
+        role === 'APPROVER' ||
+        Boolean((user as any).department?.includes('อาจารย์')) ||
+        Boolean((user as any).email?.includes('teacher')) ||
+        ACADEMIC_PREFIXES.some(
+          (r) =>
+            r !== 'อาจารย์' &&
+            r !== 'อ.' &&
+            ((user.prefix || '').startsWith(r) || (user.name || '').startsWith(r))
+        ));
+
+    if (isTeacherUser) {
+      return formatTeacherName(user);
+    }
+  }
+
   const prefix = (user.prefix || '').trim();
   let name = (user.name || '').trim();
 

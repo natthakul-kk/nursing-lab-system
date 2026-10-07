@@ -753,8 +753,18 @@ export default function RoomsPage() {
         </div>
       </div>
 
-      {/* TAB 1: TIMETABLE & CALENDAR VIEW */}
-      {activeTab === 'TIMETABLE' && (
+      {/* Loading State */}
+      {loading ? (
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 p-16 shadow-sm flex items-center justify-center">
+          <LoadingSpinner
+            message="กำลังโหลดข้อมูลห้องปฏิบัติการและตารางการจอง..."
+            submessage="กำลังเชื่อมต่อและดึงข้อมูลสถานะห้องและรายการจองใช้งาน"
+          />
+        </div>
+      ) : (
+        <>
+          {/* TAB 1: TIMETABLE & CALENDAR VIEW */}
+          {activeTab === 'TIMETABLE' && (
         <div className="space-y-6">
           {/* SECTION 1: ROOM STATUS & AVAILABILITY BAR */}
           <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-sm space-y-4">
@@ -1644,6 +1654,8 @@ export default function RoomsPage() {
             </div>
           )}
         </div>
+      )}
+      </>
       )}
 
       {/* MODAL: SUBMIT ROOM BOOKING */}

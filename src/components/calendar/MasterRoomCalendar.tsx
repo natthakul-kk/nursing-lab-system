@@ -17,6 +17,7 @@ import {
   LayoutGrid,
   GraduationCap,
 } from 'lucide-react';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { formatUserName, formatTeacherName } from '@/lib/user-utils';
 
 export type RoomCategory = 'ALL' | 'SKILL' | 'SIMULATION' | 'SPECIALTY' | 'SUPPORT';
@@ -123,6 +124,7 @@ export default function MasterRoomCalendar({
   const [rooms, setRooms] = useState<any[]>([]);
   const [roomBookings, setRoomBookings] = useState<any[]>([]);
   const [practiceSlots, setPracticeSlots] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string>('');
 
@@ -137,7 +139,11 @@ export default function MasterRoomCalendar({
 
   // Fetch Master Data
   const fetchData = async (manual = false) => {
-    if (manual) setIsRefreshing(true);
+    if (manual) {
+      setIsRefreshing(true);
+    } else {
+      setLoading(true);
+    }
     try {
       const year = currentMonth.getFullYear();
       const month = currentMonth.getMonth() + 1;
@@ -165,6 +171,7 @@ export default function MasterRoomCalendar({
     } catch (err) {
       console.error('Error fetching calendar data:', err);
     } finally {
+      setLoading(false);
       setIsRefreshing(false);
     }
   };
@@ -728,7 +735,14 @@ export default function MasterRoomCalendar({
               </div>
 
               {/* Rows for Each Room */}
-              {filteredRooms.length === 0 ? (
+              {loading ? (
+                <div className="py-24 flex items-center justify-center bg-slate-50/50 dark:bg-slate-900/50">
+                  <LoadingSpinner
+                    message="กำลังโหลดตารางการใช้ห้องปฏิบัติการ..."
+                    submessage="กำลังเชื่อมต่อและดึงข้อมูลรอบเวลา กิจกรรมการเรียน และการฝึกปฏิบัติการ"
+                  />
+                </div>
+              ) : filteredRooms.length === 0 ? (
                 <div className="p-12 text-center text-slate-400 text-xs">
                   ไม่พบห้องปฏิบัติการในหมวดหมู่นี้
                 </div>
@@ -836,7 +850,16 @@ export default function MasterRoomCalendar({
       {/* ============================================================== */}
       {viewMode === 'MONTH' && (
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm space-y-4 p-5">
-          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+          {loading ? (
+            <div className="py-24 flex items-center justify-center">
+              <LoadingSpinner
+                message="กำลังโหลดปฏิทินกิจกรรมรายเดือน..."
+                submessage="กำลังเชื่อมต่อและดึงข้อมูลรอบเวลา กิจกรรมการเรียน และการฝึกปฏิบัติการ"
+              />
+            </div>
+          ) : (
+            <>
+              <div className="rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
             <div className="grid grid-cols-7 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/80 text-center text-xs font-black text-slate-700 dark:text-slate-300 py-2.5">
               <div className="text-rose-500">อา.</div>
               <div>จ.</div>
@@ -968,6 +991,8 @@ export default function MasterRoomCalendar({
               </div>
             )}
           </div>
+          </>
+          )}
         </div>
       )}
 
@@ -1009,7 +1034,16 @@ export default function MasterRoomCalendar({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
-                {filteredActivities.length === 0 ? (
+                {loading ? (
+                  <tr>
+                    <td colSpan={8} className="p-16 text-center">
+                      <LoadingSpinner
+                        message="กำลังโหลดรายการกิจกรรม..."
+                        submessage="กำลังเชื่อมต่อและดึงข้อมูลการจองห้องปฏิบัติการ"
+                      />
+                    </td>
+                  </tr>
+                ) : filteredActivities.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="p-8 text-center text-slate-400">
                       ไม่พบรายการกิจกรรมตามเงื่อนไขที่ค้นหา

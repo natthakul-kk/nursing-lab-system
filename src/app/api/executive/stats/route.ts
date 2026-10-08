@@ -240,6 +240,7 @@ export async function GET(req: Request) {
         condition: a.condition || 'GOOD',
         status: a.status || 'AVAILABLE',
         categoryName: a.item.category?.name || 'ครุภัณฑ์',
+        unit: a.item.unit || 'ชิ้น',
         supplier: a.supplier || '-',
         warrantyExpiry: a.warrantyExpiry ? a.warrantyExpiry.toISOString() : null,
         imageUrl: rawImageUrl ? formatImageUrl(rawImageUrl) : null,

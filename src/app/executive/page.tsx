@@ -658,7 +658,7 @@ export default function ExecutiveDashboardPage() {
                             </div>
                             {item.sequenceNumber && (
                               <div className="text-[10px] text-slate-500">
-                                เครื่องที่ {item.sequenceNumber}
+                                {item.unit || 'ชิ้น'}ที่ {item.sequenceNumber}
                               </div>
                             )}
                           </div>
@@ -782,7 +782,7 @@ export default function ExecutiveDashboardPage() {
                   {selectedAsset.itemName}
                 </h3>
                 <p className="text-[11px] text-teal-200/80">
-                  เครื่องที่ {selectedAsset.sequenceNumber || 1} • เลขครุภัณฑ์: {selectedAsset.govAssetCode || '-'}
+                  {selectedAsset.unit || 'ชิ้น'}ที่ {selectedAsset.sequenceNumber || 1} • เลขครุภัณฑ์: {selectedAsset.govAssetCode || '-'}
                 </p>
               </div>
 

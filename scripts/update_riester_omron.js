@@ -5,29 +5,71 @@ const path = require('path');
 const fs = require('fs');
 
 async function main() {
-  console.log('=== Updating Exact 14 Brand and Model Items ===');
+  console.log('=== Updating Images for Specified Items ===');
 
-  const updateRules = [
-    { prefix: '1-B9701-FT17-65450010003/', range: [1, 5], newBrand: 'Prestan พรีสแตน', newModel: 'PP AM 100M MS' },
-    { prefix: '1-B9701-FT17-65300010001/', range: [21, 21], newBrand: 'เตียงเฟาร์เลอร์ 2 ไกร์', newModel: 'แบบ ดิจิตอล' },
-    { prefix: '1-B9701-FT17-65450010002/001-68', isExact: true, newBrand: '4DEM', newModel: 'หุ่น SIM MAN Gaumard Scientific' },
-    { prefix: '1-B9701-FT17-65450010002/002-68', isExact: true, newBrand: '4DEM', newModel: 'Qube AVPro' },
-    { prefix: '1-B9701-FT17-65450010004/', range: [11, 15], newBrand: 'KOKEN', newModel: 'LM-097B' },
-    { prefix: '1-B9701-FT17-65450010004/016-68', isExact: true, newName: 'หุ่นจำลองผู้ใหญ่ (SIM MAN)', newBrand: 'Gaumard Scientific', newModel: 'S3201.PK' },
-    { prefix: '1-B9701-FT17-65450010004/', range: [34, 38], newBrand: 'CLA Nursing Doll', newModel: 'CLA 1M' },
-    { prefix: '1-B9701-FT17-65450010004/', range: [39, 43], newBrand: 'CLA Nursing Doll', newModel: 'CLA 1F' },
-    { prefix: '1-B9701-FT17-65450010004/', range: [1, 5], newBrand: 'Limbs & Things', newModel: '60850' },
-    { prefix: '1-B9701-FT17-65450010004/', range: [6, 10], newBrand: 'Limbs & Things', newModel: '60851' },
-    { prefix: '1-B9701-FT17-65450010004/', range: [17, 23], newBrand: 'Koken', newModel: 'LM-028' },
-    { prefix: '1-B9701-FT17-65450010004/', range: [24, 28], newBrand: 'Nasco Healthcare', newModel: 'LF00929U' },
-    { prefix: '1-B9701-FT17-65450010004/', range: [29, 33], newBrand: '4DEM', newModel: 'L-IMD' },
-    { prefix: '1-B9701-FA17-65450010004/', range: [45, 54], newBrand: 'อัพไรท์ ซิมมูเลชั่น', newModel: '800-816' },
+  const imageRules = [
+    // 1: CPR ผู้ใหญ่ครึ่งตัว
+    {
+      prefix: '1-B9701-FT17-65450010003/',
+      range: [1, 5],
+      imageUrl: 'https://drive.google.com/file/d/1qWDRLyiRBRWXFeMUaNj08d7du6_Nq4v0/view?usp=drive_link',
+      label: 'ลำดับ 1: CPR ผู้ใหญ่ครึ่งตัว'
+    },
+    // 4: เครื่องแสดงสัญญาณชีพ
+    {
+      prefix: '1-B9701-FT17-65450010002/001-68',
+      isExact: true,
+      imageUrl: 'https://drive.google.com/file/d/1DWZW08_PLRwGlqQl4BoUlhh71GbyPON2/view?usp=sharing',
+      label: 'ลำดับ 4: เครื่องแสดงสัญญาณชีพ'
+    },
+    // 7: หุ่นจำลองผู้ใหญ่ (SIM MAN)
+    {
+      prefix: '1-B9701-FT17-65450010004/016-68',
+      isExact: true,
+      imageUrl: 'https://drive.google.com/file/d/1kiOynTyquGIhurpptqoCWFk2f4YJTzt-/view?usp=sharing',
+      label: 'ลำดับ 7: หุ่นจำลองผู้ใหญ่ (SIM MAN)'
+    },
+    // 8: หุ่นฝึกปฏิบัติการพยาบาลพื้นฐาน (ชาย)
+    {
+      prefix: '1-B9701-FT17-65450010004/',
+      range: [34, 38],
+      imageUrl: 'https://drive.google.com/file/d/1I3j4FtFdzZNOq74M-lt01NwuHRQca8va/view?usp=drive_link',
+      label: 'ลำดับ 8: หุ่นฝึกปฏิบัติการพยาบาลพื้นฐาน (ชาย)'
+    },
+    // 9: หุ่นฝึกปฏิบัติการพยาบาลพื้นฐาน (หญิง)
+    {
+      prefix: '1-B9701-FT17-65450010004/',
+      range: [39, 43],
+      imageUrl: 'https://drive.google.com/file/d/1I3j4FtFdzZNOq74M-lt01NwuHRQca8va/view?usp=drive_link',
+      label: 'ลำดับ 9: หุ่นฝึกปฏิบัติการพยาบาลพื้นฐาน (หญิง)'
+    },
+    // 10: หุ่นจำลองฝึกสวนปัสสาวะ (ชาย)
+    {
+      prefix: '1-B9701-FT17-65450010004/',
+      range: [1, 5],
+      imageUrl: 'https://drive.google.com/file/d/1KMDffuqSb8cDJ424qT4DNEhzM1LmaWw8/view?usp=drive_link',
+      label: 'ลำดับ 10: หุ่นจำลองฝึกสวนปัสสาวะ (ชาย)'
+    },
+    // 11: หุ่นจำลองฝึกสวนปัสสาวะ (หญิง)
+    {
+      prefix: '1-B9701-FT17-65450010004/',
+      range: [6, 10],
+      imageUrl: 'https://drive.google.com/file/d/1xyCtKRsHoSu51SrvV2dwPtellv1vdJQK/view?usp=drive_link',
+      label: 'ลำดับ 11: หุ่นจำลองฝึกสวนปัสสาวะ (หญิง)'
+    },
+    // 15: โมเดลบาดแผลจำลอง
+    {
+      prefix: '1-B9701-FA17-65450010004/',
+      range: [45, 54],
+      imageUrl: 'https://drive.google.com/file/d/1BKFWzzaVlnwr6u5W10lyJMxDFtTqV6oX/view?usp=drive_link',
+      label: 'ลำดับ 15: โมเดลบาดแผลจำลอง'
+    },
   ];
 
   function matchRule(govCode) {
     if (!govCode) return null;
     const clean = String(govCode).trim();
-    for (const rule of updateRules) {
+    for (const rule of imageRules) {
       if (rule.isExact) {
         if (clean === rule.prefix) return rule;
       } else {
@@ -55,17 +97,16 @@ async function main() {
       await prisma.equipmentAsset.update({
         where: { id: a.id },
         data: {
-          brand: rule.newBrand,
-          model: rule.newModel,
+          imageUrl: rule.imageUrl,
         },
       });
       affectedItemIds.add(a.itemId);
       dbAssetCount++;
-      console.log(`✓ Updated Asset ${a.assetCode} (${a.govAssetCode}): ${rule.newBrand} / ${rule.newModel}`);
+      console.log(`✓ Updated Asset Image ${a.assetCode} (${a.govAssetCode}): ${rule.label}`);
     }
   }
 
-  console.log(`Total database assets updated: ${dbAssetCount}`);
+  console.log(`Total database assets with image updated: ${dbAssetCount}`);
 
   // 2. Update Database Parent Items
   for (const itemId of affectedItemIds) {
@@ -81,12 +122,10 @@ async function main() {
           await prisma.item.update({
             where: { id: it.id },
             data: {
-              brand: rule.newBrand,
-              model: rule.newModel,
-              ...(rule.newName ? { name: rule.newName } : {}),
+              imageUrl: rule.imageUrl,
             },
           });
-          console.log(`✓ Updated Item ${it.code} (${rule.newName || it.name}): ${rule.newBrand} / ${rule.newModel}`);
+          console.log(`✓ Updated Item Image ${it.code} (${it.name}): ${rule.imageUrl}`);
         }
       }
     }
@@ -108,9 +147,8 @@ async function main() {
       const updatedRows = rows.map((r) => {
         const rule = matchRule(r['เลขครุภัณฑ์ราชการ']);
         if (rule) {
-          r['ยี่ห้อ (Brand)'] = rule.newBrand;
-          r['รุ่น (Model)'] = rule.newModel;
-          if (rule.newName) r['ชื่อรายการ'] = rule.newName;
+          r['ลิงก์รูปภาพ (Image URL)'] = rule.imageUrl;
+          r['รูปภาพ'] = rule.imageUrl;
           excelCount++;
         }
         return r;
@@ -123,7 +161,7 @@ async function main() {
     }
   }
 
-  console.log('=== Update finished successfully ===');
+  console.log('=== Image update finished successfully ===');
   await prisma.$disconnect();
 }
 

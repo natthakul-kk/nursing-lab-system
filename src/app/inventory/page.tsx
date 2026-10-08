@@ -9,6 +9,7 @@ import BatchConsumableStickerModal from '@/components/qrcode/BatchConsumableStic
 import BatchAssetStickerModal from '@/components/qrcode/BatchAssetStickerModal';
 import QrScannerModal from '@/components/qrcode/QrScannerModal';
 import StorageManagementTab from '@/components/storage/StorageManagementTab';
+import ConsumableDetailModal from '@/components/inventory/ConsumableDetailModal';
 import { extractCleanCode } from '@/lib/scanner-utils';
 import { formatImageUrl } from '@/lib/image-helper';
 import {
@@ -63,6 +64,7 @@ export default function InventoryPage() {
   const [selectedAssetForQr, setSelectedAssetForQr] = useState<{ asset: any; itemName: string; itemUnit?: string } | null>(null);
   const [selectedLotForQr, setSelectedLotForQr] = useState<{ lot: any; item: any } | null>(null);
   const [selectedLotForBoxStickers, setSelectedLotForBoxStickers] = useState<{ item: any; lot: any; boxes: any[] } | null>(null);
+  const [selectedConsumableForDetail, setSelectedConsumableForDetail] = useState<{ item: any; lot?: any | null } | null>(null);
   const [showBatchConsumableModal, setShowBatchConsumableModal] = useState(false);
   const [showBatchAssetModal, setShowBatchAssetModal] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
@@ -1747,6 +1749,16 @@ export default function InventoryPage() {
 
                         <td className="py-3.5 px-4 text-right">
                           <div className="flex items-center justify-end gap-1.5">
+                            {!isEquipment && (
+                              <button
+                                type="button"
+                                onClick={() => setSelectedConsumableForDetail({ item })}
+                                className="p-1.5 rounded-lg border border-teal-200 dark:border-teal-800 text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-950/60 transition cursor-pointer"
+                                title="ดูรายละเอียดพัสดุและทุกล็อตคงคลัง"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                              </button>
+                            )}
                             {isStaff && (
                               <button
                                 onClick={() => openEditItem(item)}
@@ -2156,6 +2168,15 @@ export default function InventoryPage() {
                                               </td>
                                               <td className="py-2 text-right">
                                                 <div className="flex items-center justify-end gap-1.5">
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => setSelectedConsumableForDetail({ item, lot })}
+                                                    className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-teal-50 dark:bg-teal-950/40 hover:bg-teal-100 dark:hover:bg-teal-900/60 text-teal-700 dark:text-teal-300 text-[11px] font-bold transition border border-teal-200 dark:border-teal-800 cursor-pointer"
+                                                    title="ดูรายละเอียดเจาะลึกของล็อตนี้"
+                                                  >
+                                                    <Eye className="w-3.5 h-3.5" />
+                                                    <span>รายละเอียดล็อต</span>
+                                                  </button>
                                                   {lot.boxes && lot.boxes.length > 0 && (
                                                     <button
                                                       type="button"
@@ -2176,7 +2197,7 @@ export default function InventoryPage() {
                                                   <button
                                                     type="button"
                                                     onClick={() => setSelectedLotForQr({ lot, item })}
-                                                    className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-teal-50 dark:bg-teal-950/40 hover:bg-teal-100 dark:hover:bg-teal-900/60 text-teal-700 dark:text-teal-300 text-[11px] font-bold transition border border-teal-200 dark:border-teal-800 cursor-pointer"
+                                                    className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-[11px] font-bold transition border border-slate-200 dark:border-slate-700 cursor-pointer"
                                                     title="พิมพ์ป้ายสติกเกอร์ QR Code ประจำล็อตนี้"
                                                   >
                                                     <QrCode className="w-3.5 h-3.5" />
@@ -4299,6 +4320,17 @@ export default function InventoryPage() {
               setSearchQuery(scannedCode);
             }
           }}
+        />
+      )}
+
+      {/* Consumable Detail Modal (Master Item & Stock Lots) */}
+      {selectedConsumableForDetail && (
+        <ConsumableDetailModal
+          item={selectedConsumableForDetail.item}
+          initialLot={selectedConsumableForDetail.lot}
+          onClose={() => setSelectedConsumableForDetail(null)}
+          onOpenQr={(lot, item) => setSelectedLotForQr({ lot, item })}
+          onOpenBoxStickers={(lot, item, boxes) => setSelectedLotForBoxStickers({ item, lot, boxes })}
         />
       )}
 

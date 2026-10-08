@@ -236,10 +236,19 @@ async function exportMissingImagesReport() {
   }
 
   const exportFilePath = path.join(exportDir, 'รายงานรายการครุภัณฑ์คงทนที่ยังไม่มีรูปภาพ.xlsx');
-  XLSX.writeFile(wb, exportFilePath);
-
-  console.log(`\nExport successfully generated!`);
-  console.log(`File location: ${exportFilePath}`);
+  try {
+    XLSX.writeFile(wb, exportFilePath);
+    console.log(`\nExport successfully generated!`);
+    console.log(`File location: ${exportFilePath}`);
+  } catch (err) {
+    if (err.code === 'EBUSY') {
+      const fallbackPath = path.join(exportDir, 'รายงานรายการครุภัณฑ์คงทนที่ยังไม่มีรูปภาพ.updated.xlsx');
+      XLSX.writeFile(wb, fallbackPath);
+      console.log(`\nOriginal file is open in Excel. Saved updated report to: ${fallbackPath}`);
+    } else {
+      throw err;
+    }
+  }
   console.log(`Summary:`);
   console.log(`- หมวดหมู่ทั้งหมด: ${catSummaryMap.size} หมวด`);
   console.log(`- รายการครุภัณฑ์ (ชนิด) ที่ยังไม่มีรูป: ${sheet1Data.length} รายการ`);

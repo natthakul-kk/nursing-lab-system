@@ -100,6 +100,8 @@ export default function InventoryPage() {
 
   // Bulk Import state
   const [showBulkModal, setShowBulkModal] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const exportMenuRef = React.useRef<HTMLDivElement>(null);
   const [bulkFile, setBulkFile] = useState<File | null>(null);
   const [previewData, setPreviewData] = useState<any[]>([]);
   const [bulkSubmitting, setBulkSubmitting] = useState(false);
@@ -527,6 +529,21 @@ export default function InventoryPage() {
     fetchItems();
     fetchCategories();
   }, []);
+
+  // Handle click outside export menu dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(event.target as Node)) {
+        setShowExportMenu(false);
+      }
+    };
+    if (showExportMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showExportMenu]);
 
 
   // ตารางความสัมพันธ์หมวดหมู่วัสดุสิ้นเปลืองกับรหัสย่อยที่ใช้งานจริงในห้องปฏิบัติการ
@@ -1023,6 +1040,227 @@ export default function InventoryPage() {
     handleDownloadConsumablesTemplate();
   };
 
+  // =========================================================================
+  // ฟังก์ชันส่งออกรายการพัสดุ (Export Inventory Data)
+  // 1. ครุภัณฑ์คงทน (Equipment)
+  // 2. วัสดุสิ้นเปลือง (Consumables)
+  // 3. รวมทั้งหมด 2 ชีตในไฟล์เดียว (Combined 2 Sheets)
+  // =========================================================================
+
+  const formatExportThaiDate = (dateVal: any) => {
+    if (!dateVal) return '-';
+    try {
+      const d = new Date(dateVal);
+      if (isNaN(d.getTime())) return '-';
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear() + 543;
+      return `${day}/${month}/${year}`;
+    } catch {
+      return '-';
+    }
+  };
+
+  const getEquipmentExportRows = () => {
+    const equipmentItems = items.filter((i) => i.type === 'EQUIPMENT');
+    const rows: any[] = [];
+    let seq = 1;
+
+    equipmentItems.forEach((item) => {
+      const assetsList = item.assets || [];
+      if (assetsList.length === 0) {
+        // กรณีไม่มี assets ย่อย แสดงข้อมูลตัวแม่
+        rows.push({
+          'ลำดับ': seq++,
+          'รหัสประจำเครื่อง (Lab Asset Code)': '-',
+          'เลขทะเบียนครุภัณฑ์ราชการ': '-',
+          'ชื่อรายการครุภัณฑ์': item.name,
+          'รหัสพัสดุแม่': item.code,
+          'หมวดหมู่': item.category?.name || '-',
+          'ยี่ห้อ (Brand)': item.brand || '-',
+          'รุ่น (Model)': item.model || '-',
+          'หมายเลขเครื่อง (Serial No.)': '-',
+          'สถานที่จัดเก็บ': item.storageLocation?.name
+            ? `${item.storageLocation.name} (${item.storageLocation.roomName || item.storageLocation.code || ''})`
+            : item.location || '-',
+          'ราคาจัดซื้อต่อหน่วย (บาท)': 0,
+          'สภาพครุภัณฑ์': 'ปกติ',
+          'สถานะการใช้งาน': 'ไม่มีชิ้นอุปกรณ์',
+          'ผู้จัดจำหน่าย (Supplier)': '-',
+          'วันที่รับเข้า': '-',
+          'วันสิ้นสุดประกัน': '-',
+          'ยืมได้หรือไม่': item.isBorrowable !== false ? 'อนุญาตให้ยืม' : 'ไม่อนุญาตให้ยืม',
+          'ลิงก์รูปภาพ': item.imageUrl || '',
+        });
+      } else {
+        assetsList.forEach((asset: any) => {
+          let conditionTh = 'ปกติ';
+          if (asset.condition === 'DAMAGED') conditionTh = 'ชำรุด';
+          else if (asset.condition === 'FAIR') conditionTh = 'พอใช้';
+
+          let statusTh = 'พร้อมใช้งาน';
+          if (asset.status === 'BORROWED') statusTh = 'กำลังถูกยืม';
+          else if (asset.status === 'MAINTENANCE') statusTh = 'ส่งซ่อมบำรุง';
+          else if (asset.status === 'RETIRED') statusTh = 'จำหน่ายออก/แทงจำหน่าย';
+
+          const loc = asset.storageLocation?.name
+            ? `${asset.storageLocation.name} (${asset.storageLocation.roomName || asset.storageLocation.code || ''})`
+            : asset.location || item.storageLocation?.name || item.location || '-';
+
+          rows.push({
+            'ลำดับ': seq++,
+            'รหัสประจำเครื่อง (Lab Asset Code)': asset.assetCode || '-',
+            'เลขทะเบียนครุภัณฑ์ราชการ': asset.govAssetCode || '-',
+            'ชื่อรายการครุภัณฑ์': item.name,
+            'รหัสพัสดุแม่': item.code,
+            'หมวดหมู่': item.category?.name || '-',
+            'ยี่ห้อ (Brand)': asset.brand || item.brand || '-',
+            'รุ่น (Model)': asset.model || item.model || '-',
+            'หมายเลขเครื่อง (Serial No.)': asset.serialNumber || '-',
+            'สถานที่จัดเก็บ': loc,
+            'ราคาจัดซื้อต่อหน่วย (บาท)': Number(asset.cost) || 0,
+            'สภาพครุภัณฑ์': conditionTh,
+            'สถานะการใช้งาน': statusTh,
+            'ผู้จัดจำหน่าย (Supplier)': asset.supplier || '-',
+            'วันที่รับเข้า': formatExportThaiDate(asset.receivedDate),
+            'วันสิ้นสุดประกัน': formatExportThaiDate(asset.warrantyExpiry),
+            'ยืมได้หรือไม่': asset.isBorrowable !== false && item.isBorrowable !== false ? 'อนุญาตให้ยืม' : 'ไม่อนุญาตให้ยืม',
+            'ลิงก์รูปภาพ': asset.imageUrl || item.imageUrl || '',
+          });
+        });
+      }
+    });
+
+    return rows;
+  };
+
+  const getConsumablesExportRows = () => {
+    const consumableItems = items.filter((i) => i.type === 'CONSUMABLE');
+    const rows: any[] = [];
+    let seq = 1;
+
+    consumableItems.forEach((item) => {
+      const lotsList = item.stockLots || [];
+      const ratio = Number(item.conversionRatio) > 0 ? Number(item.conversionRatio) : 1;
+      const loc = item.storageLocation?.name
+        ? `${item.storageLocation.name} (${item.storageLocation.roomName || item.storageLocation.code || ''})`
+        : item.location || '-';
+
+      if (lotsList.length === 0) {
+        rows.push({
+          'ลำดับ': seq++,
+          'รหัสพัสดุ': item.code,
+          'ชื่อรายการวัสดุ': item.name,
+          'หมวดหมู่': item.category?.name || '-',
+          'หน่วยบรรจุหลัก': item.unit,
+          'หน่วยย่อยเบิกใช้': item.usageUnit || item.unit,
+          'อัตราแปลง (ชิ้น/หน่วยหลัก)': ratio,
+          'สถานที่จัดเก็บ': loc,
+          'ยอดคงคลังรวม (หน่วยหลัก)': item.availableStock ?? 0,
+          'ยอดคงคลังรวม (หน่วยย่อย)': item.totalPiecesRemaining ?? 0,
+          'เศษชิ้นเปิดใช้': item.openPackRemainder ?? 0,
+          'จุดแจ้งเตือนขั้นต่ำ': item.minStockAlert ?? 0,
+          'สถานะคงคลัง': item.isLowStock ? 'ต่ำกว่าเกณฑ์' : 'ปกติ',
+          'หมายเลขล็อต': '-',
+          'วันหมดอายุ': '-',
+          'วันที่รับเข้า': '-',
+          'ราคาต่อหน่วยบรรจุ (บาท)': 0,
+          'ผู้จัดจำหน่าย (Supplier)': '-',
+        });
+      } else {
+        lotsList.forEach((lot: any) => {
+          rows.push({
+            'ลำดับ': seq++,
+            'รหัสพัสดุ': item.code,
+            'ชื่อรายการวัสดุ': item.name,
+            'หมวดหมู่': item.category?.name || '-',
+            'หน่วยบรรจุหลัก': item.unit,
+            'หน่วยย่อยเบิกใช้': item.usageUnit || item.unit,
+            'อัตราแปลง (ชิ้น/หน่วยหลัก)': Number(lot.packSize) > 0 ? Number(lot.packSize) : ratio,
+            'สถานที่จัดเก็บ': loc,
+            'ยอดคงคลังในล็อต (หน่วยหลัก)': lot.quantityRemaining ?? 0,
+            'ยอดคงคลังรวมทั้งหมด (หน่วยย่อย)': item.totalPiecesRemaining ?? 0,
+            'เศษชิ้นเปิดใช้ในล็อต': lot.openPackRemainder ?? 0,
+            'จุดแจ้งเตือนขั้นต่ำ': item.minStockAlert ?? 0,
+            'สถานะคงคลัง': item.isLowStock ? 'ต่ำกว่าเกณฑ์' : 'ปกติ',
+            'หมายเลขล็อต': lot.lotNumber || '-',
+            'วันหมดอายุ': formatExportThaiDate(lot.expiryDate),
+            'วันที่รับเข้า': formatExportThaiDate(lot.receivedDate),
+            'ราคาต่อหน่วยบรรจุ (บาท)': Number(lot.unitCost) || 0,
+            'ผู้จัดจำหน่าย (Supplier)': lot.supplier || '-',
+          });
+        });
+      }
+    });
+
+    return rows;
+  };
+
+  const setWorksheetColumnWidths = (ws: XLSX.WorkSheet, data: any[]) => {
+    if (!data || data.length === 0) return;
+    const colKeys = Object.keys(data[0]);
+    const colWidths = colKeys.map((key) => {
+      let maxLen = key.length * 2; // Thai chars approx width
+      data.forEach((row) => {
+        const valStr = String(row[key] ?? '');
+        const len = valStr.length > 30 ? 30 : Math.max(valStr.length * 1.5, 10);
+        if (len > maxLen) maxLen = len;
+      });
+      return { wch: Math.min(Math.max(Math.ceil(maxLen), 12), 40) };
+    });
+    ws['!cols'] = colWidths;
+  };
+
+  const handleExportEquipment = () => {
+    const data = getEquipmentExportRows();
+    if (data.length === 0) {
+      alert('ไม่พบรายการครุภัณฑ์สำหรับส่งออก');
+      return;
+    }
+    const ws = XLSX.utils.json_to_sheet(data);
+    setWorksheetColumnWidths(ws, data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'ครุภัณฑ์คงทน');
+    const today = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(wb, `รายงานครุภัณฑ์คงทน_${today}.xlsx`);
+  };
+
+  const handleExportConsumables = () => {
+    const data = getConsumablesExportRows();
+    if (data.length === 0) {
+      alert('ไม่พบรายการวัสดุสิ้นเปลืองสำหรับส่งออก');
+      return;
+    }
+    const ws = XLSX.utils.json_to_sheet(data);
+    setWorksheetColumnWidths(ws, data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'วัสดุสิ้นเปลือง');
+    const today = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(wb, `รายงานวัสดุสิ้นเปลือง_${today}.xlsx`);
+  };
+
+  const handleExportCombined = () => {
+    const eqData = getEquipmentExportRows();
+    const csData = getConsumablesExportRows();
+    if (eqData.length === 0 && csData.length === 0) {
+      alert('ไม่พบรายการพัสดุสำหรับส่งออก');
+      return;
+    }
+    const wb = XLSX.utils.book_new();
+    if (eqData.length > 0) {
+      const wsEq = XLSX.utils.json_to_sheet(eqData);
+      setWorksheetColumnWidths(wsEq, eqData);
+      XLSX.utils.book_append_sheet(wb, wsEq, 'ครุภัณฑ์คงทน');
+    }
+    if (csData.length > 0) {
+      const wsCs = XLSX.utils.json_to_sheet(csData);
+      setWorksheetColumnWidths(wsCs, csData);
+      XLSX.utils.book_append_sheet(wb, wsCs, 'วัสดุสิ้นเปลือง');
+    }
+    const today = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(wb, `รายงานรายการพัสดุทั้งหมด_${today}.xlsx`);
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -1123,6 +1361,92 @@ export default function InventoryPage() {
               <Folder className="w-4 h-4 text-teal-600" />
               <span>จัดการหมวดหมู่ ({categories.length})</span>
             </button>
+
+            {/* ปุ่มส่งออกรายการพัสดุ (Export Dropdown) */}
+            <div className="relative inline-block text-left" ref={exportMenuRef}>
+              <button
+                type="button"
+                onClick={() => setShowExportMenu(!showExportMenu)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 text-xs font-bold shadow-sm transition cursor-pointer"
+                title="ส่งออกข้อมูลรายการพัสดุเป็นไฟล์ Excel (.xlsx)"
+              >
+                <Download className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <span>ส่งออกรายการพัสดุ</span>
+                <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${showExportMenu ? 'rotate-180' : ''}`} />
+              </button>
+
+              {showExportMenu && (
+                <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-white dark:bg-slate-800 shadow-xl border border-slate-200/90 dark:border-slate-700 z-50 p-1.5 space-y-1 animate-fadeIn">
+                  <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider border-b border-slate-100 dark:border-slate-700/60 mb-1">
+                    เลือกรูปแบบการส่งออก (.xlsx)
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowExportMenu(false);
+                      handleExportEquipment();
+                    }}
+                    className="w-full flex items-start gap-2.5 px-3 py-2 text-left rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition cursor-pointer group"
+                  >
+                    <span className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 group-hover:scale-105 transition flex-shrink-0">
+                      <Archive className="w-4 h-4" />
+                    </span>
+                    <div>
+                      <div className="text-xs font-bold text-slate-800 dark:text-slate-100">
+                        ครุภัณฑ์คงทน
+                      </div>
+                      <div className="text-[10px] text-slate-400 dark:text-slate-400 leading-tight">
+                        ข้อมูลรายชิ้น รหัสแล็บ เลขราชการ ราคา สถานะ
+                      </div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowExportMenu(false);
+                      handleExportConsumables();
+                    }}
+                    className="w-full flex items-start gap-2.5 px-3 py-2 text-left rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition cursor-pointer group"
+                  >
+                    <span className="p-1.5 rounded-lg bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 group-hover:scale-105 transition flex-shrink-0">
+                      <Boxes className="w-4 h-4" />
+                    </span>
+                    <div>
+                      <div className="text-xs font-bold text-slate-800 dark:text-slate-100">
+                        วัสดุสิ้นเปลือง
+                      </div>
+                      <div className="text-[10px] text-slate-400 dark:text-slate-400 leading-tight">
+                        ยอดคงเหลือ ล็อต วันหมดอายุ เศษเปิดใช้
+                      </div>
+                    </div>
+                  </button>
+
+                  <div className="border-t border-slate-100 dark:border-slate-700/60 my-1"></div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowExportMenu(false);
+                      handleExportCombined();
+                    }}
+                    className="w-full flex items-start gap-2.5 px-3 py-2 text-left rounded-xl hover:bg-emerald-50/80 dark:hover:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 transition cursor-pointer group"
+                  >
+                    <span className="p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 group-hover:scale-105 transition flex-shrink-0">
+                      <FileSpreadsheet className="w-4 h-4" />
+                    </span>
+                    <div>
+                      <div className="text-xs font-bold text-emerald-900 dark:text-emerald-200">
+                        รวมทั้งหมด (2 Sheets)
+                      </div>
+                      <div className="text-[10px] text-emerald-700/80 dark:text-emerald-400 leading-tight">
+                        แยกชีตครุภัณฑ์ และวัสดุสิ้นเปลืองในไฟล์เดียว
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
 
             <button
               onClick={() => {

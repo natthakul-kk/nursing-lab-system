@@ -107,11 +107,13 @@ export default function LoginPage() {
 
   // Initialize Google Identity Services button
   const initializeGoogleBtn = () => {
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    const clientId =
+      process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
+      '852809851978-sdl1j15pb8db2uh6lm9kcmopghn4hhv2.apps.googleusercontent.com';
     if (typeof window !== 'undefined' && (window as any).google && googleBtnContainerRef.current) {
       try {
         (window as any).google.accounts.id.initialize({
-          client_id: clientId || 'YOUR_GOOGLE_CLIENT_ID_PLACEHOLDER',
+          client_id: clientId,
           callback: handleGoogleCredentialResponse,
           auto_select: false,
           cancel_on_tap_outside: true,

@@ -3,8 +3,12 @@ import { OAuth2Client } from 'google-auth-library';
 import { prisma } from '@/lib/prisma';
 
 // Use configured client ID or fallback
-const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID;
+const googleClientId =
+  process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
+  process.env.GOOGLE_CLIENT_ID ||
+  '852809851978-sdl1j15pb8db2uh6lm9kcmopghn4hhv2.apps.googleusercontent.com';
 const client = new OAuth2Client(googleClientId);
+
 
 export async function POST(req: Request) {
   try {

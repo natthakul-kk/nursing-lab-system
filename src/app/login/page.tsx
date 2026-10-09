@@ -117,6 +117,9 @@ export default function LoginPage() {
           cancel_on_tap_outside: true,
         });
 
+        const containerWidth = googleBtnContainerRef.current.clientWidth || 320;
+        const btnWidth = Math.min(Math.max(containerWidth, 240), 380);
+
         // Render Google button inside container
         (window as any).google.accounts.id.renderButton(googleBtnContainerRef.current, {
           theme: 'outline',
@@ -125,7 +128,7 @@ export default function LoginPage() {
           shape: 'rectangular',
           text: 'signin_with',
           logo_alignment: 'left',
-          width: '340',
+          width: String(btnWidth),
           locale: 'th',
         });
       } catch (err) {

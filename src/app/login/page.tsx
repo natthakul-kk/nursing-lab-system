@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import Script from 'next/script';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import {
@@ -19,11 +20,12 @@ import {
   HelpCircle,
   Clock,
   User,
+  Sparkles,
 } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, currentUser, isLoading } = useAuth();
+  const { login, loginWithGoogle, currentUser, isLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -31,6 +33,8 @@ export default function LoginPage() {
   const [timeoutNotice, setTimeoutNotice] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [googleSubmitting, setGoogleSubmitting] = useState(false);
+  const googleBtnContainerRef = useRef<HTMLDivElement>(null);
 
   // Check if redirected due to session timeout
   useEffect(() => {
@@ -75,6 +79,64 @@ export default function LoginPage() {
       setSubmitting(false);
     }
   };
+
+  // Handle Google OAuth Credential
+  const handleGoogleCredentialResponse = async (response: any) => {
+    if (!response || !response.credential) {
+      setError('ไม่พบข้อมูลการยืนยันตัวตนจาก Google');
+      return;
+    }
+
+    setError(null);
+    setTimeoutNotice(false);
+    setGoogleSubmitting(true);
+
+    try {
+      const res = await loginWithGoogle(response.credential, rememberMe);
+      if (res.success) {
+        router.push('/');
+      } else {
+        setError(res.error || 'เข้าสู่ระบบด้วย Google ไม่สำเร็จ');
+        setGoogleSubmitting(false);
+      }
+    } catch (err) {
+      setError('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์ Google');
+      setGoogleSubmitting(false);
+    }
+  };
+
+  // Initialize Google Identity Services button
+  const initializeGoogleBtn = () => {
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    if (typeof window !== 'undefined' && (window as any).google && googleBtnContainerRef.current) {
+      try {
+        (window as any).google.accounts.id.initialize({
+          client_id: clientId || 'YOUR_GOOGLE_CLIENT_ID_PLACEHOLDER',
+          callback: handleGoogleCredentialResponse,
+          auto_select: false,
+          cancel_on_tap_outside: true,
+        });
+
+        // Render Google button inside container
+        (window as any).google.accounts.id.renderButton(googleBtnContainerRef.current, {
+          theme: 'outline',
+          size: 'large',
+          type: 'standard',
+          shape: 'rectangular',
+          text: 'signin_with',
+          logo_alignment: 'left',
+          width: '340',
+          locale: 'th',
+        });
+      } catch (err) {
+        console.error('Failed to initialize Google Sign-In button', err);
+      }
+    }
+  };
+
+  useEffect(() => {
+    initializeGoogleBtn();
+  }, [googleBtnContainerRef.current]);
 
   // Step 1: Request OTP
   const handleRequestOtp = async (e: React.FormEvent) => {
@@ -285,13 +347,53 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || googleSubmitting}
               className="w-full py-3 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-lg shadow-teal-600/30 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
-              <span>{submitting ? 'กำลังตรวจสอบรหัสผ่าน...' : 'เข้าสู่ระบบ'}</span>
+              <span>{submitting ? 'กำลังตรวจสอบรหัสผ่าน...' : 'เข้าสู่ระบบด้วยรหัสผ่าน'}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
+
+          {/* Divider */}
+          <div className="relative my-4">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-200 dark:border-slate-800" />
+            </div>
+            <div className="relative flex justify-center text-[11px] uppercase">
+              <span className="bg-white dark:bg-slate-900 px-3 font-semibold text-slate-400">
+                หรือเข้าสู่ระบบด้วย
+              </span>
+            </div>
+          </div>
+
+          {/* Google Sign-In Section */}
+          <div className="space-y-2.5">
+            <Script
+              src="https://accounts.google.com/gsi/client"
+              strategy="afterInteractive"
+              onLoad={() => initializeGoogleBtn()}
+            />
+
+            <div className="flex justify-center w-full min-h-[44px]">
+              {/* Google Native One Tap & Standard Button Container */}
+              <div
+                ref={googleBtnContainerRef}
+                className={`w-full flex justify-center ${googleSubmitting ? 'opacity-40 pointer-events-none' : ''}`}
+              />
+            </div>
+
+            {googleSubmitting && (
+              <div className="text-center text-xs font-semibold text-teal-600 dark:text-teal-400 animate-pulse flex items-center justify-center gap-1.5 pt-1">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>กำลังยืนยันตัวตนกับบัญชี Google...</span>
+              </div>
+            )}
+
+            <p className="text-[11px] text-center text-slate-400">
+              รองรับบัญชี Google มหาวิทยาลัยเกษตรศาสตร์ (@ku.th)
+            </p>
+          </div>
 
           {/* System Info / Security Note */}
           <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">

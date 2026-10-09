@@ -28,6 +28,7 @@ interface AuthContextType {
   availableUsers: User[];
 
   login: (email: string, password?: string, rememberMe?: boolean) => Promise<{ success: boolean; error?: string }>;
+  loginWithGoogle: (credential: string, rememberMe?: boolean) => Promise<{ success: boolean; error?: string }>;
   logout: (reason?: string | React.MouseEvent | unknown) => void;
   extendSession: () => void;
   updateUser: (updatedData: Partial<User>) => Promise<boolean>;
@@ -225,6 +226,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const loginWithGoogle = async (credential: string, rememberMe = true): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const res = await fetch('/api/auth/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        return { success: false, error: data.error || 'เข้าสู่ระบบด้วย Google ไม่สำเร็จ' };
+      }
+
+      const user: User = data.user;
+      setCurrentUser(user);
+
+      if (typeof window !== 'undefined') {
+        const now = Date.now();
+        const lifetime = rememberMe ? SESSION_LIFETIME_REMEMBER_MS : SESSION_LIFETIME_NORMAL_MS;
+        const expiresAt = now + lifetime;
+
+        localStorage.setItem('active_user_id', user.id);
+        localStorage.setItem('cached_current_user', JSON.stringify(user));
+        localStorage.setItem('session_expires_at', expiresAt.toString());
+        localStorage.setItem('session_last_active', now.toString());
+        localStorage.setItem('session_remember_me', rememberMe ? 'true' : 'false');
+      }
+
+      return { success: true };
+    } catch (err: any) {
+      console.error('Google login request failed', err);
+      return { success: false, error: 'เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์ Google' };
+    }
+  };
+
   const refreshUsers = async () => {
     try {
       const res = await fetch('/api/users');
@@ -295,6 +332,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         currentUser,
         availableUsers,
         login,
+        loginWithGoogle,
         logout,
         extendSession,
         updateUser,

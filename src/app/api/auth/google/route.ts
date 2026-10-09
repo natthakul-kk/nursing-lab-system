@@ -73,39 +73,14 @@ export async function POST(req: Request) {
       },
     });
 
-    // If user does not exist in database
+    // If user does not exist in database (Strict: only pre-registered accounts allowed)
     if (!user) {
-      // Auto-register only if KU domain email (@ku.th)
-      const isKuEmail = email.endsWith('@ku.th');
-
-      if (isKuEmail) {
-        // Extract student ID from email if pattern bXXXXXXXXXX@ku.th or similar
-        let extractedStudentId: string | null = null;
-        const match = email.match(/^b?(\d{8,10})@ku\.th$/i);
-        if (match && match[1]) {
-          extractedStudentId = `b${match[1]}`;
-        }
-
-        user = await prisma.user.create({
-          data: {
-            email,
-            name,
-            role: 'USER',
-            studentId: extractedStudentId,
-            status: 'ACTIVE',
-            approvalScopes: 'ALL',
-            password: 'GOOGLE_OAUTH_ACCOUNT', // Safe placeholder
-          },
-        });
-        console.log(`[GOOGLE AUTH] Created new user account for ${email} with role USER`);
-      } else {
-        return NextResponse.json(
-          {
-            error: `ไม่พบบัญชี "${email}" ในระบบห้องปฏิบัติการพยาบาล กรุณาเข้าสู่ระบบด้วยอีเมลมหาวิทยาลัย (@ku.th) หรือติดต่อเจ้าหน้าที่ห้องปฏิบัติการเพื่อลงทะเบียน`,
-          },
-          { status: 403 }
-        );
-      }
+      return NextResponse.json(
+        {
+          error: `ไม่พบบัญชี "${email}" ในระบบห้องปฏิบัติการพยาบาล กรุณาติดต่อเจ้าหน้าที่ห้องปฏิบัติการเพื่อลงทะเบียนก่อนเข้าใช้งาน`,
+        },
+        { status: 403 }
+      );
     }
 
     // Check account status
